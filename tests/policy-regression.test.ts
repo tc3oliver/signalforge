@@ -130,6 +130,7 @@ function mkItem(id: string): NormalizedItem {
 	return {
 		id,
 		sourceType: "rss",
+		trust: "UNTRUSTED_EXTERNAL_CONTENT" as const,
 		sourceName: "feed",
 		title: `title ${id}`,
 		summary: "",

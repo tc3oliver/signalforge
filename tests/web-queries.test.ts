@@ -136,6 +136,7 @@ describe.skipIf(!probe.available)("web read projections", () => {
 			{
 				id: "it-early",
 				sourceType: "rss",
+				trust: "UNTRUSTED_EXTERNAL_CONTENT" as const,
 				sourceName: "Test Feed",
 				title: "Quantum widget factory opens",
 				summary: "A widget factory with quantum characteristics",
@@ -147,6 +148,7 @@ describe.skipIf(!probe.available)("web read projections", () => {
 			{
 				id: "it-late",
 				sourceType: "rss",
+				trust: "UNTRUSTED_EXTERNAL_CONTENT" as const,
 				sourceName: "Test Feed",
 				title: "Quantum widget recall announced",
 				summary: "The same factory recalls its widgets",

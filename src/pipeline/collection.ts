@@ -48,6 +48,9 @@ export function factIdFor(kind: string, externalId: string): string {
 export function toNormalizedItem(item: CollectedItem): NormalizedItem {
 	return {
 		id: itemIdFor(item.sourceType, item.externalId),
+		// Carried across the boundary, not re-derived: the collector said this came
+		// from outside and the agent-visible shape has to keep saying so.
+		trust: item.trust,
 		sourceType: item.sourceType,
 		sourceName: item.sourceName,
 		title: item.title,

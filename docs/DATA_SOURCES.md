@@ -13,10 +13,10 @@ Everything below was read out of the collector source, `config/sources.yaml` and
 | Source | Credential | Required? | Enabled | Status |
 |---|---|---|---|---|
 | rss (Miniflux) | `MINIFLUX_API_KEY` (+ `baseUrl`) | Required | true | **DISABLED** — no credential present |
-| web (Tavily) | `TAVILY_API_KEY` | Required | true | **Not a collector.** Reached only via the `search_web` curator tool; degrades to Exa, then unavailable. No credential present |
+| web (Tavily) | `TAVILY_API_KEY` | Required | false | **Not a collector.** Reached only via the `search_web` curator tool; degrades to Exa, then unavailable. Credential present in the Keychain but unreadable by this project — see below |
 | github | `GITHUB_TOKEN` | Optional | true | **DEGRADED** — runs unauthenticated at lower rate limits |
 | hackernews | — | None | true | **OK** |
-| arxiv | — | None | true | **OK** |
+| arxiv | — | None | true | **FAILED (transient)** — the export API is currently rate-limiting this address; see the arxiv section |
 | semantic-scholar | `SEMANTIC_SCHOLAR_API_KEY` | Optional | true | **OK (throttled)** — keyless public tier; enrichment-only, needs arXiv ids |
 | coingecko | `COINGECKO_API_KEY` | Optional | true | **OK** — public tier, no demo key present |
 | fred | `FRED_API_KEY` | Required | true | **DISABLED** — no credential present |
@@ -33,6 +33,23 @@ mapping the code knows about is `TAVILY_API_KEY → (service "pi-tavily", accoun
 credential-requiring source reports `DISABLED`, and every credential-*optional*
 source runs in its reduced, unauthenticated mode. None of them are "working" in the
 full sense until the operator supplies secrets.
+
+### The Tavily credential exists but this project cannot read it
+
+The Keychain item is there: `security find-generic-password -s pi-tavily -a oliver`
+finds it and prints its attributes. Reading the *value* (`-w`) fails with status 36
+from a non-interactive shell, because the item's access control list admits the
+binary that created it and not `/usr/bin/security`. `resolveSecret("TAVILY_API_KEY")`
+therefore reports the secret as absent, which is the correct answer to the only
+question it asks — can this process obtain the value — and `search_web` is simply not
+configured for the run.
+
+This is not something to fix in code, and deliberately so: the fix would be to widen
+an ACL on a credential this project does not own, or to copy the value into a file
+beside the code. Either would weaken the arrangement that is currently protecting it.
+Enabling web research means the operator granting access to that item, or putting a
+key in the environment under `TAVILY_API_KEY` or `EXA_API_KEY`. Until then the
+pipeline runs without web research and says so.
 
 *(Note on `youtube`: `config/sources.yaml` sets `enabled: false`, which is what
 governs. The row above reflects config.)*
@@ -224,6 +241,21 @@ lastUpdatedDate&sortOrder=descending&start={n}&max_results={PAGE_SIZE}`, Atom XM
 parsed without a dependency. Sent with an explicit descriptive `user-agent`.
 
 **Credential.** **None.** `requiredSecrets: []`.
+
+**Current status: FAILED, and it is the provider, not the collector.** arXiv's export
+API is answering this address with `429 Rate exceeded` after a ~16s wait. The
+collector honours `Retry-After` (`fetchWithRetry` in `src/collectors/http.ts`), so a
+rate-limited poll spends its whole request budget backing off and ends at the
+configured timeout, recorded as `FAILED` with the reason visible in
+`/admin/sources`. Nothing downstream fails: the day is marked degraded, with
+`daily_runs.degraded_reason` naming arXiv, and the other sources publish as normal.
+
+Two things about this are worth stating plainly. First, the timeout is now the one in
+`config/sources.yaml` (45s) rather than a constant compiled into the collector — a
+15s ceiling used to turn arXiv's ordinary slowness into a failure that no amount of
+config editing could fix. Second, the rate limiting is self-inflicted and temporary:
+it followed repeated back-to-back collection runs during acceptance. Polling on the
+normal schedule (five incremental runs a day) does not approach arXiv's limits.
 
 **Incrementality.** The cursor holds `lastUpdated` (the last successfully processed
 `updated` watermark) and `nextStart`. Pagination walks `start` until `totalResults`

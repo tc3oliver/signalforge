@@ -128,6 +128,10 @@ export async function getNormalizedItem(
 	if (!r) return undefined;
 	return {
 		id: r.item_id,
+		// Set here rather than stored: it has been true of every row in this table
+		// since the column list was written, so a read cannot get it wrong and an
+		// older row cannot lose it.
+		trust: "UNTRUSTED_EXTERNAL_CONTENT",
 		sourceType: r.source_type as NormalizedItem["sourceType"],
 		sourceName: r.source_name,
 		title: r.title,
@@ -172,6 +176,10 @@ interface ItemRow {
 function toItem(r: ItemRow): NormalizedItem {
 	return {
 		id: r.item_id,
+		// Set here rather than stored: it has been true of every row in this table
+		// since the column list was written, so a read cannot get it wrong and an
+		// older row cannot lose it.
+		trust: "UNTRUSTED_EXTERNAL_CONTENT",
 		sourceType: r.source_type as NormalizedItem["sourceType"],
 		sourceName: r.source_name,
 		title: r.title,

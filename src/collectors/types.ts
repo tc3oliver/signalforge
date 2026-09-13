@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SourceType } from "../schemas/item.ts";
+import { SourceType, UNTRUSTED_EXTERNAL_CONTENT } from "../schemas/item.ts";
 import type { CollectorSourceConfig, WatchlistsConfig } from "../config/schema.ts";
 
 /**
@@ -7,7 +7,7 @@ import type { CollectorSourceConfig, WatchlistsConfig } from "../config/schema.t
  * evidence about the world, never an instruction to the agent, and it is tagged as
  * such at the boundary so no later layer has to remember to do it.
  */
-export const UNTRUSTED_EXTERNAL_CONTENT = "UNTRUSTED_EXTERNAL_CONTENT" as const;
+export { UNTRUSTED_EXTERNAL_CONTENT };
 
 export const RawPayload = z.object({
 	/** The provider's own identifier, used for idempotent upserts. */

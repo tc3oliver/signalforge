@@ -165,6 +165,7 @@ export function makeManifest(opts: SyntheticManifestOptions): DailyManifest {
 			items.push({
 				id: `itm-${opts.date.replace(/-/g, "")}-${String(n).padStart(4, "0")}`,
 				sourceType: k === 0 ? "rss" : "hackernews",
+				trust: "UNTRUSTED_EXTERNAL_CONTENT" as const,
 				sourceName: k === 0 ? "Synthetic Wire" : "Hacker News",
 				title: `${group} coverage ${k + 1}: something measurable happened`,
 				summary: `Report ${k + 1} about event ${group}.`,

@@ -75,6 +75,7 @@ describe.skipIf(!probe.available)("raw + normalized items", () => {
 			{
 				id: `${suffix}-3`,
 				sourceType: "rss",
+				trust: "UNTRUSTED_EXTERNAL_CONTENT" as const,
 				sourceName: "Example Feed",
 				title: "A normalized title",
 				summary: "normalized summary",
@@ -124,11 +125,13 @@ describe.skipIf(!probe.available)("explainability", () => {
 		await upsertNormalizedItems(sql, lineage, [
 			{
 				id: "item-scanned", sourceType: "rss", sourceName: "Example Feed",
+				trust: "UNTRUSTED_EXTERNAL_CONTENT" as const,
 				title: "A minor version bump", summary: "patch release",
 				publishedAt: "2026-09-13T06:00:00.000Z", metadata: {},
 			},
 			{
 				id: "item-published", sourceType: "rss", sourceName: "Example Feed",
+				trust: "UNTRUSTED_EXTERNAL_CONTENT" as const,
 				title: "A major platform change", summary: "big news",
 				publishedAt: "2026-09-13T06:00:00.000Z", metadata: {},
 			},

@@ -15,6 +15,7 @@ const manifest: DailyManifest = {
 	items: Array.from({ length: N * 2 }, (_, i) => ({
 		id: `item-${i + 1}`,
 		sourceType: "rss" as const,
+		trust: "UNTRUSTED_EXTERNAL_CONTENT" as const,
 		sourceName: "Feed",
 		title: `Item ${i + 1}`,
 		summary: "s",

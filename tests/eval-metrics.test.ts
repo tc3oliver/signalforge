@@ -36,6 +36,7 @@ function manifest(): DailyManifest {
 		items: allIds.map((id) => ({
 			id,
 			sourceType: "rss" as const,
+			trust: "UNTRUSTED_EXTERNAL_CONTENT" as const,
 			sourceName: "feed",
 			title: `title ${id}`,
 			summary: "",

@@ -1,7 +1,9 @@
 # Phase 1 Report
 
 Run date: 2026-09-13. All numbers below come from artifacts under `runs/`; nothing
-here is estimated or reconstructed.
+here is estimated or reconstructed. Sections 1–10 and 13 describe the original Phase 1
+run, which failed acceptance. Section 11 records the Phase 1.1 policy calibration and
+the clean rerun that followed; its numbers come from `experiments/p11-b/`.
 
 ---
 
@@ -125,8 +127,12 @@ after (`diff -q`, verified). `settings.json` and `auth.json` mtimes unchanged.
 
 ```
 pnpm typecheck   clean
-pnpm test        17 files, 223 tests, all passing
+pnpm test        52 files, 619 tests, all passing, none skipped
 ```
+
+The per-suite table below is the Phase 1 snapshot (17 files, 223 tests). The suites
+added since — the policy guards of §11, the pipeline, config, collector, database and
+operations suites — are not broken out here.
 
 | Suite | Tests |
 |---|---|
@@ -228,16 +234,28 @@ is likewise only covered by tests.
 
 ## 9. Known limitations
 
-1. **Fallback and corrective retry are test-verified, not live-verified.** See §8.
-2. **Single model, single repetition.** Every live number is one run of
-   `gemini-3.8-flash`. There is no variance estimate and no cross-model comparison —
-   see §12 for why that sweep was not run.
+1. **Fallback is now live-verified; corrective retry is still test-verified only.**
+   In Phase 1 neither had fired outside tests (§8). Fallback has since been validated
+   live: a real `github-copilot/gemini-3.8-flash` Pi SDK session decided 50 of the 79
+   items for 2026-09-10, a QUOTA fault was injected at the worker boundary, the real
+   error classifier classified it as `QUOTA`, and a fresh Pi SDK session on
+   `openai-codex/gpt-5.6-sol` opened with `processedItems=50` / `unseenItems=29`,
+   decided exactly the remaining 29 and submitted 14 stories. Artifacts:
+   `experiments/p11-fallback2/2026-09-10/2026-09-10-6ee32ae7/`. The structured-output
+   corrective-retry path has still never fired live.
+2. **Single model; three repetitions on one day.** Every live number is
+   `gemini-3.8-flash`; there is still no cross-model comparison — see §13 for why that
+   sweep was not run. Variance is no longer unmeasured: three independent lineages
+   (`p11-b`, `p11-c`, `p11-d`) exist and `docs/STABILITY_REPORT.md` reports
+   `core_story_selection_stability` 0.922 against a 0.85 gate. That comparison is
+   across lineages on a single date, not across all three days.
 3. **`DailyMaterials.stories` has no lower bound** but the editor needs 8–15. If a
    curator ever submits fewer than 8 stories, the editor is structurally unable to
    produce a valid brief and the day fails as `EDITOR_FAILED` after exhausting the
    chain. It did not happen (materials were 14–15 every day), and it was left alone
    deliberately rather than changing the code mid-experiment.
-4. **`selected_story_precision` and the emerging-signal arc are in tension.** See §12.
+4. **`selected_story_precision` and the emerging-signal arc were in tension.** See §13
+   for the original diagnosis and §11 for the structural cause and the fix.
 5. **Fixtures are synthetic.** Real feeds are messier, contain adversarial content,
    and have far higher duplicate density. Nothing here says how this behaves on
    Hacker News at 3am.
@@ -266,18 +284,117 @@ is likewise only covered by tests.
 | Structured output after retry | 100% | 100% | 100% | 100% | **PASS (3/3)** |
 | Would I read this every morning? | ≥ 4 | — | — | — | **NOT SCORED** — human only |
 
-## 11. Final status
+## 11. Phase 1.1 — policy calibration and clean rerun
 
-# FAIL
+The two gate failures in §13 were closed and all three days were rerun from an empty
+ledger. Lineage `p11-b`, `github-copilot/gemini-3.8-flash`:
 
-Two of three days failed at least one gate. The program runs end to end, produces
-briefs that read well, and passes 10 of 12 gates on all three days — but the
-acceptance gate is the acceptance gate, and it was not met.
+| Date | Run id |
+|---|---|
+| 2026-09-10 | `2026-09-10-1c627843` |
+| 2026-09-11 | `2026-09-11-9bb84af8` |
+| 2026-09-12 | `2026-09-12-ca643215` |
 
-The human score in `MANUAL_REVIEW.md` is deliberately blank in all three runs. Nothing
-in this repository writes it.
+All three days: `overallPass = true`, `failedGates = []`.
 
-## 12. Exact reasons for each failed gate
+| Metric | Gate | 09-10 | 09-11 | 09-12 |
+|---|---|---|---|---|
+| scan_coverage | = 1.00 | 1.000 | 1.000 | 1.000 |
+| important_story_recall | ≥ 0.90 | 1.000 | 0.909 | 1.000 |
+| selected_story_precision | ≥ 0.85 | 1.000 | 1.000 | 1.000 |
+| cluster_precision | — | 1.000 | 1.000 | 1.000 |
+| cluster_recall | — | 0.986 | 0.947 | 0.945 |
+| cluster_f1 | ≥ 0.90 | 0.993 | 0.973 | 0.972 |
+| change_type_accuracy | ≥ 0.85 | 1.000 | 0.867 | 0.929 |
+| noise_rejection_rate | ≥ 0.95 | 1.000 | 1.000 | 1.000 |
+| fabricated_source_ids | = 0 | 0 | 0 | 0 |
+| invalid_fact_refs | = 0 | 0 | 0 | 0 |
+| final_duplicate_stories | = 0 | 0 | 0 | 0 |
+| final_story_count | 8–15 | 11 | 10 | 11 |
+| must_know_count | 3–5 | 4 | 4 | 4 |
+| schema_validity | = 1 | 1 | 1 | 1 |
+| structured_output_after_retry | = 1 | 1 | 1 | 1 |
+| **Overall** | | **PASS** | **PASS** | **PASS** |
+
+Numbers are read from `experiments/p11-b/<date>/<run-id>/evaluation.json`. The before
+numbers in §7 and §10 are left in place.
+
+**Nothing in the acceptance thresholds, the gold truth or the fixture expected answers
+was changed.** `git diff 29166c7 HEAD -- eval/gold fixtures` is empty, and neither
+`eval/gold` nor `fixtures` has an uncommitted modification in `git status`. The gates
+in the table above are the same gates as in §7.
+
+### 11.1 The precision failure was structural, not a model error
+
+`src/validator/brief-validator.ts` required every `storyId` named by an Emerging Signal
+to also be a published story in the same brief. That constraint forced the curator and
+editor to promote signal constituents into standalone stories in order to produce a
+brief that validated at all — which is exactly the behaviour
+`selected_story_precision` then penalised. The model was obeying the validator.
+
+The check now resolves those ids against the day's curated materials instead, so a
+signal may cite evidence that was deliberately not published. An independent audit of
+the two "unjustified" stories on each failing day confirmed they were exactly the
+constituents of `expectedEmergingSignals[0].eventIds`.
+
+This is the only code change in the calibration. Everything else is policy text.
+
+### 11.2 Policy changes
+
+| File | Change |
+|---|---|
+| `editorial-policy.md` | The Standalone Value Test: "If the aggregate Emerging Signal did not exist, would this event still deserve one of today's limited Daily Brief story slots?" — with the explicit counterweight that an event which independently qualifies must still be published, and that when genuinely uncertain the story goes in. |
+| `deduplication.md` | A SAME_EVENT / RELATED_EVENT / BACKGROUND_CONTEXT taxonomy; the rule that a causal relationship does not imply event identity; a six-axis comparison table (principal actor, core action, object/subject, decision-or-occurrence, time, primary source); and a five-question Event Identity Test. |
+| `story-clustering.md` | An explicit anti-over-splitting guard, so the cluster fix could not be bought by splitting everything. |
+| `novelty.md` | A precondition: no `find_history` call means the only permissible changeType is NEW; a hit means it cannot be NEW; a story's first appearance is never NO_MATERIAL_CHANGE. |
+
+### 11.3 The first attempt over-corrected
+
+Lineage `p11-a` was the first calibration attempt and it **regressed** day 2:
+`important_story_recall` 0.909 → 0.818 and `change_type_accuracy` 0.857 → 0.765. Two
+causes, both introduced by the new policy text:
+
+- The editor applied the Standalone Value Test to a story that independently qualified
+  and shrank the brief to the floor.
+- The curator created all stories first and backfilled changeTypes without calling
+  `find_history` at all.
+
+A second round added the counterweight in the Standalone Value Test and the
+`find_history` precondition in `novelty.md`. `p11-b` is the result of that second
+round. The over-correction is recorded here because it is the evidence that the policy
+text is load-bearing in both directions: a rule written to fix precision can cost
+recall.
+
+### 11.4 Guards against tuning the policy to the fixtures
+
+Two test files were added:
+
+- `tests/policy-docs.test.ts` — asserts the normative rules above are actually present
+  in the policy documents, and that no gold `eventId`, fixture `itemId`, gold
+  `canonicalTitle` or fixture-invented entity name appears anywhere in the policy
+  text. The policy therefore cannot be tuned to the fixtures by naming them.
+- `tests/policy-regression.test.ts` — cases proving the evaluator actually
+  discriminates the two failure modes and their over-corrections, rather than passing
+  everything.
+
+## 12. Final status
+
+# PASS
+
+All three days pass every gate after the Phase 1.1 calibration (§11). The original
+Phase 1 run failed on two of three days (§13); those numbers and their analysis are
+retained below rather than overwritten.
+
+The human score in `MANUAL_REVIEW.md` is deliberately blank in all runs. Nothing in
+this repository writes it. The "Would I read this every morning?" criterion in §10 is
+therefore still **NOT SCORED**, in Phase 1.1 as in Phase 1.
+
+## 13. Exact reasons for each failed gate
+
+These are the **pre-calibration** failures, from the original Phase 1 run in §6–§10.
+Both were closed in Phase 1.1; see §11. The analysis is kept because it is the record
+of why they happened — and §11.1 shows the first diagnosis below was incomplete: the
+precision failure had a structural cause in the validator, not only a policy gap.
 
 ### `selected_story_precision` — 0.833 on 09-10 and 09-12 (gate 0.85)
 
@@ -351,24 +468,32 @@ pnpm benchmark:models --models gemini,gpt,deepseek --dates 2026-09-12 --repeat 1
 Token and cost columns report `N/A` rather than a guess: the SDK exposes no reliable
 per-run total at this integration point.
 
-## 13. Recommended Phase 2 work
+## 14. Recommended Phase 2 work
+
+Items 1–4 and 6 were done in Phase 1.1; they are marked and kept so the list still
+reads as the plan that was followed.
 
 **Close the two gate failures first — both are content, not code.**
 
-1. Add an explicit rule to `editorial-policy.md`: an item whose only significance is
-   as evidence for a trend goes in Emerging Signals, not as a standalone story. Add a
-   worked example. Re-run all three days and check precision.
-2. Add a worked example to `deduplication.md` for "data release vs policy response",
-   and more generally for cause/reaction pairs that share a day and a topic.
-3. Tighten `novelty.md` on recurring scheduled releases (weekly claims, monthly CPI)
-   and on the RUMOR-vs-NO_MATERIAL_CHANGE overlap.
+1. ~~Add an explicit rule to `editorial-policy.md`~~ — **done** (§11.2), plus the
+   validator fix in §11.1 that turned out to be the real cause.
+2. ~~Add a worked example to `deduplication.md` for cause/reaction pairs~~ — **done**
+   (§11.2), as a taxonomy, a six-axis table and an Event Identity Test.
+3. ~~Tighten `novelty.md` on recurring scheduled releases and the
+   RUMOR-vs-NO_MATERIAL_CHANGE overlap~~ — **partly done** (§11.2). The
+   `find_history` precondition was added; recurring scheduled releases were not
+   given a dedicated rule, and `ashgrove-utilities-dividend-q3` (`UPDATE` vs gold
+   `NEW`) is still wrong on 09-11.
 
 **Then make the result trustworthy.**
 
-4. Run each day ≥ 3 times to get variance. One run per day is not a measurement.
+4. ~~Run each day ≥ 3 times to get variance~~ — **partly done**. Three lineages exist
+   but are compared on 2026-09-10 only; see `docs/STABILITY_REPORT.md` and §9 item 2.
 5. Run the cross-model sweep once quota is confirmed, and compare the three models on
-   the same fixtures.
-6. Deliberately fail a provider in a live run to validate fallback outside tests.
+   the same fixtures. **Still open.**
+6. ~~Deliberately fail a provider in a live run to validate fallback outside tests~~ —
+   **done**; see §9 item 1. The structured-output corrective-retry path is still only
+   covered by tests.
 
 **Then engineering.**
 

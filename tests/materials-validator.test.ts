@@ -11,6 +11,7 @@ const manifest: DailyManifest = {
 		{
 			id: "item-1",
 			sourceType: "rss",
+			trust: "UNTRUSTED_EXTERNAL_CONTENT" as const,
 			sourceName: "The Verge",
 			title: "Model launch",
 			summary: "s",
@@ -20,6 +21,7 @@ const manifest: DailyManifest = {
 		{
 			id: "item-2",
 			sourceType: "github",
+			trust: "UNTRUSTED_EXTERNAL_CONTENT" as const,
 			sourceName: "GitHub",
 			title: "Repo release",
 			summary: "s",

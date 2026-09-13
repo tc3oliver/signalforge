@@ -397,6 +397,9 @@ export function generateDay(date: DateKey, seed: number = DEFAULT_SEED): Generat
 		idBySortKey.set(draft.sortKey, id);
 		return {
 			id,
+			// A synthetic item stands in for external text and is labelled the same
+			// way, so a fixture run and a live run hand the agent the same shape.
+			trust: "UNTRUSTED_EXTERNAL_CONTENT" as const,
 			sourceType: draft.sourceType,
 			sourceName: draft.sourceName,
 			title: draft.title,

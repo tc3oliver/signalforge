@@ -91,6 +91,7 @@ export async function buildManifestFromDb(options: BuildManifestOptions): Promis
 
 	const items: NormalizedItem[] = itemRows.map((r) => ({
 		id: r.item_id,
+		trust: "UNTRUSTED_EXTERNAL_CONTENT",
 		sourceType: r.source_type as NormalizedItem["sourceType"],
 		sourceName: r.source_name,
 		title: r.title,
