@@ -81,10 +81,14 @@ function checkSecrets(): void {
 	let setNames: string[] = [];
 	let path = "(none)";
 	try {
-		// A scratch env, not process.env: loadSecretsFile sets what it reads into
-		// whatever env it is handed, and a preflight that is advertised as
-		// read-only must not quietly populate this process's environment.
-		const result = loadSecretsFile({ env: {} });
+		// A copy, not process.env itself: loadSecretsFile sets what it reads into
+		// whatever env it is handed, and a preflight advertised as read-only must
+		// not quietly populate this process's environment. It has to be a copy
+		// rather than an empty object, because the path of the file is itself
+		// taken from the environment -- with `{}` the override is invisible and
+		// the check silently reports on the default location instead of the one
+		// actually in use.
+		const result = loadSecretsFile({ env: { ...process.env } });
 		setNames = result.loaded;
 		path = result.found ? result.path : "(none)";
 	} catch {
@@ -133,6 +137,24 @@ function checkModels(): void {
 
 // ---------------------------------------------------------------- database
 
+/**
+ * Where we tried to connect, with no credential in it. DATABASE_URL carries a
+ * password, so it is parsed for host/port/database and the userinfo is dropped
+ * rather than the string being printed. An unparseable URL yields a constant,
+ * never a fragment of the original.
+ */
+function describeTarget(cfg: ReturnType<typeof dbConfigFromEnv>): string {
+	if (cfg.url) {
+		try {
+			const u = new URL(cfg.url);
+			return `${u.hostname}:${u.port || "5432"}${u.pathname}`;
+		} catch {
+			return "the configured DATABASE_URL";
+		}
+	}
+	return `${cfg.host ?? "localhost"}:${cfg.port ?? 5432}`;
+}
+
 async function checkDatabase(): Promise<void> {
 	const cfg = dbConfigFromEnv();
 	const sql = createSql(cfg);
@@ -157,10 +179,18 @@ async function checkDatabase(): Promise<void> {
 			record("Database", "ok", `reachable, ${applied.length} migrations applied`);
 		}
 	} catch (err) {
+		// postgres.js reports a connection refusal with an empty message and the
+		// detail only on `code`, which produced a uselessly blank "not reachable
+		// ()". Prefer whichever of the three actually says something.
+		const e = err as NodeJS.ErrnoException & { code?: string };
+		const why = [e.message?.split("\n")[0], e.code, (e.cause as Error | undefined)?.message]
+			.filter((x): x is string => typeof x === "string" && x.trim() !== "")
+			.join(" ")
+			.trim();
 		record(
 			"Database",
 			"fail",
-			`not reachable (${(err as Error).message.split("\n")[0]})`,
+			`not reachable at ${describeTarget(cfg)}${why ? ` (${why})` : ""}`,
 			"Start it with: docker compose up -d   (then: pnpm db:migrate)",
 		);
 	} finally {
