@@ -9,6 +9,7 @@
   "scripts": {
     "test": "vitest --run",
     "typecheck": "tsc --noEmit",
+    "build": "pnpm run typecheck && pnpm --dir web run build",
     "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
     "db:reset": "tsx --env-file-if-exists=.env src/db/migrate.ts --reset",
     "collect": "tsx --env-file-if-exists=.env src/cli/run-collection.ts",

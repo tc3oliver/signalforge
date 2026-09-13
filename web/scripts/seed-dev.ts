@@ -595,6 +595,7 @@ async function main(): Promise<void> {
 			const rawItemId = rawIdByExternal.get(`seed:${item.id}`);
 			return {
 				id: item.id,
+				trust: "UNTRUSTED_EXTERNAL_CONTENT" as const,
 				sourceType: item.sourceType,
 				sourceName: item.sourceName,
 				title: item.title,

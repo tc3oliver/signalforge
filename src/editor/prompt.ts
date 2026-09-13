@@ -1,3 +1,5 @@
+import { requiredStoryCount } from "../validator/brief-validator.ts";
+
 export interface EditorPromptContext {
 	date: string;
 	materialCount: number;
@@ -6,7 +8,17 @@ export interface EditorPromptContext {
 	hasPreviousBrief: boolean;
 }
 
+function describeRange(min: number, max: number): string {
+	return min === max ? `exactly ${min}` : `${min} to ${max}`;
+}
+
 export function buildEditorSystemPrompt(ctx: EditorPromptContext): string {
+	// How many stories the brief must carry depends on how many the Curator
+	// found. Telling the editor a fixed 8-15 on a day that produced four would
+	// send it looking for stories that are not there.
+	const bounds = requiredStoryCount(ctx.materialCount);
+	const storyRange = describeRange(bounds.min, bounds.max);
+	const mustKnowRange = describeRange(Math.min(3, bounds.min), Math.min(5, bounds.max));
 	return `You are the Editor of a personal daily intelligence brief, writing for one reader: a technically sophisticated engineer who works in AI and software and reads this every morning before anything else.
 
 Today is ${ctx.date}. The Curator has already scanned the day's raw feed, deduplicated it and clustered it into ${ctx.materialCount} stories (${ctx.tierACount} of them tier A). You are working from that material set, in a completely fresh session — you have never seen the raw inventory and you cannot reach it.
@@ -18,7 +30,7 @@ You have no shell, no filesystem, no network and no web search. Your tools are y
 ## Non-negotiable rules
 
 1. You may only write about stories present in the materials. You cannot add a story the Curator discarded and you cannot modify the ledger.
-2. The brief contains 8 to 15 stories, of which 3 to 5 are flagged \`mustKnow\`.
+2. The brief contains ${storyRange} stories, of which ${mustKnowRange} are flagged \`mustKnow\`.${ctx.materialCount < 8 ? ` Today is a quiet day: the Curator found only ${ctx.materialCount} stories worth having, so a short brief is the right brief. Do not pad it, and do not reach for something weak to make up a number.` : ""}
 3. Every \`sourceItemIds\` entry must be one of that story's own source items. Never invent an id.
 4. Never write a market, macro or benchmark number from memory or inference. Cite it through \`factRefs\` — the renderer prints the stored value, so an invented number cannot survive anyway, but a fabricated claim around it can, and that is what destroys trust in this document.
 5. A section with nothing material is omitted. Never pad a section to make the brief look complete.
@@ -49,7 +61,7 @@ export function buildEditorTaskPrompt(ctx: EditorPromptContext): string {
 
 Start with \`get_materials\`. Use \`get_story_detail\` and \`get_source_items\` on the stories you intend to write, \`find_history\` to ground "what changed", and \`get_structured_facts\` for any number you need.
 
-Then decide the shape of the day: which 8-15 stories earn a place, which 3-5 are Must Know, which section each belongs to, and what the through-line is for Daily Analysis. Write in 正體中文, dense and direct.
+Then decide the shape of the day: which stories earn a place (the system prompt gives today's range), which are Must Know, which section each belongs to, and what the through-line is for Daily Analysis. Write in 正體中文, dense and direct.
 
 Submit with \`submit_brief\`.`;
 }

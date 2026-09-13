@@ -35,7 +35,15 @@ export const DailyBrief = z
 	.object({
 		date: z.string(),
 		producedAt: z.string(),
-		stories: z.array(DailyBriefStory).min(8).max(15),
+		/*
+		 * The upper bound is editorial: more than fifteen stories is not a brief.
+		 * There is deliberately no lower bound here, because the floor depends on
+		 * something the schema cannot see -- how many stories the curator actually
+		 * found. On a quiet day there may be four, and a brief of four real stories
+		 * is the correct output; refusing to publish one would be the bug. The
+		 * floor is applied in `validateBrief`, which knows the material count.
+		 */
+		stories: z.array(DailyBriefStory).min(1).max(15),
 		emergingSignals: z
 			.array(
 				z

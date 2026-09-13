@@ -102,7 +102,7 @@ describe("editor submission validation", () => {
 		expect(result.brief.date).toBe(DATE);
 	});
 
-	it("reports the minimum-story violation back to the editor", async () => {
+	it("reports the minimum-story violation back to the editor, against the material count", async () => {
 		const manifest = makeManifest({ date: DATE, groups: 12, perGroup: 2 });
 		const materials = makeMaterials(manifest, 10);
 		let rejection: unknown;
@@ -119,8 +119,10 @@ describe("editor submission validation", () => {
 		await expect(
 			editorStage({ manifest, materials, scripts: [script], maxNudges: 0 }),
 		).rejects.toThrow(InvalidAgentOutputError);
+		// The floor is not a constant any more: it is whatever the curator supplied,
+		// capped at eight. Ten materials means eight, and the message says why.
 		expect((rejection as Error).message).toMatch(
-			/submit_brief payload rejected: stories: Too small: expected array to have >=8 items/,
+			/must have between 8 and 10, because the curator supplied 10/,
 		);
 	});
 

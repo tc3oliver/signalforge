@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateBrief } from "../src/validator/brief-validator.ts";
+import { requiredStoryCount, validateBrief } from "../src/validator/brief-validator.ts";
 import type { BriefValidationContext } from "../src/validator/brief-validator.ts";
 import type { BriefSection, DailyBriefInput, DailyBriefStory } from "../src/schemas/brief.ts";
 import type { DailyManifest } from "../src/schemas/manifest.ts";
@@ -89,10 +89,10 @@ describe("validateBrief", () => {
 		expect(validateBrief(brief(), ctx)).toEqual({ ok: true, errors: [] });
 	});
 
-	it("reports Zod issues, including the 8-15 story bound", () => {
+	it("reports the story-count bound against what the curator supplied", () => {
 		const result = validateBrief(brief({ stories: [briefStory(0)] }), ctx);
 		expect(result.ok).toBe(false);
-		expect(result.errors.some((e) => e.startsWith("Schema error at stories:"))).toBe(true);
+		expect(result.errors.some((e) => /must have between 8 and 9/.test(e))).toBe(true);
 	});
 
 	it("rejects too few Must Know stories", () => {
@@ -190,5 +190,52 @@ describe("validateBrief", () => {
 		const result = validateBrief(brief({ watchNext: [] }), ctx);
 		expect(result.ok).toBe(false);
 		expect(result.errors.some((e) => e.includes("watchNext"))).toBe(true);
+	});
+});
+
+describe("brief size follows what the curator actually found", () => {
+	/** The same fixtures, trimmed to a day on which the curator found only `n` stories. */
+	function contextWithMaterials(n: number): BriefValidationContext {
+		return { manifest, materials: { ...materials, stories: materials.stories.slice(0, n) } };
+	}
+
+	function briefWith(n: number, opts: { mustKnow: number }): DailyBriefInput {
+		return brief({
+			stories: Array.from({ length: n }, (_, i) => briefStory(i, { mustKnow: i < opts.mustKnow })),
+		});
+	}
+
+	it("requires the usual 8-15 on a normal day", () => {
+		expect(requiredStoryCount(15)).toEqual({ min: 8, max: 15 });
+		expect(requiredStoryCount(40)).toEqual({ min: 8, max: 15 });
+		expect(requiredStoryCount(8)).toEqual({ min: 8, max: 8 });
+	});
+
+	it("asks for every story there is on a quiet day, rather than eight there are not", () => {
+		// The first real production run found four genuine stories in 771 items.
+		// A brief of four real stories is the right output for that morning;
+		// failing the day because the world was quiet is not.
+		expect(requiredStoryCount(4)).toEqual({ min: 4, max: 4 });
+		expect(requiredStoryCount(1)).toEqual({ min: 1, max: 1 });
+	});
+
+	it("accepts a four-story brief when the materials held four stories", () => {
+		expect(validateBrief(briefWith(4, { mustKnow: 3 }), contextWithMaterials(4))).toEqual({
+			ok: true,
+			errors: [],
+		});
+	});
+
+	it("still rejects a short brief when the curator had plenty", () => {
+		const result = validateBrief(briefWith(4, { mustKnow: 3 }), ctx);
+		expect(result.ok).toBe(false);
+		expect(result.errors.join("\n")).toMatch(/must have between 8 and 9/);
+	});
+
+	it("scales Must Know down with the brief instead of demanding three of two", () => {
+		expect(validateBrief(briefWith(2, { mustKnow: 2 }), contextWithMaterials(2))).toEqual({
+			ok: true,
+			errors: [],
+		});
 	});
 });

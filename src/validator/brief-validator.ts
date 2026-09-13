@@ -14,6 +14,31 @@ export interface BriefValidationContext {
 const MIN_MUST_KNOW = 3;
 const MAX_MUST_KNOW = 5;
 
+/** The shape of a full day: enough stories to be a brief, few enough to be read. */
+const TARGET_MIN_STORIES = 8;
+
+/**
+ * How many stories this brief must contain, given what the curator found.
+ *
+ * A normal day supplies fifteen-odd stories and the answer is the usual 8-15.
+ * A quiet day -- the first real production run found four genuine stories in
+ * 771 items, most of them repository noise -- supplies fewer than eight, and
+ * then the only correct brief is one that carries all of them. Demanding eight
+ * from four would leave the day unpublishable, which is a worse failure than a
+ * short brief: the reader gets nothing at all on the morning when there
+ * genuinely was not much, and the pipeline reports a failure for doing the
+ * right thing.
+ */
+export function requiredStoryCount(materialCount: number): { min: number; max: number } {
+	const max = Math.min(15, Math.max(1, materialCount));
+	return { min: Math.min(TARGET_MIN_STORIES, max), max };
+}
+
+/** Must Know is a subset, so it cannot exceed what the brief actually carries. */
+function requiredMustKnowCount(storyCount: number): { min: number; max: number } {
+	return { min: Math.min(MIN_MUST_KNOW, storyCount), max: Math.min(MAX_MUST_KNOW, storyCount) };
+}
+
 function formatIssuePath(path: ReadonlyArray<PropertyKey>): string {
 	return path.length === 0 ? "<root>" : path.map(String).join(".");
 }
@@ -36,10 +61,18 @@ export function validateBrief(input: unknown, ctx: BriefValidationContext): Vali
 	}
 	const brief = parsed.data;
 
-	const mustKnow = brief.stories.filter((s) => s.mustKnow);
-	if (mustKnow.length < MIN_MUST_KNOW || mustKnow.length > MAX_MUST_KNOW) {
+	const storyBounds = requiredStoryCount(ctx.materials.stories.length);
+	if (brief.stories.length < storyBounds.min || brief.stories.length > storyBounds.max) {
 		errors.push(
-			`Must Know count is ${mustKnow.length}; it must be between ${MIN_MUST_KNOW} and ${MAX_MUST_KNOW}. Adjust the mustKnow flags accordingly.`,
+			`Brief has ${brief.stories.length} stories; it must have between ${storyBounds.min} and ${storyBounds.max}, because the curator supplied ${ctx.materials.stories.length}. Add or remove stories to land in that range.`,
+		);
+	}
+
+	const mustKnowBounds = requiredMustKnowCount(brief.stories.length);
+	const mustKnow = brief.stories.filter((s) => s.mustKnow);
+	if (mustKnow.length < mustKnowBounds.min || mustKnow.length > mustKnowBounds.max) {
+		errors.push(
+			`Must Know count is ${mustKnow.length}; it must be between ${mustKnowBounds.min} and ${mustKnowBounds.max} for a brief of ${brief.stories.length} stories. Adjust the mustKnow flags accordingly.`,
 		);
 	}
 
