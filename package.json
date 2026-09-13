@@ -18,6 +18,7 @@
     "db:reset": "tsx --env-file-if-exists=.env src/db/migrate.ts --reset",
     "collect": "tsx --env-file-if-exists=.env src/cli/run-collection.ts",
     "daily": "tsx --env-file-if-exists=.env src/cli/run-daily.ts",
+    "postinstall": "pnpm --dir web install --prefer-offline",
     "setup:check": "tsx --env-file-if-exists=.env src/cli/setup-check.ts",
     "demo": "tsx --env-file-if-exists=.env web/scripts/seed-dev.ts",
     "phase1:generate": "tsx src/cli/generate-fixtures.ts",

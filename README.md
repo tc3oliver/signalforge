@@ -125,7 +125,7 @@ articles.
 
 ```bash
 git clone <this repository> signalforge && cd signalforge
-pnpm install
+pnpm install                             # also installs web/, via postinstall
 
 cp .env.example .env
 # Edit .env: replace the placeholder password with a locally generated one, in

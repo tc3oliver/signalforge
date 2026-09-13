@@ -21,3 +21,9 @@ secrets.env
 # nobody else's business -- interests and watchlists in particular are as
 # personal as a bookmarks file.
 config/*.local.yaml
+
+# Operational output directories. `observations/` does not exist yet and nothing
+# writes it today; it is listed because it is the natural name for the next
+# thing that records what a run saw, and a production artifact directory is far
+# easier to ignore before it exists than after it has been committed once.
+observations/
