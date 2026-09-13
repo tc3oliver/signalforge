@@ -13,7 +13,14 @@ import { describe, expect, it } from "vitest";
 describe("setup:check output", () => {
 	const ROOT = join(import.meta.dirname, "..");
 	const PASSWORD = "SUPERSECRETPASSWORD1234";
-	const TOKEN = "ghp_SUPERSECRETTOKENVALUE0000000000000000";
+	/*
+	 * Assembled rather than written out. The value is fake, but a literal in
+	 * GitHub personal-access-token shape is exactly what a secret scanner is
+	 * supposed to shout about, and a repository that trains its own operators to
+	 * wave scanner hits through is worse off than one with no scanner. Built at
+	 * run time, the test is just as real and the scan stays meaningful.
+	 */
+	const TOKEN = ["ghp", "SUPERSECRETTOKENVALUE0000000000000000"].join("_");
 
 	function run(): string {
 		try {

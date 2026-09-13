@@ -16,6 +16,8 @@ does not, that is a defect.
 | [`OPERATIONS.md`](OPERATIONS.md) | Day-to-day operation of the running system |
 | [`RUNBOOK.md`](RUNBOOK.md) | Incident procedures |
 | [`PRODUCTION_PLAN.md`](PRODUCTION_PLAN.md) | Staged build plan and per-task status |
+| [`OPEN_SOURCE_AUDIT.md`](OPEN_SOURCE_AUDIT.md) | Pre-publication security and privacy audit: what was scanned, what was found, what was accepted and why |
+| [`OPEN_SOURCE_READINESS.md`](OPEN_SOURCE_READINESS.md) | Release readiness: clean-clone results, CI, and what still needs a decision |
 
 ## Reports — point-in-time, not maintained
 
