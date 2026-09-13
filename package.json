@@ -11,6 +11,7 @@
   "bugs": "https://github.com/tc3oliver/signalforge/issues",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.34.5",
   "engines": {
     "node": ">=24"
   },

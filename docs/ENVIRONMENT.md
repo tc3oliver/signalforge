@@ -70,8 +70,10 @@ Dev: `@types/node` ^24.7.0, `tsx` ^4.20.6, `typescript` ^5.9.3, `vitest` ^3.2.4.
 | `react` | 19.1.1 |
 | `react-dom` | 19.1.1 |
 
-The web app binds to `127.0.0.1:3300` in both `dev` and `start` (`next dev -H
-127.0.0.1 -p 3300`), for the same reason Postgres does.
+The web app binds to `127.0.0.1:3300` by default in both `dev` and `start`
+(`next dev -H ${WEB_HOST:-127.0.0.1} -p ${WEB_PORT:-3300}`), for the same reason
+Postgres does. `WEB_HOST` / `WEB_PORT` override it deliberately; every route is
+read-only and unauthenticated, and `/admin` stays off unless `SIGNALFORGE_ADMIN=1`.
 
 ## Pi packages actually installed
 
@@ -160,7 +162,7 @@ From `.env.example` — these are the only variables the app itself defines:
 | `DI_LINEAGE` | ledger namespace (default `default`); experimental runs set their own so they can never collide with production rows in the same database |
 
 `DAILY_INTELLIGENCE_FAULT_INJECTION` is a test-only opt-in and is documented in
-`README.md`; it is absent in normal operation.
+`docs/DEVELOPMENT.md`; it is absent in normal operation.
 
 **No collector credential is present in `.env` or the environment at the time of
 writing.** Only the six variables above are set. See `docs/DATA_SOURCES.md` for what

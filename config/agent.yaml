@@ -18,9 +18,13 @@
 #     - provider: openai
 #       model: gpt-5.6
 #
-# and the matching API key in ~/.config/daily-intelligence/secrets.env. Nothing
-# in the pipeline depends on which providers these are, only that there are one
-# or more of them and that the first is the most capable.
+# authenticated with Pi (`pi auth login`, or the provider's own environment
+# variable such as ANTHROPIC_API_KEY where Pi documents one). Model
+# authentication is Pi's: SignalForge never stores a model credential, and
+# ~/.config/daily-intelligence/secrets.env is for collector credentials.
+# See docs/CREDENTIALS.md. Nothing in the pipeline depends on which providers
+# these are, only that there are one or more of them and that the first is the
+# most capable.
 modelChain:
   - provider: github-copilot
     model: gemini-3.8-flash

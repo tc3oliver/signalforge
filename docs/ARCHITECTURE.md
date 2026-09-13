@@ -71,8 +71,10 @@ is an interface, `JsonStoryRepository` and `PostgresStoryRepository`
         │             an agent ever sees
         ▼
   Pi Curator session ── restricted runtime, 12 custom tools (13 with search_web)
-        │   ── tools ──►  item_decisions, story_ledger, story_items
-        │                 (the cross-day ledger)
+        │   ── tools ──►  item_decisions, story_ledger
+        │                 (the cross-day ledger; story_items is provisioned
+        │                  but has no production writer yet -- see
+        │                  INTELLIGENCE_BACKLOG.md)
         │
         │  submit_materials  (validated; rejects unless scan coverage == 100%)
         ▼
@@ -147,8 +149,11 @@ in the path.
 
 ## The story ledger = cross-day memory
 
-`story_ledger` / `story_items` / `item_decisions` are the agent's memory across
-sessions and across days.
+`story_ledger` / `item_decisions` are the agent's memory across sessions and
+across days. (`story_items`, the normalised story-to-item relation, exists in
+the schema and is read by the web story page, but nothing in the pipeline
+writes it yet; the ledger row's `source_item_ids` / `primary_source_ids` arrays
+carry that information today. Making it canonical is a backlog item.)
 
 - Within a day, they are how a curator that crashed at item 50 can be replaced by a
   different model that picks up at item 51 — because the first 50 decisions are in

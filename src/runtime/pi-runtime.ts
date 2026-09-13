@@ -37,8 +37,12 @@ export class ModelResolutionError extends Error {
 let sharedRuntime: ModelRuntime | undefined;
 
 /**
- * One ModelRuntime per process. `refreshOnCreate: false` and `allowModelNetwork: false`
- * keep it from rewriting the global catalog files it reads.
+ * One ModelRuntime per process. `refreshOnCreate: true` reads the global Pi
+ * catalog and auth files on creation so a model that Pi can authenticate as
+ * resolves here; `allowModelNetwork: false` keeps that refresh local, so the
+ * runtime never fetches a catalog over the network or rewrites the global Pi
+ * files it reads. Authentication stays Pi's: nothing here stores a model
+ * credential.
  */
 export async function getModelRuntime(): Promise<ModelRuntime> {
 	if (!sharedRuntime) {

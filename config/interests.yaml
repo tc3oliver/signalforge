@@ -4,9 +4,14 @@
 # (gitignored, and it wins outright when present) and replace every topic with
 # your own before the brief means anything to you.
 #
-# This file is the single largest determinant of what reaches your brief. It
-# drives prompt construction (what the curator is told to look for) and scoring
-# (how it weighs what it found).
+# Honest status: this file is loaded and validated (`pnpm setup:check` reports
+# its topic count), but as of the current release its topics and weights are
+# NOT yet passed to the Curator or Editor sessions. What reaches the brief is
+# decided by the shipped editorial policy in agent/skills/daily-intelligence/
+# and by which sources you enable in watchlists.yaml / sources.yaml. Wiring this
+# profile into both agents -- weights as priors, never as filters -- is the
+# first item in docs/INTELLIGENCE_BACKLOG.md. Filling it in now is still the
+# right move: the shape will not change, and it is what that work consumes.
 #
 #   id       stable key; referenced by discovery.yaml topicIds
 #   label    human name, used in prompts and in the web reader

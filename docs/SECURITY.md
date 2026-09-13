@@ -246,7 +246,14 @@ those. `tests/ops-scripts.test.ts` asserts both "refuses any host other than
 loopback" and "rejects a non-loopback `DATABASE_URL` host end-to-end", and that every
 docker command is scoped to the `daily-intelligence-postgres` container by name.
 
-The web app binds `127.0.0.1:3300` in both `dev` and `start`.
+The web app binds `127.0.0.1:3300` by default in both `dev` and `start`.
+`WEB_HOST=0.0.0.0` is an explicit opt-in to serve the LAN; nothing sets it for
+you. Every route is read-only, no route invokes a model or a collector
+(`tests/web-no-llm.test.ts`), and the `/admin` diagnostics 404 unless
+`SIGNALFORGE_ADMIN=1` (`tests/web-admin-gate.test.ts`), so a LAN-visible reader
+shows briefs and nothing about the deployment. The reader loads no remote font,
+stylesheet or script; `web/next.config.ts` sets a `default-src 'self'` CSP on
+every response.
 
 ## No public ingress
 
