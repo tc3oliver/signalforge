@@ -3,7 +3,7 @@ import { defineTool, type ToolDefinition } from "@earendil-works/pi-coding-agent
 import type { DailyManifest, DailyMaterials, StructuredFact } from "../schemas/index.ts";
 import { DailyBriefInput, type DailyBrief } from "../schemas/index.ts";
 import type { StoryRepository } from "../stories/repository.ts";
-import { validateBrief } from "../validator/brief-validator.ts";
+import { requiredMustKnowCount, requiredStoryCount, validateBrief } from "../validator/brief-validator.ts";
 import { ToolRejection } from "../curator/tools.ts";
 
 function ok(payload: unknown) {
@@ -41,6 +41,19 @@ export function createEditorTools(ctx: EditorContext): ToolDefinition[] {
 	 * the curator already attached to a material story. It cannot re-scan the day.
 	 */
 	const allowedItemIds = new Set(ctx.materials.stories.flatMap((s) => s.sourceItemIds));
+
+	// What the tool tells the model it wants has to agree with what the validator
+	// will accept, and both follow the material count rather than a constant.
+	const storyBounds = requiredStoryCount(ctx.materials.stories.length);
+	const mustKnowBounds = requiredMustKnowCount(storyBounds.min);
+	const storyRule =
+		storyBounds.min === storyBounds.max
+			? `exactly ${storyBounds.min}`
+			: `${storyBounds.min}-${storyBounds.max}`;
+	const mustKnowRule =
+		mustKnowBounds.min === mustKnowBounds.max
+			? `exactly ${mustKnowBounds.min}`
+			: `${mustKnowBounds.min}-${mustKnowBounds.max}`;
 
 	const note = (name: string, summary: Record<string, unknown>) => ctx.onToolCall?.(name, summary);
 
@@ -159,8 +172,8 @@ export function createEditorTools(ctx: EditorContext): ToolDefinition[] {
 		name: "submit_brief",
 		label: "Submit brief",
 		description:
-			"Submit the finished daily brief. This is the only authoritative output — prose in your reply is discarded. Requires 8-15 stories, 3-5 flagged mustKnow, every storyId drawn from the materials, every sourceItemId belonging to that story, and every factRef valid.",
-		promptSnippet: "submit_brief: final editor output (8-15 stories, 3-5 Must Know)",
+			`Submit the finished daily brief. This is the only authoritative output — prose in your reply is discarded. Requires ${storyRule} stories (never the same storyId twice), ${mustKnowRule} flagged mustKnow, every storyId drawn from the materials, every sourceItemId belonging to that story, and every factRef valid.`,
+		promptSnippet: `submit_brief: final editor output (${storyRule} stories, ${mustKnowRule} Must Know)`,
 		parameters: Type.Object({
 			stories: Type.Array(
 				Type.Object({
@@ -180,7 +193,20 @@ export function createEditorTools(ctx: EditorContext): ToolDefinition[] {
 					sourceItemIds: Type.Array(Type.String(), { minItems: 1 }),
 					factRefs: Type.Optional(Type.Array(Type.String())),
 				}),
-				{ minItems: 8, maxItems: 15 },
+				/*
+				 * The floor cannot live in the tool schema, because the schema is
+				 * fixed and the floor is not: it is whatever the curator supplied,
+				 * capped at eight. Hardcoding 8 here made a quiet day impossible to
+				 * submit at all -- three different models, told by this schema that
+				 * they needed eight and by the materials that there were four,
+				 * each wrote all four twice, and were then rejected for duplicating.
+				 * They were obeying the contract they were given.
+				 *
+				 * So the schema enforces only what is universally true, and the real
+				 * bound is checked by validateBrief, which knows the material count
+				 * and can say what is wrong in a sentence the model can act on.
+				 */
+				{ minItems: 1, maxItems: 15 },
 			),
 			emergingSignals: Type.Optional(
 				Type.Array(

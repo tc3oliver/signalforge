@@ -35,7 +35,7 @@ const manifest: DailyManifest = {
 	],
 };
 
-const materials: DailyMaterials = {
+const materialsFixture: DailyMaterials = {
 	date: "2026-09-13",
 	producedAt: "2026-09-13T01:00:00.000Z",
 	stories: ids.map((storyId, i) => ({
@@ -55,6 +55,7 @@ const materials: DailyMaterials = {
 	curatorNotes: "",
 };
 
+const materials = materialsFixture;
 const ctx: BriefValidationContext = { manifest, materials };
 
 function briefStory(i: number, over: Partial<DailyBriefStory> = {}): DailyBriefStory {
@@ -237,6 +238,29 @@ describe("brief size follows what the curator actually found", () => {
 			ok: true,
 			errors: [],
 		});
+	});
+
+	it("advertises a contract the validator will actually accept", async () => {
+		// The live failure this comes from: submit_brief's own parameter schema
+		// said minItems 8 while the materials held four, so the only payload that
+		// could be submitted at all was one the validator would then reject for
+		// duplication. Three models in a row wrote each story twice -- obeying the
+		// contract they were handed. The tool and the validator have to agree.
+		const { createEditorTools } = await import("../src/editor/tools.ts");
+		const materials = { ...materialsFixture, stories: materialsFixture.stories.slice(0, 4) };
+		const tools = createEditorTools({
+			date: "2026-09-13",
+			manifest,
+			materials,
+			repo: {} as never,
+			now: () => new Date("2026-09-13T02:00:00.000Z"),
+		});
+		const submit = tools.find((t) => t.name === "submit_brief");
+
+		const schema = submit?.parameters as { properties: { stories: { minItems: number } } };
+		expect(schema.properties.stories.minItems).toBeLessThanOrEqual(4);
+		expect(submit?.promptSnippet).toContain("exactly 4");
+		expect(submit?.description).toContain("never the same storyId twice");
 	});
 
 	it("keeps Must Know a selection rather than a quota", () => {
