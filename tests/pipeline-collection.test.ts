@@ -8,6 +8,7 @@ import type {
 import type { RawItemRef } from "../src/db/items.ts";
 import type { StructuredFact } from "../src/schemas/fact.ts";
 import type { NormalizedItem } from "../src/schemas/item.ts";
+import { loadConfig } from "../src/config/loader.ts";
 import {
 	type CollectionStore,
 	type RegistryEntry,
@@ -286,5 +287,78 @@ describe("collection orchestration", () => {
 		});
 
 		expect(peak).toBeLessThanOrEqual(3);
+	});
+});
+
+/**
+ * The config fields on CollectorContext are optional, and every collector treats
+ * an absent watchlist as an empty one. That combination compiles perfectly while
+ * collecting nothing and reporting success, so the wiring itself needs a test --
+ * type-checking it proves nothing.
+ */
+describe("collector configuration reaches the collector", () => {
+	it("hands each collector its watchlists and its own source config", async () => {
+		const seen: Array<{
+			watchlists?: unknown;
+			sourceConfig?: unknown;
+			userAgent?: string | undefined;
+		}> = [];
+
+		const probe = {
+			id: "sec",
+			sourceType: "sec" as const,
+			requiredSecrets: [] as const,
+			check: async () => ({ ok: true, detail: "probe" }),
+			collect: async (ctx: CollectorContext) => {
+				seen.push({
+					watchlists: ctx.watchlists,
+					sourceConfig: ctx.sourceConfig,
+					userAgent: await ctx.config?.("SEC_USER_AGENT"),
+				});
+				return okResult("sec", []);
+			},
+		};
+
+		const appConfig = loadConfig();
+		await runCollection({
+			store: memoryStore().store,
+			since: new Date("2026-09-12T00:00:00.000Z"),
+			entries: [{ sourceKey: "sec", collector: probe }],
+			enabledSourceKeys: ["sec"],
+			appConfig,
+			secrets: { secret: async () => "", hasSecret: async () => false },
+		});
+
+		expect(seen).toHaveLength(1);
+		const got = seen[0]!;
+		// The real watchlist file, not an empty object standing in for it.
+		expect(got.watchlists).toBe(appConfig.watchlists);
+		expect(got.sourceConfig).toBe(appConfig.sources.collectors.sec);
+		expect(got.userAgent).toBe(appConfig.sources.collectors.sec.userAgent);
+	});
+
+	it("gives a collector whose key is not a real source type no configuration", async () => {
+		let sourceConfig: unknown = "untouched";
+		const probe = {
+			id: "fake",
+			sourceType: "web" as const,
+			requiredSecrets: [] as const,
+			check: async () => ({ ok: true, detail: "probe" }),
+			collect: async (ctx: CollectorContext) => {
+				sourceConfig = ctx.sourceConfig;
+				return okResult("fake", []);
+			},
+		};
+
+		await runCollection({
+			store: memoryStore().store,
+			since: new Date("2026-09-12T00:00:00.000Z"),
+			entries: [{ sourceKey: "not-a-source-type", collector: probe }],
+			enabledSourceKeys: ["not-a-source-type"],
+			appConfig: loadConfig(),
+			secrets: { secret: async () => "", hasSecret: async () => false },
+		});
+
+		expect(sourceConfig).toBeUndefined();
 	});
 });

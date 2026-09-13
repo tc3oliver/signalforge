@@ -83,6 +83,42 @@ describe("config validation errors", () => {
 		).toThrow();
 	});
 
+	it("rejects an enabled sec collector with no userAgent", () => {
+		const config = loadConfig();
+		const result = SourcesConfig.safeParse({
+			collectors: {
+				...config.sources.collectors,
+				sec: { ...config.sources.collectors.sec, enabled: true, userAgent: undefined },
+			},
+		});
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error.issues[0]?.path.join(".")).toBe("collectors.sec.userAgent");
+		}
+	});
+
+	it("rejects a userAgent with no contact email", () => {
+		const config = loadConfig();
+		const result = SourcesConfig.safeParse({
+			collectors: {
+				...config.sources.collectors,
+				sec: { ...config.sources.collectors.sec, enabled: true, userAgent: "Just A Name" },
+			},
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it("accepts an enabled sec collector with a valid contact userAgent", () => {
+		const config = loadConfig();
+		const result = SourcesConfig.safeParse({
+			collectors: {
+				...config.sources.collectors,
+				sec: { ...config.sources.collectors.sec, enabled: true, userAgent: "Daily Intelligence oliver@example.com" },
+			},
+		});
+		expect(result.success).toBe(true);
+	});
+
 	it("rejects a sources config missing a source type", () => {
 		const config = loadConfig();
 		const { rss: _rss, ...rest } = config.sources.collectors;

@@ -74,6 +74,20 @@ export type WatchlistsConfig = z.infer<typeof WatchlistsConfig>;
 
 // ------------------------------------------------------------------ sources
 
+// SEC EDGAR's fair-access policy requires every requester to identify itself
+// with a descriptive contact User-Agent (see https://www.sec.gov/os/webmaster-faq#code-support).
+// It is a public, loggable string, not a credential — modeled as a typed config
+// field rather than routed through secrets.ts. Reject anything that doesn't at
+// least look like "Name email@example.com": a malformed UA gets the user
+// rate-limited or IP-blocked by SEC rather than failing loudly here.
+const SecUserAgent = z
+	.string()
+	.min(1)
+	.regex(
+		/\S+@\S+\.\S+/,
+		'SEC requires a descriptive contact User-Agent containing an email address, e.g. "Your Name you@example.com"',
+	);
+
 export const CollectorSourceConfig = z
 	.object({
 		enabled: z.boolean(),
@@ -82,6 +96,8 @@ export const CollectorSourceConfig = z
 		timeoutMs: z.number().int().positive(),
 		pageSize: z.number().int().positive(),
 		requiredSecrets: z.array(z.string().min(1)).default([]),
+		/** SEC-only: mandatory contact User-Agent. See {@link SecUserAgent}. */
+		userAgent: SecUserAgent.optional(),
 	})
 	.strict();
 export type CollectorSourceConfig = z.infer<typeof CollectorSourceConfig>;
@@ -101,6 +117,18 @@ export const SourcesConfig = z
 					path: ["collectors", sourceType],
 				});
 			}
+		}
+		// SEC collection is not allowed to run without a valid contact UA, so an
+		// enabled sec collector with no userAgent is a config error, not a
+		// runtime surprise. Ship it disabled until the user supplies their own.
+		const sec = value.collectors.sec;
+		if (sec?.enabled && !sec.userAgent) {
+			ctx.addIssue({
+				code: "custom",
+				message:
+					'SEC collector is enabled but has no "userAgent" configured; SEC policy requires a descriptive contact User-Agent for every request',
+				path: ["collectors", "sec", "userAgent"],
+			});
 		}
 	});
 export type SourcesConfig = z.infer<typeof SourcesConfig>;

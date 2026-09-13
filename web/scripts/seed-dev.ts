@@ -391,7 +391,9 @@ const DAY3_STORIES: SeedStory[] = [
 		mustKnow: false,
 		changeType: "ESCALATION",
 		status: "OPEN",
-		itemIds: ["it-chip-capex"],
+		// Shares it-inference-price with the AI/LLM story: the same evidence
+		// supporting two stories is what makes them provably related.
+		itemIds: ["it-chip-capex", "it-inference-price"],
 		primaryIds: ["it-chip-capex"],
 		factRefs: ["fact-capex-delta"],
 		reason: "兩家同時上修且理由一致，屬於強度升高而非單一事件。",

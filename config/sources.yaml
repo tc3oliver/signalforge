@@ -62,7 +62,11 @@ collectors:
     requiredSecrets: [FRED_API_KEY]
 
   sec:
-    enabled: true
+    # Disabled until a real contact User-Agent is supplied: SEC EDGAR requires
+    # "Name email@example.com" on every request and will rate-limit or block an
+    # IP that omits or fakes one, so there is no safe placeholder to ship here.
+    # Set userAgent, then flip enabled: true.
+    enabled: false
     rateLimitPerMinute: 10
     timeoutMs: 15000
     pageSize: 40

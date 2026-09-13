@@ -18,6 +18,8 @@ import { secCollector } from "../collectors/sec.ts";
 import { SemanticScholarCollector } from "../collectors/semantic-scholar.ts";
 import { youtubeCollector } from "../collectors/youtube.ts";
 import { loadConfig, resolveEnabledSources } from "../config/loader.ts";
+import type { AppConfig } from "../config/schema.ts";
+import { SourceType } from "../schemas/item.ts";
 import { hasSecret, resolveSecret } from "../config/secrets.ts";
 import type { Sql } from "../db/client.ts";
 import { listCollectorStatus, recordCollectionRun, upsertSourceConfig } from "../db/collector-health.ts";
@@ -140,6 +142,7 @@ export function createPostgresCollectionStore(sql: Sql, lineage: string): Collec
 
 export interface RegistryEntry {
 	/** The key under `collectors:` in config/sources.yaml. */
+	/** A real SourceType for shipped collectors; tests register fakes that simply have no config. */
 	sourceKey: string;
 	collector: Collector;
 }
@@ -226,10 +229,40 @@ export interface CollectionOptions {
 	/** Defaults to `config/sources.yaml`. */
 	enabledSourceKeys?: readonly string[];
 	secrets?: SecretAccess;
+	/** Defaults to the real config on disk; tests inject one so they stay hermetic. */
+	appConfig?: AppConfig;
 	fetchImpl?: typeof globalThis.fetch;
 	concurrency?: number;
 	signal?: AbortSignal;
 	log?: (msg: string, fields?: Record<string, unknown>) => void;
+}
+
+/**
+ * Non-secret scalars a collector needs that have no dedicated schema field yet.
+ * Kept narrow on purpose: anything durable belongs in a typed field instead.
+ */
+function sourceConfigFor(appConfig: AppConfig, sourceKey: string) {
+	// A test registers fake collectors whose key is not a SourceType at all; they
+	// simply have no configuration, which is different from having bad configuration.
+	const parsed = SourceType.safeParse(sourceKey);
+	return parsed.success ? appConfig.sources.collectors[parsed.data] : undefined;
+}
+
+/**
+ * Non-secret scalars a collector needs that have no dedicated schema field yet.
+ * Kept narrow on purpose: anything durable belongs in a typed field instead.
+ */
+function collectorScalar(
+	appConfig: AppConfig,
+	sourceKey: string,
+	name: string,
+): string | undefined {
+	const source = sourceConfigFor(appConfig, sourceKey) as
+		| (Record<string, unknown> & { userAgent?: string })
+		| undefined;
+	if (name === "SEC_USER_AGENT") return source?.userAgent;
+	const value = source?.[name];
+	return typeof value === "string" ? value : undefined;
 }
 
 /** Bounded pool: eleven collectors hitting eleven providers at once is a thundering herd. */
@@ -286,9 +319,10 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
 	};
 	const startedAt = now().toISOString();
 
+	const appConfig = options.appConfig ?? loadConfig();
 	const entries = options.entries ?? buildRegistry();
 	const enabledKeys = new Set(
-		options.enabledSourceKeys ?? resolveEnabledSources(loadConfig()),
+		options.enabledSourceKeys ?? resolveEnabledSources(appConfig),
 	);
 	const cursors = await options.store.loadCursors();
 	/** arXiv ids seen this run; the Semantic Scholar enrichment worklist. */
@@ -359,6 +393,14 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
 				...(cursor === undefined ? {} : { cursor }),
 				secret: secrets.secret,
 				hasSecret: secrets.hasSecret,
+				// A collector with no watchlist silently collects nothing and reports
+				// success, which is the worst failure shape there is -- so the curated
+				// lists are handed over here rather than read by each collector.
+				watchlists: appConfig.watchlists,
+				...(sourceConfigFor(appConfig, entry.sourceKey)
+					? { sourceConfig: sourceConfigFor(appConfig, entry.sourceKey)! }
+					: {}),
+				config: async (name) => collectorScalar(appConfig, entry.sourceKey, name),
 				fetch: fetchImpl,
 				...(options.signal ? { signal: options.signal } : {}),
 				log: (msg, fields) => log(msg, { collector: collector.id, ...fields }),

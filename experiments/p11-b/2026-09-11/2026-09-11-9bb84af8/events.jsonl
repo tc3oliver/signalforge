@@ -52,3 +52,23 @@
 {"ts":"2026-09-13T09:25:52.659Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"meridian-exchange-withdrawal-suspension","hits":0}
 {"ts":"2026-09-13T09:25:54.212Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"sable-orm-batch-loss-bug","hits":1}
 {"ts":"2026-09-13T09:25:56.226Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"meridian-long-context-enterprise","hits":1}
+{"ts":"2026-09-13T09:25:58.360Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"ashgrove-utilities-dividend-q3","hits":1}
+{"ts":"2026-09-13T09:25:59.937Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"ashgrove-utilities-dividend","hits":1}
+{"ts":"2026-09-13T09:26:01.822Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"us-jobless-claims-20260910","hits":1}
+{"ts":"2026-09-13T09:26:03.553Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"jobless claims 2026-09-11","hits":3}
+{"ts":"2026-09-13T09:26:05.422Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"initial claims","hits":0}
+{"ts":"2026-09-13T09:26:07.280Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"us-jobless-claims-20260911","hits":0}
+{"ts":"2026-09-13T09:26:09.321Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"accelerator-power-capping","hits":1}
+{"ts":"2026-09-13T09:26:11.497Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"power budget halyard","hits":1}
+{"ts":"2026-09-13T09:26:13.200Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"grid curtailment","hits":0}
+{"ts":"2026-09-13T09:26:15.393Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"tariff","hits":0}
+{"ts":"2026-09-13T09:26:18.062Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"halyard-power","hits":1}
+{"ts":"2026-09-13T09:26:21.004Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"halyard-power-rack-budget","hits":1}
+{"ts":"2026-09-13T09:26:23.340Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"northern-grid-curtailment-tariff","hits":0}
+{"ts":"2026-09-13T09:26:25.071Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"halyard-power-rack-budget","hits":0}
+{"ts":"2026-09-13T09:26:27.086Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"meridian-exchange-withdrawal-halt","hits":0}
+{"ts":"2026-09-13T09:26:28.910Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"halcyon-fusion-series-d","hits":0}
+{"ts":"2026-09-13T09:26:58.030Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"build-plugins-credential-exfiltration","hits":0}
+{"ts":"2026-09-13T09:27:00.678Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"open-tooling-protocol-spec","hits":0}
+{"ts":"2026-09-13T09:27:02.196Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"halyard-v2-release","hits":0}
+{"ts":"2026-09-13T09:27:03.917Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"sign-sgd-1bit-optimizer","hits":0}
