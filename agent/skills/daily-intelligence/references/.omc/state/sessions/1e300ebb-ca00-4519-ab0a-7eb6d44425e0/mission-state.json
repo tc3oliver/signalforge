@@ -1,0 +1,45 @@
+{
+  "updatedAt": "2026-09-13T08:47:10.263Z",
+  "missions": [
+    {
+      "id": "session:1e300ebb-ca00-4519-ab0a-7eb6d44425e0:none",
+      "source": "session",
+      "name": "none",
+      "objective": "Session mission",
+      "createdAt": "2026-09-13T08:47:10.263Z",
+      "updatedAt": "2026-09-13T08:47:10.263Z",
+      "status": "running",
+      "workerCount": 1,
+      "taskCounts": {
+        "total": 1,
+        "pending": 0,
+        "blocked": 0,
+        "inProgress": 1,
+        "completed": 0,
+        "failed": 0
+      },
+      "agents": [
+        {
+          "name": "evalaudit:aevalau",
+          "role": "evalaudit",
+          "ownership": "aevalaudit-1c0cc1eabe267a6e",
+          "status": "running",
+          "currentStep": null,
+          "latestUpdate": null,
+          "completedSummary": null,
+          "updatedAt": "2026-09-13T08:47:10.263Z"
+        }
+      ],
+      "timeline": [
+        {
+          "id": "session-start:aevalaudit-1c0cc1eabe267a6e:2026-09-13T08:47:10.263Z",
+          "at": "2026-09-13T08:47:10.263Z",
+          "kind": "update",
+          "agent": "evalaudit:aevalau",
+          "detail": "started evalaudit:aevalau",
+          "sourceKey": "session-start:aevalaudit-1c0cc1eabe267a6e"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,212 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1789289216174,
+  "projectRoot": "/Users/oliver/Developer/src/personal/daily-intelligence",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": ">=24",
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "vitest",
+        "version": "3.2.4",
+        "category": "testing"
+      }
+    ],
+    "packageManager": "pnpm",
+    "runtime": "Node.js 24"
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": "pnpm test",
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {
+      "test": "vitest --run",
+      "typecheck": "tsc --noEmit",
+      "phase1:generate": "tsx src/cli/generate-fixtures.ts",
+      "phase1:curate": "tsx src/cli/run-curator.ts",
+      "phase1:edit": "tsx src/cli/run-editor.ts",
+      "phase1:run": "tsx src/cli/run-phase1.ts",
+      "eval:run": "tsx src/cli/run-eval.ts",
+      "benchmark:models": "tsx src/cli/benchmark.ts"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": "*.test.ts",
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs",
+      "src",
+      "tests"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "agent": {
+      "path": "agent",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1789289216169,
+      "keyFiles": []
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 3,
+      "lastAccessed": 1789289216169,
+      "keyFiles": [
+        "ARCHITECTURE.md",
+        "ENVIRONMENT.md",
+        "PHASE1_REPORT.md"
+      ]
+    },
+    "eval": {
+      "path": "eval",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1789289216170,
+      "keyFiles": []
+    },
+    "fixtures": {
+      "path": "fixtures",
+      "purpose": "Test fixtures",
+      "fileCount": 0,
+      "lastAccessed": 1789289216170,
+      "keyFiles": []
+    },
+    "runs": {
+      "path": "runs",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1789289216170,
+      "keyFiles": []
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1789289216171,
+      "keyFiles": []
+    },
+    "tests": {
+      "path": "tests",
+      "purpose": "Test files",
+      "fileCount": 11,
+      "lastAccessed": 1789289216171,
+      "keyFiles": [
+        "brief-validator.test.ts",
+        "error-classifier.test.ts",
+        "eval-matching.test.ts",
+        "eval-metrics.test.ts",
+        "fixtures.test.ts"
+      ]
+    },
+    "src/fixtures": {
+      "path": "src/fixtures",
+      "purpose": "Test fixtures",
+      "fileCount": 2,
+      "lastAccessed": 1789289216171,
+      "keyFiles": [
+        "generator.ts",
+        "scenarios.ts"
+      ]
+    },
+    "src/schemas": {
+      "path": "src/schemas",
+      "purpose": "Schema definitions",
+      "fileCount": 10,
+      "lastAccessed": 1789289216171,
+      "keyFiles": [
+        "brief.ts",
+        "decision.ts",
+        "fact.ts"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "src/runtime/model-router.ts",
+      "accessCount": 5,
+      "lastAccessed": 1789289567475,
+      "type": "file"
+    },
+    {
+      "path": "src/eval/stability.ts",
+      "accessCount": 4,
+      "lastAccessed": 1789289541506,
+      "type": "file"
+    },
+    {
+      "path": "tests/policy-regression.test.ts",
+      "accessCount": 3,
+      "lastAccessed": 1789289535714,
+      "type": "file"
+    },
+    {
+      "path": "src/curator/session.ts",
+      "accessCount": 2,
+      "lastAccessed": 1789289580830,
+      "type": "file"
+    },
+    {
+      "path": "src/schemas/stability.ts",
+      "accessCount": 1,
+      "lastAccessed": 1789289478855,
+      "type": "file"
+    },
+    {
+      "path": "src/schemas/index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1789289481582,
+      "type": "file"
+    },
+    {
+      "path": "src/runtime/fault-injection.ts",
+      "accessCount": 1,
+      "lastAccessed": 1789289529806,
+      "type": "file"
+    },
+    {
+      "path": "src/schemas/run.ts",
+      "accessCount": 1,
+      "lastAccessed": 1789289535070,
+      "type": "file"
+    },
+    {
+      "path": "src/cli/run-stability.ts",
+      "accessCount": 1,
+      "lastAccessed": 1789289553965,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 1,
+      "lastAccessed": 1789289557328,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

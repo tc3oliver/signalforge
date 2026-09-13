@@ -1,0 +1,125 @@
+{
+  "updatedAt": "2026-09-13T08:52:45.942Z",
+  "missions": [
+    {
+      "id": "session:1e300ebb-ca00-4519-ab0a-7eb6d44425e0:none",
+      "source": "session",
+      "name": "none",
+      "objective": "Session mission",
+      "createdAt": "2026-09-13T08:14:43.920Z",
+      "updatedAt": "2026-09-13T08:52:45.942Z",
+      "status": "running",
+      "workerCount": 5,
+      "taskCounts": {
+        "total": 5,
+        "pending": 0,
+        "blocked": 0,
+        "inProgress": 2,
+        "completed": 3,
+        "failed": 0
+      },
+      "agents": [
+        {
+          "name": "integ:ainteg-",
+          "role": "integ",
+          "ownership": "ainteg-900aa98eaa91fdb6",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-09-13T08:50:24.318Z"
+        },
+        {
+          "name": "polytest:apolyte",
+          "role": "polytest",
+          "ownership": "apolytest-a09a751cc4dad6ef",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-09-13T08:52:45.942Z"
+        },
+        {
+          "name": "stability:astabil",
+          "role": "stability",
+          "ownership": "astability-1f39eff1d374050e",
+          "status": "running",
+          "currentStep": null,
+          "latestUpdate": null,
+          "completedSummary": null,
+          "updatedAt": "2026-09-13T08:49:56.101Z"
+        },
+        {
+          "name": "faultinj:afaulti",
+          "role": "faultinj",
+          "ownership": "afaultinj-36787d65894e6d23",
+          "status": "running",
+          "currentStep": null,
+          "latestUpdate": null,
+          "completedSummary": null,
+          "updatedAt": "2026-09-13T08:50:04.353Z"
+        },
+        {
+          "name": "evalaudit:aevalau",
+          "role": "evalaudit",
+          "ownership": "aevalaudit-1c0cc1eabe267a6e",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-09-13T08:50:31.866Z"
+        }
+      ],
+      "timeline": [
+        {
+          "id": "session-start:astability-1f39eff1d374050e:2026-09-13T08:49:56.101Z",
+          "at": "2026-09-13T08:49:56.101Z",
+          "kind": "update",
+          "agent": "stability:astabil",
+          "detail": "started stability:astabil",
+          "sourceKey": "session-start:astability-1f39eff1d374050e"
+        },
+        {
+          "id": "session-start:afaultinj-36787d65894e6d23:2026-09-13T08:50:04.353Z",
+          "at": "2026-09-13T08:50:04.353Z",
+          "kind": "update",
+          "agent": "faultinj:afaulti",
+          "detail": "started faultinj:afaulti",
+          "sourceKey": "session-start:afaultinj-36787d65894e6d23"
+        },
+        {
+          "id": "session-start:aevalaudit-1c0cc1eabe267a6e:2026-09-13T08:50:16.803Z",
+          "at": "2026-09-13T08:50:16.803Z",
+          "kind": "update",
+          "agent": "evalaudit:aevalau",
+          "detail": "started evalaudit:aevalau",
+          "sourceKey": "session-start:aevalaudit-1c0cc1eabe267a6e"
+        },
+        {
+          "id": "session-stop:a591683feb924fbbf:2026-09-13T08:50:24.318Z",
+          "at": "2026-09-13T08:50:24.318Z",
+          "kind": "completion",
+          "agent": "integ:ainteg-",
+          "detail": "completed",
+          "sourceKey": "session-stop:a591683feb924fbbf"
+        },
+        {
+          "id": "session-stop:aevalaudit-1c0cc1eabe267a6e:2026-09-13T08:50:31.866Z",
+          "at": "2026-09-13T08:50:31.866Z",
+          "kind": "completion",
+          "agent": "evalaudit:aevalau",
+          "detail": "completed",
+          "sourceKey": "session-stop:aevalaudit-1c0cc1eabe267a6e"
+        },
+        {
+          "id": "session-stop:apolytest-a09a751cc4dad6ef:2026-09-13T08:52:45.942Z",
+          "at": "2026-09-13T08:52:45.942Z",
+          "kind": "completion",
+          "agent": "polytest:apolyte",
+          "detail": "completed",
+          "sourceKey": "session-stop:apolytest-a09a751cc4dad6ef"
+        }
+      ]
+    }
+  ]
+}

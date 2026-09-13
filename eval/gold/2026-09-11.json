@@ -1,0 +1,305 @@
+{
+  "date": "2026-09-11",
+  "events": [
+    {
+      "eventId": "evt-20260911-arc-model-rumor-d2",
+      "canonicalTitle": "Second-hand coverage of the Meridian long-context rumor adds nothing",
+      "itemIds": [
+        "itm-20260911-0045",
+        "itm-20260911-0046",
+        "itm-20260911-0047"
+      ],
+      "primaryItemIds": [
+        "itm-20260911-0046"
+      ],
+      "expectedChangeType": "NO_MATERIAL_CHANGE",
+      "expectedImportant": false,
+      "expectedSection": "AI_LLM"
+    },
+    {
+      "eventId": "evt-20260911-arc-gh-regression-d2",
+      "canonicalTitle": "Sable ORM maintainers confirm the upsert data-loss regression",
+      "itemIds": [
+        "itm-20260911-0017",
+        "itm-20260911-0035",
+        "itm-20260911-0041",
+        "itm-20260911-0068"
+      ],
+      "primaryItemIds": [
+        "itm-20260911-0041"
+      ],
+      "expectedChangeType": "ESCALATION",
+      "expectedImportant": true,
+      "expectedSection": "DEVELOPER_OSS"
+    },
+    {
+      "eventId": "evt-20260911-arc-release-d2",
+      "canonicalTitle": "Halyard 2.0 ships a rewritten scheduler and a stable plugin ABI",
+      "itemIds": [
+        "itm-20260911-0039",
+        "itm-20260911-0052",
+        "itm-20260911-0053",
+        "itm-20260911-0062",
+        "itm-20260911-0070"
+      ],
+      "primaryItemIds": [
+        "itm-20260911-0062",
+        "itm-20260911-0070"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "DEVELOPER_OSS"
+    },
+    {
+      "eventId": "evt-20260911-arc-paper-d2",
+      "canonicalTitle": "Preprint reports stable training at 1-bit optimizer state",
+      "itemIds": [
+        "itm-20260911-0013",
+        "itm-20260911-0015",
+        "itm-20260911-0030",
+        "itm-20260911-0034"
+      ],
+      "primaryItemIds": [
+        "itm-20260911-0030"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "RESEARCH"
+    },
+    {
+      "eventId": "evt-20260911-arc-conflict-d2",
+      "canonicalTitle": "Outlets contradict each other on a Corvid Robotics acquisition",
+      "itemIds": [
+        "itm-20260911-0004",
+        "itm-20260911-0021",
+        "itm-20260911-0025",
+        "itm-20260911-0063"
+      ],
+      "primaryItemIds": [
+        "itm-20260911-0004",
+        "itm-20260911-0025"
+      ],
+      "expectedChangeType": "RUMOR",
+      "expectedImportant": true,
+      "expectedSection": "COMPANIES"
+    },
+    {
+      "eventId": "evt-20260911-arc-filing-d2",
+      "canonicalTitle": "Lumen Fabrication discloses a 1.8 billion dollar capacity write-down",
+      "itemIds": [
+        "itm-20260911-0031",
+        "itm-20260911-0054",
+        "itm-20260911-0059",
+        "itm-20260911-0076"
+      ],
+      "primaryItemIds": [
+        "itm-20260911-0076"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "COMPANIES"
+    },
+    {
+      "eventId": "evt-20260911-arc-community-rumor-d2",
+      "canonicalTitle": "Basalt licence rumor recirculates without new evidence",
+      "itemIds": [
+        "itm-20260911-0050",
+        "itm-20260911-0072"
+      ],
+      "primaryItemIds": [
+        "itm-20260911-0050"
+      ],
+      "expectedChangeType": "RUMOR",
+      "expectedImportant": false,
+      "expectedSection": "DEVELOPER_OSS"
+    },
+    {
+      "eventId": "evt-20260911-trend-power-c",
+      "canonicalTitle": "Scheduler gains a power-budget-aware placement plugin",
+      "itemIds": [
+        "itm-20260911-0049"
+      ],
+      "primaryItemIds": [
+        "itm-20260911-0049"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": false,
+      "expectedSection": "DEVELOPER_OSS"
+    },
+    {
+      "eventId": "evt-20260911-trend-power-d",
+      "canonicalTitle": "Utility opens a dedicated large-load interconnection tariff",
+      "itemIds": [
+        "itm-20260911-0019"
+      ],
+      "primaryItemIds": [
+        "itm-20260911-0019"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": false,
+      "expectedSection": "COMPANIES"
+    },
+    {
+      "eventId": "evt-20260911-routine-claims-2026-09-11",
+      "canonicalTitle": "Weekly initial jobless claims, 2026-09-11",
+      "itemIds": [
+        "itm-20260911-0005",
+        "itm-20260911-0032"
+      ],
+      "primaryItemIds": [
+        "itm-20260911-0005"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": false,
+      "expectedSection": "MACRO"
+    },
+    {
+      "eventId": "evt-20260911-routine-filing-2026-09-11",
+      "canonicalTitle": "Ashgrove Utilities routine dividend declaration, 2026-09-11",
+      "itemIds": [
+        "itm-20260911-0027",
+        "itm-20260911-0043"
+      ],
+      "primaryItemIds": [
+        "itm-20260911-0027"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": false,
+      "expectedSection": "COMPANIES"
+    },
+    {
+      "eventId": "evt-20260911-std-agent-protocol",
+      "canonicalTitle": "Four vendors publish a shared tool-invocation protocol",
+      "itemIds": [
+        "itm-20260911-0003",
+        "itm-20260911-0022",
+        "itm-20260911-0044",
+        "itm-20260911-0080"
+      ],
+      "primaryItemIds": [
+        "itm-20260911-0044",
+        "itm-20260911-0080"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "AI_LLM"
+    },
+    {
+      "eventId": "evt-20260911-std-supply-chain",
+      "canonicalTitle": "Credential-stealing payload found in nine popular build plugins",
+      "itemIds": [
+        "itm-20260911-0001",
+        "itm-20260911-0020",
+        "itm-20260911-0055",
+        "itm-20260911-0057"
+      ],
+      "primaryItemIds": [
+        "itm-20260911-0057"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "MUST_KNOW"
+    },
+    {
+      "eventId": "evt-20260911-std-fusion-round",
+      "canonicalTitle": "Halcyon Fusion raises 1.4 billion dollars against a 2031 grid date",
+      "itemIds": [
+        "itm-20260911-0002",
+        "itm-20260911-0016",
+        "itm-20260911-0056",
+        "itm-20260911-0074"
+      ],
+      "primaryItemIds": [
+        "itm-20260911-0002"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "COMPANIES"
+    },
+    {
+      "eventId": "evt-20260911-std-exchange-halt",
+      "canonicalTitle": "Meridian Exchange halts withdrawals citing a custodian reconciliation gap",
+      "itemIds": [
+        "itm-20260911-0011",
+        "itm-20260911-0065",
+        "itm-20260911-0066",
+        "itm-20260911-0082"
+      ],
+      "primaryItemIds": [
+        "itm-20260911-0082"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "CRYPTO_MARKET"
+    },
+    {
+      "eventId": "evt-20260911-std-ai-act",
+      "canonicalTitle": "Regulator publishes binding guidance on general-purpose model obligations",
+      "itemIds": [
+        "itm-20260911-0023",
+        "itm-20260911-0067",
+        "itm-20260911-0073",
+        "itm-20260911-0077"
+      ],
+      "primaryItemIds": [
+        "itm-20260911-0073"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "MACRO"
+    },
+    {
+      "eventId": "evt-20260911-std-robotics-paper",
+      "canonicalTitle": "Manipulation policy transfers across five robot embodiments without retraining",
+      "itemIds": [
+        "itm-20260911-0028",
+        "itm-20260911-0036",
+        "itm-20260911-0037",
+        "itm-20260911-0078"
+      ],
+      "primaryItemIds": [
+        "itm-20260911-0028"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "RESEARCH"
+    }
+  ],
+  "noiseItemIds": [
+    "itm-20260911-0006",
+    "itm-20260911-0007",
+    "itm-20260911-0008",
+    "itm-20260911-0009",
+    "itm-20260911-0010",
+    "itm-20260911-0012",
+    "itm-20260911-0014",
+    "itm-20260911-0018",
+    "itm-20260911-0024",
+    "itm-20260911-0026",
+    "itm-20260911-0029",
+    "itm-20260911-0033",
+    "itm-20260911-0038",
+    "itm-20260911-0040",
+    "itm-20260911-0042",
+    "itm-20260911-0048",
+    "itm-20260911-0051",
+    "itm-20260911-0058",
+    "itm-20260911-0060",
+    "itm-20260911-0061",
+    "itm-20260911-0064",
+    "itm-20260911-0069",
+    "itm-20260911-0071",
+    "itm-20260911-0075",
+    "itm-20260911-0079",
+    "itm-20260911-0081"
+  ],
+  "expectedEmergingSignals": [
+    {
+      "label": "Electrical power is becoming the binding constraint on compute capacity",
+      "eventIds": [
+        "evt-20260911-trend-power-c",
+        "evt-20260911-trend-power-d"
+      ]
+    }
+  ]
+}

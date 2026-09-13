@@ -1,0 +1,263 @@
+import { Type } from "typebox";
+import { defineTool, type ToolDefinition } from "@earendil-works/pi-coding-agent";
+import type { DailyManifest, DailyMaterials, StructuredFact } from "../schemas/index.ts";
+import { DailyBriefInput, type DailyBrief } from "../schemas/index.ts";
+import type { StoryRepository } from "../stories/repository.ts";
+import { validateBrief } from "../validator/brief-validator.ts";
+import { ToolRejection } from "../curator/tools.ts";
+
+function ok(payload: unknown) {
+	return { content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }], details: {} };
+}
+
+export interface EditorContext {
+	date: string;
+	manifest: DailyManifest;
+	materials: DailyMaterials;
+	repo: StoryRepository;
+	previousBrief?: DailyBrief;
+	now: () => Date;
+	submitted?: DailyBrief;
+	onToolCall?: (name: string, summary: Record<string, unknown>) => void;
+}
+
+const SECTIONS = [
+	"MUST_KNOW",
+	"AI_LLM",
+	"DEVELOPER_OSS",
+	"RESEARCH",
+	"CRYPTO_MARKET",
+	"MACRO",
+	"COMPANIES",
+] as const;
+
+export function createEditorTools(ctx: EditorContext): ToolDefinition[] {
+	const itemsById = new Map(ctx.manifest.items.map((i) => [i.id, i]));
+	const factsById = new Map(ctx.manifest.facts.map((f) => [f.factId, f]));
+	const materialById = new Map(ctx.materials.stories.map((s) => [s.storyId, s]));
+
+	/**
+	 * The editor's window onto source items is deliberately narrow: only items
+	 * the curator already attached to a material story. It cannot re-scan the day.
+	 */
+	const allowedItemIds = new Set(ctx.materials.stories.flatMap((s) => s.sourceItemIds));
+
+	const note = (name: string, summary: Record<string, unknown>) => ctx.onToolCall?.(name, summary);
+
+	const getMaterials = defineTool({
+		name: "get_materials",
+		label: "Get materials",
+		description:
+			"Return today's curated material set: every story the curator selected, with tier, why it was selected, change type and scores. This is your complete universe of stories — you cannot add one that is not here.",
+		promptSnippet: "get_materials: the curated stories you may write about",
+		parameters: Type.Object({}),
+		execute: async () => {
+			note("get_materials", { stories: ctx.materials.stories.length });
+			return ok({
+				date: ctx.materials.date,
+				stories: ctx.materials.stories,
+				emergingSignals: ctx.materials.emergingSignals,
+				curatorNotes: ctx.materials.curatorNotes,
+				previousBriefDate: ctx.previousBrief?.date ?? null,
+			});
+		},
+	});
+
+	const getStoryDetail = defineTool({
+		name: "get_story_detail",
+		label: "Story detail",
+		description:
+			"Return the full ledger entry for a story in the materials, including its reason, status, scores and history-derived change type.",
+		promptSnippet: "get_story_detail: full ledger record for a material story",
+		parameters: Type.Object({ storyIds: Type.Array(Type.String(), { minItems: 1, maxItems: 20 }) }),
+		execute: async (_id, params) => {
+			const unknown = params.storyIds.filter((s) => !materialById.has(s));
+			if (unknown.length > 0) {
+				throw new ToolRejection(
+					`These storyIds are not in today's materials: ${unknown.join(", ")}. You may only write about stories the curator selected.`,
+				);
+			}
+			const entries = [];
+			for (const storyId of params.storyIds) {
+				const entry = await ctx.repo.getStory(storyId);
+				entries.push({ storyId, material: materialById.get(storyId), ledger: entry ?? null });
+			}
+			return ok({ stories: entries });
+		},
+	});
+
+	const getSourceItems = defineTool({
+		name: "get_source_items",
+		label: "Source items",
+		description:
+			"Return the full text of source items belonging to material stories. Only items the curator attached to a story are reachable — you cannot see the raw daily inventory.",
+		promptSnippet: "get_source_items: full text of a story's source items",
+		parameters: Type.Object({ itemIds: Type.Array(Type.String(), { minItems: 1, maxItems: 20 }) }),
+		execute: async (_id, params) => {
+			const outOfScope = params.itemIds.filter((i) => !allowedItemIds.has(i));
+			if (outOfScope.length > 0) {
+				throw new ToolRejection(
+					`Not available: ${outOfScope.join(", ")}. You can only read source items that belong to a story in today's materials.`,
+				);
+			}
+			note("get_source_items", { count: params.itemIds.length });
+			return ok({ items: params.itemIds.map((id) => itemsById.get(id)!) });
+		},
+	});
+
+	const findHistory = defineTool({
+		name: "find_history",
+		label: "Find history",
+		description:
+			"Look up a story's entries on previous days so 'what changed' describes an actual delta rather than repeating today's facts.",
+		promptSnippet: "find_history: what this story looked like on earlier days",
+		parameters: Type.Object({
+			text: Type.Optional(Type.String()),
+			storyId: Type.Optional(Type.String()),
+			limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 25 })),
+		}),
+		execute: async (_id, params) => {
+			if (!params.text && !params.storyId) {
+				throw new ToolRejection("Provide either text or storyId.");
+			}
+			const entries = await ctx.repo.findHistory({
+				text: params.text,
+				storyId: params.storyId,
+				beforeDate: ctx.date,
+				limit: params.limit ?? 10,
+			});
+			return ok({ entries });
+		},
+	});
+
+	const getStructuredFacts = defineTool({
+		name: "get_structured_facts",
+		label: "Structured facts",
+		description:
+			"Return verified numeric facts. Cite these by factId in factRefs. Never write a market, macro or benchmark number that does not come from here — the renderer prints the stored value, so an invented number cannot reach the brief anyway.",
+		promptSnippet: "get_structured_facts: verified numbers, cite by factId",
+		parameters: Type.Object({
+			kind: Type.Optional(
+				Type.Union([Type.Literal("crypto"), Type.Literal("macro"), Type.Literal("filing")]),
+			),
+			factIds: Type.Optional(Type.Array(Type.String())),
+		}),
+		execute: async (_id, params) => {
+			let facts: StructuredFact[] = ctx.manifest.facts.filter((f) =>
+				allowedItemIds.has(f.sourceItemId),
+			);
+			if (params.kind) facts = facts.filter((f) => f.kind === params.kind);
+			if (params.factIds && params.factIds.length > 0) {
+				const wanted = new Set(params.factIds);
+				facts = facts.filter((f) => wanted.has(f.factId));
+			}
+			return ok({ facts });
+		},
+	});
+
+	const submitBrief = defineTool({
+		name: "submit_brief",
+		label: "Submit brief",
+		description:
+			"Submit the finished daily brief. This is the only authoritative output — prose in your reply is discarded. Requires 8-15 stories, 3-5 flagged mustKnow, every storyId drawn from the materials, every sourceItemId belonging to that story, and every factRef valid.",
+		promptSnippet: "submit_brief: final editor output (8-15 stories, 3-5 Must Know)",
+		parameters: Type.Object({
+			stories: Type.Array(
+				Type.Object({
+					storyId: Type.String({ minLength: 1 }),
+					section: Type.Union(SECTIONS.map((s) => Type.Literal(s))),
+					mustKnow: Type.Boolean(),
+					title: Type.String({ minLength: 1 }),
+					whatHappened: Type.String({ minLength: 1 }),
+					whyItMatters: Type.String({ minLength: 1 }),
+					whatChanged: Type.String({ minLength: 1 }),
+					impact: Type.String({ minLength: 1 }),
+					confidence: Type.Union([
+						Type.Literal("HIGH"),
+						Type.Literal("MEDIUM"),
+						Type.Literal("LOW"),
+					]),
+					sourceItemIds: Type.Array(Type.String(), { minItems: 1 }),
+					factRefs: Type.Optional(Type.Array(Type.String())),
+				}),
+				{ minItems: 8, maxItems: 15 },
+			),
+			emergingSignals: Type.Optional(
+				Type.Array(
+					Type.Object({
+						label: Type.String({ minLength: 1 }),
+						body: Type.String({ minLength: 1 }),
+						storyIds: Type.Array(Type.String()),
+					}),
+				),
+			),
+			dailyAnalysis: Type.String({ minLength: 1 }),
+			watchNext: Type.Array(Type.String({ minLength: 1 }), { minItems: 1 }),
+		}),
+		execute: async (_id, params) => {
+			const normalized = {
+				stories: params.stories.map((s) => ({ ...s, factRefs: s.factRefs ?? [] })),
+				emergingSignals: params.emergingSignals ?? [],
+				dailyAnalysis: params.dailyAnalysis,
+				watchNext: params.watchNext,
+			};
+			const parsed = DailyBriefInput.safeParse(normalized);
+			if (!parsed.success) {
+				throw new ToolRejection(
+					`submit_brief payload rejected: ${parsed.error.issues
+						.map((i) => `${i.path.join(".")}: ${i.message}`)
+						.join("; ")}`,
+				);
+			}
+
+			const result = validateBrief(parsed.data, {
+				manifest: ctx.manifest,
+				materials: ctx.materials,
+			});
+			if (!result.ok) {
+				throw new ToolRejection(
+					`submit_brief rejected:\n- ${result.errors.join("\n- ")}\nNothing was saved. Fix these and call submit_brief again.`,
+				);
+			}
+
+			// Belt and braces alongside the validator: an unknown factRef here would
+			// crash the renderer, which is the wrong place to discover it.
+			const badFacts = parsed.data.stories.flatMap((s) =>
+				s.factRefs.filter((f) => !factsById.has(f)),
+			);
+			if (badFacts.length > 0) {
+				throw new ToolRejection(`Unknown factRef(s): ${[...new Set(badFacts)].join(", ")}`);
+			}
+
+			const brief: DailyBrief = {
+				date: ctx.date,
+				producedAt: ctx.now().toISOString(),
+				...parsed.data,
+			};
+			ctx.submitted = brief;
+			note("submit_brief", {
+				stories: brief.stories.length,
+				mustKnow: brief.stories.filter((s) => s.mustKnow).length,
+			});
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: `Brief accepted: ${brief.stories.length} stories, ${brief.stories.filter((s) => s.mustKnow).length} Must Know. Writing is complete — stop here.`,
+					},
+				],
+				details: {},
+				terminate: true,
+			};
+		},
+	});
+
+	return [
+		getMaterials,
+		getStoryDetail,
+		getSourceItems,
+		findHistory,
+		getStructuredFacts,
+		submitBrief,
+	];
+}

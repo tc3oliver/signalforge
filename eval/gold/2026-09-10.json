@@ -1,0 +1,288 @@
+{
+  "date": "2026-09-10",
+  "events": [
+    {
+      "eventId": "evt-20260910-arc-model-rumor-d1",
+      "canonicalTitle": "Unconfirmed reports of a Meridian 3 Opus long-context model",
+      "itemIds": [
+        "itm-20260910-0015",
+        "itm-20260910-0053",
+        "itm-20260910-0057",
+        "itm-20260910-0067"
+      ],
+      "primaryItemIds": [
+        "itm-20260910-0067"
+      ],
+      "expectedChangeType": "RUMOR",
+      "expectedImportant": true,
+      "expectedSection": "AI_LLM"
+    },
+    {
+      "eventId": "evt-20260910-arc-gh-regression-d1",
+      "canonicalTitle": "Sable ORM 6.2 reported to drop rows during batched upserts",
+      "itemIds": [
+        "itm-20260910-0033",
+        "itm-20260910-0052",
+        "itm-20260910-0077",
+        "itm-20260910-0079"
+      ],
+      "primaryItemIds": [
+        "itm-20260910-0079"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "DEVELOPER_OSS"
+    },
+    {
+      "eventId": "evt-20260910-arc-community-rumor-d1",
+      "canonicalTitle": "Unsourced claim that Basalt Engine is changing its licence",
+      "itemIds": [
+        "itm-20260910-0017",
+        "itm-20260910-0020"
+      ],
+      "primaryItemIds": [
+        "itm-20260910-0020"
+      ],
+      "expectedChangeType": "RUMOR",
+      "expectedImportant": false,
+      "expectedSection": "DEVELOPER_OSS"
+    },
+    {
+      "eventId": "evt-20260910-trend-power-a",
+      "canonicalTitle": "Datacentre operator defers two campus builds over substation queue",
+      "itemIds": [
+        "itm-20260910-0055"
+      ],
+      "primaryItemIds": [
+        "itm-20260910-0055"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": false,
+      "expectedSection": "DEVELOPER_OSS"
+    },
+    {
+      "eventId": "evt-20260910-trend-power-b",
+      "canonicalTitle": "Paper measures accelerator idle time caused by power capping",
+      "itemIds": [
+        "itm-20260910-0042"
+      ],
+      "primaryItemIds": [
+        "itm-20260910-0042"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": false,
+      "expectedSection": "RESEARCH"
+    },
+    {
+      "eventId": "evt-20260910-routine-claims-2026-09-10",
+      "canonicalTitle": "Weekly initial jobless claims, 2026-09-10",
+      "itemIds": [
+        "itm-20260910-0011",
+        "itm-20260910-0012"
+      ],
+      "primaryItemIds": [
+        "itm-20260910-0012"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": false,
+      "expectedSection": "MACRO"
+    },
+    {
+      "eventId": "evt-20260910-routine-filing-2026-09-10",
+      "canonicalTitle": "Ashgrove Utilities routine dividend declaration, 2026-09-10",
+      "itemIds": [
+        "itm-20260910-0030",
+        "itm-20260910-0047"
+      ],
+      "primaryItemIds": [
+        "itm-20260910-0030"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": false,
+      "expectedSection": "COMPANIES"
+    },
+    {
+      "eventId": "evt-20260910-std-cloud-outage",
+      "canonicalTitle": "Northbridge Cloud us-east-2 control plane outage lasts six hours",
+      "itemIds": [
+        "itm-20260910-0008",
+        "itm-20260910-0009",
+        "itm-20260910-0021",
+        "itm-20260910-0036",
+        "itm-20260910-0059"
+      ],
+      "primaryItemIds": [
+        "itm-20260910-0021"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "MUST_KNOW"
+    },
+    {
+      "eventId": "evt-20260910-std-open-weights",
+      "canonicalTitle": "Aperture releases Nimbus-7 weights under a restricted commercial licence",
+      "itemIds": [
+        "itm-20260910-0022",
+        "itm-20260910-0061",
+        "itm-20260910-0069",
+        "itm-20260910-0075"
+      ],
+      "primaryItemIds": [
+        "itm-20260910-0069",
+        "itm-20260910-0075"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "AI_LLM"
+    },
+    {
+      "eventId": "evt-20260910-std-rust-release",
+      "canonicalTitle": "Rust 1.94 enables the parallel front end by default",
+      "itemIds": [
+        "itm-20260910-0027",
+        "itm-20260910-0068",
+        "itm-20260910-0071",
+        "itm-20260910-0072"
+      ],
+      "primaryItemIds": [
+        "itm-20260910-0072"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "DEVELOPER_OSS"
+    },
+    {
+      "eventId": "evt-20260910-std-export-rule",
+      "canonicalTitle": "Regulator widens accelerator export licensing to mid-tier parts",
+      "itemIds": [
+        "itm-20260910-0003",
+        "itm-20260910-0010",
+        "itm-20260910-0014",
+        "itm-20260910-0034"
+      ],
+      "primaryItemIds": [
+        "itm-20260910-0010"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "MACRO"
+    },
+    {
+      "eventId": "evt-20260910-std-db-cve",
+      "canonicalTitle": "Critical authentication bypass disclosed in Quarrystone logical replication",
+      "itemIds": [
+        "itm-20260910-0004",
+        "itm-20260910-0023",
+        "itm-20260910-0051",
+        "itm-20260910-0060"
+      ],
+      "primaryItemIds": [
+        "itm-20260910-0004"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "MUST_KNOW"
+    },
+    {
+      "eventId": "evt-20260910-std-quantum",
+      "canonicalTitle": "Below-threshold logical qubit sustained for one million cycles",
+      "itemIds": [
+        "itm-20260910-0001",
+        "itm-20260910-0006",
+        "itm-20260910-0045",
+        "itm-20260910-0046"
+      ],
+      "primaryItemIds": [
+        "itm-20260910-0001"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "RESEARCH"
+    },
+    {
+      "eventId": "evt-20260910-std-stablecoin-rule",
+      "canonicalTitle": "Final rule requires daily attested reserves for payment stablecoins",
+      "itemIds": [
+        "itm-20260910-0035",
+        "itm-20260910-0037",
+        "itm-20260910-0043",
+        "itm-20260910-0058"
+      ],
+      "primaryItemIds": [
+        "itm-20260910-0043"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "CRYPTO_MARKET"
+    },
+    {
+      "eventId": "evt-20260910-std-guidance-cut",
+      "canonicalTitle": "Vantiq Systems cuts full-year guidance on enterprise renewal slippage",
+      "itemIds": [
+        "itm-20260910-0019",
+        "itm-20260910-0056",
+        "itm-20260910-0064",
+        "itm-20260910-0065"
+      ],
+      "primaryItemIds": [
+        "itm-20260910-0064"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "COMPANIES"
+    },
+    {
+      "eventId": "evt-20260910-std-kernel-sched",
+      "canonicalTitle": "Linux 6.19 merges the deadline-aware scheduler rework",
+      "itemIds": [
+        "itm-20260910-0032",
+        "itm-20260910-0038",
+        "itm-20260910-0054",
+        "itm-20260910-0063"
+      ],
+      "primaryItemIds": [
+        "itm-20260910-0063"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "DEVELOPER_OSS"
+    }
+  ],
+  "noiseItemIds": [
+    "itm-20260910-0002",
+    "itm-20260910-0005",
+    "itm-20260910-0007",
+    "itm-20260910-0013",
+    "itm-20260910-0016",
+    "itm-20260910-0018",
+    "itm-20260910-0024",
+    "itm-20260910-0025",
+    "itm-20260910-0026",
+    "itm-20260910-0028",
+    "itm-20260910-0029",
+    "itm-20260910-0031",
+    "itm-20260910-0039",
+    "itm-20260910-0040",
+    "itm-20260910-0041",
+    "itm-20260910-0044",
+    "itm-20260910-0048",
+    "itm-20260910-0049",
+    "itm-20260910-0050",
+    "itm-20260910-0062",
+    "itm-20260910-0066",
+    "itm-20260910-0070",
+    "itm-20260910-0073",
+    "itm-20260910-0074",
+    "itm-20260910-0076",
+    "itm-20260910-0078"
+  ],
+  "expectedEmergingSignals": [
+    {
+      "label": "Electrical power is becoming the binding constraint on compute capacity",
+      "eventIds": [
+        "evt-20260910-trend-power-a",
+        "evt-20260910-trend-power-b"
+      ]
+    }
+  ]
+}

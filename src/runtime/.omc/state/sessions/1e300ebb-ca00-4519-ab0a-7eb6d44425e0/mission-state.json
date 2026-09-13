@@ -1,0 +1,101 @@
+{
+  "updatedAt": "2026-09-13T08:11:27.884Z",
+  "missions": [
+    {
+      "id": "session:1e300ebb-ca00-4519-ab0a-7eb6d44425e0:none",
+      "source": "session",
+      "name": "none",
+      "objective": "Session mission",
+      "createdAt": "2026-09-13T08:10:42.700Z",
+      "updatedAt": "2026-09-13T08:11:27.884Z",
+      "status": "running",
+      "workerCount": 5,
+      "taskCounts": {
+        "total": 5,
+        "pending": 0,
+        "blocked": 0,
+        "inProgress": 5,
+        "completed": 0,
+        "failed": 0
+      },
+      "agents": [
+        {
+          "name": "runtime:aruntim",
+          "role": "runtime",
+          "ownership": "aruntime-140662a63bcf3c8e",
+          "status": "running",
+          "currentStep": null,
+          "latestUpdate": null,
+          "completedSummary": null,
+          "updatedAt": "2026-09-13T08:10:42.700Z"
+        },
+        {
+          "name": "fixtures:afixtur",
+          "role": "fixtures",
+          "ownership": "afixtures-a8d849a6a8719b79",
+          "status": "running",
+          "currentStep": null,
+          "latestUpdate": null,
+          "completedSummary": null,
+          "updatedAt": "2026-09-13T08:10:52.448Z"
+        },
+        {
+          "name": "stores:astores",
+          "role": "stores",
+          "ownership": "astores-f7631276fdd6123f",
+          "status": "running",
+          "currentStep": null,
+          "latestUpdate": null,
+          "completedSummary": null,
+          "updatedAt": "2026-09-13T08:11:04.204Z"
+        },
+        {
+          "name": "evalr:aevalr-",
+          "role": "evalr",
+          "ownership": "aevalr-7e9ecd0b0ec8c332",
+          "status": "running",
+          "currentStep": null,
+          "latestUpdate": null,
+          "completedSummary": null,
+          "updatedAt": "2026-09-13T08:11:14.193Z"
+        },
+        {
+          "name": "skillw:askillw",
+          "role": "skillw",
+          "ownership": "askillw-2d5f7fd7e463411b",
+          "status": "running",
+          "currentStep": null,
+          "latestUpdate": null,
+          "completedSummary": null,
+          "updatedAt": "2026-09-13T08:11:27.884Z"
+        }
+      ],
+      "timeline": [
+        {
+          "id": "session-start:astores-f7631276fdd6123f:2026-09-13T08:11:04.204Z",
+          "at": "2026-09-13T08:11:04.204Z",
+          "kind": "update",
+          "agent": "stores:astores",
+          "detail": "started stores:astores",
+          "sourceKey": "session-start:astores-f7631276fdd6123f"
+        },
+        {
+          "id": "session-start:aevalr-7e9ecd0b0ec8c332:2026-09-13T08:11:14.193Z",
+          "at": "2026-09-13T08:11:14.193Z",
+          "kind": "update",
+          "agent": "evalr:aevalr-",
+          "detail": "started evalr:aevalr-",
+          "sourceKey": "session-start:aevalr-7e9ecd0b0ec8c332"
+        },
+        {
+          "id": "session-start:askillw-2d5f7fd7e463411b:2026-09-13T08:11:27.884Z",
+          "at": "2026-09-13T08:11:27.884Z",
+          "kind": "update",
+          "agent": "skillw:askillw",
+          "detail": "started skillw:askillw",
+          "sourceKey": "session-start:askillw-2d5f7fd7e463411b"
+        }
+      ]
+    }
+  ]
+}

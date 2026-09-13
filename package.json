@@ -1,0 +1,29 @@
+{
+  "name": "daily-intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "test": "vitest --run",
+    "typecheck": "tsc --noEmit",
+    "phase1:generate": "tsx src/cli/generate-fixtures.ts",
+    "phase1:curate": "tsx src/cli/run-curator.ts",
+    "phase1:edit": "tsx src/cli/run-editor.ts",
+    "phase1:run": "tsx src/cli/run-phase1.ts",
+    "eval:run": "tsx src/cli/run-eval.ts",
+    "stability:run": "tsx src/cli/run-stability.ts",
+    "benchmark:models": "tsx src/cli/benchmark.ts"
+  },
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "0.85.1",
+    "typebox": "1.3.7",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

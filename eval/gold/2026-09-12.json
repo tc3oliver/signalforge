@@ -1,0 +1,304 @@
+{
+  "date": "2026-09-12",
+  "events": [
+    {
+      "eventId": "evt-20260912-arc-model-rumor-d3",
+      "canonicalTitle": "Meridian Labs confirms Meridian 3 Opus with a two-million-token context window",
+      "itemIds": [
+        "itm-20260912-0006",
+        "itm-20260912-0012",
+        "itm-20260912-0038",
+        "itm-20260912-0042",
+        "itm-20260912-0077"
+      ],
+      "primaryItemIds": [
+        "itm-20260912-0038",
+        "itm-20260912-0077"
+      ],
+      "expectedChangeType": "CONFIRMATION",
+      "expectedImportant": true,
+      "expectedSection": "AI_LLM"
+    },
+    {
+      "eventId": "evt-20260912-arc-gh-regression-d3",
+      "canonicalTitle": "Sable ORM 6.2.4 patches the batched-upsert data-loss regression",
+      "itemIds": [
+        "itm-20260912-0018",
+        "itm-20260912-0039",
+        "itm-20260912-0071"
+      ],
+      "primaryItemIds": [
+        "itm-20260912-0018"
+      ],
+      "expectedChangeType": "RESOLUTION",
+      "expectedImportant": true,
+      "expectedSection": "DEVELOPER_OSS"
+    },
+    {
+      "eventId": "evt-20260912-arc-release-d3",
+      "canonicalTitle": "Downstream coverage repeats the Halyard 2.0 release notes",
+      "itemIds": [
+        "itm-20260912-0011",
+        "itm-20260912-0023",
+        "itm-20260912-0069"
+      ],
+      "primaryItemIds": [
+        "itm-20260912-0011"
+      ],
+      "expectedChangeType": "NO_MATERIAL_CHANGE",
+      "expectedImportant": false,
+      "expectedSection": "DEVELOPER_OSS"
+    },
+    {
+      "eventId": "evt-20260912-arc-paper-d3",
+      "canonicalTitle": "Independent reproductions qualify the 1-bit optimizer result",
+      "itemIds": [
+        "itm-20260912-0025",
+        "itm-20260912-0051",
+        "itm-20260912-0061",
+        "itm-20260912-0079"
+      ],
+      "primaryItemIds": [
+        "itm-20260912-0051"
+      ],
+      "expectedChangeType": "UPDATE",
+      "expectedImportant": true,
+      "expectedSection": "RESEARCH"
+    },
+    {
+      "eventId": "evt-20260912-arc-conflict-d3",
+      "canonicalTitle": "Corvid Robotics says no acquisition talks are active, reversing the deal report",
+      "itemIds": [
+        "itm-20260912-0014",
+        "itm-20260912-0028",
+        "itm-20260912-0035",
+        "itm-20260912-0043"
+      ],
+      "primaryItemIds": [
+        "itm-20260912-0028"
+      ],
+      "expectedChangeType": "REVERSAL",
+      "expectedImportant": true,
+      "expectedSection": "COMPANIES"
+    },
+    {
+      "eventId": "evt-20260912-arc-macro-cpi-d3",
+      "canonicalTitle": "August core CPI comes in below consensus at 2.4% year over year",
+      "itemIds": [
+        "itm-20260912-0024",
+        "itm-20260912-0037",
+        "itm-20260912-0041",
+        "itm-20260912-0059"
+      ],
+      "primaryItemIds": [
+        "itm-20260912-0024"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "MACRO"
+    },
+    {
+      "eventId": "evt-20260912-arc-community-rumor-d3",
+      "canonicalTitle": "Basalt licence rumor persists into a third day",
+      "itemIds": [
+        "itm-20260912-0002",
+        "itm-20260912-0003"
+      ],
+      "primaryItemIds": [
+        "itm-20260912-0003"
+      ],
+      "expectedChangeType": "RUMOR",
+      "expectedImportant": false,
+      "expectedSection": "DEVELOPER_OSS"
+    },
+    {
+      "eventId": "evt-20260912-trend-power-e",
+      "canonicalTitle": "Inference runtime adds a watts-per-token reporting mode",
+      "itemIds": [
+        "itm-20260912-0067"
+      ],
+      "primaryItemIds": [
+        "itm-20260912-0067"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": false,
+      "expectedSection": "DEVELOPER_OSS"
+    },
+    {
+      "eventId": "evt-20260912-trend-power-f",
+      "canonicalTitle": "Cloud provider begins pricing an instance class by power envelope",
+      "itemIds": [
+        "itm-20260912-0034"
+      ],
+      "primaryItemIds": [
+        "itm-20260912-0034"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": false,
+      "expectedSection": "COMPANIES"
+    },
+    {
+      "eventId": "evt-20260912-routine-claims-2026-09-12",
+      "canonicalTitle": "Weekly initial jobless claims, 2026-09-12",
+      "itemIds": [
+        "itm-20260912-0056",
+        "itm-20260912-0073"
+      ],
+      "primaryItemIds": [
+        "itm-20260912-0073"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": false,
+      "expectedSection": "MACRO"
+    },
+    {
+      "eventId": "evt-20260912-routine-filing-2026-09-12",
+      "canonicalTitle": "Ashgrove Utilities routine dividend declaration, 2026-09-12",
+      "itemIds": [
+        "itm-20260912-0004",
+        "itm-20260912-0040"
+      ],
+      "primaryItemIds": [
+        "itm-20260912-0004"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": false,
+      "expectedSection": "COMPANIES"
+    },
+    {
+      "eventId": "evt-20260912-std-inference-chip",
+      "canonicalTitle": "Tessellate ships an inference part with 6 terabytes per second of memory bandwidth",
+      "itemIds": [
+        "itm-20260912-0017",
+        "itm-20260912-0020",
+        "itm-20260912-0032",
+        "itm-20260912-0075"
+      ],
+      "primaryItemIds": [
+        "itm-20260912-0017"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "AI_LLM"
+    },
+    {
+      "eventId": "evt-20260912-std-k8s-release",
+      "canonicalTitle": "Kubernetes 1.36 graduates in-place pod resize to stable",
+      "itemIds": [
+        "itm-20260912-0007",
+        "itm-20260912-0013",
+        "itm-20260912-0057",
+        "itm-20260912-0068"
+      ],
+      "primaryItemIds": [
+        "itm-20260912-0057",
+        "itm-20260912-0068"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "DEVELOPER_OSS"
+    },
+    {
+      "eventId": "evt-20260912-std-cb-pause",
+      "canonicalTitle": "Central bank signals an extended pause after the inflation print",
+      "itemIds": [
+        "itm-20260912-0010",
+        "itm-20260912-0016",
+        "itm-20260912-0029",
+        "itm-20260912-0064"
+      ],
+      "primaryItemIds": [
+        "itm-20260912-0064"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "MACRO"
+    },
+    {
+      "eventId": "evt-20260912-std-biotech-approval",
+      "canonicalTitle": "Regulator approves Larkspur Bio's oral therapy with a boxed warning",
+      "itemIds": [
+        "itm-20260912-0047",
+        "itm-20260912-0053",
+        "itm-20260912-0066",
+        "itm-20260912-0070"
+      ],
+      "primaryItemIds": [
+        "itm-20260912-0066",
+        "itm-20260912-0070"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "COMPANIES"
+    },
+    {
+      "eventId": "evt-20260912-std-bridge-exploit",
+      "canonicalTitle": "Cross-chain bridge drained of 190 million dollars via a signature replay",
+      "itemIds": [
+        "itm-20260912-0005",
+        "itm-20260912-0030",
+        "itm-20260912-0036",
+        "itm-20260912-0050"
+      ],
+      "primaryItemIds": [
+        "itm-20260912-0005"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "CRYPTO_MARKET"
+    },
+    {
+      "eventId": "evt-20260912-std-contamination",
+      "canonicalTitle": "Audit finds benchmark contamination in widely cited evaluation suites",
+      "itemIds": [
+        "itm-20260912-0048",
+        "itm-20260912-0049",
+        "itm-20260912-0076",
+        "itm-20260912-0078"
+      ],
+      "primaryItemIds": [
+        "itm-20260912-0078"
+      ],
+      "expectedChangeType": "NEW",
+      "expectedImportant": true,
+      "expectedSection": "RESEARCH"
+    }
+  ],
+  "noiseItemIds": [
+    "itm-20260912-0001",
+    "itm-20260912-0008",
+    "itm-20260912-0009",
+    "itm-20260912-0015",
+    "itm-20260912-0019",
+    "itm-20260912-0021",
+    "itm-20260912-0022",
+    "itm-20260912-0026",
+    "itm-20260912-0027",
+    "itm-20260912-0031",
+    "itm-20260912-0033",
+    "itm-20260912-0044",
+    "itm-20260912-0045",
+    "itm-20260912-0046",
+    "itm-20260912-0052",
+    "itm-20260912-0054",
+    "itm-20260912-0055",
+    "itm-20260912-0058",
+    "itm-20260912-0060",
+    "itm-20260912-0062",
+    "itm-20260912-0063",
+    "itm-20260912-0065",
+    "itm-20260912-0072",
+    "itm-20260912-0074",
+    "itm-20260912-0080",
+    "itm-20260912-0081"
+  ],
+  "expectedEmergingSignals": [
+    {
+      "label": "Electrical power is becoming the binding constraint on compute capacity",
+      "eventIds": [
+        "evt-20260912-trend-power-e",
+        "evt-20260912-trend-power-f"
+      ]
+    }
+  ]
+}

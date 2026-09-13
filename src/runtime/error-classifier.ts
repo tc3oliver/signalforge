@@ -1,0 +1,283 @@
+import type { FailureClass } from "../schemas/run.ts";
+
+/** Keys whose values must never leave this process. */
+const SECRET_KEY_RE = /token|key|secret|authorization|cookie|bearer|password/i;
+
+const MAX_MESSAGE_LENGTH = 500;
+const MAX_SANITIZE_DEPTH = 4;
+
+/* -------------------------------------------------------------------------- */
+/* Marker errors the app throws itself                                        */
+/* -------------------------------------------------------------------------- */
+
+/** The agent returned something that does not satisfy the stage's schema. */
+export class InvalidAgentOutputError extends Error {
+	override readonly name = "InvalidAgentOutputError";
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message, options);
+	}
+}
+
+/** The agent kept calling tools without converging on a final answer. */
+export class ToolLoopError extends Error {
+	override readonly name = "ToolLoopError";
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message, options);
+	}
+}
+
+/** A bug in this codebase. Never retried, never fallen back from. */
+export class ProgrammerError extends Error {
+	override readonly name = "ProgrammerError";
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message, options);
+	}
+}
+
+/* -------------------------------------------------------------------------- */
+/* Sanitization                                                               */
+/* -------------------------------------------------------------------------- */
+
+const REDACTED = "[REDACTED]";
+
+/**
+ * Recursively strip anything that looks like a credential. Applied to every
+ * value that reaches errorMeta, so a provider SDK error carrying request
+ * headers can never leak an Authorization bearer token into run artifacts.
+ */
+export function sanitizeValue(value: unknown, depth = 0): unknown {
+	if (value === null || value === undefined) return value;
+	const t = typeof value;
+	if (t === "string") return truncate(value as string);
+	if (t === "number" || t === "boolean") return value;
+	if (t === "bigint") return (value as bigint).toString();
+	if (t === "function" || t === "symbol") return undefined;
+	if (depth >= MAX_SANITIZE_DEPTH) return undefined;
+	if (Array.isArray(value)) {
+		return value.slice(0, 20).map((v) => sanitizeValue(v, depth + 1));
+	}
+	if (value instanceof Error) {
+		return { name: value.name, message: truncate(value.message) };
+	}
+	const out: Record<string, unknown> = {};
+	for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+		if (SECRET_KEY_RE.test(k)) {
+			out[k] = REDACTED;
+			continue;
+		}
+		const s = sanitizeValue(v, depth + 1);
+		if (s !== undefined) out[k] = s;
+	}
+	return out;
+}
+
+function truncate(s: string): string {
+	return s.length > MAX_MESSAGE_LENGTH ? `${s.slice(0, MAX_MESSAGE_LENGTH)}…` : s;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Classification                                                             */
+/* -------------------------------------------------------------------------- */
+
+function asRecord(err: unknown): Record<string, unknown> | undefined {
+	return typeof err === "object" && err !== null ? (err as Record<string, unknown>) : undefined;
+}
+
+function numberProp(rec: Record<string, unknown> | undefined, ...names: string[]): number | undefined {
+	if (!rec) return undefined;
+	for (const n of names) {
+		const v = rec[n];
+		if (typeof v === "number" && Number.isFinite(v)) return v;
+		if (typeof v === "string" && /^\d{3}$/.test(v)) return Number(v);
+	}
+	return undefined;
+}
+
+function stringProp(rec: Record<string, unknown> | undefined, name: string): string | undefined {
+	const v = rec?.[name];
+	return typeof v === "string" ? v : undefined;
+}
+
+function messageOf(err: unknown): string {
+	if (err instanceof Error) return err.message;
+	if (typeof err === "string") return err;
+	const m = stringProp(asRecord(err), "message");
+	return m ?? "";
+}
+
+/** Flatten the cause chain, outermost first, with a cycle/length guard. */
+function causeChain(err: unknown): unknown[] {
+	const chain: unknown[] = [];
+	const seen = new Set<unknown>();
+	let cur: unknown = err;
+	while (cur !== undefined && cur !== null && chain.length < 8) {
+		if (typeof cur === "object" && seen.has(cur)) break;
+		if (typeof cur === "object") seen.add(cur);
+		chain.push(cur);
+		cur = asRecord(cur)?.["cause"];
+	}
+	return chain;
+}
+
+/** Message mentions running out of money/allowance rather than going too fast. */
+function looksLikeQuota(message: string): boolean {
+	return /quota|credit|billing|insufficient|exceeded your current/i.test(message);
+}
+
+function classifyStatus(status: number, message: string): FailureClass | undefined {
+	if (status === 401 || status === 403) return "AUTH";
+	if (status === 402) return "BILLING";
+	if (status === 429) return looksLikeQuota(message) ? "QUOTA" : "RATE_LIMIT";
+	if (status === 404) return "MODEL_UNAVAILABLE";
+	if (status === 408 || status === 504) return "TIMEOUT";
+	if (status >= 500 && status <= 599) return "SERVER_ERROR";
+	return undefined;
+}
+
+function classifyCode(code: string): FailureClass | undefined {
+	switch (code) {
+		case "ENOTFOUND":
+		case "ECONNREFUSED":
+		case "ECONNRESET":
+		case "EAI_AGAIN":
+		case "EPIPE":
+		case "EHOSTUNREACH":
+		case "ENETUNREACH":
+			return "NETWORK";
+		case "ETIMEDOUT":
+		case "ESOCKETTIMEDOUT":
+		case "UND_ERR_HEADERS_TIMEOUT":
+		case "UND_ERR_BODY_TIMEOUT":
+			return "TIMEOUT";
+		case "ABORT_ERR":
+			return "USER_ABORT";
+		default:
+			return undefined;
+	}
+}
+
+function classifyName(name: string): FailureClass | undefined {
+	switch (name) {
+		case "InvalidAgentOutputError":
+			return "INVALID_AGENT_OUTPUT";
+		case "ToolLoopError":
+			return "TOOL_LOOP";
+		case "ProgrammerError":
+			return "PROGRAMMER_ERROR";
+		case "AbortError":
+			return "USER_ABORT";
+		case "TypeError":
+		case "ReferenceError":
+		case "SyntaxError":
+		case "RangeError":
+			return "PROGRAMMER_ERROR";
+		case "TimeoutError":
+			return "TIMEOUT";
+		default:
+			return undefined;
+	}
+}
+
+function classifyMessage(message: string): FailureClass | undefined {
+	if (!message) return undefined;
+	if (/context length|too many tokens|maximum context|context window/i.test(message)) {
+		return "CONTEXT_OVERFLOW";
+	}
+	if (/rate limit|too many requests/i.test(message)) {
+		// "rate limit exceeded, you are out of credits" is really a quota problem.
+		return looksLikeQuota(message) ? "QUOTA" : "RATE_LIMIT";
+	}
+	if (/\bbilling\b|payment required|add a payment method/i.test(message)) return "BILLING";
+	if (/quota|credit|insufficient|exceeded your current/i.test(message)) return "QUOTA";
+	if (/model not found|unsupported model|unknown model|no such model/i.test(message)) {
+		return "MODEL_UNAVAILABLE";
+	}
+	if (/unauthorized|invalid api key|authentication failed|forbidden/i.test(message)) return "AUTH";
+	if (/timed? ?out|timeout/i.test(message)) return "TIMEOUT";
+	if (/socket hang up|network|dns|connection refused|connection reset/i.test(message)) return "NETWORK";
+	if (/abort/i.test(message)) return "USER_ABORT";
+	return undefined;
+}
+
+/** Structural signals on a single link of the cause chain. */
+function classifyStructural(err: unknown): FailureClass | undefined {
+	if (err instanceof InvalidAgentOutputError) return "INVALID_AGENT_OUTPUT";
+	if (err instanceof ToolLoopError) return "TOOL_LOOP";
+	if (err instanceof ProgrammerError) return "PROGRAMMER_ERROR";
+
+	const rec = asRecord(err);
+	const message = messageOf(err);
+
+	const status = numberProp(rec, "status", "statusCode", "httpStatus") ?? numberProp(asRecord(rec?.["response"]), "status", "statusCode");
+	if (status !== undefined) {
+		const byStatus = classifyStatus(status, message);
+		if (byStatus) return byStatus;
+	}
+
+	const code = stringProp(rec, "code");
+	if (code) {
+		const byCode = classifyCode(code);
+		if (byCode) return byCode;
+	}
+
+	const name = err instanceof Error ? err.name : stringProp(rec, "name");
+	if (name) {
+		const byName = classifyName(name);
+		if (byName) return byName;
+	}
+	return undefined;
+}
+
+function buildErrorMeta(err: unknown): Record<string, unknown> {
+	const chain = causeChain(err);
+	const head = chain[0];
+	const rec = asRecord(head);
+	const meta: Record<string, unknown> = {};
+
+	const name = head instanceof Error ? head.name : stringProp(rec, "name");
+	if (name) meta["name"] = name;
+
+	const status = numberProp(rec, "status", "statusCode", "httpStatus") ?? numberProp(asRecord(rec?.["response"]), "status", "statusCode");
+	if (status !== undefined) meta["status"] = status;
+
+	const code = stringProp(rec, "code");
+	if (code) meta["code"] = code;
+
+	const message = messageOf(head);
+	if (message) meta["message"] = truncate(message);
+
+	if (chain.length > 1) {
+		meta["causeChain"] = chain.slice(1).map((c) => {
+			const cr = asRecord(c);
+			return {
+				name: (c instanceof Error ? c.name : stringProp(cr, "name")) ?? typeof c,
+				message: truncate(messageOf(c)),
+			};
+		});
+	}
+
+	// Whitelist above already excludes headers/auth payloads; sanitize is the
+	// belt-and-braces pass so a hostile `name`/`code` cannot smuggle anything.
+	return sanitizeValue(meta) as Record<string, unknown>;
+}
+
+/**
+ * Map an arbitrary thrown value onto a {@link FailureClass} plus sanitized
+ * metadata safe to persist in run artifacts.
+ */
+export function classifyError(err: unknown): { failureClass: FailureClass; errorMeta: Record<string, unknown> } {
+	const errorMeta = buildErrorMeta(err);
+	const chain = causeChain(err);
+
+	// Pass 1: structural signals, outermost cause first.
+	for (const link of chain) {
+		const c = classifyStructural(link);
+		if (c) return { failureClass: c, errorMeta };
+	}
+	// Pass 2: message heuristics, same order.
+	for (const link of chain) {
+		const c = classifyMessage(messageOf(link));
+		if (c) return { failureClass: c, errorMeta };
+	}
+	return { failureClass: "UNKNOWN", errorMeta };
+}
