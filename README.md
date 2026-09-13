@@ -17,26 +17,31 @@ It runs on one machine, for one person, on a schedule.
 - **Not an autonomous agent with a shell.** The agent sessions have no bash, no
   filesystem (beyond one narrowly-rooted skill-reference reader), no arbitrary HTTP,
   and no credentials. See `docs/SECURITY.md`.
-- **Not finished.** The synthetic acceptance harness passes (below), but the live
-  end-to-end run on real sources, the stability sweep and the LaunchAgent install
-  have **not** happened. `docs/PRODUCTION_PLAN.md` tracks what is left.
+- **Not rich, on a day with no credentials.** Everything runs, but what reaches the
+  brief is bounded by which connectors have a key. On the first live run, six of ten
+  sources were disabled for want of one and a seventh was rate-limited, so the day's
+  material came almost entirely from Hacker News. See `docs/DATA_SOURCES.md`.
 - **Not currently collecting from credentialed sources.** No collector credential is
   present in `.env` or the environment, so those sources report `DISABLED` or run in
   a degraded mode. See `docs/DATA_SOURCES.md` for the per-source status.
 
 ## Where it stands
 
-`pnpm test` on this checkout: **47 test files passed, 5 skipped; 569 tests passed, 42
-skipped.** The skipped suites are the ones guarded by `describe.skipIf(!probe.available)` —
-they need a reachable Postgres (`db-items`, `db-migrations`, `db-story-repository`,
-`pipeline-daily-run`, `web-queries`) or generated fixtures (`gold-isolation`).
+`pnpm test`: **53 files, 630 tests, all passing, none skipped.** The Postgres-backed
+suites run against the real database; `pnpm test` loads `.env` so they can, because
+a green run that silently skipped the whole data layer is worse than a red one.
 
-Synthetic acceptance: the `p11-b` experiment lineage has `overallPass: true` and an
-empty `failedGates` array for all three fixture days (2026-09-10, -11, -12), across
-15 recorded metrics — see `experiments/p11-b/<date>/<run-id>/evaluation.json`.
-`docs/PRODUCTION_PLAN.md` still carries this as WIP (0.6), and
-`docs/PHASE1_REPORT.md` documents the earlier lineage that failed two gates and why
-the policy was corrected; read both before treating the pass as settled.
+- **Synthetic acceptance:** `p11-b` passes every gate on all three fixture days —
+  `experiments/p11-b/<date>/<run-id>/evaluation.json`, and `docs/PHASE1_REPORT.md`
+  §11 for the before-and-after.
+- **Stability:** three independent lineages, core story selection 0.922 against a
+  0.85 gate — `docs/STABILITY_REPORT.md`.
+- **Model fallback:** validated live, not only in tests. A real primary session
+  decided 50 of 79 items, a quota failure was injected at the worker boundary, and a
+  fresh session on the second model finished the remaining 29.
+- **Live run:** one real end-to-end day, triggered through the installed
+  LaunchAgent — `docs/LIVE_RUN_REPORT.md`.
+- **Everything, in one table:** `docs/FINAL_ACCEPTANCE_REPORT.md`.
 
 ## Prerequisites
 

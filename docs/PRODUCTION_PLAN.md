@@ -15,10 +15,10 @@ Status values: `TODO` / `WIP` / `DONE` / `BLOCKED_EXTERNAL`
 | 0.3 | Policy document regression tests | DONE |
 | 0.4 | Policy behaviour regression tests (evaluator discriminates) | DONE |
 | 0.5 | Experiment-scoped lineage (`resolvePaths(root, experiment)`) | DONE |
-| 0.6 | Clean 3-day rerun, all gates PASS | WIP (p11-b; p11-a exposed a recall regression, policy corrected) |
-| 0.7 | Stability tooling + 3 lineages, selection Jaccard >= 0.85 | DONE (tooling; sweep pending) |
-| 0.8 | Fault injection capability + live fallback validation | DONE (capability; live validation pending) |
-| 0.9 | Initial git commit of verified prototype | TODO |
+| 0.6 | Clean 3-day rerun, all gates PASS | DONE (p11-b, 3/3 PASS; p11-a exposed a recall regression, policy corrected) |
+| 0.7 | Stability tooling + 3 lineages, selection Jaccard >= 0.85 | DONE (p11-b/c/d; 0.922) |
+| 0.8 | Fault injection capability + live fallback validation | DONE (live: 50/79 on the primary, 29 on the fallback) |
+| 0.9 | Initial git commit of verified prototype | DONE |
 
 ## Stage 1 — Contracts
 
@@ -47,34 +47,34 @@ Status values: `TODO` / `WIP` / `DONE` / `BLOCKED_EXTERNAL`
 | 3.1 | Production run state machine (CREATED..PUBLISHED + failures) | DONE |
 | 3.2 | `search_web` curator tool with budget limits | DONE |
 | 3.3 | Emerging signal persistence + lifecycle state | DONE |
-| 3.4 | Explainability trace (why an item did not reach the brief) | WIP |
+| 3.4 | Explainability trace (why an item did not reach the brief) | DONE (verified on live data) |
 | 3.5 | Publish path into Postgres | DONE |
 
 ## Stage 4 — Web
 
 | # | Task | Status |
 |---|---|---|
-| 4.1 | Next.js app + DB read layer (no LLM on request path) | TODO |
-| 4.2 | `/`, `/brief/[date]`, `/story/[id]`, `/history`, `/signals`, `/search` | TODO |
-| 4.3 | `/admin/runs`, `/admin/sources` | TODO |
-| 4.4 | FTS + pgvector search | TODO |
+| 4.1 | Next.js app + DB read layer (no LLM on request path) | DONE |
+| 4.2 | `/`, `/brief/[date]`, `/story/[id]`, `/history`, `/signals`, `/search` | DONE |
+| 4.3 | `/admin/runs`, `/admin/sources` | DONE (plus `/admin/item/[id]`) |
+| 4.4 | FTS + pgvector search | PARTIAL — FTS only. The `vector(1536)` column and its index exist; nothing computes an embedding yet |
 
 ## Stage 5 — Operations
 
 | # | Task | Status |
 |---|---|---|
-| 5.1 | LaunchAgent plist + install/uninstall scripts, `gui/<uid>` | DONE (install pending) |
+| 5.1 | LaunchAgent plist + install/uninstall scripts, `gui/<uid>` | DONE (installed and loaded) |
 | 5.2 | Backup/restore scripts + proven restore | DONE (restore proven) |
-| 5.3 | Health and observability surface | WIP |
+| 5.3 | Health and observability surface | DONE (`/admin`, `/admin/runs`, `/admin/sources`) |
 
 ## Stage 6 — Acceptance
 
 | # | Task | Status |
 |---|---|---|
-| 6.1 | Live end-to-end daily run on real sources | TODO |
-| 6.2 | Web acceptance | TODO |
-| 6.3 | LaunchAgent manual trigger acceptance | TODO |
-| 6.4 | `docs/FINAL_ACCEPTANCE_REPORT.md` | TODO |
+| 6.1 | Live end-to-end daily run on real sources | DONE — see `docs/LIVE_RUN_REPORT.md` |
+| 6.2 | Web acceptance | DONE — see `docs/FINAL_ACCEPTANCE_REPORT.md` |
+| 6.3 | LaunchAgent manual trigger acceptance | DONE — both agents kickstarted |
+| 6.4 | `docs/FINAL_ACCEPTANCE_REPORT.md` | DONE |
 
 ## Requires the user (collected here, raised at the end)
 
