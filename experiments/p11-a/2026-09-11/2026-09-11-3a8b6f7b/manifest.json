@@ -1,0 +1,1356 @@
+{
+  "date": "2026-09-11",
+  "generatedAt": "2026-09-11T23:59:00.000Z",
+  "items": [
+    {
+      "id": "itm-20260911-0001",
+      "sourceType": "github",
+      "sourceName": "github.com/registry-sec/advisories",
+      "title": "advisories: add GHSA entries for the nine affected plugins",
+      "summary": "Repository activity on registry-sec/advisories. Nine build plugins with a combined 4.2 million weekly downloads shipped a post-install script that exfiltrated CI environment variables to a single collector host for roughly nineteen hours.",
+      "content": "Repository activity on registry-sec/advisories. Nine build plugins with a combined 4.2 million weekly downloads shipped a post-install script that exfiltrated CI environment variables to a single collector host for roughly nineteen hours.\n\nThe malicious versions have been unpublished and the collector host is sinkholed.\n\nAny pipeline that installed in that window should treat its CI secrets as disclosed, which is a rotation task, not a patch task. Further reporting is expected as Registry Security and the affected downstream projects respond.",
+      "url": "https://github.com/registry-sec/advisories/issues/6078",
+      "publishedAt": "2026-09-11T06:07:00.000Z",
+      "metadata": {
+        "repo": "registry-sec/advisories",
+        "number": 3647,
+        "stars": 83268,
+        "openIssues": 445,
+        "labels": [
+          "needs-triage"
+        ],
+        "state": "open"
+      }
+    },
+    {
+      "id": "itm-20260911-0002",
+      "sourceType": "web",
+      "sourceName": "Halcyon Fusion Newsroom",
+      "title": "Halcyon Fusion closes Series D",
+      "summary": "Halcyon Fusion published this as a primary source document. Halcyon Fusion raised 1.4 billion dollars in a round that includes two utilities as strategic investors and a power purchase agreement contingent on delivery by 2031.",
+      "content": "Halcyon Fusion published this as a primary source document. Halcyon Fusion raised 1.4 billion dollars in a round that includes two utilities as strategic investors and a power purchase agreement contingent on delivery by 2031.\n\nThe company has not yet demonstrated net facility energy gain.\n\nA contingent power purchase agreement is a harder commitment than a funding round, and it is the first one attached to a fusion programme. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://halcyonfusionnewsroom.example.com/halcyon-fusion-closes-series-d",
+      "publishedAt": "2026-09-11T06:24:00.000Z",
+      "metadata": {
+        "author": "Halcyon Fusion Communications",
+        "wordCount": 1240
+      }
+    },
+    {
+      "id": "itm-20260911-0003",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Four vendors agreed on a tool-calling format, which is two more than I expected",
+      "summary": "Front page discussion thread. Four model vendors published a common wire format for tool invocation, including a capability negotiation handshake and a mandatory per-call resource budget field.",
+      "url": "https://news.ycombinator.com/item?id=41466491",
+      "publishedAt": "2026-09-11T06:49:00.000Z",
+      "metadata": {
+        "score": 647,
+        "commentCount": 632,
+        "hnId": 44778863,
+        "domain": "opentoolingconsortium.example.com"
+      }
+    },
+    {
+      "id": "itm-20260911-0004",
+      "sourceType": "rss",
+      "sourceName": "Stratechery",
+      "title": "Corvid Robotics talks with Talos fell apart weeks ago, people familiar say",
+      "summary": "Analysis from Stratechery. Both reports cannot be true, and the disagreement is about the present state of the deal rather than about details.",
+      "content": "Analysis from Stratechery. One outlet reports that Corvid Robotics has agreed to be acquired by Talos Industrial for about 4.1 billion dollars, while a second reports on its own sourcing that talks collapsed over indemnity terms three weeks ago.\n\nNeither company has filed or commented, and the two reports do not share a source.\n\nBoth reports cannot be true, and the disagreement is about the present state of the deal rather than about details. Further reporting is expected as Corvid Robotics and the affected downstream projects respond.",
+      "url": "https://stratechery.example.com/corvid-robotics-talks-with-talos-fell-apart-week",
+      "publishedAt": "2026-09-11T06:55:00.000Z",
+      "metadata": {
+        "author": "A. Ferreira",
+        "wordCount": 893,
+        "section": "markets"
+      }
+    },
+    {
+      "id": "itm-20260911-0005",
+      "sourceType": "fred",
+      "sourceName": "FRED",
+      "title": "ICSA: Initial Claims, week ending 2026-09-11",
+      "summary": "Series release from the FRED economic data service. Initial jobless claims printed at 221,000, inside the range of the past six weeks and consistent with an unchanged labour market.",
+      "content": "Series release from the FRED economic data service. Initial jobless claims printed at 221,000, inside the range of the past six weeks and consistent with an unchanged labour market.\n\nContext reported alongside the item is limited to what Department of Labor has said publicly so far.\n\nA print inside the recent range carries no new information for policy. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://fred.stlouisfed.org/release?rid=352",
+      "publishedAt": "2026-09-11T07:14:00.000Z",
+      "metadata": {
+        "seriesId": "CPILFESL",
+        "releaseName": "Department of Labor scheduled release",
+        "frequency": "Monthly"
+      }
+    },
+    {
+      "id": "itm-20260911-0006",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Why I switched my terminal font again",
+      "summary": "Personal blog post about editor aesthetics.",
+      "url": "https://hackernews.example.com/why-i-switched-my-terminal-font-again",
+      "publishedAt": "2026-09-11T07:17:00.000Z",
+      "metadata": {
+        "score": 152,
+        "commentCount": 122,
+        "hnId": 42122555
+      }
+    },
+    {
+      "id": "itm-20260911-0007",
+      "sourceType": "rss",
+      "sourceName": "Screen Report",
+      "title": "Box office: sequel opens softer than tracking suggested",
+      "summary": "Weekend box office figures for a film franchise.",
+      "url": "https://screenreport.example.com/box-office-sequel-opens-softer-than-tracking-sug",
+      "publishedAt": "2026-09-11T07:56:00.000Z",
+      "metadata": {
+        "author": "D. Moreau",
+        "wordCount": 851
+      }
+    },
+    {
+      "id": "itm-20260911-0008",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Avalanche slips 1.73% in quiet trading",
+      "summary": "Avalanche changed -1.73% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/avalanche",
+      "publishedAt": "2026-09-11T07:59:00.000Z",
+      "metadata": {
+        "symbol": "AVAX",
+        "priceUsd": 32.18,
+        "change24hPct": -1.73,
+        "marketCapUsd": 253083801721,
+        "volume24hUsd": 7422325006
+      }
+    },
+    {
+      "id": "itm-20260911-0009",
+      "sourceType": "web",
+      "sourceName": "Local Bulletin",
+      "title": "Weekend market returns to the town square",
+      "summary": "Community events notice.",
+      "url": "https://localbulletin.example.com/weekend-market-returns-to-the-town-square",
+      "publishedAt": "2026-09-11T08:01:00.000Z",
+      "metadata": {
+        "author": "H. Yilmaz",
+        "wordCount": 796
+      }
+    },
+    {
+      "id": "itm-20260911-0010",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Solana edges up 1.43% in quiet trading",
+      "summary": "Solana changed 1.43% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/solana",
+      "publishedAt": "2026-09-11T08:18:00.000Z",
+      "metadata": {
+        "symbol": "SOL",
+        "priceUsd": 189.07,
+        "change24hPct": 1.43,
+        "marketCapUsd": 9240289917,
+        "volume24hUsd": 33610492825
+      }
+    },
+    {
+      "id": "itm-20260911-0011",
+      "sourceType": "reddit",
+      "sourceName": "r/CryptoCurrency",
+      "title": "Withdrawal queue at Meridian is frozen, mine has been pending 9 hours",
+      "summary": "Community thread in r/CryptoCurrency. Meridian Exchange suspended all withdrawals after a reconciliation against its qualified custodian showed a 340 million dollar discrepancy between internal ledger balances and attested holdings.",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/2ntd/withdrawal-queue-at-meridian-is-frozen-mine-has-",
+      "publishedAt": "2026-09-11T08:46:00.000Z",
+      "metadata": {
+        "subreddit": "CryptoCurrency",
+        "upvotes": 5116,
+        "commentCount": 505,
+        "flair": "Discussion"
+      }
+    },
+    {
+      "id": "itm-20260911-0012",
+      "sourceType": "rss",
+      "sourceName": "Sports Desk",
+      "title": "Late equaliser keeps the title race alive going into the break",
+      "summary": "Match report from last night's fixture.",
+      "url": "https://sportsdesk.example.com/late-equaliser-keeps-the-title-race-alive-going-",
+      "publishedAt": "2026-09-11T08:53:00.000Z",
+      "metadata": {
+        "author": "D. Moreau",
+        "wordCount": 914
+      }
+    },
+    {
+      "id": "itm-20260911-0013",
+      "sourceType": "reddit",
+      "sourceName": "r/MachineLearning",
+      "title": "Paper discussion: is the 1-bit optimizer result going to survive 70B?",
+      "summary": "Community thread in r/MachineLearning. A preprint reports that a sign-based optimizer with per-tensor error feedback matches AdamW loss curves on a 13B-parameter run while holding optimizer state at one bit per parameter.",
+      "url": "https://reddit.com/r/MachineLearning/comments/f11k/paper-discussion-is-the-1-bit-optimizer-result-g",
+      "publishedAt": "2026-09-11T08:59:00.000Z",
+      "metadata": {
+        "subreddit": "MachineLearning",
+        "upvotes": 4195,
+        "commentCount": 494,
+        "flair": "Resource"
+      }
+    },
+    {
+      "id": "itm-20260911-0014",
+      "sourceType": "rss",
+      "sourceName": "Travel Notes",
+      "title": "A long weekend in a city you have probably overlooked",
+      "summary": "Destination piece with hotel and restaurant suggestions.",
+      "url": "https://travelnotes.example.com/a-long-weekend-in-a-city-you-have-probably-overl",
+      "publishedAt": "2026-09-11T09:03:00.000Z",
+      "metadata": {
+        "author": "P. Andersson",
+        "wordCount": 741
+      }
+    },
+    {
+      "id": "itm-20260911-0015",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "1-bit optimizer state that actually trains (paper)",
+      "summary": "Front page discussion thread. A preprint reports that a sign-based optimizer with per-tensor error feedback matches AdamW loss curves on a 13B-parameter run while holding optimizer state at one bit per parameter.",
+      "url": "https://news.ycombinator.com/item?id=41085406",
+      "publishedAt": "2026-09-11T09:53:00.000Z",
+      "metadata": {
+        "score": 699,
+        "commentCount": 74,
+        "hnId": 43677150,
+        "domain": "kestrelinstitute.example.com"
+      }
+    },
+    {
+      "id": "itm-20260911-0016",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "The offtake agreement matters more than the 1.4 billion",
+      "summary": "Front page discussion thread. Halcyon Fusion raised 1.4 billion dollars in a round that includes two utilities as strategic investors and a power purchase agreement contingent on delivery by 2031.",
+      "url": "https://news.ycombinator.com/item?id=42580460",
+      "publishedAt": "2026-09-11T09:58:00.000Z",
+      "metadata": {
+        "score": 1335,
+        "commentCount": 351,
+        "hnId": 42114142,
+        "domain": "halcyonfusion.example.com"
+      }
+    },
+    {
+      "id": "itm-20260911-0017",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Sable ORM data loss is confirmed and bisected to a 6.2.0 pool change",
+      "summary": "Front page discussion thread. A maintainer reproduced the fault, bisected it to a connection-release change shipped in 6.2.0, and eleven further organisations reported matching symptoms including two with confirmed production data loss.",
+      "url": "https://news.ycombinator.com/item?id=43610051",
+      "publishedAt": "2026-09-11T10:07:00.000Z",
+      "metadata": {
+        "score": 689,
+        "commentCount": 460,
+        "hnId": 44871875,
+        "domain": "sable.example.com"
+      }
+    },
+    {
+      "id": "itm-20260911-0018",
+      "sourceType": "rss",
+      "sourceName": "Travel Notes",
+      "title": "Airline adds a seasonal route for the winter schedule",
+      "summary": "Route announcement for leisure travellers.",
+      "url": "https://travelnotes.example.com/airline-adds-a-seasonal-route-for-the-winter-sch",
+      "publishedAt": "2026-09-11T10:08:00.000Z",
+      "metadata": {
+        "author": "P. Andersson",
+        "wordCount": 1249
+      }
+    },
+    {
+      "id": "itm-20260911-0019",
+      "sourceType": "reddit",
+      "sourceName": "r/energy",
+      "title": "Northern Grid's new 200MW+ tariff has curtailment clauses buried in it",
+      "summary": "Community thread in r/energy. Northern Grid filed a tariff creating a separate interconnection track for loads above 200 megawatts, with curtailment obligations attached.",
+      "url": "https://reddit.com/r/energy/comments/jq0z/northern-grid-s-new-200mw-tariff-has-curtailment",
+      "publishedAt": "2026-09-11T10:23:00.000Z",
+      "metadata": {
+        "subreddit": "energy",
+        "upvotes": 5257,
+        "commentCount": 111,
+        "flair": "Resource"
+      }
+    },
+    {
+      "id": "itm-20260911-0020",
+      "sourceType": "rss",
+      "sourceName": "BleepingComputer",
+      "title": "Build plugin compromise exposes CI credentials",
+      "summary": "Reporting from BleepingComputer. Nine build plugins with a combined 4.2 million weekly downloads shipped a post-install script that exfiltrated CI environment variables to a single collector host for roughly nineteen hours.",
+      "content": "Reporting from BleepingComputer. Nine build plugins with a combined 4.2 million weekly downloads shipped a post-install script that exfiltrated CI environment variables to a single collector host for roughly nineteen hours.\n\nThe malicious versions have been unpublished and the collector host is sinkholed.\n\nAny pipeline that installed in that window should treat its CI secrets as disclosed, which is a rotation task, not a patch task. Further reporting is expected as Registry Security and the affected downstream projects respond.",
+      "url": "https://bleepingcomputer.example.com/build-plugin-compromise-exposes-ci-credentials",
+      "publishedAt": "2026-09-11T10:24:00.000Z",
+      "metadata": {
+        "author": "A. Ferreira",
+        "wordCount": 1814,
+        "section": "business"
+      }
+    },
+    {
+      "id": "itm-20260911-0021",
+      "sourceType": "reddit",
+      "sourceName": "r/investing",
+      "title": "Which Corvid Robotics report do we believe?",
+      "summary": "Community thread in r/investing. One outlet reports that Corvid Robotics has agreed to be acquired by Talos Industrial for about 4.1 billion dollars, while a second reports on its own sourcing that talks collapsed over indemnity terms three weeks ago.",
+      "url": "https://reddit.com/r/investing/comments/h99d/which-corvid-robotics-report-do-we-believe",
+      "publishedAt": "2026-09-11T10:34:00.000Z",
+      "metadata": {
+        "subreddit": "investing",
+        "upvotes": 8321,
+        "commentCount": 212,
+        "flair": "News"
+      }
+    },
+    {
+      "id": "itm-20260911-0022",
+      "sourceType": "reddit",
+      "sourceName": "r/LocalLLaMA",
+      "title": "OTP 1.0 read-through: the resource budget field is the interesting bit",
+      "summary": "Community thread in r/LocalLLaMA. Four model vendors published a common wire format for tool invocation, including a capability negotiation handshake and a mandatory per-call resource budget field.",
+      "url": "https://reddit.com/r/LocalLLaMA/comments/gk9v/otp-1-0-read-through-the-resource-budget-field-i",
+      "publishedAt": "2026-09-11T10:40:00.000Z",
+      "metadata": {
+        "subreddit": "LocalLLaMA",
+        "upvotes": 7021,
+        "commentCount": 265,
+        "flair": "Resource"
+      }
+    },
+    {
+      "id": "itm-20260911-0023",
+      "sourceType": "rss",
+      "sourceName": "Politico",
+      "title": "Brussels sets the line between deployer and provider",
+      "summary": "Reporting from Politico. The guidance sets a compute threshold for systemic-risk classification, requires an incident register with fourteen-day reporting, and defines what counts as a substantial modification by a downstream deployer.",
+      "content": "Reporting from Politico. The guidance sets a compute threshold for systemic-risk classification, requires an incident register with fourteen-day reporting, and defines what counts as a substantial modification by a downstream deployer.\n\nThe guidance applies from January and there is no transition period for the incident register.\n\nThe substantial-modification definition is what determines whether a company fine-tuning a model inherits the original provider's obligations. Further reporting is expected as European Commission and the affected downstream projects respond.",
+      "url": "https://politico.example.com/brussels-sets-the-line-between-deployer-and-prov",
+      "publishedAt": "2026-09-11T10:41:00.000Z",
+      "metadata": {
+        "author": "J. Okonkwo",
+        "wordCount": 1412,
+        "section": "technology"
+      }
+    },
+    {
+      "id": "itm-20260911-0024",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Ask HN: what chair are you using?",
+      "summary": "Recurring low-signal furniture thread.",
+      "url": "https://hackernews.example.com/ask-hn-what-chair-are-you-using",
+      "publishedAt": "2026-09-11T10:43:00.000Z",
+      "metadata": {
+        "score": 217,
+        "commentCount": 13,
+        "hnId": 42793003
+      }
+    },
+    {
+      "id": "itm-20260911-0025",
+      "sourceType": "rss",
+      "sourceName": "Bloomberg",
+      "title": "Talos Industrial nears 4.1 billion dollar deal for Corvid Robotics",
+      "summary": "Reporting from Bloomberg. One outlet reports that Corvid Robotics has agreed to be acquired by Talos Industrial for about 4.1 billion dollars, while a second reports on its own sourcing that talks collapsed over indemnity terms three weeks ago.",
+      "content": "Reporting from Bloomberg. One outlet reports that Corvid Robotics has agreed to be acquired by Talos Industrial for about 4.1 billion dollars, while a second reports on its own sourcing that talks collapsed over indemnity terms three weeks ago.\n\nNeither company has filed or commented, and the two reports do not share a source.\n\nBoth reports cannot be true, and the disagreement is about the present state of the deal rather than about details. Further reporting is expected as Corvid Robotics and the affected downstream projects respond.",
+      "url": "https://bloomberg.example.com/talos-industrial-nears-4-1-billion-dollar-deal-f",
+      "publishedAt": "2026-09-11T10:47:00.000Z",
+      "metadata": {
+        "author": "J. Okonkwo",
+        "wordCount": 674,
+        "section": "policy"
+      }
+    },
+    {
+      "id": "itm-20260911-0026",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Dogecoin edges up 3.01% in quiet trading",
+      "summary": "Dogecoin changed 3.01% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/dogecoin",
+      "publishedAt": "2026-09-11T10:52:00.000Z",
+      "metadata": {
+        "symbol": "DOGE",
+        "priceUsd": 0.1926,
+        "change24hPct": 3.01,
+        "marketCapUsd": 1064943991361,
+        "volume24hUsd": 5237492226
+      }
+    },
+    {
+      "id": "itm-20260911-0027",
+      "sourceType": "sec",
+      "sourceName": "SEC EDGAR",
+      "title": "Ashgrove Utilities Corp. Form 8-K, Item 8.01 dividend declaration",
+      "summary": "Filing text from EDGAR. Ashgrove Utilities filed an 8-K declaring a quarterly dividend of 0.44 dollars per share, payable next quarter to holders of record at month end.",
+      "content": "Filing text from EDGAR. Ashgrove Utilities filed an 8-K declaring a quarterly dividend of 0.44 dollars per share, payable next quarter to holders of record at month end.\n\nContext reported alongside the item is limited to what Ashgrove Utilities has said publicly so far.\n\nA dividend declaration in line with the prior quarter is administrative, not informative. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://sec.gov/Archives/edgar/data/1693430/ashgrove-utilities-corp-form-8-k-item-8-01-divid.htm",
+      "publishedAt": "2026-09-11T11:01:00.000Z",
+      "metadata": {
+        "cik": "1638761",
+        "formType": "10-Q",
+        "ticker": "ASHG"
+      }
+    },
+    {
+      "id": "itm-20260911-0028",
+      "sourceType": "arxiv",
+      "sourceName": "arXiv cs.LG",
+      "title": "Kinematics-conditioned policies transfer across robot embodiments zero-shot",
+      "summary": "Preprint posted to arXiv. A single policy conditioned on a kinematic description transfers across five distinct arms, retaining 88% of single-embodiment success on unseen hardware with no fine-tuning.",
+      "content": "Preprint posted to arXiv. A single policy conditioned on a kinematic description transfers across five distinct arms, retaining 88% of single-embodiment success on unseen hardware with no fine-tuning.\n\nAll five arms are 6 or 7 degree-of-freedom; no mobile or bimanual results are reported.\n\nCross-embodiment transfer at that retention rate makes a shared manipulation dataset worth building, which it previously was not. Further reporting is expected as Ridgeway University and the affected downstream projects respond.",
+      "url": "https://arxiv.org/abs/2609.03495",
+      "publishedAt": "2026-09-11T11:18:00.000Z",
+      "metadata": {
+        "arxivId": "2609.15822",
+        "primaryCategory": "cs.LG",
+        "authorCount": 7,
+        "version": 1
+      }
+    },
+    {
+      "id": "itm-20260911-0029",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Bitcoin slips 2.31% in quiet trading",
+      "summary": "Bitcoin changed -2.31% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/bitcoin",
+      "publishedAt": "2026-09-11T11:20:00.000Z",
+      "metadata": {
+        "symbol": "BTC",
+        "priceUsd": 69594.36,
+        "change24hPct": -2.31,
+        "marketCapUsd": 315272737574,
+        "volume24hUsd": 8779045446
+      }
+    },
+    {
+      "id": "itm-20260911-0030",
+      "sourceType": "arxiv",
+      "sourceName": "arXiv cs.LG",
+      "title": "Sign-SGD with per-tensor error feedback matches AdamW at 1-bit optimizer state",
+      "summary": "Preprint posted to arXiv. A preprint reports that a sign-based optimizer with per-tensor error feedback matches AdamW loss curves on a 13B-parameter run while holding optimizer state at one bit per parameter.",
+      "content": "Preprint posted to arXiv. A preprint reports that a sign-based optimizer with per-tensor error feedback matches AdamW loss curves on a 13B-parameter run while holding optimizer state at one bit per parameter.\n\nThe largest reported run is 13B parameters over 400B tokens; no 70B result is included.\n\nIf it replicates at larger scale, it removes roughly two thirds of optimizer memory and changes how much model fits on a fixed accelerator budget. Further reporting is expected as Kestrel Institute and the affected downstream projects respond.",
+      "url": "https://arxiv.org/abs/2609.02591",
+      "publishedAt": "2026-09-11T11:36:00.000Z",
+      "metadata": {
+        "arxivId": "2609.18815",
+        "primaryCategory": "quant-ph",
+        "authorCount": 5,
+        "version": 1
+      }
+    },
+    {
+      "id": "itm-20260911-0031",
+      "sourceType": "rss",
+      "sourceName": "Reuters",
+      "title": "Lumen takes 1.8 billion dollar hit, slashes capex guidance",
+      "summary": "Reporting from Reuters. Lumen Fabrication filed an 8-K disclosing a 1.8 billion dollar impairment against its 3nm capacity expansion and cut full-year capital expenditure guidance to 6.2 billion dollars from 8.4 billion.",
+      "content": "Reporting from Reuters. Lumen Fabrication filed an 8-K disclosing a 1.8 billion dollar impairment against its 3nm capacity expansion and cut full-year capital expenditure guidance to 6.2 billion dollars from 8.4 billion.\n\nThe filing attributes the impairment to a single customer's cancelled multi-year commitment.\n\nA capex cut of that size from a leading-edge foundry is a demand signal for everyone downstream of it, not just a Lumen story. Further reporting is expected as Lumen Fabrication and the affected downstream projects respond.",
+      "url": "https://reuters.example.com/lumen-takes-1-8-billion-dollar-hit-slashes-capex",
+      "publishedAt": "2026-09-11T11:43:00.000Z",
+      "metadata": {
+        "author": "J. Okonkwo",
+        "wordCount": 532,
+        "section": "markets"
+      }
+    },
+    {
+      "id": "itm-20260911-0032",
+      "sourceType": "rss",
+      "sourceName": "MarketWatch",
+      "title": "Jobless claims little changed at 221,000",
+      "summary": "Reporting from MarketWatch. Initial jobless claims printed at 221,000, inside the range of the past six weeks and consistent with an unchanged labour market.",
+      "content": "Reporting from MarketWatch. Initial jobless claims printed at 221,000, inside the range of the past six weeks and consistent with an unchanged labour market.\n\nContext reported alongside the item is limited to what Department of Labor has said publicly so far.\n\nA print inside the recent range carries no new information for policy. Further reporting is expected as Department of Labor and the affected downstream projects respond.",
+      "url": "https://marketwatch.example.com/jobless-claims-little-changed-at-221-000",
+      "publishedAt": "2026-09-11T11:44:00.000Z",
+      "metadata": {
+        "author": "T. Abadi",
+        "wordCount": 1625,
+        "section": "markets"
+      }
+    },
+    {
+      "id": "itm-20260911-0033",
+      "sourceType": "rss",
+      "sourceName": "Gardening Monthly",
+      "title": "What to plant now for an early spring",
+      "summary": "Seasonal planting calendar.",
+      "url": "https://gardeningmonthly.example.com/what-to-plant-now-for-an-early-spring",
+      "publishedAt": "2026-09-11T11:46:00.000Z",
+      "metadata": {
+        "author": "H. Yilmaz",
+        "wordCount": 473
+      }
+    },
+    {
+      "id": "itm-20260911-0034",
+      "sourceType": "semantic-scholar",
+      "sourceName": "Semantic Scholar",
+      "title": "Low-precision optimizer state for large-scale pretraining",
+      "summary": "Indexed bibliographic record. A preprint reports that a sign-based optimizer with per-tensor error feedback matches AdamW loss curves on a 13B-parameter run while holding optimizer state at one bit per parameter.",
+      "url": "https://semanticscholar.org/paper/3765fd22",
+      "publishedAt": "2026-09-11T12:11:00.000Z",
+      "metadata": {
+        "citationCount": 2,
+        "influentialCitationCount": 1,
+        "fieldsOfStudy": [
+          "Computer Science"
+        ]
+      }
+    },
+    {
+      "id": "itm-20260911-0035",
+      "sourceType": "rss",
+      "sourceName": "InfoQ",
+      "title": "Sable ORM data-loss bug widens as maintainers confirm regression",
+      "summary": "Reporting from InfoQ. A maintainer reproduced the fault, bisected it to a connection-release change shipped in 6.2.0, and eleven further organisations reported matching symptoms including two with confirmed production data loss.",
+      "content": "Reporting from InfoQ. A maintainer reproduced the fault, bisected it to a connection-release change shipped in 6.2.0, and eleven further organisations reported matching symptoms including two with confirmed production data loss.\n\nA CVE request is open and the maintainers have advised against upgrading until a patch lands.\n\nThe blast radius is now every 6.2.x deployment using batched writes, not a single misconfigured pool, and there is no workaround other than pinning to 6.1.9. Further reporting is expected as Sable and the affected downstream projects respond.",
+      "url": "https://infoq.example.com/sable-orm-data-loss-bug-widens-as-maintainers-co",
+      "publishedAt": "2026-09-11T12:25:00.000Z",
+      "metadata": {
+        "author": "A. Ferreira",
+        "wordCount": 1375,
+        "section": "markets"
+      }
+    },
+    {
+      "id": "itm-20260911-0036",
+      "sourceType": "semantic-scholar",
+      "sourceName": "Semantic Scholar",
+      "title": "Zero-shot cross-embodiment manipulation transfer",
+      "summary": "Indexed bibliographic record. A single policy conditioned on a kinematic description transfers across five distinct arms, retaining 88% of single-embodiment success on unseen hardware with no fine-tuning.",
+      "url": "https://semanticscholar.org/paper/25b0302e",
+      "publishedAt": "2026-09-11T12:42:00.000Z",
+      "metadata": {
+        "citationCount": 13,
+        "influentialCitationCount": 3,
+        "fieldsOfStudy": [
+          "Computer Science"
+        ]
+      }
+    },
+    {
+      "id": "itm-20260911-0037",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "88% zero-shot transfer across five arms",
+      "summary": "Front page discussion thread. A single policy conditioned on a kinematic description transfers across five distinct arms, retaining 88% of single-embodiment success on unseen hardware with no fine-tuning.",
+      "url": "https://news.ycombinator.com/item?id=43005110",
+      "publishedAt": "2026-09-11T12:46:00.000Z",
+      "metadata": {
+        "score": 1150,
+        "commentCount": 469,
+        "hnId": 42766762,
+        "domain": "ridgewayuniversity.example.com"
+      }
+    },
+    {
+      "id": "itm-20260911-0038",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Ethereum edges up 0.62% in quiet trading",
+      "summary": "Ethereum changed 0.62% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/ethereum",
+      "publishedAt": "2026-09-11T13:01:00.000Z",
+      "metadata": {
+        "symbol": "ETH",
+        "priceUsd": 3833.62,
+        "change24hPct": 0.62,
+        "marketCapUsd": 1159944077409,
+        "volume24hUsd": 33138079054
+      }
+    },
+    {
+      "id": "itm-20260911-0039",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Show HN: we rewrote Halyard's scheduler and the p99 dropped 70%",
+      "summary": "Front page discussion thread. Halyard 2.0 replaces the cooperative scheduler with a work-stealing runtime, freezes the plugin ABI for the 2.x line, and removes the deprecated YAML v1 pipeline format.",
+      "url": "https://news.ycombinator.com/item?id=43412760",
+      "publishedAt": "2026-09-11T13:05:00.000Z",
+      "metadata": {
+        "score": 323,
+        "commentCount": 13,
+        "hnId": 44302108,
+        "domain": "halyard.example.com"
+      }
+    },
+    {
+      "id": "itm-20260911-0040",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Chainlink slips 1.64% in quiet trading",
+      "summary": "Chainlink changed -1.64% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/chainlink",
+      "publishedAt": "2026-09-11T13:21:00.000Z",
+      "metadata": {
+        "symbol": "LINK",
+        "priceUsd": 18.77,
+        "change24hPct": -1.64,
+        "marketCapUsd": 379539725717,
+        "volume24hUsd": 38665573686
+      }
+    },
+    {
+      "id": "itm-20260911-0041",
+      "sourceType": "github",
+      "sourceName": "github.com/sable-data/sable-orm",
+      "title": "Maintainer confirmation + bisect: regression introduced by #7741 connection release",
+      "summary": "Repository activity on sable-data/sable-orm. A maintainer reproduced the fault, bisected it to a connection-release change shipped in 6.2.0, and eleven further organisations reported matching symptoms including two with confirmed production data loss.",
+      "content": "Repository activity on sable-data/sable-orm. A maintainer reproduced the fault, bisected it to a connection-release change shipped in 6.2.0, and eleven further organisations reported matching symptoms including two with confirmed production data loss.\n\nA CVE request is open and the maintainers have advised against upgrading until a patch lands.\n\nThe blast radius is now every 6.2.x deployment using batched writes, not a single misconfigured pool, and there is no workaround other than pinning to 6.1.9. Further reporting is expected as Sable and the affected downstream projects respond.",
+      "url": "https://github.com/sable-data/sable-orm/issues/3733",
+      "publishedAt": "2026-09-11T13:51:00.000Z",
+      "metadata": {
+        "repo": "sable-data/sable-orm",
+        "number": 3908,
+        "stars": 6143,
+        "openIssues": 734,
+        "labels": [
+          "regression"
+        ],
+        "state": "closed"
+      }
+    },
+    {
+      "id": "itm-20260911-0042",
+      "sourceType": "web",
+      "sourceName": "Listicle Central",
+      "title": "The ultimate guide to organising a small wardrobe",
+      "summary": "Storage and decluttering advice.",
+      "url": "https://listiclecentral.example.com/the-ultimate-guide-to-organising-a-small-wardrob",
+      "publishedAt": "2026-09-11T14:00:00.000Z",
+      "metadata": {
+        "author": "L. Rossi",
+        "wordCount": 490
+      }
+    },
+    {
+      "id": "itm-20260911-0043",
+      "sourceType": "rss",
+      "sourceName": "PR Newswire",
+      "title": "Ashgrove Utilities declares quarterly dividend of 0.44 dollars",
+      "summary": "Reporting from PR Newswire. Ashgrove Utilities filed an 8-K declaring a quarterly dividend of 0.44 dollars per share, payable next quarter to holders of record at month end.",
+      "content": "Reporting from PR Newswire. Ashgrove Utilities filed an 8-K declaring a quarterly dividend of 0.44 dollars per share, payable next quarter to holders of record at month end.\n\nContext reported alongside the item is limited to what Ashgrove Utilities has said publicly so far.\n\nA dividend declaration in line with the prior quarter is administrative, not informative. Further reporting is expected as Ashgrove Utilities and the affected downstream projects respond.",
+      "url": "https://prnewswire.example.com/ashgrove-utilities-declares-quarterly-dividend-o",
+      "publishedAt": "2026-09-11T14:22:00.000Z",
+      "metadata": {
+        "author": "T. Abadi",
+        "wordCount": 1749,
+        "section": "business"
+      }
+    },
+    {
+      "id": "itm-20260911-0044",
+      "sourceType": "github",
+      "sourceName": "github.com/open-tooling/otp-spec",
+      "title": "otp-spec: 1.0 release with capability negotiation and resource budgets",
+      "summary": "Repository activity on open-tooling/otp-spec. Four model vendors published a common wire format for tool invocation, including a capability negotiation handshake and a mandatory per-call resource budget field.",
+      "content": "Repository activity on open-tooling/otp-spec. Four model vendors published a common wire format for tool invocation, including a capability negotiation handshake and a mandatory per-call resource budget field.\n\nTwo of the four have shipped implementations; the other two list it as planned.\n\nA shared wire format removes the per-vendor adapter layer that every agent framework currently maintains, if the vendors actually ship it. Further reporting is expected as Open Tooling Consortium and the affected downstream projects respond.",
+      "url": "https://github.com/open-tooling/otp-spec/issues/6114",
+      "publishedAt": "2026-09-11T14:25:00.000Z",
+      "metadata": {
+        "repo": "open-tooling/otp-spec",
+        "number": 5285,
+        "stars": 91277,
+        "openIssues": 263,
+        "labels": [
+          "enhancement"
+        ],
+        "state": "closed"
+      }
+    },
+    {
+      "id": "itm-20260911-0045",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Meridian long-context rumour roundup (mostly recycled)",
+      "summary": "Front page discussion thread. A follow-up write-up restates yesterday's sourcing without adding a named source, a benchmark, a date or a price, and the aggregator threads simply relink the original report.",
+      "url": "https://news.ycombinator.com/item?id=41447096",
+      "publishedAt": "2026-09-11T14:49:00.000Z",
+      "metadata": {
+        "score": 276,
+        "commentCount": 246,
+        "hnId": 43399688,
+        "domain": "meridianlabs.example.com"
+      }
+    },
+    {
+      "id": "itm-20260911-0046",
+      "sourceType": "rss",
+      "sourceName": "VentureBeat",
+      "title": "What we know so far about Meridian's rumoured flagship",
+      "summary": "Reporting from VentureBeat. A follow-up write-up restates yesterday's sourcing without adding a named source, a benchmark, a date or a price, and the aggregator threads simply relink the original report.",
+      "content": "Reporting from VentureBeat. A follow-up write-up restates yesterday's sourcing without adding a named source, a benchmark, a date or a price, and the aggregator threads simply relink the original report.\n\nMeridian Labs again declined to comment when contacted for this piece.\n\nThe state of knowledge is unchanged: there is still no primary artifact, so the story should not advance in the ledger. Further reporting is expected as Meridian Labs and the affected downstream projects respond.",
+      "url": "https://venturebeat.example.com/what-we-know-so-far-about-meridian-s-rumoured-fl",
+      "publishedAt": "2026-09-11T14:58:00.000Z",
+      "metadata": {
+        "author": "T. Abadi",
+        "wordCount": 1946,
+        "section": "policy"
+      }
+    },
+    {
+      "id": "itm-20260911-0047",
+      "sourceType": "reddit",
+      "sourceName": "r/LocalLLaMA",
+      "title": "Daily discussion: still no Meridian 3 announcement",
+      "summary": "Community thread in r/LocalLLaMA. A follow-up write-up restates yesterday's sourcing without adding a named source, a benchmark, a date or a price, and the aggregator threads simply relink the original report.",
+      "url": "https://reddit.com/r/LocalLLaMA/comments/ji4j/daily-discussion-still-no-meridian-3-announcemen",
+      "publishedAt": "2026-09-11T15:00:00.000Z",
+      "metadata": {
+        "subreddit": "LocalLLaMA",
+        "upvotes": 2974,
+        "commentCount": 498,
+        "flair": "Discussion"
+      }
+    },
+    {
+      "id": "itm-20260911-0048",
+      "sourceType": "reddit",
+      "sourceName": "r/food",
+      "title": "Made pasta from scratch for the first time",
+      "summary": "Photo post of a home-cooked meal.",
+      "url": "https://rfood.example.com/made-pasta-from-scratch-for-the-first-time",
+      "publishedAt": "2026-09-11T15:05:00.000Z",
+      "metadata": {
+        "subreddit": "food",
+        "upvotes": 23442,
+        "commentCount": 1035
+      }
+    },
+    {
+      "id": "itm-20260911-0049",
+      "sourceType": "github",
+      "sourceName": "github.com/halyard/halyard-power",
+      "title": "halyard-power: rack power budget as a schedulable resource",
+      "summary": "Repository activity on halyard/halyard-power. A new placement plugin lets operators express a rack power budget as a first-class scheduling constraint alongside CPU and memory.",
+      "content": "Repository activity on halyard/halyard-power. A new placement plugin lets operators express a rack power budget as a first-class scheduling constraint alongside CPU and memory.\n\nContext reported alongside the item is limited to what Halyard has said publicly so far.\n\nPower is being promoted from a facilities concern to a scheduling primitive. Further reporting is expected as Halyard and the affected downstream projects respond.",
+      "url": "https://github.com/halyard/halyard-power/issues/5933",
+      "publishedAt": "2026-09-11T15:06:00.000Z",
+      "metadata": {
+        "repo": "halyard/halyard-power",
+        "number": 4845,
+        "stars": 68820,
+        "openIssues": 1172,
+        "labels": [
+          "regression"
+        ],
+        "state": "open"
+      }
+    },
+    {
+      "id": "itm-20260911-0050",
+      "sourceType": "reddit",
+      "sourceName": "r/gamedev",
+      "title": "Basalt revenue-share licence: gathering what we actually know",
+      "summary": "Community thread in r/gamedev. The licence claim recirculates in a new thread, still sourced to the same unnamed partner call and still contradicted by nobody on the record.",
+      "url": "https://reddit.com/r/gamedev/comments/g4eu/basalt-revenue-share-licence-gathering-what-we-a",
+      "publishedAt": "2026-09-11T15:19:00.000Z",
+      "metadata": {
+        "subreddit": "gamedev",
+        "upvotes": 1981,
+        "commentCount": 226,
+        "flair": "Resource"
+      }
+    },
+    {
+      "id": "itm-20260911-0051",
+      "sourceType": "rss",
+      "sourceName": "Lifestyle Daily",
+      "title": "Nine sheet-pan dinners that take under thirty minutes",
+      "summary": "Seasonal recipe roundup aimed at weeknight cooking.",
+      "url": "https://lifestyledaily.example.com/nine-sheet-pan-dinners-that-take-under-thirty-mi",
+      "publishedAt": "2026-09-11T15:23:00.000Z",
+      "metadata": {
+        "author": "L. Rossi",
+        "wordCount": 1240
+      }
+    },
+    {
+      "id": "itm-20260911-0052",
+      "sourceType": "reddit",
+      "sourceName": "r/devops",
+      "title": "Halyard 2.0 migration: the YAML v1 removal is going to hurt",
+      "summary": "Community thread in r/devops. Halyard 2.0 replaces the cooperative scheduler with a work-stealing runtime, freezes the plugin ABI for the 2.x line, and removes the deprecated YAML v1 pipeline format.",
+      "url": "https://reddit.com/r/devops/comments/dgox/halyard-2-0-migration-the-yaml-v1-removal-is-goi",
+      "publishedAt": "2026-09-11T15:28:00.000Z",
+      "metadata": {
+        "subreddit": "devops",
+        "upvotes": 6884,
+        "commentCount": 275,
+        "flair": "News"
+      }
+    },
+    {
+      "id": "itm-20260911-0053",
+      "sourceType": "rss",
+      "sourceName": "The New Stack",
+      "title": "Halyard 2.0 lands with a stable plugin interface",
+      "summary": "Reporting from The New Stack. Halyard 2.0 replaces the cooperative scheduler with a work-stealing runtime, freezes the plugin ABI for the 2.x line, and removes the deprecated YAML v1 pipeline format.",
+      "content": "Reporting from The New Stack. Halyard 2.0 replaces the cooperative scheduler with a work-stealing runtime, freezes the plugin ABI for the 2.x line, and removes the deprecated YAML v1 pipeline format.\n\nMigration from v1 pipelines requires a one-way conversion tool shipped alongside the release.\n\nThe ABI freeze is what unblocks third-party plugin authors who have been rebuilding against every minor release for two years. Further reporting is expected as Halyard and the affected downstream projects respond.",
+      "url": "https://thenewstack.example.com/halyard-2-0-lands-with-a-stable-plugin-interface",
+      "publishedAt": "2026-09-11T15:48:00.000Z",
+      "metadata": {
+        "author": "J. Okonkwo",
+        "wordCount": 1929,
+        "section": "technology"
+      }
+    },
+    {
+      "id": "itm-20260911-0054",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Lumen's 8-K reads like a demand warning for the whole node",
+      "summary": "Front page discussion thread. Lumen Fabrication filed an 8-K disclosing a 1.8 billion dollar impairment against its 3nm capacity expansion and cut full-year capital expenditure guidance to 6.2 billion dollars from 8.4 billion.",
+      "url": "https://news.ycombinator.com/item?id=41301089",
+      "publishedAt": "2026-09-11T15:49:00.000Z",
+      "metadata": {
+        "score": 537,
+        "commentCount": 576,
+        "hnId": 41668595,
+        "domain": "lumenfabrication.example.com"
+      }
+    },
+    {
+      "id": "itm-20260911-0055",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Nineteen hours of CI secrets went to one collector host",
+      "summary": "Front page discussion thread. Nine build plugins with a combined 4.2 million weekly downloads shipped a post-install script that exfiltrated CI environment variables to a single collector host for roughly nineteen hours.",
+      "url": "https://news.ycombinator.com/item?id=42737090",
+      "publishedAt": "2026-09-11T15:52:00.000Z",
+      "metadata": {
+        "score": 347,
+        "commentCount": 474,
+        "hnId": 44570171,
+        "domain": "registrysecurity.example.com"
+      }
+    },
+    {
+      "id": "itm-20260911-0056",
+      "sourceType": "rss",
+      "sourceName": "Financial Times",
+      "title": "Utilities back fusion developer with contingent offtake deal",
+      "summary": "Reporting from Financial Times. Halcyon Fusion raised 1.4 billion dollars in a round that includes two utilities as strategic investors and a power purchase agreement contingent on delivery by 2031.",
+      "content": "Reporting from Financial Times. Halcyon Fusion raised 1.4 billion dollars in a round that includes two utilities as strategic investors and a power purchase agreement contingent on delivery by 2031.\n\nThe company has not yet demonstrated net facility energy gain.\n\nA contingent power purchase agreement is a harder commitment than a funding round, and it is the first one attached to a fusion programme. Further reporting is expected as Halcyon Fusion and the affected downstream projects respond.",
+      "url": "https://financialtimes.example.com/utilities-back-fusion-developer-with-contingent-",
+      "publishedAt": "2026-09-11T15:57:00.000Z",
+      "metadata": {
+        "author": "R. Delacroix",
+        "wordCount": 2251,
+        "section": "markets"
+      }
+    },
+    {
+      "id": "itm-20260911-0057",
+      "sourceType": "web",
+      "sourceName": "Registry Security Newsroom",
+      "title": "Advisory: malicious post-install scripts in nine build plugins",
+      "summary": "Registry Security published this as a primary source document. Nine build plugins with a combined 4.2 million weekly downloads shipped a post-install script that exfiltrated CI environment variables to a single collector host for roughly nineteen hours.",
+      "content": "Registry Security published this as a primary source document. Nine build plugins with a combined 4.2 million weekly downloads shipped a post-install script that exfiltrated CI environment variables to a single collector host for roughly nineteen hours.\n\nThe malicious versions have been unpublished and the collector host is sinkholed.\n\nAny pipeline that installed in that window should treat its CI secrets as disclosed, which is a rotation task, not a patch task. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://registrysecuritynewsroom.example.com/advisory-malicious-post-install-scripts-in-nine-",
+      "publishedAt": "2026-09-11T15:58:00.000Z",
+      "metadata": {
+        "author": "Registry Security Communications",
+        "wordCount": 378
+      }
+    },
+    {
+      "id": "itm-20260911-0058",
+      "sourceType": "rss",
+      "sourceName": "Sports Desk",
+      "title": "Marathon organisers announce a new qualifying window",
+      "summary": "Amateur athletics scheduling notice.",
+      "url": "https://sportsdesk.example.com/marathon-organisers-announce-a-new-qualifying-wi",
+      "publishedAt": "2026-09-11T16:12:00.000Z",
+      "metadata": {
+        "author": "H. Yilmaz",
+        "wordCount": 445
+      }
+    },
+    {
+      "id": "itm-20260911-0059",
+      "sourceType": "rss",
+      "sourceName": "Stratechery",
+      "title": "What Lumen's capex cut says about leading-edge demand",
+      "summary": "Analysis from Stratechery. A capex cut of that size from a leading-edge foundry is a demand signal for everyone downstream of it, not just a Lumen story.",
+      "content": "Analysis from Stratechery. Lumen Fabrication filed an 8-K disclosing a 1.8 billion dollar impairment against its 3nm capacity expansion and cut full-year capital expenditure guidance to 6.2 billion dollars from 8.4 billion.\n\nThe filing attributes the impairment to a single customer's cancelled multi-year commitment.\n\nA capex cut of that size from a leading-edge foundry is a demand signal for everyone downstream of it, not just a Lumen story. Further reporting is expected as Lumen Fabrication and the affected downstream projects respond.",
+      "url": "https://stratechery.example.com/what-lumen-s-capex-cut-says-about-leading-edge-d",
+      "publishedAt": "2026-09-11T16:19:00.000Z",
+      "metadata": {
+        "author": "A. Ferreira",
+        "wordCount": 1888,
+        "section": "business"
+      }
+    },
+    {
+      "id": "itm-20260911-0060",
+      "sourceType": "rss",
+      "sourceName": "Gadget Weekly",
+      "title": "The 14 best wireless earbuds you can buy this autumn",
+      "summary": "A refreshed buying guide with affiliate links and no new testing since spring.",
+      "url": "https://gadgetweekly.example.com/the-14-best-wireless-earbuds-you-can-buy-this-au",
+      "publishedAt": "2026-09-11T16:27:00.000Z",
+      "metadata": {
+        "author": "P. Andersson",
+        "wordCount": 361
+      }
+    },
+    {
+      "id": "itm-20260911-0061",
+      "sourceType": "web",
+      "sourceName": "Listicle Central",
+      "title": "21 kitchen gadgets under fifty that people swear by",
+      "summary": "Product listicle with affiliate links.",
+      "url": "https://listiclecentral.example.com/21-kitchen-gadgets-under-fifty-that-people-swear",
+      "publishedAt": "2026-09-11T16:53:00.000Z",
+      "metadata": {
+        "author": "K. Mensah",
+        "wordCount": 723
+      }
+    },
+    {
+      "id": "itm-20260911-0062",
+      "sourceType": "github",
+      "sourceName": "github.com/halyard/halyard",
+      "title": "halyard v2.0.0 release notes: work-stealing scheduler, frozen plugin ABI",
+      "summary": "Repository activity on halyard/halyard. Halyard 2.0 replaces the cooperative scheduler with a work-stealing runtime, freezes the plugin ABI for the 2.x line, and removes the deprecated YAML v1 pipeline format.",
+      "content": "Repository activity on halyard/halyard. Halyard 2.0 replaces the cooperative scheduler with a work-stealing runtime, freezes the plugin ABI for the 2.x line, and removes the deprecated YAML v1 pipeline format.\n\nMigration from v1 pipelines requires a one-way conversion tool shipped alongside the release.\n\nThe ABI freeze is what unblocks third-party plugin authors who have been rebuilding against every minor release for two years. Further reporting is expected as Halyard and the affected downstream projects respond.",
+      "url": "https://github.com/halyard/halyard/issues/5256",
+      "publishedAt": "2026-09-11T17:30:00.000Z",
+      "metadata": {
+        "repo": "halyard/halyard",
+        "number": 7308,
+        "stars": 71917,
+        "openIssues": 1258,
+        "labels": [
+          "regression"
+        ],
+        "state": "closed"
+      }
+    },
+    {
+      "id": "itm-20260911-0063",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Two outlets, two opposite stories about Corvid Robotics",
+      "summary": "Front page discussion thread. One outlet reports that Corvid Robotics has agreed to be acquired by Talos Industrial for about 4.1 billion dollars, while a second reports on its own sourcing that talks collapsed over indemnity terms three weeks ago.",
+      "url": "https://news.ycombinator.com/item?id=42511724",
+      "publishedAt": "2026-09-11T17:36:00.000Z",
+      "metadata": {
+        "score": 1408,
+        "commentCount": 357,
+        "hnId": 42551589,
+        "domain": "corvidrobotics.example.com"
+      }
+    },
+    {
+      "id": "itm-20260911-0064",
+      "sourceType": "rss",
+      "sourceName": "Culture Column",
+      "title": "A museum show that rewards a second visit",
+      "summary": "Exhibition review.",
+      "url": "https://culturecolumn.example.com/a-museum-show-that-rewards-a-second-visit",
+      "publishedAt": "2026-09-11T17:37:00.000Z",
+      "metadata": {
+        "author": "K. Mensah",
+        "wordCount": 1263
+      }
+    },
+    {
+      "id": "itm-20260911-0065",
+      "sourceType": "rss",
+      "sourceName": "CoinDesk",
+      "title": "Meridian Exchange halts withdrawals over 340 million dollar gap",
+      "summary": "Reporting from CoinDesk. Meridian Exchange suspended all withdrawals after a reconciliation against its qualified custodian showed a 340 million dollar discrepancy between internal ledger balances and attested holdings.",
+      "content": "Reporting from CoinDesk. Meridian Exchange suspended all withdrawals after a reconciliation against its qualified custodian showed a 340 million dollar discrepancy between internal ledger balances and attested holdings.\n\nDeposits remain open, which several commentators flagged as the wrong sequencing.\n\nA reconciliation gap of that size is either an accounting failure or a solvency failure, and the exchange has not said which. Further reporting is expected as Meridian Exchange and the affected downstream projects respond.",
+      "url": "https://coindesk.example.com/meridian-exchange-halts-withdrawals-over-340-mil",
+      "publishedAt": "2026-09-11T18:08:00.000Z",
+      "metadata": {
+        "author": "S. Nakamura",
+        "wordCount": 1656,
+        "section": "markets"
+      }
+    },
+    {
+      "id": "itm-20260911-0066",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Deposits are still open at Meridian Exchange, which tells you something",
+      "summary": "Front page discussion thread. Meridian Exchange suspended all withdrawals after a reconciliation against its qualified custodian showed a 340 million dollar discrepancy between internal ledger balances and attested holdings.",
+      "url": "https://news.ycombinator.com/item?id=43499415",
+      "publishedAt": "2026-09-11T18:35:00.000Z",
+      "metadata": {
+        "score": 181,
+        "commentCount": 444,
+        "hnId": 42107909,
+        "domain": "meridianexchange.example.com"
+      }
+    },
+    {
+      "id": "itm-20260911-0067",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "The substantial modification test is going to catch a lot of fine-tuners",
+      "summary": "Front page discussion thread. The guidance sets a compute threshold for systemic-risk classification, requires an incident register with fourteen-day reporting, and defines what counts as a substantial modification by a downstream deployer.",
+      "url": "https://news.ycombinator.com/item?id=44786831",
+      "publishedAt": "2026-09-11T18:36:00.000Z",
+      "metadata": {
+        "score": 1016,
+        "commentCount": 483,
+        "hnId": 44686549,
+        "domain": "europeancommission.example.com"
+      }
+    },
+    {
+      "id": "itm-20260911-0068",
+      "sourceType": "reddit",
+      "sourceName": "r/node",
+      "title": "Update: Sable ORM row loss is confirmed, we lost three days of ledger writes",
+      "summary": "Community thread in r/node. A maintainer reproduced the fault, bisected it to a connection-release change shipped in 6.2.0, and eleven further organisations reported matching symptoms including two with confirmed production data loss.",
+      "url": "https://reddit.com/r/node/comments/5ssm/update-sable-orm-row-loss-is-confirmed-we-lost-t",
+      "publishedAt": "2026-09-11T18:43:00.000Z",
+      "metadata": {
+        "subreddit": "node",
+        "upvotes": 6121,
+        "commentCount": 276,
+        "flair": "News"
+      }
+    },
+    {
+      "id": "itm-20260911-0069",
+      "sourceType": "rss",
+      "sourceName": "Culture Column",
+      "title": "The return of the very long album",
+      "summary": "Music criticism piece.",
+      "url": "https://culturecolumn.example.com/the-return-of-the-very-long-album",
+      "publishedAt": "2026-09-11T18:52:00.000Z",
+      "metadata": {
+        "author": "K. Mensah",
+        "wordCount": 1169
+      }
+    },
+    {
+      "id": "itm-20260911-0070",
+      "sourceType": "web",
+      "sourceName": "Halyard Newsroom",
+      "title": "Halyard 2.0 is available today",
+      "summary": "Halyard published this as a primary source document. Halyard 2.0 replaces the cooperative scheduler with a work-stealing runtime, freezes the plugin ABI for the 2.x line, and removes the deprecated YAML v1 pipeline format.",
+      "content": "Halyard published this as a primary source document. Halyard 2.0 replaces the cooperative scheduler with a work-stealing runtime, freezes the plugin ABI for the 2.x line, and removes the deprecated YAML v1 pipeline format.\n\nMigration from v1 pipelines requires a one-way conversion tool shipped alongside the release.\n\nThe ABI freeze is what unblocks third-party plugin authors who have been rebuilding against every minor release for two years. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://halyardnewsroom.example.com/halyard-2-0-is-available-today",
+      "publishedAt": "2026-09-11T19:04:00.000Z",
+      "metadata": {
+        "author": "Halyard Communications",
+        "wordCount": 928
+      }
+    },
+    {
+      "id": "itm-20260911-0071",
+      "sourceType": "reddit",
+      "sourceName": "r/gaming",
+      "title": "Patch notes are up and they nerfed the shotgun again",
+      "summary": "Community reaction to a live-service game balance patch.",
+      "url": "https://rgaming.example.com/patch-notes-are-up-and-they-nerfed-the-shotgun-a",
+      "publishedAt": "2026-09-11T19:22:00.000Z",
+      "metadata": {
+        "subreddit": "gaming",
+        "upvotes": 6223,
+        "commentCount": 1349
+      }
+    },
+    {
+      "id": "itm-20260911-0072",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "The Basalt licence rumour is back",
+      "summary": "Front page discussion thread. The licence claim recirculates in a new thread, still sourced to the same unnamed partner call and still contradicted by nobody on the record.",
+      "url": "https://news.ycombinator.com/item?id=41126348",
+      "publishedAt": "2026-09-11T19:33:00.000Z",
+      "metadata": {
+        "score": 68,
+        "commentCount": 323,
+        "hnId": 42735189,
+        "domain": "basalt.example.com"
+      }
+    },
+    {
+      "id": "itm-20260911-0073",
+      "sourceType": "web",
+      "sourceName": "European Commission Newsroom",
+      "title": "Guidance on obligations for providers of general-purpose AI models",
+      "summary": "European Commission published this as a primary source document. The guidance sets a compute threshold for systemic-risk classification, requires an incident register with fourteen-day reporting, and defines what counts as a substantial modification by a downstream deployer.",
+      "content": "European Commission published this as a primary source document. The guidance sets a compute threshold for systemic-risk classification, requires an incident register with fourteen-day reporting, and defines what counts as a substantial modification by a downstream deployer.\n\nThe guidance applies from January and there is no transition period for the incident register.\n\nThe substantial-modification definition is what determines whether a company fine-tuning a model inherits the original provider's obligations. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://europeancommissionnewsroom.example.com/guidance-on-obligations-for-providers-of-general",
+      "publishedAt": "2026-09-11T19:39:00.000Z",
+      "metadata": {
+        "author": "European Commission Communications",
+        "wordCount": 866
+      }
+    },
+    {
+      "id": "itm-20260911-0074",
+      "sourceType": "rss",
+      "sourceName": "Stratechery",
+      "title": "Contingent offtake as a discipline device for fusion timelines",
+      "summary": "Analysis from Stratechery. A contingent power purchase agreement is a harder commitment than a funding round, and it is the first one attached to a fusion programme.",
+      "content": "Analysis from Stratechery. Halcyon Fusion raised 1.4 billion dollars in a round that includes two utilities as strategic investors and a power purchase agreement contingent on delivery by 2031.\n\nThe company has not yet demonstrated net facility energy gain.\n\nA contingent power purchase agreement is a harder commitment than a funding round, and it is the first one attached to a fusion programme. Further reporting is expected as Halcyon Fusion and the affected downstream projects respond.",
+      "url": "https://stratechery.example.com/contingent-offtake-as-a-discipline-device-for-fu",
+      "publishedAt": "2026-09-11T19:39:00.000Z",
+      "metadata": {
+        "author": "T. Abadi",
+        "wordCount": 1766,
+        "section": "markets"
+      }
+    },
+    {
+      "id": "itm-20260911-0075",
+      "sourceType": "web",
+      "sourceName": "Local Bulletin",
+      "title": "Roadworks on the ring road extended by two weeks",
+      "summary": "Local transport notice affecting one city.",
+      "url": "https://localbulletin.example.com/roadworks-on-the-ring-road-extended-by-two-weeks",
+      "publishedAt": "2026-09-11T20:03:00.000Z",
+      "metadata": {
+        "author": "D. Moreau",
+        "wordCount": 344
+      }
+    },
+    {
+      "id": "itm-20260911-0076",
+      "sourceType": "sec",
+      "sourceName": "SEC EDGAR",
+      "title": "Lumen Fabrication Inc. Form 8-K, Item 2.06 material impairment",
+      "summary": "Filing text from EDGAR. Lumen Fabrication filed an 8-K disclosing a 1.8 billion dollar impairment against its 3nm capacity expansion and cut full-year capital expenditure guidance to 6.2 billion dollars from 8.4 billion.",
+      "content": "Filing text from EDGAR. Lumen Fabrication filed an 8-K disclosing a 1.8 billion dollar impairment against its 3nm capacity expansion and cut full-year capital expenditure guidance to 6.2 billion dollars from 8.4 billion.\n\nThe filing attributes the impairment to a single customer's cancelled multi-year commitment.\n\nA capex cut of that size from a leading-edge foundry is a demand signal for everyone downstream of it, not just a Lumen story. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://sec.gov/Archives/edgar/data/1510712/lumen-fabrication-inc-form-8-k-item-2-06-materia.htm",
+      "publishedAt": "2026-09-11T20:16:00.000Z",
+      "metadata": {
+        "cik": "1284364",
+        "formType": "10-Q",
+        "ticker": "LUME"
+      }
+    },
+    {
+      "id": "itm-20260911-0077",
+      "sourceType": "rss",
+      "sourceName": "Stratechery",
+      "title": "Reading the systemic-risk compute threshold in practice",
+      "summary": "Analysis from Stratechery. The substantial-modification definition is what determines whether a company fine-tuning a model inherits the original provider's obligations.",
+      "content": "Analysis from Stratechery. The guidance sets a compute threshold for systemic-risk classification, requires an incident register with fourteen-day reporting, and defines what counts as a substantial modification by a downstream deployer.\n\nThe guidance applies from January and there is no transition period for the incident register.\n\nThe substantial-modification definition is what determines whether a company fine-tuning a model inherits the original provider's obligations. Further reporting is expected as European Commission and the affected downstream projects respond.",
+      "url": "https://stratechery.example.com/reading-the-systemic-risk-compute-threshold-in-p",
+      "publishedAt": "2026-09-11T20:54:00.000Z",
+      "metadata": {
+        "author": "R. Delacroix",
+        "wordCount": 1647,
+        "section": "business"
+      }
+    },
+    {
+      "id": "itm-20260911-0078",
+      "sourceType": "reddit",
+      "sourceName": "r/MachineLearning",
+      "title": "Cross-embodiment paper: the kinematic conditioning trick is elegant",
+      "summary": "Community thread in r/MachineLearning. A single policy conditioned on a kinematic description transfers across five distinct arms, retaining 88% of single-embodiment success on unseen hardware with no fine-tuning.",
+      "url": "https://reddit.com/r/MachineLearning/comments/4kgx/cross-embodiment-paper-the-kinematic-conditionin",
+      "publishedAt": "2026-09-11T21:03:00.000Z",
+      "metadata": {
+        "subreddit": "MachineLearning",
+        "upvotes": 3925,
+        "commentCount": 481,
+        "flair": "Resource"
+      }
+    },
+    {
+      "id": "itm-20260911-0079",
+      "sourceType": "rss",
+      "sourceName": "Lifestyle Daily",
+      "title": "How to actually keep a houseplant alive in a north-facing flat",
+      "summary": "Light and watering advice for low-light apartments.",
+      "url": "https://lifestyledaily.example.com/how-to-actually-keep-a-houseplant-alive-in-a-nor",
+      "publishedAt": "2026-09-11T21:31:00.000Z",
+      "metadata": {
+        "author": "H. Yilmaz",
+        "wordCount": 1068
+      }
+    },
+    {
+      "id": "itm-20260911-0080",
+      "sourceType": "web",
+      "sourceName": "Open Tooling Consortium Newsroom",
+      "title": "Introducing the Open Tooling Protocol 1.0",
+      "summary": "Open Tooling Consortium published this as a primary source document. Four model vendors published a common wire format for tool invocation, including a capability negotiation handshake and a mandatory per-call resource budget field.",
+      "content": "Open Tooling Consortium published this as a primary source document. Four model vendors published a common wire format for tool invocation, including a capability negotiation handshake and a mandatory per-call resource budget field.\n\nTwo of the four have shipped implementations; the other two list it as planned.\n\nA shared wire format removes the per-vendor adapter layer that every agent framework currently maintains, if the vendors actually ship it. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://opentoolingconsortiumnewsroom.example.com/introducing-the-open-tooling-protocol-1-0",
+      "publishedAt": "2026-09-11T21:40:00.000Z",
+      "metadata": {
+        "author": "Open Tooling Consortium Communications",
+        "wordCount": 712
+      }
+    },
+    {
+      "id": "itm-20260911-0081",
+      "sourceType": "rss",
+      "sourceName": "Gadget Weekly",
+      "title": "This robot vacuum is 40% off for one more day",
+      "summary": "A time-limited retail promotion on a two-year-old model.",
+      "url": "https://gadgetweekly.example.com/this-robot-vacuum-is-40-off-for-one-more-day",
+      "publishedAt": "2026-09-11T21:51:00.000Z",
+      "metadata": {
+        "author": "K. Mensah",
+        "wordCount": 804
+      }
+    },
+    {
+      "id": "itm-20260911-0082",
+      "sourceType": "web",
+      "sourceName": "Meridian Exchange Newsroom",
+      "title": "Temporary suspension of withdrawals",
+      "summary": "Meridian Exchange published this as a primary source document. Meridian Exchange suspended all withdrawals after a reconciliation against its qualified custodian showed a 340 million dollar discrepancy between internal ledger balances and attested holdings.",
+      "content": "Meridian Exchange published this as a primary source document. Meridian Exchange suspended all withdrawals after a reconciliation against its qualified custodian showed a 340 million dollar discrepancy between internal ledger balances and attested holdings.\n\nDeposits remain open, which several commentators flagged as the wrong sequencing.\n\nA reconciliation gap of that size is either an accounting failure or a solvency failure, and the exchange has not said which. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://meridianexchangenewsroom.example.com/temporary-suspension-of-withdrawals",
+      "publishedAt": "2026-09-11T21:59:00.000Z",
+      "metadata": {
+        "author": "Meridian Exchange Communications",
+        "wordCount": 981
+      }
+    }
+  ],
+  "facts": [
+    {
+      "factId": "fct-20260911-001",
+      "kind": "macro",
+      "label": "Initial jobless claims",
+      "value": 221000,
+      "unit": "persons",
+      "asOf": "2026-09-11T07:14:00.000Z",
+      "sourceItemId": "itm-20260911-0005",
+      "previousValue": 214000,
+      "changePct": 3.27
+    },
+    {
+      "factId": "fct-20260911-002",
+      "kind": "macro",
+      "label": "Initial jobless claims, four-week moving average",
+      "value": 217500,
+      "unit": "persons",
+      "asOf": "2026-09-11T07:14:00.000Z",
+      "sourceItemId": "itm-20260911-0005"
+    },
+    {
+      "factId": "fct-20260911-003",
+      "kind": "crypto",
+      "label": "Avalanche spot price",
+      "value": 32.18,
+      "unit": "usd",
+      "asOf": "2026-09-11T07:59:00.000Z",
+      "sourceItemId": "itm-20260911-0008",
+      "previousValue": 32.75,
+      "changePct": -1.73
+    },
+    {
+      "factId": "fct-20260911-004",
+      "kind": "crypto",
+      "label": "Solana spot price",
+      "value": 189.07,
+      "unit": "usd",
+      "asOf": "2026-09-11T08:18:00.000Z",
+      "sourceItemId": "itm-20260911-0010",
+      "previousValue": 186.4,
+      "changePct": 1.43
+    },
+    {
+      "factId": "fct-20260911-005",
+      "kind": "crypto",
+      "label": "Dogecoin spot price",
+      "value": 0.1926,
+      "unit": "usd",
+      "asOf": "2026-09-11T10:52:00.000Z",
+      "sourceItemId": "itm-20260911-0026",
+      "previousValue": 0.187,
+      "changePct": 3.01
+    },
+    {
+      "factId": "fct-20260911-006",
+      "kind": "filing",
+      "label": "Ashgrove Utilities quarterly dividend per share",
+      "value": 0.44,
+      "unit": "usd",
+      "asOf": "2026-09-11T11:01:00.000Z",
+      "sourceItemId": "itm-20260911-0027",
+      "previousValue": 0.42
+    },
+    {
+      "factId": "fct-20260911-007",
+      "kind": "filing",
+      "label": "Ashgrove Utilities shares outstanding",
+      "value": 412300000,
+      "unit": "shares",
+      "asOf": "2026-09-11T11:01:00.000Z",
+      "sourceItemId": "itm-20260911-0027"
+    },
+    {
+      "factId": "fct-20260911-008",
+      "kind": "crypto",
+      "label": "Bitcoin spot price",
+      "value": 69594.36,
+      "unit": "usd",
+      "asOf": "2026-09-11T11:20:00.000Z",
+      "sourceItemId": "itm-20260911-0029",
+      "previousValue": 71240,
+      "changePct": -2.31
+    },
+    {
+      "factId": "fct-20260911-009",
+      "kind": "crypto",
+      "label": "Ethereum spot price",
+      "value": 3833.62,
+      "unit": "usd",
+      "asOf": "2026-09-11T13:01:00.000Z",
+      "sourceItemId": "itm-20260911-0038",
+      "previousValue": 3810,
+      "changePct": 0.62
+    },
+    {
+      "factId": "fct-20260911-010",
+      "kind": "crypto",
+      "label": "Chainlink spot price",
+      "value": 18.77,
+      "unit": "usd",
+      "asOf": "2026-09-11T13:21:00.000Z",
+      "sourceItemId": "itm-20260911-0040",
+      "previousValue": 19.08,
+      "changePct": -1.64
+    },
+    {
+      "factId": "fct-20260911-011",
+      "kind": "filing",
+      "label": "Lumen Fabrication impairment charge",
+      "value": 1800000000,
+      "unit": "usd",
+      "asOf": "2026-09-11T20:16:00.000Z",
+      "sourceItemId": "itm-20260911-0076"
+    },
+    {
+      "factId": "fct-20260911-012",
+      "kind": "filing",
+      "label": "Lumen Fabrication FY capex guidance",
+      "value": 6200000000,
+      "unit": "usd",
+      "asOf": "2026-09-11T20:16:00.000Z",
+      "sourceItemId": "itm-20260911-0076",
+      "previousValue": 8400000000,
+      "changePct": -26.19
+    }
+  ]
+}

@@ -1,0 +1,333 @@
+{
+  "date": "2026-09-10",
+  "producedAt": "2026-09-13T08:54:26.636Z",
+  "stories": [
+    {
+      "storyId": "bis-accelerator-export-threshold-revision",
+      "tier": "A",
+      "canonicalTitle": "美國 BIS 發布暫行終局規則，下調算力密度門檻將中階晶片納入出口管制",
+      "whySelected": "重大貿易與半導體政策變更，下修算力密度門檻使原本專為規避前版限制的中階加速晶片納入管制，且僅給予 30 天生效期且無既有訂單通用許可，直接重塑伺服器供應鏈與晶片廠商庫存布局。",
+      "changeType": "NEW",
+      "importance": 0.88,
+      "novelty": 0.9,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0003",
+        "itm-20260910-0010",
+        "itm-20260910-0014",
+        "itm-20260910-0034"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0010"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "quarrystone-cve-2026-41882",
+      "tier": "A",
+      "canonicalTitle": "Quarrystone 釋出 17.4 與 16.8 安全更新，修補未授權讀取 WAL 之高危漏洞 CVE-2026-41882",
+      "whySelected": "關鍵基礎設施安全事件。未認證客戶端在未啟用 SCRAM channel binding 時可開啟邏輯複製槽並讀取完整 WAL（等同洩漏整庫資料），且此脆弱組態為兩個熱門容器映象檔的預設值，維運團隊需立即修補或調整組態。",
+      "changeType": "NEW",
+      "importance": 0.85,
+      "novelty": 0.9,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0004",
+        "itm-20260910-0023",
+        "itm-20260910-0051",
+        "itm-20260910-0060"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0004"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "northbridge-us-east-2-control-plane-outage",
+      "tier": "A",
+      "canonicalTitle": "Northbridge Cloud us-east-2 控制平面因憑證輪替失敗中斷逾 6 小時，阻斷執行個體啟動與自動擴展",
+      "whySelected": "重大雲端基礎設施事故。控制平面憑證輪替失效長達 6 小時 11 分鐘，暴露了依賴動態擴展與容錯遷移之架構在控制平面失靈時的單點故障風險，促使工程團隊檢視多區域容錯策略。",
+      "changeType": "NEW",
+      "importance": 0.82,
+      "novelty": 0.9,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0008",
+        "itm-20260910-0009",
+        "itm-20260910-0021",
+        "itm-20260910-0036",
+        "itm-20260910-0059"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0021"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "sable-orm-batched-upsert-data-loss",
+      "tier": "A",
+      "canonicalTitle": "Sable ORM 6.2.0 回報批次 upsert 超出連線池大小時無聲遺失資料之重大漏洞",
+      "whySelected": "高危險資料完整性隱患。受歡迎的 ORM 在批次寫入超出連線池時會無聲拋棄資料而不報錯，這類問題往往在數週後財務對帳時才被發現，開發與維運團隊需立即評估升級或降級。",
+      "changeType": "NEW",
+      "importance": 0.82,
+      "novelty": 0.85,
+      "confidence": 0.85,
+      "sourceItemIds": [
+        "itm-20260910-0033",
+        "itm-20260910-0052",
+        "itm-20260910-0077",
+        "itm-20260910-0079"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0079"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "fsb-payment-stablecoin-reserve-rules",
+      "tier": "A",
+      "canonicalTitle": "金融穩定委員會發布支付型穩定幣儲備揭露新規，要求每日第三方查核且八成配置隔夜工具",
+      "whySelected": "全球金融監管定案。流通量百億美元以上穩定幣必須每日發布第三方查核儲備且 80% 需配置於隔夜流動性工具，強制改變前兩大主要發行商之資產負債表結構與收益模型，合規期為 180 天。",
+      "changeType": "NEW",
+      "importance": 0.85,
+      "novelty": 0.9,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0035",
+        "itm-20260910-0037",
+        "itm-20260910-0043",
+        "itm-20260910-0058"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0043"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "aperture-nimbus-7-weight-release-licence",
+      "tier": "B",
+      "canonicalTitle": "Aperture 釋出 72B MoE 模型 Nimbus-7 權重，條款限制第三方推論代管服務",
+      "whySelected": "開源權重模型重要發布，但其授權條款明確禁止第三方提供代管服務（雲端推論供應商），是開源定義爭議與基礎模型商防禦雲端轉售的具體案例。",
+      "changeType": "NEW",
+      "importance": 0.8,
+      "novelty": 0.9,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0022",
+        "itm-20260910-0061",
+        "itm-20260910-0069",
+        "itm-20260910-0075"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0069"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "rust-1-94-release-parallel-frontend",
+      "tier": "B",
+      "canonicalTitle": "Rust 1.94 釋出：預設啟用編譯器平行前端縮短冷檢查耗時，穩定三項常數 API",
+      "whySelected": "主流系統程式語言重大正式版本，預設開啟平行前端為多年來首度實質縮短日常漸進檢查（check）耗時之編譯效能突破，直接影響所有 Rust 開發者日常工作流。",
+      "changeType": "NEW",
+      "importance": 0.78,
+      "novelty": 0.85,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0027",
+        "itm-20260910-0068",
+        "itm-20260910-0071",
+        "itm-20260910-0072"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0072"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "linux-6-19-deadline-aware-scheduler",
+      "tier": "B",
+      "canonicalTitle": "Linux 6.19 合併具期限感知之公平排程器，改進延遲敏感工作負載",
+      "whySelected": "核心排程機制迎來架構重寫，以任務期限取代長期使用的 vruntime 啟發式機制，對音訊與延遲敏感型邊緣/桌面工作負載有顯著改善，儘管伺服器吞吐量可能有 1-2% 回歸。",
+      "changeType": "NEW",
+      "importance": 0.78,
+      "novelty": 0.85,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0032",
+        "itm-20260910-0038",
+        "itm-20260910-0054",
+        "itm-20260910-0063"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0063"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "fenwick-surface-code-logical-qubit",
+      "tier": "B",
+      "canonicalTitle": "Fenwick Quantum 發表首個達百萬週期低於門檻之 distance-9 表面碼邏輯量子位元實驗",
+      "whySelected": "量子運算錯誤更正重大實驗里程碑，首度在長達一百萬週期的運作中將邏輯錯誤率穩定維持在容錯門檻以下，直接回答了表面碼是否能長時間運作的關鍵疑問。",
+      "changeType": "NEW",
+      "importance": 0.75,
+      "novelty": 0.85,
+      "confidence": 0.85,
+      "sourceItemIds": [
+        "itm-20260910-0001",
+        "itm-20260910-0006",
+        "itm-20260910-0045",
+        "itm-20260910-0046"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0001"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "meridian-two-million-token-model-testing",
+      "tier": "B",
+      "canonicalTitle": "消息稱 Meridian 正在企業客戶端測試具 200 萬 token 上下文之長文本模型",
+      "whySelected": "產業高關注度的前瞻模型訊號。若免檢索的 2M token 長文本推論落地，將徹底改寫企業長文件處理的架構選型，並對以向量檢索（RAG）為核心的工具鏈形成架構挑戰。",
+      "changeType": "RUMOR",
+      "importance": 0.75,
+      "novelty": 0.7,
+      "confidence": 0.55,
+      "sourceItemIds": [
+        "itm-20260910-0015",
+        "itm-20260910-0053",
+        "itm-20260910-0057",
+        "itm-20260910-0067"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0067"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "vantiq-guidance-cut-renewal-slippage",
+      "tier": "B",
+      "canonicalTitle": "Vantiq Systems 下修全年度營收指引 9%，主因大型企業合約續約遞延而非客戶流失",
+      "whySelected": "企業軟體市場的重要結構性信號，反映企業買方在大型多年期軟體合約決策週期拉長，以及 NRR 出現放緩趨勢，具有產業代表性。",
+      "changeType": "NEW",
+      "importance": 0.7,
+      "novelty": 0.8,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0019",
+        "itm-20260910-0056",
+        "itm-20260910-0064",
+        "itm-20260910-0065"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0064"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "anvil-datacenter-campus-deferral-grid-queue",
+      "tier": "B",
+      "canonicalTitle": "Anvil Data Centres 因變電所併網排隊延宕至 2029 年，宣布推遲兩座資料中心園區建設",
+      "whySelected": "展示資料中心算力擴張的瓶頸已從晶片資本支出轉移至公用事業電網併網容量，為電力限制算力擴張的具體案例，並構成新興趨勢的核心支撐。",
+      "changeType": "NEW",
+      "importance": 0.7,
+      "novelty": 0.75,
+      "confidence": 0.85,
+      "sourceItemIds": [
+        "itm-20260910-0055"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0055"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "datacenter-power-capping-accelerator-idle-study",
+      "tier": "B",
+      "canonicalTitle": "研究顯示生產加速卡叢集因機櫃級功率限制導致 11% 閒置時間",
+      "whySelected": "大專院校跨四個叢集之實測研究，指出加速卡叢集非預期閒置的主因是機櫃級功率封頂而非排程效率，為資料中心散熱與供電瓶頸提供首手測量數據。",
+      "changeType": "NEW",
+      "importance": 0.65,
+      "novelty": 0.75,
+      "confidence": 0.8,
+      "sourceItemIds": [
+        "itm-20260910-0042"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0042"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "basalt-engine-revenue-share-licence-rumour",
+      "tier": "C",
+      "canonicalTitle": "社群傳聞 Basalt Engine 次代 v7 版本將轉向營收分成授權模式",
+      "whySelected": "社群傳聞單一未具名來源，置信度低但社群討論熱度高，先在 ledger 建檔以備後續官方回應或反轉確認。",
+      "changeType": "RUMOR",
+      "importance": 0.65,
+      "novelty": 0.6,
+      "confidence": 0.35,
+      "sourceItemIds": [
+        "itm-20260910-0017",
+        "itm-20260910-0020"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0017"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "us-jobless-claims-weekly",
+      "tier": "C",
+      "canonicalTitle": "美國公布初領失業救濟人數為 21.4 萬人，勞動市場維持穩定區間",
+      "whySelected": "常態每週總體經濟數據更新，數值 21.4 萬人落在近期區間內，無方向性變更，供歷史備查與宏觀事實引用。",
+      "changeType": "NEW",
+      "importance": 0.35,
+      "novelty": 0.4,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0011",
+        "itm-20260910-0012"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0012"
+      ],
+      "factRefs": [
+        "fct-20260910-001",
+        "fct-20260910-002"
+      ]
+    },
+    {
+      "storyId": "ashgrove-utilities-dividend-declaration",
+      "tier": "C",
+      "canonicalTitle": "Ashgrove Utilities 申報每股 0.42 美元季度股利，金額與前期持平",
+      "whySelected": "例行性 SEC 8-K 季度股利申報，金額與前期持平，純屬行政程序，供結構化事實紀錄。",
+      "changeType": "NEW",
+      "importance": 0.25,
+      "novelty": 0.3,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0030",
+        "itm-20260910-0047"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0030"
+      ],
+      "factRefs": [
+        "fct-20260910-006",
+        "fct-20260910-007"
+      ]
+    }
+  ],
+  "emergingSignals": [
+    {
+      "label": "算力基礎設施面臨電力與電網物理上限硬約束",
+      "rationale": "今日三則不相關領域事件（資料中心營運商、學術測量預印本、晶片管制政策）共同反映算力擴張正在撞上電力與物理基礎設施硬邊界：Anvil 因變電所送電排隊延至 2029 年被迫推遲兩座資料中心園區；Ridgeway 實測論文顯示加速卡有 11% 閒置來自機櫃級電力封頂而非軟體排程；BIS 新規亦聚焦於降低算力密度門檻。三者反映從單一機櫃功率到區域電網併網已成為制約運算部署之實體瓶頸。反證在於：若電網約束為短期或局部現象，後續數季應見公用事業併網排隊大幅縮短與高密度機櫃功率封頂解決方案普及。",
+      "storyIds": [
+        "anvil-datacenter-campus-deferral-grid-queue",
+        "datacenter-power-capping-accelerator-idle-study",
+        "bis-accelerator-export-threshold-revision"
+      ]
+    }
+  ],
+  "curatorNotes": "今日總計 79 則 raw items 全部完成分類與去重（unseen 為 0），共收斂為 16 則 stories。Tier A 共有 5 則（BIS 算力出口門檻下調、Quarrystone 高危 WAL 外洩漏洞、Northbridge 雲端控制平面中斷、Sable ORM 批次寫入靜默遺失資料、FSB 支付型穩定幣儲備新規），均具備高重要性與明確行動期限。此外辨識出一條新興訊號「算力基礎設施面臨電力與電網物理上限硬約束」，由 Anvil 延宕資料中心、叢集功率封頂閒置研究與 BIS 晶片密度新規三者跨領域支撐。未成案的純市場常態波動（SOL、DOGE、BTC、LINK、AVAX、ETH）與生活消費噪音已全數標記為 IRRELEVANT。"
+}

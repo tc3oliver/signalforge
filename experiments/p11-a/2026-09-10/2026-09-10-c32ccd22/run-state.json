@@ -1,10 +1,10 @@
 {
   "runId": "2026-09-10-c32ccd22",
   "date": "2026-09-10",
-  "status": "CURATING",
+  "status": "COMPLETED",
   "createdAt": "2026-09-13T08:49:41.772Z",
-  "updatedAt": "2026-09-13T08:49:41.789Z",
+  "updatedAt": "2026-09-13T08:56:43.978Z",
   "totalItems": 79,
-  "processedItems": 0,
-  "storyCount": 0
+  "processedItems": 79,
+  "storyCount": 16
 }

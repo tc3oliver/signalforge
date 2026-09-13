@@ -39,3 +39,15 @@
 {"ts":"2026-09-13T08:52:33.172Z","kind":"tool_call","stage":"CURATOR","tool":"record_item_decisions","recorded":29,"processedItems":79,"totalItems":79,"unseenItems":0}
 {"ts":"2026-09-13T08:52:36.000Z","kind":"tool_call","stage":"CURATOR","tool":"get_daily_inventory","date":"2026-09-10","totalItems":79,"itemsBySource":{"arxiv":2,"reddit":11,"rss":28,"web":7,"youtube":2,"hackernews":13,"github":6,"fred":1,"coingecko":6,"sec":2,"semantic-scholar":1},"processedItems":79,"unseenItems":0,"storyCount":16}
 {"ts":"2026-09-13T08:52:37.662Z","kind":"tool_call","stage":"CURATOR","tool":"list_today_stories","count":16}
+{"ts":"2026-09-13T08:54:26.636Z","kind":"tool_call","stage":"CURATOR","tool":"submit_materials","stories":16}
+{"ts":"2026-09-13T08:54:26.673Z","kind":"run.transition","from":"CURATING","to":"MATERIALS_READY"}
+{"ts":"2026-09-13T08:54:26.697Z","kind":"run.transition","from":"MATERIALS_READY","to":"WRITING"}
+{"ts":"2026-09-13T08:54:28.971Z","kind":"tool_call","stage":"EDITOR","tool":"get_materials","stories":16}
+{"ts":"2026-09-13T08:54:45.108Z","kind":"tool_call","stage":"EDITOR","tool":"get_source_items","count":11}
+{"ts":"2026-09-13T08:55:07.415Z","kind":"tool_call","stage":"EDITOR","tool":"get_source_items","count":2}
+{"ts":"2026-09-13T08:55:21.340Z","kind":"tool_call","stage":"EDITOR","tool":"get_source_items","count":19}
+{"ts":"2026-09-13T08:55:25.173Z","kind":"tool_call","stage":"EDITOR","tool":"get_source_items","count":15}
+{"ts":"2026-09-13T08:56:43.930Z","kind":"tool_call","stage":"EDITOR","tool":"submit_brief","stories":11,"mustKnow":4}
+{"ts":"2026-09-13T08:56:43.951Z","kind":"run.transition","from":"WRITING","to":"DRAFT_READY"}
+{"ts":"2026-09-13T08:56:43.960Z","kind":"run.transition","from":"DRAFT_READY","to":"VALIDATING"}
+{"ts":"2026-09-13T08:56:43.982Z","kind":"run.transition","from":"VALIDATING","to":"COMPLETED"}

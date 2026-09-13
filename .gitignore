@@ -2,3 +2,4 @@ node_modules/
 runs/
 fixtures/generated/
 *.log
+.omc/

@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"sed -n '1,40p' tests/model-router.test.ts && echo ... && cat src/runtime/agent-driver.ts | head -60 && echo === && cat README.md | head -60\"}",
-  "error": "Exit code 1\nimport { describe, expect, it } from \"vitest\";\nimport type { AgentAttempt, FailureClass } from \"../src/schemas/run.ts\";\nimport { AgentAttempt as AgentAttemptSchema } from \"../src/schemas/run.ts\";\nimport { MODEL_CHAIN, modelKey, parseModelKey } from \"../src/runtime/model-config.ts\";\nimport { ProgrammerError, ToolLoopError, InvalidAgentOutputError } from \"../src/runtime/error-classifier.ts\";\nimport { RouterState, decideAction, runStageWithFallback } from \"../src/runtime/model-router.ts...",
-  "timestamp": "2026-09-13T08:51:37.793Z",
-  "retry_count": 1
-}

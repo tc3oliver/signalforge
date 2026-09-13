@@ -124,7 +124,7 @@ export async function runPhase1Day(opts: Phase1RunOptions): Promise<Phase1RunRes
 			store.appendAttempt(a);
 		},
 		now,
-		onAttempt: async ({ spec, mode }) => {
+		onAttempt: async ({ spec, mode, checkFault }) => {
 			log.info("curator attempt", { model: modelKey(spec), mode });
 			return runCuratorStage({
 				date: opts.date,
@@ -139,6 +139,7 @@ export async function runPhase1Day(opts: Phase1RunOptions): Promise<Phase1RunRes
 				mode: mode === "FRESH" ? "RESUME" : mode,
 				now,
 				onEvent,
+				checkFault,
 			});
 		},
 	}).catch((err) => {
@@ -184,7 +185,7 @@ export async function runPhase1Day(opts: Phase1RunOptions): Promise<Phase1RunRes
 			store.appendAttempt(a);
 		},
 		now,
-		onAttempt: async ({ spec, mode }) => {
+		onAttempt: async ({ spec, mode, checkFault }) => {
 			log.info("editor attempt", { model: modelKey(spec), mode });
 			return runEditorStage({
 				date: opts.date,
@@ -199,6 +200,7 @@ export async function runPhase1Day(opts: Phase1RunOptions): Promise<Phase1RunRes
 				mode,
 				now,
 				onEvent,
+				checkFault,
 			});
 		},
 	}).catch((err) => {
