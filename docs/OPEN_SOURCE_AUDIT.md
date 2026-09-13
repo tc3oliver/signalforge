@@ -90,9 +90,10 @@ was verified after the change to return the same 20 topics, 16 repositories and
 
 Three items match the search patterns and were deliberately left in place.
 
-**`LICENSE` — copyright holder.** Reads `Copyright (c) 2026 Oliver`, taken from
-the git identity. A copyright notice naming the author is the point of the file.
-*Requires a decision:* whether to use a full legal name before publishing.
+**`LICENSE` — copyright holder.** Reads `Copyright (c) 2026 tc3oliver`, the
+owner's GitHub account. A copyright notice naming the author is the point of
+the file. **Decided 2026-09-13:** the GitHub account name is the intended
+holder.
 
 **`gui/501` in `docs/RUNBOOK.md` and `docs/SECURITY.md`.** UID 501 is the first
 user account on every macOS installation, so it identifies nothing. Both sites
@@ -126,15 +127,19 @@ profile and the author's home directory.
 
 **Recommendation: accept it.** None of it is a credential, none of it is a
 security exposure, and the interest profile is the same kind of information the
-brief output would reveal anyway. Squashing 35 commits of genuine development
+brief output would reveal anyway. Squashing 38 commits of genuine development
 history to hide a directory path trades something real for something cosmetic.
 
-**If you disagree**, the minimum necessary rewrite is a fresh initial commit —
-`git checkout --orphan` from the current tree — which discards all history
-rather than surgically editing it. That is the only rewrite worth doing here;
-a filter over 35 commits to scrub paths would leave the interest profile in the
-diffs unless it also scrubbed those, at which point nothing of the history
-survives anyway. Nothing has been pushed, so either option is still open.
+**Decided 2026-09-13: accepted, no rewrite.** The consequence, recorded so it
+is not a surprise afterwards: anyone who clones the published repository can
+`git log -p` and read the original interest profile and the author's home
+directory path. This becomes irreversible at the first push.
+
+For the record, the option that was declined: the only rewrite worth doing here
+would have been a fresh initial commit (`git checkout --orphan` from the
+current tree), discarding all history rather than editing it. A filter over 38
+commits to scrub paths would leave the interest profile in the diffs unless it
+scrubbed those too, at which point nothing of the history survives anyway.
 
 ## Production artifacts
 
@@ -184,4 +189,4 @@ what they collect.
 | Personal data in history | yes — interest profile, home paths (accepted; see above) |
 | Production artifacts tracked | none |
 | History rewrite performed | none |
-| Decisions outstanding | LICENSE copyright name; whether to accept history as-is |
+| Decisions outstanding | **none** — copyright holder `tc3oliver`, history accepted as-is, both 2026-09-13 |

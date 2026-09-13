@@ -3,6 +3,12 @@
   "version": "0.1.0",
   "description": "Self-hosted AI intelligence pipeline that turns noisy multi-source data into deduplicated events, emerging signals, and source-grounded daily briefs.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tc3oliver/signalforge.git"
+  },
+  "homepage": "https://github.com/tc3oliver/signalforge#readme",
+  "bugs": "https://github.com/tc3oliver/signalforge/issues",
   "private": true,
   "type": "module",
   "engines": {

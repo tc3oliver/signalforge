@@ -124,7 +124,7 @@ articles.
 ## Quick start
 
 ```bash
-git clone <this repository> signalforge && cd signalforge
+git clone https://github.com/tc3oliver/signalforge.git && cd signalforge
 pnpm install                             # also installs web/, via postinstall
 
 cp .env.example .env

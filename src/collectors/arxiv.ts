@@ -12,7 +12,8 @@ const PAGE_SIZE = 50;
  * every installation, attributing everyone else's traffic to one person.
  * Operators who want their own contact on the header set ARXIV_USER_AGENT.
  */
-const USER_AGENT = process.env["ARXIV_USER_AGENT"]?.trim() || "signalforge/0.1 (+https://github.com/signalforge)";
+const USER_AGENT =
+	process.env["ARXIV_USER_AGENT"]?.trim() || "signalforge/0.1 (+https://github.com/tc3oliver/signalforge)";
 
 const DEFAULT_CATEGORIES = ["cs.CL", "cs.LG", "cs.AI", "cs.DC"];
 

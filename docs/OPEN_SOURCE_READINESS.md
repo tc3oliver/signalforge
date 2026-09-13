@@ -4,15 +4,20 @@ Prepared 2026-09-13, against a repository that has never been pushed.
 
 ## Overall status
 
-> ## NOT READY TO PUSH
+> ## READY TO PUSH
 >
-> Not because anything is broken. Every mechanical gate passes: no secret has
-> ever been committed, a stranger can clone and run it, CI is real, the license
-> is in place. **Two things need your decision, and one of them cannot be
-> undone after the first push.** They are listed under "What needs your
-> decision"; neither takes long, and both are yours rather than mine.
+> Both outstanding decisions were made by the owner on 2026-09-13: the MIT
+> copyright holder is `tc3oliver`, and the git history is accepted as it stands.
+> Nothing else was blocking.
+>
+> One judgement call remains open and is deliberately *not* treated as a
+> blocker, because it is about timing rather than readiness: the five-day
+> observation freeze that began 2026-09-13 has one day of evidence behind it,
+> and the author's own quality review scores intelligence quality 4/10. The
+> repository is ready; whether today is the right day to publish is a separate
+> question, and it is the owner's.
 
-Everything below the decisions is done and verified.
+Everything below is done and verified.
 
 ## Security and privacy audit
 
@@ -150,7 +155,7 @@ fixed, each with a regression test:
 
 | | |
 |---|---|
-| `LICENSE` | MIT, complete and unmodified text |
+| `LICENSE` | MIT, complete and unmodified text, `Copyright (c) 2026 tc3oliver` |
 | `package.json` | `"license": "MIT"`, consistent with README |
 | `CONTRIBUTING.md` | Development setup, tests, the acceptance rules, how to add a collector, what evidence a policy change needs |
 | `.github/SECURITY.md` | Private vulnerability reporting, no personal address |
@@ -212,28 +217,49 @@ source configuration or collector scope was changed. The agent-facing skill text
 was deliberately left alone during the rebrand for exactly this reason, even
 though it still says `daily-intelligence`.
 
-## What needs your decision
+## Decisions taken
 
-**1. The copyright holder in `LICENSE`.** It currently reads
-`Copyright (c) 2026 Oliver`, taken from the git identity. Decide whether that
-should be a full legal name or an entity before publishing — it is the one
-string in the repository I will not choose for you.
+Both were made by the owner on 2026-09-13.
 
-**2. Whether to accept the git history as it stands.** Recommended, and
-explained in the audit. It contains no credential, but it does contain the
-original interest profile and home-directory paths in old commits. **This is
-the decision that closes after the first push** — nothing has been pushed, so
-an orphan-commit restart is still available and will not be afterwards.
+**1. Copyright holder — settled.** `LICENSE` reads
+`Copyright (c) 2026 tc3oliver`, the owner's GitHub account, and `package.json`
+declares `"license": "MIT"` to match. The MIT text is complete and unmodified.
 
-Optional, not blocking: the author email in all 35 commits (normal for public
-repositories); and my standing recommendation to let the observation freeze
-finish before publishing, so the quality claims have more than one day of
-evidence behind them.
+**2. Git history — accepted as it stands.** No rewrite will be performed. The
+consequence, stated plainly so it is not a surprise later: old commits contain
+the author's original interest profile and home-directory paths, and anyone who
+clones the published repository can read them with `git log -p`. None of it is
+a credential; the audit sets out why this is a reasonable trade. This decision
+becomes irreversible at the first push, which is exactly why it was made
+deliberately rather than by default.
+
+Noted, not blocking: the author's email appears in all 38 commits as git
+author metadata, which is normal for a public repository and was not raised as
+a concern.
+
+## Still open, by choice
+
+The observation freeze (2026-09-13 to 2026-09-18) has one day of evidence. The
+author's own `QUALITY_REVIEW.md` scores intelligence quality 4/10 and product
+value 4/10. Publishing today is defensible — the README and the limitations
+section are honest about exactly this, and `QUALITY_REVIEW.md` is linked from
+the README rather than buried. Waiting until the freeze ends would mean the
+quality claims rest on five days rather than one.
+
+That is a judgement about timing, not about readiness, and it belongs to the
+owner. It is recorded here so the choice is visible rather than implicit.
 
 ## Suggested repository
 
-`signalforge`, description: *Self-hosted AI intelligence pipeline that turns
-noisy multi-source data into deduplicated events, emerging signals, and
-source-grounded daily briefs.*
+`github.com/tc3oliver/signalforge`, description: *Self-hosted AI intelligence
+pipeline that turns noisy multi-source data into deduplicated events, emerging
+signals, and source-grounded daily briefs.*
 
-No remote has been configured and nothing has been pushed.
+`package.json` declares that URL in `repository`, `homepage` and `bugs`, and the
+README's clone command uses it. **The repository does not exist yet.** No remote
+has been configured here and nothing has been pushed; creating it and pushing
+are the owner's to do.
+
+Suggested topics: `ai`, `agents`, `llm`, `intelligence`, `news-aggregator`,
+`rss`, `self-hosted`, `daily-brief`, `knowledge-management`, `typescript`,
+`postgresql`.
