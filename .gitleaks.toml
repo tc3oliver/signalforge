@@ -20,3 +20,18 @@ secret of any kind.
 paths = ['''src/fixtures/scenarios\.ts''']
 regexTarget = "line"
 regexes = ['''key:\s*"[a-z0-9-]+"''']
+
+[[rules]]
+id = "github-pat"
+[rules.allowlist]
+description = """
+tests/setup-check-redaction.test.ts proves that `pnpm setup:check` cannot print
+a credential, which requires putting a credential-shaped value into its
+environment. The value is fabricated and has never been a real token.
+
+At HEAD the value is assembled at run time so no literal exists. Commit 4b5d29d
+still contains the literal, and gitleaks scans history, so the path stays
+allowlisted -- the alternative is rewriting a commit to hide a string that was
+never a secret.
+"""
+paths = ['''tests/setup-check-redaction\.test\.ts''']

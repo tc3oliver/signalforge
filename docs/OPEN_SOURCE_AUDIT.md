@@ -41,9 +41,17 @@ Each is a field literally named `key` holding a story identifier
 the field name. The file is committed fixture data and contains no credential of
 any kind.
 
-These are recorded in `.gitleaks.toml` so that a clean scan means something and
-CI can fail on anything new. After the allowlist: **`no leaks found`** across all
-35 commits.
+A fourth finding appeared later, from work done during this audit:
+`tests/setup-check-redaction.test.ts` needed a credential-shaped value in order
+to prove that `setup:check` cannot print one. The value is fabricated and has
+never been a real token. At `HEAD` it is assembled at run time so no literal
+exists; commit `4b5d29d` still contains the literal and gitleaks scans history,
+so the path is allowlisted rather than rewriting a commit to hide a string that
+was never a secret.
+
+All four are recorded in `.gitleaks.toml` with the reasoning, so that a clean
+scan means something and CI fails on anything new. After the allowlist:
+**`no leaks found`** across all 38 commits.
 
 **`ROTATION_REQUIRED`: none.** No credential was ever committed, so nothing needs
 rotating.
