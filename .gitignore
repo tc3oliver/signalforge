@@ -10,3 +10,8 @@ runs/
 # Published briefs are output, not source: the database is canonical and
 # these files are re-rendered from it by `pnpm daily`.
 briefs/
+
+# Credentials live in ~/.config/daily-intelligence/secrets.env, outside this
+# repository, so this line is belt and braces: it only matters if someone ever
+# copies that file in here, which is exactly when it would matter most.
+secrets.env

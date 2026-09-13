@@ -69,13 +69,31 @@ docker compose -p daily-intelligence up -d     # Postgres 17 + pgvector, 127.0.0
 pnpm db:migrate
 ```
 
-`.env` is gitignored. Never commit a real credential; see `docs/SECURITY.md` for
-where credentials are allowed to live.
+### Credentials
 
-To add collector credentials, set the logical secret names from
-`config/sources.yaml` as environment variables, or add a Keychain mapping in
-`src/config/secrets.ts`. `pnpm collect` will report each source's health and name
-the missing secrets.
+Collector credentials go in **`~/.config/daily-intelligence/secrets.env`** —
+outside this repository, mode `600` in a `700` directory. It is loaded at worker
+startup, so both `pnpm collect`/`pnpm daily` and the scheduled LaunchAgents pick
+it up with no extra wiring.
+
+```sh
+$EDITOR ~/.config/daily-intelligence/secrets.env    # one KEY=value per line
+pnpm collect                                        # reports each source's health
+```
+
+A name left blank is treated as absent: the loader sets nothing, the Keychain
+fallback still applies, and the collector that needs it stays `DISABLED` rather
+than failing the run. A missing file is equally fine — the product is expected to
+run with no credentials at all.
+
+Precedence is **explicit environment variable → `secrets.env` → Keychain**. An
+existing Keychain mapping (`KEYCHAIN_MAPPINGS` in `src/config/secrets.ts`) keeps
+working; a blank placeholder cannot shadow it. Set
+`DAILY_INTELLIGENCE_SECRETS_FILE` to keep the file somewhere else.
+
+Nothing about this reaches a log: startup records how many names were set and
+which are still blank, never a value. `.env` (database settings only) is
+gitignored; never commit a real credential. See `docs/SECURITY.md`.
 
 ## Running it
 

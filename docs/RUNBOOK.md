@@ -69,6 +69,47 @@ If this fails and you *are* logged in:
    installed plist will fail silently at run time. Re-running the installer
    re-resolves and re-renders these.
 
+## A collector needs a credential you have not supplied
+
+**Symptom:** `/admin/sources` shows the collector `DISABLED` with
+`missing required secret(s): NAME`, and the day is published without it.
+
+That is the designed behaviour, not a fault — the run degrades rather than
+failing. To supply the credential:
+
+```sh
+$EDITOR ~/.config/daily-intelligence/secrets.env
+pnpm collect
+```
+
+The file is outside the repository, mode `600` inside a `700` directory, and is
+loaded at worker startup by `src/config/secrets-file.ts`, so the scheduled
+LaunchAgents get it too without any change to the plists.
+
+- A name left blank sets nothing, so it cannot shadow a working Keychain entry.
+- A missing file is not an error.
+- Precedence: explicit environment variable → `secrets.env` → Keychain.
+- `DAILY_INTELLIGENCE_SECRETS_FILE` points the loader elsewhere.
+
+Startup logs how many names were set and which are still blank. It never logs a
+value, and no error message carries one — so if a key is wrong, the symptom is
+the provider rejecting it, not the key appearing in a log.
+
+Check what the worker actually loaded, without revealing anything:
+
+```sh
+grep -o '"msg":"secrets file[^"]*"' logs/incremental.err.log | tail -1
+grep -o '"stillBlank":"[^"]*"' logs/incremental.err.log | tail -1
+```
+
+If the file's permissions drift, startup warns (`should be 600`) and carries on.
+Restore them with:
+
+```sh
+chmod 700 ~/.config/daily-intelligence
+chmod 600 ~/.config/daily-intelligence/secrets.env
+```
+
 ## Collector failing
 
 **Symptom:** `logs/incremental.err.log` or `logs/daily.err.log` shows a

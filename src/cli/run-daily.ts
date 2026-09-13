@@ -10,6 +10,7 @@ import { createTavilyProvider } from "../research/providers/tavily.ts";
 import { ResearchBudgetTracker, ResearchRouter } from "../research/router.ts";
 import type { CuratorResearchConfig } from "../curator/tools.ts";
 import { createLogger } from "../runtime/logger.ts";
+import { loadSecretsFileAndReport } from "../config/secrets-file.ts";
 import { writeJsonAtomic, writeTextAtomic } from "../runtime/atomic-json.ts";
 
 const STAGES: readonly PipelineStage[] = ["collect", "curate", "write", "validate", "publish"];
@@ -55,6 +56,10 @@ async function main(): Promise<number> {
 	}
 
 	const log = createLogger("daily");
+	// Before anything reads a credential: the operator's file outside the repo
+	// populates the environment, and the resolver in config/secrets.ts then
+	// behaves exactly as it always has (environment first, Keychain second).
+	loadSecretsFileAndReport((msg, fields) => log.info(msg, fields));
 	const root = projectRoot();
 	const sql = createSql();
 	try {

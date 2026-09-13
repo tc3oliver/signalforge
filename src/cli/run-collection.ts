@@ -2,6 +2,7 @@ import { parseFlags } from "./_args.ts";
 import { createSql } from "../db/client.ts";
 import { createPostgresCollectionStore, runCollectionForDay } from "../pipeline/collection.ts";
 import { createLogger } from "../runtime/logger.ts";
+import { loadSecretsFileAndReport } from "../config/secrets-file.ts";
 
 /**
  * Collection only — what the daytime incremental cron calls. It never touches a
@@ -17,6 +18,10 @@ async function main(): Promise<number> {
 	if (Number.isNaN(since.getTime())) throw new Error(`Invalid --since value`);
 
 	const log = createLogger("collect");
+	// Before anything reads a credential: the operator's file outside the repo
+	// populates the environment, and the resolver in config/secrets.ts then
+	// behaves exactly as it always has (environment first, Keychain second).
+	loadSecretsFileAndReport((msg, fields) => log.info(msg, fields));
 	const sql = createSql();
 	try {
 		const summary = await runCollectionForDay({
