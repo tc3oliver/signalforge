@@ -127,7 +127,7 @@ after (`diff -q`, verified). `settings.json` and `auth.json` mtimes unchanged.
 
 ```
 pnpm typecheck   clean
-pnpm test        52 files, 619 tests, all passing, none skipped
+pnpm test        53 files, 630 tests, all passing, none skipped
 ```
 
 The per-suite table below is the Phase 1 snapshot (17 files, 223 tests). The suites

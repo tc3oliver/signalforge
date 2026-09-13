@@ -456,4 +456,36 @@ describe("a collector that never finishes", () => {
 		expect(summary.degraded).toBe(true);
 		expect(summary.empty).toBe(false);
 	});
+
+	it("also caps a collector that does return, just far too late", async () => {
+		// The commoner shape than an outright hang: a collector that catches its
+		// own errors and reports FAILED after spending minutes backing off a
+		// rate-limited provider. The ceiling has to bound wall time, not only
+		// liveness, or a slow provider still sets the pace for the whole run.
+		const { store, runs } = memoryStore();
+		const slow: Collector = {
+			id: "slow",
+			sourceType: "arxiv",
+			requiredSecrets: [],
+			check: async () => ({ ok: true, detail: "" }),
+			collect: () =>
+				new Promise<CollectorResult>((resolve) =>
+					setTimeout(() => resolve(okResult("slow", [])), 400),
+				),
+		};
+
+		const summary = await runCollection({
+			store,
+			since: SINCE,
+			now: () => NOW,
+			collectorDeadlineMs: 50,
+			entries: [{ sourceKey: "arxiv", collector: slow }],
+			enabledSourceKeys: ["arxiv"],
+			secrets: { secret: async () => "", hasSecret: async () => true },
+		});
+
+		expect(summary.outcomes[0]?.health).toBe("FAILED");
+		expect(summary.outcomes[0]?.error).toMatch(/did not finish within/);
+		expect(runs[0]?.result.error).toMatch(/did not finish within/);
+	});
 });
