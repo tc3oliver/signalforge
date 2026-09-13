@@ -181,3 +181,59 @@ describe("youtubeCollector", () => {
 		expect(r1.items.map((i) => i.externalId).sort()).toEqual(r2.items.map((i) => i.externalId).sort());
 	});
 });
+
+describe("youtubeCollector handles", () => {
+	it("resolves an @handle to a channel id before asking for its feed", async () => {
+		const asked: string[] = [];
+		const fetchMock = vi.fn(async (url: string) => {
+			asked.push(url);
+			if (url.includes("/channels?")) return jsonResponse({ items: [{ id: "UCresolved" }] });
+			if (url.includes("feeds/videos.xml")) return textResponse(atomFeed([{ id: "vid1", title: "Talk" }]));
+			return jsonResponse({ items: [] });
+		});
+		const ctx = makeCtx({
+			fetch: fetchMock as unknown as typeof fetch,
+			secrets: { YOUTUBE_API_KEY: "k" },
+			watchlists: { github_repos: [], sec_companies: [], crypto_assets: [], fred_series: [], subreddits: [], youtube_channels: ["@someone"], arxiv_categories: [] },
+		});
+
+		const result = await runCollect(ctx);
+		expect(asked.some((u) => u.includes("forHandle=%40someone"))).toBe(true);
+		expect(asked.some((u) => u.includes("channel_id=UCresolved"))).toBe(true);
+		expect(result.items.some((i) => i.externalId === "youtube-vid1")).toBe(true);
+	});
+
+	it("skips an unresolvable handle with a reason rather than requesting a feed for it", async () => {
+		const asked: string[] = [];
+		const fetchMock = vi.fn(async (url: string) => {
+			asked.push(url);
+			return jsonResponse({ items: [] });
+		});
+		const ctx = makeCtx({
+			fetch: fetchMock as unknown as typeof fetch,
+			secrets: { YOUTUBE_API_KEY: "k" },
+			watchlists: { github_repos: [], sec_companies: [], crypto_assets: [], fred_series: [], subreddits: [], youtube_channels: ["@gone"], arxiv_categories: [] },
+		});
+
+		const result = await runCollect(ctx);
+		expect(asked.some((u) => u.includes("feeds/videos.xml"))).toBe(false);
+		expect(result.warnings.some((w) => w.includes("@gone") && w.includes("no channel matched"))).toBe(true);
+	});
+
+	it("does not request a handle's feed when there is no key to resolve it with", async () => {
+		const asked: string[] = [];
+		const fetchMock = vi.fn(async (url: string) => {
+			asked.push(url);
+			return textResponse(atomFeed([]));
+		});
+		const ctx = makeCtx({
+			fetch: fetchMock as unknown as typeof fetch,
+			watchlists: { github_repos: [], sec_companies: [], crypto_assets: [], fred_series: [], subreddits: [], youtube_channels: ["@someone", "UCplain"], arxiv_categories: [] },
+		});
+
+		const result = await runCollect(ctx);
+		expect(asked.every((u) => !u.includes("%40someone"))).toBe(true);
+		expect(asked.some((u) => u.includes("channel_id=UCplain"))).toBe(true);
+		expect(result.warnings.some((w) => w.includes("@someone") && w.includes("YOUTUBE_API_KEY"))).toBe(true);
+	});
+});

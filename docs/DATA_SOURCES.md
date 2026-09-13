@@ -12,47 +12,43 @@ Everything below was read out of the collector source, `config/sources.yaml` and
 
 | Source | Credential | Required? | Enabled | Status |
 |---|---|---|---|---|
-| rss (Miniflux) | `MINIFLUX_API_KEY` (+ `baseUrl`) | Required | true | **DISABLED** — no credential present |
-| web (Tavily) | `TAVILY_API_KEY` | Required | false | **Not a collector.** Reached only via the `search_web` curator tool; degrades to Exa, then unavailable. Credential present in the Keychain but unreadable by this project — see below |
-| github | `GITHUB_TOKEN` | Optional | true | **DEGRADED** — runs unauthenticated at lower rate limits |
+| rss (Miniflux) | `MINIFLUX_API_KEY` (+ `MINIFLUX_URL`) | Required | true | **OK** — 83 entries on the first authenticated run |
+| web (Tavily) | `TAVILY_API_KEY` | Required | false | **Not a collector.** Reached only via the `search_web` curator tool; degrades to Exa, then unavailable. **Working** — resolved from `secrets.env`, not the Keychain; see below |
+| github | `GITHUB_TOKEN` | Optional | true | **OK (authenticated)** — 5000 req/h, 1018 items on the first authenticated run |
 | hackernews | — | None | true | **OK** |
-| arxiv | — | None | true | **FAILED (transient)** — the export API is currently rate-limiting this address; see the arxiv section |
-| semantic-scholar | `SEMANTIC_SCHOLAR_API_KEY` | Optional | true | **OK (throttled)** — keyless public tier; enrichment-only, needs arXiv ids |
+| arxiv | — | None | true | **FAILED (transient)** — the export API is rate-limiting this address; see the arxiv section |
+| semantic-scholar | `SEMANTIC_SCHOLAR_API_KEY` | Optional | true | **OK (anonymous)** — keyless public tier; enrichment-only, needs arXiv ids |
 | coingecko | `COINGECKO_API_KEY` | Optional | true | **OK** — public tier, no demo key present |
-| fred | `FRED_API_KEY` | Required | true | **DISABLED** — no credential present |
+| fred | `FRED_API_KEY` | Required | true | **OK** — authenticated; most days add no observations, which is not a fault |
 | sec | — (`userAgent`, not a secret) | None, but `userAgent` is mandatory | false | **DISABLED** — disabled in config *and* no `userAgent` set |
-| reddit | `REDDIT_CLIENT_ID` + `REDDIT_CLIENT_SECRET` | Optional | false | **DISABLED** — disabled in config |
-| youtube | `YOUTUBE_API_KEY` | Optional | true *(see note)* | **DISABLED** — disabled in config |
+| reddit | `REDDIT_CLIENT_ID` + `REDDIT_CLIENT_SECRET` | Optional | false | **DISABLED** — disabled in config, both credentials blank |
+| youtube | `YOUTUBE_API_KEY` | Optional | true | **DEGRADED** — RSS + Data API discovery working; one watchlist handle (`@sst_dev`) matches no channel |
 
-**Read the Status column as current fact, not as a hypothetical.** At the time of
-writing, `.env` and the process environment contain only `POSTGRES_USER`,
-`POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_PORT`, `DATABASE_URL` and
-`DI_LINEAGE`. No collector credential of any kind is present, and the only Keychain
-mapping the code knows about is `TAVILY_API_KEY → (service "pi-tavily", account
-"oliver")` (`KEYCHAIN_MAPPINGS` in `src/config/secrets.ts`). So every
-credential-requiring source reports `DISABLED`, and every credential-*optional*
-source runs in its reduced, unauthenticated mode. None of them are "working" in the
-full sense until the operator supplies secrets.
+**Read the Status column as current fact, not as a hypothetical.** Credentials now
+reach the collectors from `~/.config/daily-intelligence/secrets.env`, which the
+worker and the LaunchAgent load into the environment at startup
+(`src/config/secrets-file.ts`); the resolver in `src/config/secrets.ts` is unchanged
+and still reads environment first, Keychain second. Of the eleven keys that file
+carries, seven hold a value and four are blank: `SEMANTIC_SCHOLAR_API_KEY`,
+`REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET` and `SEC_USER_AGENT`.
 
-### The Tavily credential exists but this project cannot read it
+### Miniflux's address is not in this repository
 
-The Keychain item is there: `security find-generic-password -s pi-tavily -a oliver`
-finds it and prints its attributes. Reading the *value* (`-w`) fails with status 36
-from a non-interactive shell, because the item's access control list admits the
-binary that created it and not `/usr/bin/security`. `resolveSecret("TAVILY_API_KEY")`
-therefore reports the secret as absent, which is the correct answer to the only
-question it asks — can this process obtain the value — and `search_web` is simply not
-configured for the run.
+`MINIFLUX_API_KEY` is useless without knowing which instance to send it to, and that
+address differs per machine, so `MINIFLUX_URL` overrides the `rss.baseUrl` in
+`config/sources.yaml` (`applyEnvOverrides`, `src/config/loader.ts`). The checked-in
+`http://localhost:8080` is a fallback, not the real address. This is the only config
+key with an environment override; it is deliberately not a general mechanism, which
+would make the effective configuration impossible to read off the files.
 
-This is not something to fix in code, and deliberately so: the fix would be to widen
-an ACL on a credential this project does not own, or to copy the value into a file
-beside the code. Either would weaken the arrangement that is currently protecting it.
-Enabling web research means the operator granting access to that item, or putting a
-key in the environment under `TAVILY_API_KEY` or `EXA_API_KEY`. Until then the
-pipeline runs without web research and says so.
+### Tavily no longer depends on the Keychain
 
-*(Note on `youtube`: `config/sources.yaml` sets `enabled: false`, which is what
-governs. The row above reflects config.)*
+The `pi-tavily` Keychain item is still unreadable by this project: its ACL admits the
+binary that created it, not `/usr/bin/security`, so `security find-generic-password
+-s pi-tavily -a oliver -w` exits 36. That has not been worked around, and nothing
+about the macOS item was changed. `TAVILY_API_KEY` in `secrets.env` simply wins the
+environment-first half of the resolution order, and a live search through the
+production provider returns results. Both facts were verified in the same run.
 
 ## How "required" is decided, and what happens when a secret is missing
 
@@ -115,8 +111,8 @@ configured entirely outside this repo.
 
 **Endpoints.** `GET {baseUrl}/v1/entries` with
 `order=id&direction=asc&limit={pageSize}&offset={n}`, plus `after_entry_id={cursor}`
-and `changed_after={unix seconds}`. `baseUrl` comes from `config/sources.yaml`
-(`http://localhost:8080`).
+and `changed_after={unix seconds}`. `baseUrl` comes from `MINIFLUX_URL` when set,
+otherwise from `config/sources.yaml` (`http://localhost:8080`, a fallback).
 
 **Credential.** **Required** — `MINIFLUX_API_KEY`, sent as the `X-Auth-Token` header.
 `requiredSecrets: ["MINIFLUX_API_KEY"]`. A missing key *or* a missing `baseUrl` short
@@ -134,7 +130,8 @@ attempts.
 **Health.** Warnings degrade: `DEGRADED` if some items came through, `FAILED` if none
 did.
 
-**Enabled:** `true`. **Current status: DISABLED** (no `MINIFLUX_API_KEY`).
+**Enabled:** `true`. **Current status: OK** — authenticated against the operator's
+instance, 83 entries on the first run that had both the URL and the key.
 
 ---
 
@@ -200,8 +197,9 @@ itself `DEGRADED`.
 1}`. `x-ratelimit-remaining` is read from responses; `<= 1` or a 429 sets
 `sawRateLimit`, which degrades the collector's health.
 
-**Enabled:** `true`. **Current status: DEGRADED** — no `GITHUB_TOKEN`, so it runs
-unauthenticated.
+**Enabled:** `true`. **Current status: OK** — authenticated with `GITHUB_TOKEN`
+(5000 requests/hour, confirmed against `/rate_limit`). The unauthenticated runs
+earlier the same day fetched 0 items; the first authenticated one fetched 1018.
 
 ---
 
@@ -349,10 +347,14 @@ cursor — and therefore the window — does not move. Falls back to
 
 **Rate limits.** `TokenBucket{capacity: 2, refillPerSecond: 2}`.
 
-**Health.** Warnings degrade: `DEGRADED` if any facts came through, `FAILED` if none
-did.
+**Health.** Only a *problem* degrades: a bad response, a failed request or a
+malformed payload gives `DEGRADED` when some facts still came through and `FAILED`
+when none did. A series with no new observation is a note, not a problem — FRED is
+incremental, and most series do not print on most days, so treating emptiness as a
+fault reported `FAILED` for a collector that was working perfectly.
 
-**Enabled:** `true`. **Current status: DISABLED** (no `FRED_API_KEY`).
+**Enabled:** `true`. **Current status: OK** — authenticated; `FEDFUNDS` verified
+against the live API.
 
 ---
 
@@ -419,7 +421,11 @@ credentials present either.
 ## youtube
 
 **What it collects.** Two passes. First, per-channel RSS for the channels in
-`config/watchlists.yaml` (`youtube_channels`) — always attempted, no key needed.
+`config/watchlists.yaml` (`youtube_channels`). Entries may be written as a UC…
+channel id or as an @handle; a handle is resolved to an id through the Data API
+first, because the feed endpoint understands only ids and answers 404 for a handle.
+Without a key a handle cannot be resolved, so it is skipped with a reason rather
+than requested anyway.
 Second, Data API keyword discovery — only when a key is present. Results are
 deduplicated across both. Warns "no YouTube channels configured" when the watchlist
 is empty.
@@ -430,24 +436,37 @@ key, `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&order
 
 **Credential.** **Optional** — `YOUTUBE_API_KEY`. `requiredSecrets: []`. `check()`
 reports "RSS + Data API discovery enabled" or "RSS only (YOUTUBE_API_KEY absent, Data
-API discovery disabled)".
+API discovery disabled)". Without the key the collector still runs, on whatever
+channel ids the watchlist spells out literally.
 
 **Incrementality.** None via cursor; deduplication plus deterministic item ids.
 
 **Rate limits.** `TokenBucket{capacity: 2, refillPerSecond: 2}`, 15s timeout, 3
 attempts.
 
-**Enabled:** `false`. **Current status: DISABLED** — disabled in config. Were it
-enabled, it would run RSS-only, since no `YOUTUBE_API_KEY` is present.
+**Enabled:** `true`. **Current status: DEGRADED** — the key is present and both
+passes work (55 items on the first run), but `@sst_dev` in the watchlist matches no
+channel. The health is honest rather than cosmetic: a watchlist entry that silently
+contributes nothing should be visible until it is corrected or removed.
 
 ---
 
 ## What to do about it
 
-To move a source from DISABLED to OK, supply its secret (env var or Keychain — see
-`docs/SECURITY.md` for the resolution order) and, for `sec`, `reddit` and `youtube`,
-flip `enabled: true` in `config/sources.yaml`. For `sec`, set `userAgent` to a real
+To move a source from DISABLED to OK, put its secret in
+`~/.config/daily-intelligence/secrets.env` (or the environment, or the Keychain — see
+`docs/SECURITY.md` for the resolution order) and, for `sec` and `reddit`, flip
+`enabled: true` in `config/sources.yaml`. For `sec`, set `userAgent` to a real
 contact string first; leaving it blank is the reason it ships disabled.
+
+The two still worth supplying:
+
+- **`SEMANTIC_SCHOLAR_API_KEY`** — only lifts a rate limit. The collector already
+  works anonymously, and its anonymous tier answers 429 under load, which is what a
+  key would fix.
+- **`REDDIT_CLIENT_ID` + `REDDIT_CLIENT_SECRET`** — both are needed, and the source
+  is the only one on the list that would add a genuinely new kind of material
+  (discussion) rather than more of what is already collected.
 
 Every collector implements `check(ctx)`, which probes configuration and credentials
 without doing a full collection, and `/admin/sources` in the web reader surfaces

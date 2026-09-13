@@ -1,5 +1,12 @@
 # Live run report
 
+> **Superseded in part.** This describes the first production run, made before the
+> operator supplied credentials — its brief is kept as
+> `briefs/2026-09-13/2026-09-13.v1.*` and as drafts 1-3 in the database. The run
+> made with Miniflux, GitHub, FRED, YouTube and Tavily enabled is
+> `docs/CONNECTOR_ENABLEMENT_REPORT.md`, which doubles the day's stories from four
+> to eight. Everything below remains accurate as a record of what was true then.
+
 The first end-to-end production run: real collectors, real Postgres, real Pi
 sessions, no fixture and no gold truth. Triggered by hand through the installed
 LaunchAgent rather than waited for, so the scheduled path is the path that was

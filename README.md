@@ -86,6 +86,11 @@ fallback still applies, and the collector that needs it stays `DISABLED` rather
 than failing the run. A missing file is equally fine — the product is expected to
 run with no credentials at all.
 
+One entry in that file is not a credential: `MINIFLUX_URL`. A Miniflux instance
+lives at a different address on every machine, and the key is useless without it,
+so it overrides `rss.baseUrl` in `config/sources.yaml` rather than being checked
+in. It is the only config key with an environment override.
+
 Precedence is **explicit environment variable → `secrets.env` → Keychain**. An
 existing Keychain mapping (`KEYCHAIN_MAPPINGS` in `src/config/secrets.ts`) keeps
 working; a blank placeholder cannot shadow it. Set

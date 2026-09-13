@@ -57,13 +57,40 @@ let cached: AppConfig | undefined;
 export function loadConfig(root: string = PROJECT_ROOT): AppConfig {
 	if (cached) return cached;
 	cached = {
+		// Order matters only for which file an invalid-config error names first;
+		// keep it the on-disk reading order.
 		interests: loadYamlFile(root, "interests.yaml", InterestsConfig),
 		watchlists: loadYamlFile(root, "watchlists.yaml", WatchlistsConfig),
-		sources: loadYamlFile(root, "sources.yaml", SourcesConfig),
+		sources: applyEnvOverrides(loadYamlFile(root, "sources.yaml", SourcesConfig), process.env),
 		discovery: loadYamlFile(root, "discovery.yaml", DiscoveryConfig),
 		agent: loadYamlFile(root, "agent.yaml", AgentConfig),
 	};
 	return cached;
+}
+
+/**
+ * A Miniflux instance lives at a different address on every machine, so its URL
+ * belongs with the operator's other per-machine settings rather than in a
+ * tracked config file. It is not a credential, but it arrives beside one — the
+ * API key is useless without it — so `MINIFLUX_URL` from the environment (which
+ * is where secrets.env lands) wins over the `rss.baseUrl` checked in here.
+ *
+ * Deliberately narrow: this is not a general "every config key is also an env
+ * var" mechanism, which would make the effective configuration unreadable.
+ */
+export function applyEnvOverrides(
+	sources: AppConfig["sources"],
+	env: NodeJS.ProcessEnv,
+): AppConfig["sources"] {
+	const minifluxUrl = env["MINIFLUX_URL"]?.trim();
+	if (minifluxUrl === undefined || minifluxUrl === "") return sources;
+	return {
+		...sources,
+		collectors: {
+			...sources.collectors,
+			rss: { ...sources.collectors["rss"]!, baseUrl: minifluxUrl.replace(/\/$/, "") },
+		},
+	};
 }
 
 /** Test-only: clears the cache so a fresh {@link loadConfig} call re-reads disk. */

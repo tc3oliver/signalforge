@@ -4,8 +4,9 @@ import { UNTRUSTED_EXTERNAL_CONTENT } from "./types.ts";
 
 /**
  * Queries used for Data API discovery (key required). Channels come from
- * config/watchlists.yaml (ctx.watchlists.youtube_channels) as channel ids; there
- * is no schema field for discovery queries yet, so this stays a documented default.
+ * config/watchlists.yaml (ctx.watchlists.youtube_channels), as either a UC...
+ * channel id or an @handle; there is no schema field for discovery queries yet,
+ * so this stays a documented default.
  */
 const DISCOVERY_QUERIES = ["claude code", "local llm inference"];
 
@@ -50,11 +51,51 @@ export const youtubeCollector: Collector = {
 		const warnings: string[] = [];
 		let itemsFetched = 0;
 
-		const channelIds = ctx.watchlists?.youtube_channels ?? [];
+		const configured = ctx.watchlists?.youtube_channels ?? [];
 		const bucket = new TokenBucket({ capacity: 2, refillPerSecond: 2 });
 		const get = (url: string) => fetchWithRetry(url, {}, { fetchImpl: ctx.fetch, timeoutMs: 15_000, maxAttempts: 3, signal: ctx.signal, bucket });
 
-		if (channelIds.length === 0) warnings.push("no YouTube channels configured");
+		if (configured.length === 0) warnings.push("no YouTube channels configured");
+
+		const hasKey = await ctx.hasSecret("YOUTUBE_API_KEY");
+		const apiKey = hasKey ? await ctx.secret("YOUTUBE_API_KEY") : undefined;
+
+		/*
+		 * The watchlist is maintained by a human, who knows channels by their
+		 * @handle; the feed endpoint only knows opaque UC... ids. Handing it a
+		 * handle produces a 404 per channel and an empty collector that still
+		 * reports itself as working, so handles are translated first -- and, when
+		 * they cannot be (no key), skipped with a reason rather than requested
+		 * anyway.
+		 */
+		const channelIds: string[] = [];
+		for (const entry of configured) {
+			if (!entry.startsWith("@")) {
+				channelIds.push(entry);
+				continue;
+			}
+			if (apiKey === undefined) {
+				warnings.push(`${entry}: a handle cannot be resolved to a channel id without YOUTUBE_API_KEY; skipped`);
+				continue;
+			}
+			const url = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${encodeURIComponent(entry)}&key=${apiKey}`;
+			try {
+				const res = await get(url);
+				const body = (await res.json()) as { items?: { id?: string }[] };
+				const id = body.items?.[0]?.id;
+				if (id === undefined) {
+					warnings.push(`${entry}: no channel matched this handle`);
+					continue;
+				}
+				channelIds.push(id);
+			} catch (err) {
+				warnings.push(
+					err instanceof HttpError
+						? `${entry}: handle lookup returned ${err.status} for ${redactUrl(url)}`
+						: `${entry}: handle lookup failed: ${(err as Error).message}`,
+				);
+			}
+		}
 
 		// --- RSS per channel: no key required, always attempted ---
 		for (const channelId of channelIds) {
@@ -93,9 +134,7 @@ export const youtubeCollector: Collector = {
 		}
 
 		// --- Data API discovery: only when a key is configured; cleanly skipped otherwise ---
-		const hasKey = await ctx.hasSecret("YOUTUBE_API_KEY");
-		if (hasKey) {
-			const apiKey = await ctx.secret("YOUTUBE_API_KEY");
+		if (apiKey !== undefined) {
 			for (const query of DISCOVERY_QUERIES) {
 				const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&order=date&q=${encodeURIComponent(
 					query,

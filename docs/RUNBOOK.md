@@ -91,6 +91,15 @@ LaunchAgents get it too without any change to the plists.
 - Precedence: explicit environment variable → `secrets.env` → Keychain.
 - `DAILY_INTELLIGENCE_SECRETS_FILE` points the loader elsewhere.
 
+Two entries need more than pasting a key:
+
+- **Miniflux** needs `MINIFLUX_URL` as well as `MINIFLUX_API_KEY`, and reports
+  `DISABLED` until it has both. The URL overrides `rss.baseUrl` in
+  `config/sources.yaml`, whose `http://localhost:8080` is only a fallback.
+- **Reddit** needs both `REDDIT_CLIENT_ID` and `REDDIT_CLIENT_SECRET`, and then
+  `enabled: true` in `config/sources.yaml`; `sec` needs a real contact string in
+  `SEC_USER_AGENT` before it may be enabled at all.
+
 Startup logs how many names were set and which are still blank. It never logs a
 value, and no error message carries one — so if a key is wrong, the symptom is
 the provider rejecting it, not the key appearing in a log.

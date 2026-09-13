@@ -87,10 +87,11 @@ describe("fredCollector", () => {
 
 		const result = await runCollect(ctx);
 
-		// Other tracked series return no observations in this fixture, which is a
-		// legitimate warning (staleness signal), so overall health is DEGRADED even
-		// though FEDFUNDS itself collected cleanly.
-		expect(result.health).toBe("DEGRADED");
+		// The other tracked series return no observations in this fixture. That is
+		// recorded as a note, not a fault: an incremental series with nothing new is
+		// a collector that worked, so health stays OK.
+		expect(result.health).toBe("OK");
+		expect(result.warnings.some((w) => w.includes("no new observations"))).toBe(true);
 		const fedFunds = result.facts.find((f) => f.label === "FEDFUNDS");
 		expect(fedFunds?.asOf).toBe("2025-12-01");
 		expect(fedFunds?.value).toBe(5.25);
@@ -180,5 +181,29 @@ describe("fredCollector", () => {
 		const r2 = await runCollect(ctx2);
 
 		expect(r1.facts.map((f) => f.externalId).sort()).toEqual(r2.facts.map((f) => f.externalId).sort());
+	});
+});
+
+describe("fredCollector health", () => {
+	it("stays OK when every series is simply up to date", async () => {
+		const fetchMock = vi.fn(async () => jsonResponse(obsBody([])));
+		const ctx = makeCtx({ fetch: fetchMock as unknown as typeof fetch, secrets: { FRED_API_KEY: "shh" } });
+
+		const result = await runCollect(ctx);
+
+		expect(result.health).toBe("OK");
+		expect(result.facts).toEqual([]);
+		expect(result.warnings.every((w) => w.includes("no new observations"))).toBe(true);
+	});
+
+	it("reports FAILED when a real fault leaves it with nothing", async () => {
+		const fetchMock = vi.fn(async () => {
+			throw new Error("network down");
+		});
+		const ctx = makeCtx({ fetch: fetchMock as unknown as typeof fetch, secrets: { FRED_API_KEY: "shh" } });
+
+		const result = await runCollect(ctx);
+
+		expect(result.health).toBe("FAILED");
 	});
 });

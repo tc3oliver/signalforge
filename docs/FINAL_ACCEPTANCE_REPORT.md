@@ -8,10 +8,15 @@ Date: 2026-09-13. Repository: `~/Developer/src/personal/daily-intelligence`.
 
 # FINAL STATUS: PASS WITH OPTIONAL CONNECTORS DISABLED
 
-Every mandatory gate passes. Six of the eleven sources are implemented, tested
-and degrade cleanly, but cannot run here because no credential is available —
-the core system works without them, and each is a one-line configuration change
-away from working. Details in "Optional connectors" below.
+Every mandatory gate passes.
+
+**Updated after the operator supplied credentials.** Miniflux, GitHub, FRED,
+YouTube and Tavily are now live and were re-verified end to end; the day's brief
+was re-run with them and doubled from four stories to eight. Two sources remain
+disabled for want of a credential (`reddit`, `sec`) and one runs anonymously
+(`semantic-scholar`), so the status line is unchanged — but it now covers three
+sources rather than six. The full record is
+`docs/CONNECTOR_ENABLEMENT_REPORT.md`.
 
 ## Results
 
@@ -20,15 +25,15 @@ away from working. Details in "Optional connectors" below.
 | Synthetic intelligence acceptance | **PASS** | `experiments/p11-b/`, three days, every gate, `failedGates: []` |
 | Stability | **PASS** | three independent lineages; core story selection 0.922 vs 0.85 gate |
 | Live Pi fallback | **PASS** | real primary → injected QUOTA at 50/79 → real fallback finished 29 |
-| Collectors | **PASS (optional connectors disabled)** | 10 registered, all report health; see below |
+| Collectors | **PASS (optional connectors disabled)** | 10 registered, all report health; 6 HEALTHY, 2 DEGRADED, 2 DISABLED after enablement |
 | PostgreSQL | **PASS** | 20 tables, migrations 1–2, pgvector + FTS, 2,075 raw / 2,007 normalized items |
 | Backup / restore | **PASS** | restored into a scratch database, counted, dropped |
-| Live daily run | **PASS** | `e3a10340-ec3f-4cf3-b61c-628a6c25b7e4` → PUBLISHED |
+| Live daily run | **PASS** | `08cf0475-54bc-4930-a1eb-c2e5aa5ef2c0` → PUBLISHED, 1295/1295 scanned, 8 stories; supersedes `e3a10340` |
 | Validator | **PASS** | rejected four unsatisfiable submissions, accepted the correct one |
-| Web | **PASS** | 10 routes, HTTP 200, real data, loopback only |
+| Web | **PASS** | 10 routes, HTTP 200, real data, loopback only; re-verified against the 8-story brief |
 | LaunchAgent | **PASS** | both agents installed and triggered by hand; both reached Postgres |
 | Security | **PASS** | restricted runtime asserted per session; global Pi untouched; no credential in any log |
-| Tests | **PASS** | 54 files, 646 tests, none skipped |
+| Tests | **PASS** | 55 files, 664 tests, none skipped |
 | Typecheck | **PASS** | clean |
 | Build | **PASS** | 13 routes |
 
@@ -272,47 +277,55 @@ pnpm build        typecheck + next build, 13 routes
 themselves while the summary still said the run passed. It now loads the env file
 and those suites actually run — which immediately surfaced a hidden failure.
 
-## Optional connectors, disabled
+## Optional connectors
 
-Each is implemented, unit-tested, and degrades to DISABLED without affecting the
-rest of the pipeline. None is required for the product to work.
+Each is implemented, unit-tested, and degrades without affecting the rest of the
+pipeline. None is required for the product to work. Five have since been enabled
+by the operator; the remaining three are below.
 
 | Connector | Missing | Impact | Works without it? | To enable |
 |---|---|---|---|---|
-| Miniflux (rss) | `MINIFLUX_API_KEY` | no RSS/feed coverage — the largest editorial loss | yes | put the key in the environment or the Keychain |
-| FRED | `FRED_API_KEY` | no macro series or structured macro facts | yes | free API key from FRED |
-| Reddit | `REDDIT_CLIENT_ID` + `_SECRET` | no community signal | yes | create a script app, set both, `enabled: true` |
-| YouTube | `YOUTUBE_API_KEY` | no video/transcript coverage | yes | YouTube Data API key, `enabled: true` |
-| SEC EDGAR | a real contact User-Agent | no filings | yes | set `userAgent: "Name email"` in `config/sources.yaml`, `enabled: true` |
-| Web research (Tavily → Exa) | a *readable* credential | curator cannot close evidence gaps; `search_web` is simply absent from the tool set | yes | see below |
+| Reddit | `REDDIT_CLIENT_ID` + `_SECRET` | no community signal — the only remaining gap in *kind* of material rather than volume | yes | create a script app, set both in `secrets.env`, `enabled: true` |
+| SEC EDGAR | a real contact User-Agent | no filings | yes | set `SEC_USER_AGENT` to "Name email", `enabled: true` |
+| Semantic Scholar | `SEMANTIC_SCHOLAR_API_KEY` | runs anonymously; the public tier answers 429 under load | yes, degraded | a free key raises the rate limit |
+
+Now enabled and verified live: Miniflux, GitHub, FRED, YouTube, and web research
+through Tavily. See `docs/CONNECTOR_ENABLEMENT_REPORT.md`.
 
 ### The Tavily credential, specifically
 
 The Keychain item exists — `security find-generic-password -s pi-tavily -a oliver`
-finds it and prints its attributes. Reading the **value** (`-w`) fails with status
-36 from a non-interactive shell, because the item's access control list admits the
-binary that created it and not `/usr/bin/security`. So `resolveSecret` correctly
-reports the secret as unavailable and the run proceeds without web research.
+finds it and prints its attributes. Reading the **value** (`-w`) still fails with
+status 36 from a non-interactive shell, because the item's access control list
+admits the binary that created it and not `/usr/bin/security`.
 
-This was deliberately **not** worked around. The available workarounds are to
-widen the ACL on a credential this project does not own, or to copy the value into
-a file next to the code — both weaken the arrangement currently protecting it.
-Enabling web research is the operator's call: grant access to that item, or set
-`TAVILY_API_KEY` / `EXA_API_KEY` in the environment.
+This was deliberately **not** worked around, and still has not been: the ACL on a
+credential this project does not own was not widened, and no macOS security
+control was weakened. Tavily works today because the operator put
+`TAVILY_API_KEY` in `~/.config/daily-intelligence/secrets.env`, which the
+environment-first half of `resolveSecret` picks up. Both facts — the working
+search and the exit-36 Keychain read — were observed in the same run.
 
 ## Known limitations
 
 1. **pgvector is provisioned, not used.** Search is full-text only.
 2. **No live prompt-injection test.** Structural defence tested, behavioural not.
-3. **The live day was thin.** Four stories from 771 items, because the sources
-   that carry news were the ones without credentials. Not a defect, but it means
-   editorial quality at full source coverage is still unmeasured.
+3. **The live day is no longer thin, but coverage is still not full.** The
+   credentialed re-run produced eight stories from 1295 items. Reddit and SEC
+   remain unavailable, so editorial quality at complete source coverage is still
+   unmeasured — and a single day is a single day either way.
 4. **arXiv is rate-limiting this address** after repeated acceptance runs. It
    should recover on the normal five-a-day schedule; it reports FAILED honestly
    meanwhile.
-5. **One unexplained discrepancy:** arXiv's live row shows 383s against a 180s
+5. **One unexplained discrepancy:** arXiv's live row showed 383s against a 180s
    per-collector ceiling that two tests confirm works. Nothing was harmed and the
-   cause was not established. Worth re-checking on the next scheduled run.
+   cause was not established. Later runs the same day show 18-51s, so the ceiling
+   is no longer visibly exceeded, but the original reading remains unexplained.
+6. **One brief source URL is unreachable.** A Reuters article answers 401 to any
+   anonymous request. The URL is genuine — it is what a real Hacker News
+   submission points at — but URL-health checking cannot distinguish a paywall
+   from a bad link without an account, so 15/15 will not be achievable on days
+   that include such a publisher.
 6. **OrbStack wedged three times** during this work — `docker` and `docker ps`
    hanging indefinitely, recovered each time by `orbctl stop && orbctl start`.
    A machine-level instability, not a project defect, but it will interrupt a

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadConfig, reloadConfig, resolveEnabledSources } from "../src/config/loader.ts";
+import { applyEnvOverrides, loadConfig, reloadConfig, resolveEnabledSources } from "../src/config/loader.ts";
 import { SourceType } from "../src/schemas/item.ts";
 import {
 	AgentConfig,
@@ -62,9 +62,10 @@ describe("resolveEnabledSources", () => {
 		for (const sourceType of enabled) {
 			expect(config.sources.collectors[sourceType as SourceType]?.enabled).toBe(true);
 		}
-		// reddit and youtube ship disabled by default (no credentials configured yet).
+		// reddit ships disabled by default: it needs two credentials, and sec
+		// needs a real contact User-Agent.
 		expect(enabled).not.toContain("reddit");
-		expect(enabled).not.toContain("youtube");
+		expect(enabled).not.toContain("sec");
 		expect(enabled).toContain("github");
 	});
 });
@@ -133,5 +134,26 @@ describe("config validation errors", () => {
 		reloadConfig();
 		expect(() => loadConfig("/nonexistent-project-root")).toThrow(/interests\.yaml/);
 		reloadConfig();
+	});
+});
+
+describe("applyEnvOverrides", () => {
+	const base = loadConfig().sources;
+
+	it("replaces the rss baseUrl with MINIFLUX_URL, trailing slash trimmed", () => {
+		const out = applyEnvOverrides(base, { MINIFLUX_URL: "https://rss.example.com/" });
+		expect(out.collectors["rss"]!.baseUrl).toBe("https://rss.example.com");
+	});
+
+	it("leaves the checked-in baseUrl alone when MINIFLUX_URL is absent or blank", () => {
+		expect(applyEnvOverrides(base, {}).collectors["rss"]!.baseUrl).toBe(base.collectors["rss"]!.baseUrl);
+		expect(applyEnvOverrides(base, { MINIFLUX_URL: "   " }).collectors["rss"]!.baseUrl).toBe(
+			base.collectors["rss"]!.baseUrl,
+		);
+	});
+
+	it("touches no other collector", () => {
+		const out = applyEnvOverrides(base, { MINIFLUX_URL: "https://rss.example.com" });
+		expect(out.collectors["github"]).toEqual(base.collectors["github"]);
 	});
 });

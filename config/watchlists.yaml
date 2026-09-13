@@ -82,8 +82,10 @@ subreddits:
   - Bitcoin
 
 youtube_channels:
-  # channel handle or ID; used to build feed/search queries.
-  - "@AnthropicAI"
+  # channel handle (@name) or UC... channel ID. A handle is resolved to an ID
+  # through the Data API, which needs YOUTUBE_API_KEY; without it, handles are
+  # skipped with a warning rather than requested and 404ed.
+  - "@anthropic-ai"
   - "@sst_dev"
   - "@TwoMinutePapers"
   - "@YannicKilcher"

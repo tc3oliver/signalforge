@@ -44,7 +44,10 @@ export const fredCollector: Collector = {
 	async collect(ctx: CollectorContext): Promise<CollectorResult> {
 		const startedAt = ctx.now().toISOString();
 		const facts: CollectedFact[] = [];
-		const warnings: string[] = [];
+		/** Things that went wrong, and only those: these decide the health. */
+		const problems: string[] = [];
+		/** Things worth telling an operator that are not faults. */
+		const notes: string[] = [];
 		let itemsFetched = 0;
 
 		const hasKey = await ctx.hasSecret("FRED_API_KEY");
@@ -72,7 +75,7 @@ export const fredCollector: Collector = {
 		const cursorOut: Cursor = { ...cursorIn };
 		let health: "OK" | "DEGRADED" | "FAILED" = "OK";
 
-		if (series.length === 0) warnings.push("no FRED series configured");
+		if (series.length === 0) problems.push("no FRED series configured");
 
 		for (const seriesId of series) {
 			const observationStart = cursorIn[seriesId] ?? ctx.since.toISOString().slice(0, 10);
@@ -80,11 +83,15 @@ export const fredCollector: Collector = {
 			try {
 				const res = await fetchWithRetry(url, {}, { fetchImpl: ctx.fetch, timeoutMs: 15_000, maxAttempts: 3, signal: ctx.signal, bucket });
 				const body = (await res.json()) as { observations?: Observation[] };
-				const observations = body.observations ?? [];
-				if (!Array.isArray(observations)) {
-					warnings.push(`${seriesId}: malformed payload, missing observations array`);
+				// Absent and non-array are both malformed. Defaulting a missing key to
+				// [] would make a broken response indistinguishable from a series that
+				// simply has nothing new -- and under the health rule below, that would
+				// turn a real fault into a silent OK.
+				if (!Array.isArray(body.observations)) {
+					problems.push(`${seriesId}: malformed payload, missing observations array`);
 					continue;
 				}
+				const observations = body.observations;
 
 				let latestDate = cursorIn[seriesId];
 				for (const obs of observations) {
@@ -114,18 +121,31 @@ export const fredCollector: Collector = {
 					next.setUTCDate(next.getUTCDate() + 1);
 					cursorOut[seriesId] = next.toISOString().slice(0, 10);
 				} else if (observations.length === 0) {
-					warnings.push(`${seriesId}: no new observations since ${observationStart}`);
+					// Not a problem: an economic series that has not printed since the
+					// last run is the normal state of most series on most days. It is
+					// recorded so an operator can see the series was asked, but it must
+					// not be mistaken for a fault -- see the health rule below.
+					notes.push(`${seriesId}: no new observations since ${observationStart}`);
 				}
 			} catch (err) {
 				if (err instanceof HttpError) {
-					warnings.push(`${seriesId} returned ${err.status} for ${redactUrl(url)}`);
+					problems.push(`${seriesId} returned ${err.status} for ${redactUrl(url)}`);
 				} else {
-					warnings.push(`${seriesId} request failed: ${(err as Error).message}`);
+					problems.push(`${seriesId} request failed: ${(err as Error).message}`);
 				}
 			}
 		}
 
-		if (warnings.length > 0) health = facts.length > 0 ? "DEGRADED" : "FAILED";
+		/*
+		 * Only a problem degrades the collector. Emptiness does not: FRED is
+		 * incremental, and a day on which no configured series printed a new
+		 * observation is a day on which this collector worked perfectly and had
+		 * nothing to add. Conflating the two reported FAILED for a healthy,
+		 * authenticated collector, which is exactly the kind of false alarm that
+		 * teaches an operator to ignore the health column.
+		 */
+		const warnings = [...problems, ...notes];
+		if (problems.length > 0) health = facts.length > 0 ? "DEGRADED" : "FAILED";
 
 		const finishedAt = ctx.now().toISOString();
 		return {

@@ -1,4 +1,4 @@
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync } from "node:fs";
 import { join } from "node:path";
 import { parseFlags, projectRoot } from "./_args.ts";
 import { loadConfig } from "../config/loader.ts";
@@ -39,6 +39,26 @@ async function buildResearch(): Promise<CuratorResearchConfig | undefined> {
 		tracker,
 	);
 	return { router, maxResults: budgets.maxResults };
+}
+
+/**
+ * Renames an existing brief pair to `<date>.v<n>.<ext>` and returns the version
+ * stem used, or undefined when there was nothing to keep. `n` is the lowest
+ * number not already taken, so repeated runs accumulate rather than collide.
+ */
+function archivePreviousBrief(
+	outDir: string,
+	date: string,
+	jsonPath: string,
+	markdownPath: string,
+): string | undefined {
+	if (!existsSync(jsonPath) && !existsSync(markdownPath)) return undefined;
+	let n = 1;
+	while (existsSync(join(outDir, `${date}.v${n}.json`)) || existsSync(join(outDir, `${date}.v${n}.md`))) n++;
+	const stem = `${date}.v${n}`;
+	if (existsSync(jsonPath)) renameSync(jsonPath, join(outDir, `${stem}.json`));
+	if (existsSync(markdownPath)) renameSync(markdownPath, join(outDir, `${stem}.md`));
+	return stem;
 }
 
 async function main(): Promise<number> {
@@ -92,6 +112,15 @@ async function main(): Promise<number> {
 			mkdirSync(outDir, { recursive: true });
 			const jsonPath = join(outDir, `${date}.json`);
 			const markdownPath = join(outDir, `${date}.md`);
+			// The database keeps every draft of a day (daily_brief_drafts.draft_no);
+			// the files did not, so re-running a day silently destroyed the copy you
+			// would want to diff the new one against. Retire the previous pair under
+			// the next free version number before writing.
+			const archived = archivePreviousBrief(outDir, date, jsonPath, markdownPath);
+			if (archived !== undefined) {
+				log.info("previous brief archived", { as: archived });
+				console.log(`previous brief kept as: ${archived}`);
+			}
 			writeJsonAtomic(jsonPath, result.brief);
 			if (result.markdown) writeTextAtomic(markdownPath, result.markdown);
 			log.info("brief written", { json: jsonPath, ...(result.markdown ? { markdown: markdownPath } : {}) });

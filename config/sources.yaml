@@ -5,6 +5,9 @@ collectors:
   rss:
     # Implemented as the "miniflux" collector: pulls from a self-hosted Miniflux instance.
     enabled: true
+    # Fallback only. A Miniflux instance's address is per-machine, so MINIFLUX_URL
+    # in the environment (i.e. secrets.env) overrides this; see applyEnvOverrides
+    # in src/config/loader.ts.
     baseUrl: "http://localhost:8080"
     rateLimitPerMinute: 60
     timeoutMs: 10000
@@ -88,7 +91,10 @@ collectors:
     requiredSecrets: [REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET]
 
   youtube:
-    enabled: false
+    # RSS per watchlist channel plus Data API discovery. Without YOUTUBE_API_KEY
+    # the discovery half is skipped and @handles cannot be resolved, so the
+    # collector reports DEGRADED rather than failing.
+    enabled: true
     rateLimitPerMinute: 30
     timeoutMs: 10000
     pageSize: 25
