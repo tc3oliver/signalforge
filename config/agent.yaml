@@ -1,6 +1,26 @@
-# Agent runtime tuning. The model chain mirrors src/runtime/model-config.ts
-# (MODEL_CHAIN) — kept here too so ops can see/tune it without a code change;
-# the loader does not enforce identity with the TS constant.
+# Agent runtime tuning.
+#
+# modelChain is the fallback order: the first entry is tried first, and each
+# later entry is a cheaper last resort. This file is authoritative -- the daily
+# CLI reads it -- and MODEL_CHAIN in src/runtime/model-config.ts is the
+# compiled-in default it must agree with (tests/model-chain-config.test.ts
+# enforces that).
+#
+# `provider` is whatever the installed Pi agent can authenticate as; run
+# `pi models` to list what is available to you. The three below route through
+# subscription-backed providers, which is what this machine happens to have.
+# If you are setting this up yourself, you most likely want a chain of
+# direct-API providers instead, for example:
+#
+#   modelChain:
+#     - provider: anthropic
+#       model: claude-sonnet-5
+#     - provider: openai
+#       model: gpt-5.6
+#
+# and the matching API key in ~/.config/daily-intelligence/secrets.env. Nothing
+# in the pipeline depends on which providers these are, only that there are one
+# or more of them and that the first is the most capable.
 modelChain:
   - provider: github-copilot
     model: gemini-3.8-flash

@@ -1,6 +1,11 @@
 # Reader interest profile. Drives prompt construction (what to look for) and
 # scoring (how to weight what was found). Weight is 0-1 relative importance;
 # keywords/aliases feed both keyword prefilters and story-scoring prompts.
+#
+# What is committed here is one particular reader's profile, kept in the repo as
+# a worked example of the shape rather than as a default anybody should inherit.
+# It is the single largest determinant of what ends up in your brief: replace it
+# with your own topics before the output means anything to you.
 topics:
   - id: ai-llm
     label: AI / LLM

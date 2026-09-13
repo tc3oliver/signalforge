@@ -1,7 +1,17 @@
 /**
- * The fixed model chain. Order is the fallback order: the first entry is tried
- * first, and each subsequent entry is a strictly cheaper/last-resort option.
- * These provider/model pairs are verified to exist on this machine.
+ * The default model chain. Order is the fallback order: the first entry is
+ * tried first, and each subsequent entry is a strictly cheaper/last-resort
+ * option.
+ *
+ * This is a default, not a fixed list. The daily CLI passes the chain from
+ * `config/agent.yaml`, which is where an operator changes providers; this
+ * constant is what the pipeline falls back to when no chain is supplied, and
+ * what tests pin against. The two are held in agreement by
+ * `tests/model-chain-config.test.ts`.
+ *
+ * The providers named here are the ones available on the machine this was
+ * built on. They are not a requirement: any provider the installed Pi agent
+ * can authenticate as will do.
  */
 
 export type ModelSpec = {

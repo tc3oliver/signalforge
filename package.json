@@ -1,6 +1,8 @@
 {
   "name": "daily-intelligence",
   "version": "0.1.0",
+  "description": "A personal daily-intelligence pipeline: collect the day's items, have a restricted agent curate them into stories, and publish a morning brief.",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "engines": {

@@ -1,8 +1,10 @@
 # Operations
 
-This is the day-2 guide for running Daily Intelligence on the Mac Studio: what
-runs when, where its output goes, and how to operate it by hand. See
-`docs/RUNBOOK.md` for what to do when something breaks.
+This is the day-2 guide for running Daily Intelligence on the machine that hosts
+it: what runs when, where its output goes, and how to operate it by hand. The
+scheduling half assumes macOS and launchd, which is what the shipped agents use;
+the commands themselves are platform-independent. See `docs/RUNBOOK.md` for what
+to do when something breaks.
 
 ## What runs, and when
 

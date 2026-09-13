@@ -2,12 +2,18 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { renderPlist, validatePlist } from "../src/ops/plist.ts";
 
+/*
+ * Representative values, not this machine's. The installer resolves the real
+ * ones at install time (`id -u` for UID, `which` for the binaries); nothing
+ * here may be hardcoded anywhere a run would read it, so the test uses
+ * stand-ins that are merely shaped like absolute paths.
+ */
 const TOKENS = {
-	PROJECT_ROOT: "/Users/oliver/Developer/src/personal/daily-intelligence",
-	NODE_BIN: "/Users/oliver/.local/share/mise/installs/node/24/bin/node",
-	PNPM_BIN: "/Users/oliver/.local/share/mise/installs/pnpm/10/pnpm",
-	NODE_BIN_DIR: "/Users/oliver/.local/share/mise/installs/node/24/bin",
-	LOG_DIR: "/Users/oliver/Developer/src/personal/daily-intelligence/logs",
+	PROJECT_ROOT: "/home/example/daily-intelligence",
+	NODE_BIN: "/opt/runtimes/node/24/bin/node",
+	PNPM_BIN: "/opt/runtimes/pnpm/10/pnpm",
+	NODE_BIN_DIR: "/opt/runtimes/node/24/bin",
+	LOG_DIR: "/home/example/daily-intelligence/logs",
 	UID: "501",
 };
 

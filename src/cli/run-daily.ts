@@ -94,6 +94,13 @@ async function main(): Promise<number> {
 			...(stage ? { stage } : {}),
 			skillsRoot: join(root, "agent", "skills"),
 			cwd: join(root, "runs"),
+			// The chain comes from config/agent.yaml, not from the MODEL_CHAIN
+			// constant. The constant remains the default the pipeline falls back
+			// to, but an operator changing providers must be able to do it
+			// without editing TypeScript -- which is the whole point of the file
+			// existing. A test asserts the shipped config still matches the
+			// constant, so the default cannot drift silently.
+			chain: loadConfig().agent.modelChain,
 			...(research ? { research } : {}),
 			log: (msg, fields) => log.info(msg, fields),
 			// Stage events -- tool calls, nudges, and above all the text of a

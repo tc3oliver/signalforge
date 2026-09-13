@@ -21,9 +21,8 @@ It runs on one machine, for one person, on a schedule.
   brief is bounded by which connectors have a key. On the first live run, six of ten
   sources were disabled for want of one and a seventh was rate-limited, so the day's
   material came almost entirely from Hacker News. See `docs/DATA_SOURCES.md`.
-- **Not currently collecting from credentialed sources.** No collector credential is
-  present in `.env` or the environment, so those sources report `DISABLED` or run in
-  a degraded mode. See `docs/DATA_SOURCES.md` for the per-source status.
+- **Not supported.** It is published because the design may be useful to read, not
+  because anyone is on call for it. Expect to fix things yourself; see `LICENSE`.
 
 ## Where it stands
 
@@ -48,14 +47,20 @@ run that silently skipped the whole data layer is worse than a red one.
 
 | | |
 |---|---|
-| Node | ≥ 24 (`package.json` `engines`); v24.21.0 here, mise-managed |
-| pnpm | 10.34.5, mise-managed |
-| Docker | OrbStack, context `orbstack` |
-| Pi CLI | 0.85.1, already installed and authenticated (`pi auth check`) |
+| Node | ≥ 24 (`package.json` `engines`) |
+| pnpm | 10.x |
+| Docker | any Docker-compatible runtime that can run `compose.yaml` |
+| Pi agent | `@earendil-works/pi-coding-agent` 0.85.1, installed and authenticated (`pi auth check`) |
 
-This project reuses the existing Pi OAuth logins read-only via
-`~/.pi/agent/auth.json` and changes nothing about the global Pi configuration. See
-`docs/ENVIRONMENT.md` for every verified version and the model chain.
+The scheduler is a macOS **LaunchAgent**, so unattended operation as shipped is
+macOS-only. Everything else — collection, curation, writing, the web reader — is
+plain Node and Postgres and does not care what it runs on; on another platform,
+drive `pnpm daily` from whatever scheduler you have.
+
+Authentication is Pi's, not this project's: it reads the existing Pi logins from
+`~/.pi/agent/auth.json` read-only and changes nothing about the global Pi
+configuration. This project never stores a model credential of its own.
+`docs/ENVIRONMENT.md` records the versions this was verified against.
 
 ## First-time setup
 
@@ -69,6 +74,32 @@ cp .env.example .env
 docker compose -p daily-intelligence up -d     # Postgres 17 + pgvector, 127.0.0.1 only
 pnpm db:migrate
 ```
+
+### Choosing the models
+
+`config/agent.yaml` holds the model chain: the first entry is tried first and
+each later one is a cheaper fallback. The daily CLI reads that file, so changing
+providers is a config edit, not a code edit.
+
+```yaml
+modelChain:
+  - provider: anthropic
+    model: claude-sonnet-5
+  - provider: openai
+    model: gpt-5.6
+```
+
+`provider` is whatever the installed Pi agent can authenticate as — run
+`pi models` to see what is available to you. The chain committed here routes
+through subscription-backed providers because that is what the machine it was
+built on has; **if you are setting this up yourself you almost certainly want
+direct-API providers instead.** Nothing in the pipeline depends on which
+providers these are, only that the first is the most capable one you have.
+
+One caveat worth stating plainly: the curator is asked to scan *every* item
+collected that day, which on a busy day is over a thousand. That is a deliberate
+product requirement rather than an oversight, and it makes the run's cost
+proportional to the day's volume. Price the primary model accordingly.
 
 ### Credentials
 
@@ -257,3 +288,14 @@ Everything above is kept current. Dated evidence — acceptance, live runs, the
 stability measurement, the quality review and the P0 fixes — lives under
 [`docs/reports/`](docs/README.md#reports--point-in-time-not-maintained) and is
 deliberately never updated after the fact.
+
+## License
+
+MIT — see [`LICENSE`](LICENSE).
+
+The code is mine to license. What the pipeline *collects* is not: items come from
+Hacker News, GitHub, arXiv, RSS feeds, FRED, CoinGecko and others, each under its
+own terms, and a published brief quotes and links them. Nothing collected is
+redistributed here — `runs/`, `briefs/` and `logs/` are gitignored, and the test
+data committed under `experiments/` and `fixtures/` is synthetic. If you run this,
+the collected content is yours to be responsible for.

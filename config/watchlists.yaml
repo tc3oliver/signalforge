@@ -1,4 +1,9 @@
 # Concrete entities to track per collector. Keep additions here, not in code.
+#
+# As with config/interests.yaml, these are one reader's entities and are meant to
+# be replaced, not inherited. A repo listed here is polled for releases and tags
+# on every run, so the list is a cost as well as a preference -- keep it to things
+# you would actually want woken up about.
 github_repos:
   - anthropics/claude-code
   - anthropics/anthropic-sdk-typescript
