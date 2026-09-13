@@ -83,8 +83,8 @@ read-only and unauthenticated, and `/admin` stays off unless `SIGNALFORGE_ADMIN=
 | `@earendil-works/pi-ai` | 0.85.1 (transitive) |
 | `typebox` | 1.3.7 |
 
-`pi-ai` ships inside `pi-coding-agent`'s own `node_modules` via npm-shrinkwrap and
-does not resolve from this project. The `Model` type is therefore taken from the
+`pi-ai` is a transitive dependency of `pi-coding-agent`, resolved through the pnpm
+store and not importable from this project. The `Model` type is therefore taken from the
 runtime API (`ReturnType<ModelRuntime["getModel"]>`) rather than imported.
 
 **The TypeBox package is `typebox`, not `@sinclair/typebox`.** Custom tool parameters
@@ -92,9 +92,9 @@ use `import { Type } from "typebox"`.
 
 ## Model IDs used by the pipeline
 
-The fixed chain is `MODEL_CHAIN` in `src/runtime/model-config.ts`, mirrored in
-`config/agent.yaml` so it can be inspected without reading code. The loader does not
-enforce identity between the two — `config/agent.yaml` says so in its own header.
+The chain that runs is `modelChain` in `config/agent.yaml`, read at run time.
+`MODEL_CHAIN` in `src/runtime/model-config.ts` is the compiled-in default, and
+`tests/model-chain-config.test.ts` fails if the two ever disagree.
 
 | Role | Provider | Model | Chain position |
 |---|---|---|---|
@@ -153,7 +153,7 @@ All five are parsed by strict Zod schemas in `src/config/schema.ts`;
 
 ## Environment variables
 
-From `.env.example` — these are the only variables the app itself defines:
+From `.env.example`, the database settings:
 
 | Variable | Purpose |
 |---|---|
@@ -161,17 +161,26 @@ From `.env.example` — these are the only variables the app itself defines:
 | `DATABASE_URL` | read first by the app; `PGHOST`/`PGPORT`/… are the fallback |
 | `DI_LINEAGE` | ledger namespace (default `default`); experimental runs set their own so they can never collide with production rows in the same database |
 
-`DAILY_INTELLIGENCE_FAULT_INJECTION` is a test-only opt-in and is documented in
-`docs/DEVELOPMENT.md`; it is absent in normal operation.
+Other variables the code reads, none of them required:
 
-**No collector credential is present in `.env` or the environment at the time of
-writing.** Only the six variables above are set. See `docs/DATA_SOURCES.md` for what
-that means per source.
+| Variable | Purpose |
+|---|---|
+| `DAILY_INTELLIGENCE_SECRETS_FILE` | alternative path for the collector secrets file (default `~/.config/daily-intelligence/secrets.env`) |
+| `KEYCHAIN_ACCOUNT` | account name used for Keychain-mapped secrets |
+| `MINIFLUX_URL` | overrides `rss.baseUrl`; the only config key with an environment override |
+| `DI_REQUIRE_INTEGRATION` | set by `pnpm verify`; turns any infrastructure skip into a failure |
+| `DI_SEED_LINEAGE` | lineage written by `pnpm demo` (default `web-dev`) |
+| `WEB_HOST` / `WEB_PORT` | reader bind address and port (default `127.0.0.1:3300`) |
+| `SIGNALFORGE_ADMIN` | `1` enables the `/admin` routes |
+| `DAILY_INTELLIGENCE_FAULT_INJECTION` | test-only fault injection, `docs/DEVELOPMENT.md`; absent in normal operation |
+
+Collector credentials are listed per source in `docs/DATA_SOURCES.md` and
+`docs/CREDENTIALS.md`; none of them lives in `.env`.
 
 ## What was deliberately NOT touched
 
 `~/.pi/agent/settings.json`, `~/.pi/agent/auth.json`, `~/.config/pi/`, the Keychain,
 the globally installed `pi-web-access` and `@narumitw/pi-usage`. No Pi extension was
 installed for this project, and no third-party package was patched.
-`~/.pi/agent/auth.json` is opened read-only, for OAuth reuse, and is the only global
-file this project depends on.
+`~/.pi/agent/auth.json` is opened read-only for OAuth reuse; the Pi model catalog
+files beside it are the only other global files this project reads.

@@ -9,8 +9,9 @@ Failure playbooks for SignalForge's operations layer. Pair with
 logged in until a login happens at the console (or via Screen Sharing). A
 user LaunchAgent in `gui/<uid>` does not start until that user's GUI session
 exists — this is macOS design, not a bug, and it is why this automation is a
-LaunchAgent and not a LaunchDaemon (it needs the login Keychain for the Pi
-provider auth and Tavily credential, which only a GUI-session job can read).
+LaunchAgent and not a LaunchDaemon (it needs the user's home for Pi's
+`~/.pi/agent/auth.json` and the login Keychain for any Keychain-mapped collector
+secret, which only a GUI-session job can read).
 
 - Screen lock alone does **not** block the agent — a locked-but-logged-in
   session still runs scheduled jobs normally.
@@ -71,7 +72,7 @@ If this fails and you *are* logged in:
 
 ## A collector needs a credential you have not supplied
 
-**Symptom:** `/admin/sources` shows the collector `DISABLED` with
+**Symptom:** `/admin/sources` (with `SIGNALFORGE_ADMIN=1`) shows the collector `DISABLED` with
 `missing required secret(s): NAME`, and the day is published without it.
 
 That is the designed behaviour, not a fault — the run degrades rather than
@@ -98,7 +99,8 @@ Two entries need more than pasting a key:
   `config/sources.yaml`, whose `http://localhost:8080` is only a fallback.
 - **Reddit** needs both `REDDIT_CLIENT_ID` and `REDDIT_CLIENT_SECRET`, and then
   `enabled: true` in `config/sources.yaml`; `sec` needs a real contact string in
-  `SEC_USER_AGENT` before it may be enabled at all.
+  `userAgent` under `sec:` in `config/sources.local.yaml` before it may be
+  enabled at all.
 
 Startup logs how many names were set and which are still blank. It never logs a
 value, and no error message carries one — so if a key is wrong, the symptom is
@@ -132,7 +134,7 @@ upstream API).
    LaunchAgent touched at all — this is a collector-code or credential issue.
    Escalate to whoever owns `src/collectors/**` with the log excerpt.
 3. If every collector fails at once, suspect network/DNS on this machine or
-   an expired credential in the Keychain rather than the schedule itself.
+   an expired credential in `secrets.env` or the Keychain rather than the schedule itself.
 
 ## Pi provider quota exhausted
 

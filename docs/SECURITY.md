@@ -103,8 +103,11 @@ the global `~/.pi/agent/settings.json` is neither read nor written. Nothing from
 `~/.pi/agent` or from `cwd/.pi` leaks in, because `DefaultResourceLoader` — the thing
 that performs that discovery — is never constructed.
 
-`GLOBAL_AUTH_PATH` (`~/.pi/agent/auth.json`) is the only global file the runtime
-reads, and it is read for OAuth reuse.
+`GLOBAL_AUTH_PATH` (`~/.pi/agent/auth.json`) is read for OAuth reuse; the only
+other global files the runtime touches are Pi's model catalog
+(`~/.pi/agent/models.json`, `models-store.json`), read with `allowModelNetwork:
+false` so no catalog is fetched over the network. Nothing else under `~/.pi` is
+read.
 
 `assertRestricted()` is exported and unit-testable, and it **fails the run** if:
 
@@ -330,8 +333,11 @@ NODE_ENV  production
 
 `{{NODE_BIN_DIR}}` is the directory of the mise-managed `node` resolved by the
 installer at install time. Nothing else is injected — in particular, **no secret is
-placed in the plist.** Credentials come from `.env` (loaded by `tsx
---env-file-if-exists=.env`) or from the login Keychain at run time.
+placed in the plist.** Collector credentials come from
+`~/.config/daily-intelligence/secrets.env`, the environment, or the login
+Keychain at run time; `.env` (loaded by `tsx --env-file-if-exists=.env`) holds
+database settings only; model authentication is Pi's own (`~/.pi/agent/auth.json`).
+See `docs/CREDENTIALS.md`.
 
 Consequences worth stating plainly:
 

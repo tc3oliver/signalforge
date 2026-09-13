@@ -250,8 +250,8 @@ have none of that.
 - An in-memory `SettingsManager` — the global `settings.json` is neither read nor
   written.
 - `ModelRuntime` pointed at `GLOBAL_AUTH_PATH` (`~/.pi/agent/auth.json`) so existing
-  OAuth logins work. That is the only global file the runtime reads, and it is read
-  for OAuth reuse and nothing else.
+  OAuth logins work, plus Pi's model catalog files beside it. Those are the only
+  global files the runtime reads, all read-only.
 
 Then `assertRestricted()` fails the run if `extensionCount !== 0`, if any active tool
 is not in the expected custom-tool list, if any expected tool is missing, or if any
@@ -309,7 +309,8 @@ sameModelAttempts)` maps the class to an action:
 
 `RouterState` remembers which providers proved unusable (AUTH failures) during a run
 and skips them for the rest of it. `runStageWithFallback()` walks the chain from
-`MODEL_CHAIN` (`src/runtime/model-config.ts`, mirrored in `config/agent.yaml`) and
+`config/agent.yaml` (`MODEL_CHAIN` in `src/runtime/model-config.ts` is the compiled
+default a test keeps in sync) and
 enforces `maxAttemptsPerModel` (default 4).
 
 `CONTEXT_OVERFLOW` deliberately does not switch models. It opens a fresh session on
@@ -339,7 +340,7 @@ per-run calls from `config/agent.yaml` `searchWeb`. Budget exhaustion is a clean
 
 `src/pipeline/daily-run.ts` defines thirteen states and the only legal edges between
 them. `daily_runs.status` stores a `PipelineState` verbatim (migration 002 widened
-the check constraint for exactly this), so `/admin/runs` reads the real state with no
+the check constraint for exactly this), so `/admin/runs` (with `SIGNALFORGE_ADMIN=1`) reads the real state with no
 lossy mapping.
 
 ```

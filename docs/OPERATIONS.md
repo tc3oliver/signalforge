@@ -9,12 +9,13 @@ to do when something breaks.
 ## What runs, and when
 
 Two [LaunchAgents](../launchd/), both user-domain (`gui/<uid>`), never a
-LaunchDaemon — they need the login Keychain for the Pi provider auth and the
-Tavily credential, which only a GUI-session job can reach.
+LaunchDaemon — they need the user's home for Pi's `~/.pi/agent/auth.json` and
+the login Keychain for any Keychain-mapped collector secret (currently the
+Tavily key), which only a GUI-session job can reach.
 
 | Job | Label | Schedule | Does |
 |---|---|---|---|
-| Daily pipeline | `com.dailyintelligence.daily` | 05:30 | Full run: collect → curate → edit → validate → publish. Targets completion before 07:00. Runs `pnpm daily`. |
+| Daily pipeline | `com.dailyintelligence.daily` | 05:30 | Full run: collect → curate → write → validate → publish. Targets completion before 07:00. Runs `pnpm daily`. |
 | Incremental ingestion | `com.dailyintelligence.incremental` | 09:00, 12:00, 15:00, 18:00, 21:00 | Ingests new source data and updates the normalized store only. **Never** rewrites the published daily brief. Runs `pnpm collect`. |
 
 ## Logs

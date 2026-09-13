@@ -64,7 +64,7 @@ health: "DISABLED", warnings: ["missing required secret(s): …"]
 The comment in the pipeline states the intent: **a missing credential is an
 operational fact, not a run failure.** A disabled collector does not fail the day; it
 is excluded from the active set and recorded in `collection_runs` /
-`daily_runs.degraded_reason` so `/admin/sources` can show credential-blocked sources.
+`daily_runs.degraded_reason` so `/admin/sources` (with `SIGNALFORGE_ADMIN=1`) can show credential-blocked sources.
 
 Note the asymmetry between the two lists: `config/sources.yaml` names the secrets an
 operator is *expected* to supply, while `Collector.requiredSecrets` in the code is

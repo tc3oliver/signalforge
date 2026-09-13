@@ -19,7 +19,7 @@ import { modelKey } from "./model-config.ts";
  * The global interactive Pi lives in ~/.pi/agent. We reuse exactly one thing from
  * it — auth.json, so the existing OAuth logins work — and nothing else. Settings,
  * resources, tools and skills are all supplied by this project, in memory, so a
- * Phase 1 run can neither read the user's interactive configuration nor write to it.
+ * pipeline run can neither read the user's interactive configuration nor write to it.
  */
 const GLOBAL_AGENT_DIR = join(homedir(), ".pi", "agent");
 const GLOBAL_AUTH_PATH = join(GLOBAL_AGENT_DIR, "auth.json");
@@ -40,9 +40,8 @@ let sharedRuntime: ModelRuntime | undefined;
  * One ModelRuntime per process. `refreshOnCreate: true` reads the global Pi
  * catalog and auth files on creation so a model that Pi can authenticate as
  * resolves here; `allowModelNetwork: false` keeps that refresh local, so the
- * runtime never fetches a catalog over the network or rewrites the global Pi
- * files it reads. Authentication stays Pi's: nothing here stores a model
- * credential.
+ * runtime never fetches a catalog over the network. Authentication stays
+ * Pi's: nothing here stores a model credential.
  */
 export async function getModelRuntime(): Promise<ModelRuntime> {
 	if (!sharedRuntime) {
@@ -94,7 +93,7 @@ export function loadProjectSkills(skillsRoot: string): Skill[] {
  * A ResourceLoader that discovers nothing. Every global discovery path
  * (~/.pi/agent/extensions, <cwd>/.pi, AGENTS.md walking, settings `packages`)
  * is replaced by an explicit, empty answer — so pi-web-access and pi-usage
- * cannot load into a Phase 1 worker even though they are installed globally.
+ * cannot load into a pipeline worker even though they are installed globally.
  */
 function createSealedResourceLoader(opts: {
 	skills: Skill[];

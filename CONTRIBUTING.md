@@ -136,8 +136,9 @@ be asked to come out.
 ## Security
 
 
-Do not open a public issue for a vulnerability. Mail the address on the commit
-history instead, and give it time before disclosing.
+Do not open a public issue for a vulnerability. Use GitHub's private
+vulnerability reporting on the repository, as [`.github/SECURITY.md`](.github/SECURITY.md)
+describes, and give it time before disclosing.
 
 The threat model is written down in [`docs/SECURITY.md`](docs/SECURITY.md),
 including what is deliberately out of scope. Two invariants matter most:

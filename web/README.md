@@ -9,7 +9,7 @@ else.
 **A web request never invokes a language model.** Pages are Server Components
 that read rows. Nothing under `web/` may import `@earendil-works/pi-coding-agent`
 or anything from `src/runtime/pi-runtime.ts`; `tests/web-no-llm.test.ts` walks
-every file here and fails the build if that ever changes.
+every file here and fails `pnpm verify` if that ever changes.
 
 Two consequences worth stating explicitly:
 
@@ -84,7 +84,7 @@ install keeps the Next dependency tree out of the pipeline's. Imports of
 `node_modules` the way they do for any other file under `src/`.
 
 ```sh
-pnpm --dir web install       # once
+pnpm install                 # at the repo root; its postinstall installs web/ too
 pnpm run web:build           # from the repo root
 pnpm run web:start           # http://127.0.0.1:3300
 pnpm run web:dev             # dev server, same address

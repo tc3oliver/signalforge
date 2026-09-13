@@ -752,7 +752,7 @@ h3 {
 	color: var(--text-muted);
 }
 
-/* Legacy tag, kept for the reference pages; same visual language. */
+/* Tag: metadata chip used on the reference pages; same visual language as badges. */
 
 .tag {
 	display: inline-flex;

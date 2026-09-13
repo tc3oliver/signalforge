@@ -8,8 +8,9 @@ either that trust or the machine it runs on.
 
 - Never modify `~/.pi/agent/settings.json`, `~/.pi/agent/auth.json`, `~/.config/pi/`
   or anything under the Keychain.
-- `auth.json` is read to reuse existing OAuth logins. That is the only global file
-  this project depends on, and it is opened read-only.
+- `auth.json` is read to reuse existing OAuth logins, and Pi's model catalog files
+  beside it are read to resolve models. Those are the only global files this
+  project depends on, and they are opened read-only.
 - Never install a Pi extension, package or MCP server for this project. Never patch
   `pi-web-access`, `@narumitw/pi-usage` or the Pi source.
 
@@ -70,7 +71,7 @@ gets a fixed policy or implementation, never a lowered bar.
 
 ## Before saying something is done
 
-- `pnpm typecheck` and `pnpm test` both clean.
+- `pnpm verify` clean (never `pnpm test` alone: it may skip the Postgres suites).
 - No `TODO`, no `test.skip`, no stubbed branch presented as working.
 - Never report a live model result that was actually produced by a fake runner, and
   never fill in the human score in `MANUAL_REVIEW.md`.
