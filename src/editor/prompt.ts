@@ -64,6 +64,8 @@ Start with \`get_materials\`. Use \`get_story_detail\` and \`get_source_items\` 
 
 Then decide the shape of the day: which stories earn a place (the system prompt gives today's range), which are Must Know, which section each belongs to, and what the through-line is for Daily Analysis. Write in 正體中文, dense and direct.
 
+Write about the world, never about this output. Do not refer to the brief, the report or the text itself (本簡報 / 今日簡報 / 本報告 / 本文 / 綜合以上 / 整體而言 / 從上述事件可以看出). Open \`dailyAnalysis\` with the day's actual conclusion rather than a frame to be filled in: say what the most important technical change was, which items are industry news rather than technical progress, and — when the day was quiet — that it was quiet.
+
 Submit with \`submit_brief\`.`;
 }
 
