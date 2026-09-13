@@ -32,6 +32,13 @@ export interface EditorStageOptions {
 	maxNudges?: number;
 	onEvent?: (event: Record<string, unknown>) => void;
 	onText?: (delta: string) => void;
+	/**
+	 * Test-only fault injection checkpoint (see `runtime/fault-injection.ts`). The
+	 * editor stage has no "items processed" concept of its own, so its
+	 * `afterProcessedItems` is interpreted as "after N tool calls" — the nearest
+	 * honest equivalent of stage progress.
+	 */
+	checkFault?: (toolCalls: number) => void;
 }
 
 export interface EditorStageResult {
@@ -68,6 +75,7 @@ export async function runEditorStage(opts: EditorStageOptions): Promise<EditorSt
 		onToolCall: (name, summary) => {
 			toolCalls += 1;
 			opts.onEvent?.({ kind: "tool_call", stage: "EDITOR", tool: name, ...summary });
+			opts.checkFault?.(toolCalls);
 		},
 	};
 

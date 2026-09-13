@@ -1,0 +1,95 @@
+# Concrete entities to track per collector. Keep additions here, not in code.
+github_repos:
+  - anthropics/claude-code
+  - anthropics/anthropic-sdk-typescript
+  - anthropics/claude-agent-sdk-python
+  - sst/opencode
+  - vllm-project/vllm
+  - ROCm/ROCm
+  - ROCm/aiter
+  - ggml-org/llama.cpp
+  - ollama/ollama
+  - ml-explore/mlx
+  - QwenLM/Qwen
+  - deepseek-ai/DeepSeek-V3
+  - deepseek-ai/DeepSeek-R1
+  - NousResearch/Hermes-Function-Calling
+  - modelcontextprotocol/servers
+  - modelcontextprotocol/typescript-sdk
+
+sec_companies:
+  # ticker, name, CIK (10-digit, zero-padded); cik left null where not yet looked up.
+  - ticker: NVDA
+    name: NVIDIA Corp
+    cik: "0001045810"
+  - ticker: AMD
+    name: Advanced Micro Devices Inc
+    cik: "0000002488"
+  - ticker: MSFT
+    name: Microsoft Corp
+    cik: "0000789019"
+  - ticker: GOOGL
+    name: Alphabet Inc
+    cik: "0001652044"
+  - ticker: META
+    name: Meta Platforms Inc
+    cik: "0001326801"
+  - ticker: AMZN
+    name: Amazon.com Inc
+    cik: "0001018724"
+  - ticker: TSM
+    name: Taiwan Semiconductor Manufacturing Co Ltd
+    cik: "0001046179"
+  - ticker: COIN
+    name: Coinbase Global Inc
+    cik: "0001679788"
+  - ticker: MSTR
+    name: MicroStrategy Inc
+    cik: "0001050446"
+
+crypto_assets:
+  - id: bitcoin
+    symbol: BTC
+  - id: ethereum
+    symbol: ETH
+  - id: solana
+    symbol: SOL
+
+fred_series:
+  - id: FEDFUNDS
+    label: "Federal Funds Effective Rate"
+  - id: DGS2
+    label: "2-Year Treasury Constant Maturity Rate"
+  - id: DGS10
+    label: "10-Year Treasury Constant Maturity Rate"
+  - id: T10Y2Y
+    label: "10-Year minus 2-Year Treasury Yield Spread"
+  - id: CPIAUCSL
+    label: "Consumer Price Index for All Urban Consumers"
+  - id: UNRATE
+    label: "Unemployment Rate"
+  - id: M2SL
+    label: "M2 Money Stock"
+  - id: WALCL
+    label: "Federal Reserve Total Assets"
+
+subreddits:
+  - LocalLLaMA
+  - MachineLearning
+  - ClaudeAI
+  - singularity
+  - cryptocurrency
+  - Bitcoin
+
+youtube_channels:
+  # channel handle or ID; used to build feed/search queries.
+  - "@AnthropicAI"
+  - "@sst_dev"
+  - "@TwoMinutePapers"
+  - "@YannicKilcher"
+
+arxiv_categories:
+  - cs.CL
+  - cs.LG
+  - cs.AI
+  - cs.DC

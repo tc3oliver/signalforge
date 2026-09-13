@@ -1,0 +1,83 @@
+# Per-collector operational settings. One entry per SourceType value in
+# src/schemas/item.ts. `requiredSecrets` names logical secrets resolved via
+# src/config/secrets.ts (env, then Keychain) — never a literal value.
+collectors:
+  rss:
+    # Implemented as the "miniflux" collector: pulls from a self-hosted Miniflux instance.
+    enabled: true
+    baseUrl: "http://localhost:8080"
+    rateLimitPerMinute: 60
+    timeoutMs: 10000
+    pageSize: 100
+    requiredSecrets: [MINIFLUX_API_KEY]
+
+  web:
+    # Implemented as the "tavily" collector: web search / discovery.
+    enabled: true
+    rateLimitPerMinute: 30
+    timeoutMs: 15000
+    pageSize: 10
+    requiredSecrets: [TAVILY_API_KEY]
+
+  github:
+    enabled: true
+    rateLimitPerMinute: 30
+    timeoutMs: 10000
+    pageSize: 50
+    requiredSecrets: [GITHUB_TOKEN]
+
+  hackernews:
+    enabled: true
+    rateLimitPerMinute: 60
+    timeoutMs: 10000
+    pageSize: 50
+    requiredSecrets: []
+
+  arxiv:
+    enabled: true
+    rateLimitPerMinute: 20
+    timeoutMs: 15000
+    pageSize: 50
+    requiredSecrets: []
+
+  semantic-scholar:
+    enabled: true
+    rateLimitPerMinute: 10
+    timeoutMs: 15000
+    pageSize: 25
+    requiredSecrets: [SEMANTIC_SCHOLAR_API_KEY]
+
+  coingecko:
+    enabled: true
+    rateLimitPerMinute: 30
+    timeoutMs: 10000
+    pageSize: 50
+    requiredSecrets: []
+
+  fred:
+    enabled: true
+    rateLimitPerMinute: 60
+    timeoutMs: 10000
+    pageSize: 100
+    requiredSecrets: [FRED_API_KEY]
+
+  sec:
+    enabled: true
+    rateLimitPerMinute: 10
+    timeoutMs: 15000
+    pageSize: 40
+    requiredSecrets: []
+
+  reddit:
+    enabled: false
+    rateLimitPerMinute: 30
+    timeoutMs: 10000
+    pageSize: 25
+    requiredSecrets: [REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET]
+
+  youtube:
+    enabled: false
+    rateLimitPerMinute: 30
+    timeoutMs: 10000
+    pageSize: 25
+    requiredSecrets: [YOUTUBE_API_KEY]

@@ -146,6 +146,51 @@ The no-argument form only proves each model resolves. A real sweep is opt-in bec
 each cell is a full curator+editor run over ~85 items and costs real subscription
 quota.
 
+## Fault injection (test-only — never use in a production run)
+
+`src/runtime/fault-injection.ts` lets a test synthesize a real, classifier-real
+provider failure at a chosen point in a chosen stage, to exercise the fallback path
+above without waiting for an actual quota exhaustion or outage. **It must never be
+enabled for a live run.** An injected fallback is not evidence of production
+fallback behaviour — it is a manufactured one, and the run artifacts record it as
+such (see below) so a report can never conflate the two.
+
+It is controlled by a single environment variable, `DAILY_INTELLIGENCE_FAULT_INJECTION`,
+carrying a JSON spec:
+
+```bash
+DAILY_INTELLIGENCE_FAULT_INJECTION='{"stage":"curator","model":"primary","afterProcessedItems":20,"failureClass":"RATE_LIMIT"}'
+```
+
+| Field | Meaning |
+|---|---|
+| `stage` | `curator` or `editor` |
+| `model` | `primary` / `secondary` / `tertiary` (chain position), or a full `provider/model` key |
+| `afterProcessedItems` | Curator: fires once at least this many items have been recorded. Editor: the editor stage has no "items processed" concept of its own, so this is interpreted as "after this many tool calls" — the nearest honest equivalent of stage progress. |
+| `failureClass` | Any value from the 14 `FailureClass`es in `src/schemas/run.ts` |
+
+Behaviour:
+
+- **Off by default.** Absent or empty env var — zero behavioural change, zero
+  overhead on the normal path.
+- **Explicit opt-in only.** Never triggered by `NODE_ENV`, test mode, or any config
+  file — env var only, and the parser rejects invalid JSON or an unknown field at
+  startup with a clear error rather than silently running as if disabled.
+- **Fires at most once per run**, so the fallback model can actually complete the
+  work.
+- The synthesized error is a real error object (`status`, `code`, or `name`, as
+  appropriate) run through the actual `classifyError` in `error-classifier.ts` —
+  there is no special-case bypass in the classifier for it.
+- Every attempt record it produces carries a `faultInjected` field
+  (`{ stage, model, failureClass, afterProcessedItems, firedAtProcessedItems }`) in
+  `attempts.json`, distinguishing it permanently from a spontaneous failure.
+
+Note: with a transient class like `RATE_LIMIT` or `NETWORK`, `decideAction` retries
+once on the *same* model before falling back (see "How model fallback works" above);
+since the fault fires only once, that retry will succeed and no fallback will occur.
+Use a class that falls back immediately on first failure — `QUOTA`, `BILLING`,
+`MODEL_UNAVAILABLE`, or `AUTH` — to force a fallback in one shot.
+
 ## Where run artifacts live
 
 ```

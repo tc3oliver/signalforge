@@ -1,0 +1,123 @@
+# Reader interest profile. Drives prompt construction (what to look for) and
+# scoring (how to weight what was found). Weight is 0-1 relative importance;
+# keywords/aliases feed both keyword prefilters and story-scoring prompts.
+topics:
+  - id: ai-llm
+    label: AI / LLM
+    weight: 1.0
+    keywords: [ai, "artificial intelligence", llm, "large language model", "foundation model"]
+    aliases: [genai, "generative ai"]
+
+  - id: inference
+    label: Inference
+    weight: 0.85
+    keywords: [inference, "inference engine", serving, "token throughput", quantization, kv-cache]
+    aliases: ["model serving"]
+
+  - id: coding-agents
+    label: Coding Agents
+    weight: 0.95
+    keywords: ["coding agent", "ai agent", "agentic coding", "autonomous coding", "code generation"]
+    aliases: ["agentic ide"]
+
+  - id: claude-code
+    label: Claude Code
+    weight: 1.0
+    keywords: ["claude code", "claude agent sdk", anthropic]
+    aliases: ["claude cli"]
+
+  - id: opencode
+    label: OpenCode
+    weight: 0.7
+    keywords: [opencode]
+    aliases: []
+
+  - id: hermes
+    label: Hermes
+    weight: 0.6
+    keywords: [hermes, "nous hermes", "nous research"]
+    aliases: []
+
+  - id: qwen
+    label: Qwen
+    weight: 0.75
+    keywords: [qwen, "alibaba qwen"]
+    aliases: []
+
+  - id: deepseek
+    label: DeepSeek
+    weight: 0.85
+    keywords: [deepseek]
+    aliases: []
+
+  - id: vllm
+    label: vLLM
+    weight: 0.8
+    keywords: [vllm, "paged attention"]
+    aliases: []
+
+  - id: rocm
+    label: ROCm
+    weight: 0.7
+    keywords: [rocm, "amd gpu", "amd instinct"]
+    aliases: []
+
+  - id: aiter
+    label: AITER
+    weight: 0.65
+    keywords: [aiter, "ai tensor engine for rocm"]
+    aliases: []
+
+  - id: local-llm
+    label: Local LLM
+    weight: 0.9
+    keywords: ["local llm", "on-device model", ollama, llama.cpp, mlx, "self-hosted model"]
+    aliases: []
+
+  - id: developer-tools
+    label: Developer Tools
+    weight: 0.75
+    keywords: ["developer tools", "devtools", "developer productivity", ide, cli]
+    aliases: []
+
+  - id: mcp
+    label: MCP
+    weight: 0.9
+    keywords: ["model context protocol", mcp, "mcp server"]
+    aliases: []
+
+  - id: open-source
+    label: Open Source
+    weight: 0.7
+    keywords: ["open source", "open-source", oss, "open weights"]
+    aliases: []
+
+  - id: research
+    label: Research
+    weight: 0.75
+    keywords: [research, paper, arxiv, benchmark, "state of the art"]
+    aliases: []
+
+  - id: btc
+    label: BTC
+    weight: 0.7
+    keywords: [bitcoin, btc]
+    aliases: []
+
+  - id: eth
+    label: ETH
+    weight: 0.65
+    keywords: [ethereum, eth, "layer 2", "smart contract"]
+    aliases: []
+
+  - id: sol
+    label: SOL
+    weight: 0.6
+    keywords: [solana, sol]
+    aliases: []
+
+  - id: macro
+    label: Macro
+    weight: 0.8
+    keywords: ["federal reserve", "interest rates", inflation, cpi, "jobs report", unemployment, "yield curve", "fomc", "monetary policy"]
+    aliases: ["macroeconomics"]
