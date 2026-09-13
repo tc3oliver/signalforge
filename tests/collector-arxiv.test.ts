@@ -139,3 +139,23 @@ describe("ArxivCollector", () => {
 		expect(sleep).toHaveBeenCalledWith(3_000, undefined);
 	});
 });
+
+describe("configured categories", () => {
+	it("queries the categories from the watchlist rather than the built-in default", async () => {
+		const urls: string[] = [];
+		const base = makeCtx({}, async () => xmlResponse(atomFeed([], 0)));
+		const ctx: CollectorContext = {
+			...base,
+			watchlists: { ...base.watchlists, arxiv_categories: ["cs.DB", "stat.ME"] },
+			fetch: async (input) => {
+				urls.push(String(input));
+				return xmlResponse(atomFeed([], 0));
+			},
+		};
+
+		await new ArxivCollector({ sleep: async () => {} }).collect(ctx);
+
+		expect(urls[0]).toContain(encodeURIComponent("cat:cs.DB OR cat:stat.ME"));
+		expect(urls[0]).not.toContain("cs.LG");
+	});
+});

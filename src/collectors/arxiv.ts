@@ -114,7 +114,10 @@ export class ArxivCollector implements Collector {
 	#categories: string[];
 	#sleep: (ms: number, signal?: AbortSignal) => Promise<void>;
 
+	#explicitCategories: string[] | undefined;
+
 	constructor(opts?: { categories?: string[]; sleep?: (ms: number, signal?: AbortSignal) => Promise<void> }) {
+		this.#explicitCategories = opts?.categories;
 		this.#categories = opts?.categories ?? DEFAULT_CATEGORIES;
 		this.#sleep = opts?.sleep ?? defaultSleep;
 	}
@@ -138,7 +141,12 @@ export class ArxivCollector implements Collector {
 		let fetchedThisRun = 0;
 		let firstRequest = true;
 
-		const searchQuery = this.#categories.map((c) => `cat:${c}`).join(" OR ");
+		// The configured categories win over the constructor default, so the list the
+		// user curates in config/watchlists.yaml is the one actually queried. The
+		// constructor override stays for tests, which must not read the real config.
+		const configured = ctx.watchlists?.arxiv_categories ?? [];
+		const categories = this.#explicitCategories ?? (configured.length > 0 ? configured : this.#categories);
+		const searchQuery = categories.map((c) => `cat:${c}`).join(" OR ");
 
 		try {
 			for (;;) {

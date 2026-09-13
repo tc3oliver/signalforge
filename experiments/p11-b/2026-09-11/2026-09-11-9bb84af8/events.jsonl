@@ -72,3 +72,63 @@
 {"ts":"2026-09-13T09:27:00.678Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"open-tooling-protocol-spec","hits":0}
 {"ts":"2026-09-13T09:27:02.196Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"halyard-v2-release","hits":0}
 {"ts":"2026-09-13T09:27:03.917Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"sign-sgd-1bit-optimizer","hits":0}
+{"ts":"2026-09-13T09:27:05.563Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"cross-embodiment-kinematics-transfer","hits":0}
+{"ts":"2026-09-13T09:27:07.240Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"corvid-talos-acquisition-talks","hits":0}
+{"ts":"2026-09-13T09:27:09.350Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"ec-gpai-systemic-risk-guidance","hits":0}
+{"ts":"2026-09-13T09:27:11.204Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"lumen-impairment-capex-cut","hits":0}
+{"ts":"2026-09-13T09:27:13.176Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"meridian-long-context-enterprise","hits":1}
+{"ts":"2026-09-13T09:27:15.302Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"sable-orm-batch-loss-bug","hits":1}
+{"ts":"2026-09-13T09:27:17.548Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"ashgrove-utilities-dividend-q3","hits":1}
+{"ts":"2026-09-13T09:27:19.873Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"us-jobless-claims-20260910","hits":1}
+{"ts":"2026-09-13T09:27:22.231Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"jobless claims 221000","hits":0}
+{"ts":"2026-09-13T09:27:24.330Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"us-jobless-claims-2026-09-11","hits":0}
+{"ts":"2026-09-13T09:27:25.877Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"us-jobless-claims","hits":0}
+{"ts":"2026-09-13T09:27:27.474Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"claims","hits":0}
+{"ts":"2026-09-13T09:27:29.038Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"ICSA","hits":0}
+{"ts":"2026-09-13T09:27:30.920Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"us-jobless-claims-20260910","hits":1}
+{"ts":"2026-09-13T09:27:32.581Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"ashgrove-utilities-dividend-q3","hits":1}
+{"ts":"2026-09-13T09:27:34.306Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Ashgrove Utilities Form 8-K","hits":4}
+{"ts":"2026-09-13T09:27:35.936Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Ashgrove Utilities 0.44","hits":3}
+{"ts":"2026-09-13T09:27:45.199Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"ashgrove-utilities-dividend","hits":1}
+{"ts":"2026-09-13T09:27:46.848Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"ashgrove-utilities-dividend-q3","hits":1}
+{"ts":"2026-09-13T09:27:48.504Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"ashgrove-utilities-dividend-q4","hits":1}
+{"ts":"2026-09-13T09:27:50.237Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"jobless claims","hits":0}
+{"ts":"2026-09-13T09:27:51.989Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"us-jobless","hits":1}
+{"ts":"2026-09-13T09:27:53.623Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"us-jobless-claims-20260910","hits":1}
+{"ts":"2026-09-13T09:27:55.509Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"ashgrove-utilities-dividend-q3","hits":1}
+{"ts":"2026-09-13T09:27:57.246Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"ashgrove-utilities-dividend","hits":1}
+{"ts":"2026-09-13T09:27:59.015Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"ashgrove-utilities-dividend-q3","hits":1}
+{"ts":"2026-09-13T09:28:01.134Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Northern Grid","hits":0}
+{"ts":"2026-09-13T09:28:02.791Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Northern Grid tariff","hits":0}
+{"ts":"2026-09-13T09:28:04.719Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"tariff 200MW","hits":0}
+{"ts":"2026-09-13T09:28:06.532Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"northern-grid-datacenter-tariff","hits":0}
+{"ts":"2026-09-13T09:28:08.411Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"halyard-power-rack-budget","hits":0}
+{"ts":"2026-09-13T09:28:11.696Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"open-tooling-protocol-spec","hits":0}
+{"ts":"2026-09-13T09:28:13.344Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"build-plugins-credential-exfiltration","hits":0}
+{"ts":"2026-09-13T09:28:15.188Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"halcyon-fusion-series-d","hits":0}
+{"ts":"2026-09-13T09:28:16.969Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"corvid-talos-acquisition-talks","hits":0}
+{"ts":"2026-09-13T09:28:26.448Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"halyard-v2-release","hits":0}
+{"ts":"2026-09-13T09:28:29.323Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"sign-sgd-1bit-optimizer","hits":0}
+{"ts":"2026-09-13T09:28:31.086Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"cross-embodiment-kinematics-transfer","hits":0}
+{"ts":"2026-09-13T09:28:34.329Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"ec-gpai-systemic-risk-guidance","hits":0}
+{"ts":"2026-09-13T09:28:36.239Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"lumen-impairment-capex-cut","hits":0}
+{"ts":"2026-09-13T09:28:38.178Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"meridian-exchange-withdrawal-halt","hits":0}
+{"ts":"2026-09-13T09:28:39.910Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"sable-orm-batch-loss-bug","hits":1}
+{"ts":"2026-09-13T09:28:42.030Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"meridian-long-context-enterprise","hits":1}
+{"ts":"2026-09-13T09:28:43.762Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"ashgrove-utilities-dividend-q3","hits":1}
+{"ts":"2026-09-13T09:28:45.739Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"us-jobless-claims-20260910","hits":1}
+{"ts":"2026-09-13T09:28:49.625Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"build-plugins-credential-exfiltration","changeType":"NEW"}
+{"ts":"2026-09-13T09:28:52.836Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"halcyon-fusion-series-d","changeType":"NEW"}
+{"ts":"2026-09-13T09:28:56.495Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"open-tooling-protocol-spec","changeType":"NEW"}
+{"ts":"2026-09-13T09:28:59.984Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"corvid-talos-acquisition-talks","changeType":"NEW"}
+{"ts":"2026-09-13T09:29:03.070Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"meridian-exchange-withdrawal-halt","changeType":"NEW"}
+{"ts":"2026-09-13T09:29:06.862Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"sign-sgd-1bit-optimizer","changeType":"NEW"}
+{"ts":"2026-09-13T09:29:10.016Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"sable-orm-batch-loss-bug","changeType":"ESCALATION"}
+{"ts":"2026-09-13T09:29:13.090Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"northern-grid-datacenter-tariff","changeType":"NEW"}
+{"ts":"2026-09-13T09:29:16.486Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"ec-gpai-systemic-risk-guidance","changeType":"NEW"}
+{"ts":"2026-09-13T09:29:20.019Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"ashgrove-utilities-dividend-q3","changeType":"UPDATE"}
+{"ts":"2026-09-13T09:29:23.996Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"cross-embodiment-kinematics-transfer","changeType":"NEW"}
+{"ts":"2026-09-13T09:29:27.795Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"us-jobless-claims-20260911","changeType":"NEW"}
+{"ts":"2026-09-13T09:29:31.301Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"lumen-impairment-capex-cut","changeType":"NEW"}
+{"ts":"2026-09-13T09:29:40.662Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"halyard-v2-release","changeType":"NEW"}
+{"ts":"2026-09-13T09:29:44.988Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"halyard-power-rack-budget","changeType":"NEW"}

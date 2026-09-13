@@ -18,7 +18,7 @@ import { secCollector } from "../collectors/sec.ts";
 import { SemanticScholarCollector } from "../collectors/semantic-scholar.ts";
 import { youtubeCollector } from "../collectors/youtube.ts";
 import { loadConfig, resolveEnabledSources } from "../config/loader.ts";
-import type { AppConfig } from "../config/schema.ts";
+import type { AppConfig, CollectorSourceConfig } from "../config/schema.ts";
 import { SourceType } from "../schemas/item.ts";
 import { hasSecret, resolveSecret } from "../config/secrets.ts";
 import type { Sql } from "../db/client.ts";
@@ -158,9 +158,11 @@ export interface RegistryOptions {
 }
 
 /**
- * `CollectorContext` carries no collector-specific configuration, so a collector
- * that needs config either reads it itself (GitHubCollector reads
- * config/watchlists.yaml) or takes it through its constructor here.
+ * Most collector-specific config (watchlists, source config, non-secret
+ * scalars) reaches a collector through `CollectorContext`, populated by
+ * `runCollection` below. Semantic Scholar is the one exception: it has no
+ * discovery feed of its own, so its worklist is injected here, at
+ * construction time, from this run's arXiv results.
  */
 export function buildRegistry(options: RegistryOptions = {}): RegistryEntry[] {
 	return [
@@ -238,14 +240,28 @@ export interface CollectionOptions {
 }
 
 /**
+ * A permissive stand-in for a collector whose `sourceKey` is not a real
+ * `SourceType` at all — only ever a test's fake collector, never a shipped
+ * one. `sourceConfig` is required on `CollectorContext`, so this keeps such a
+ * fake constructible without inventing a fifth "no config" representation.
+ */
+const NO_SOURCE_CONFIG: CollectorSourceConfig = {
+	enabled: true,
+	rateLimitPerMinute: 60,
+	timeoutMs: 30_000,
+	pageSize: 50,
+	requiredSecrets: [],
+};
+
+/**
  * Non-secret scalars a collector needs that have no dedicated schema field yet.
  * Kept narrow on purpose: anything durable belongs in a typed field instead.
  */
-function sourceConfigFor(appConfig: AppConfig, sourceKey: string) {
+function sourceConfigFor(appConfig: AppConfig, sourceKey: string): CollectorSourceConfig {
 	// A test registers fake collectors whose key is not a SourceType at all; they
 	// simply have no configuration, which is different from having bad configuration.
 	const parsed = SourceType.safeParse(sourceKey);
-	return parsed.success ? appConfig.sources.collectors[parsed.data] : undefined;
+	return parsed.success ? appConfig.sources.collectors[parsed.data] : NO_SOURCE_CONFIG;
 }
 
 /**
@@ -257,11 +273,9 @@ function collectorScalar(
 	sourceKey: string,
 	name: string,
 ): string | undefined {
-	const source = sourceConfigFor(appConfig, sourceKey) as
-		| (Record<string, unknown> & { userAgent?: string })
-		| undefined;
-	if (name === "SEC_USER_AGENT") return source?.userAgent;
-	const value = source?.[name];
+	const source = sourceConfigFor(appConfig, sourceKey) as Record<string, unknown>;
+	if (name === "SEC_USER_AGENT") return source["userAgent"] as string | undefined;
+	const value = source[name];
 	return typeof value === "string" ? value : undefined;
 }
 
@@ -397,9 +411,7 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
 				// success, which is the worst failure shape there is -- so the curated
 				// lists are handed over here rather than read by each collector.
 				watchlists: appConfig.watchlists,
-				...(sourceConfigFor(appConfig, entry.sourceKey)
-					? { sourceConfig: sourceConfigFor(appConfig, entry.sourceKey)! }
-					: {}),
+				sourceConfig: sourceConfigFor(appConfig, entry.sourceKey),
 				config: async (name) => collectorScalar(appConfig, entry.sourceKey, name),
 				fetch: fetchImpl,
 				...(options.signal ? { signal: options.signal } : {}),

@@ -9,6 +9,7 @@ import type { RawItemRef } from "../src/db/items.ts";
 import type { StructuredFact } from "../src/schemas/fact.ts";
 import type { NormalizedItem } from "../src/schemas/item.ts";
 import { loadConfig } from "../src/config/loader.ts";
+import type { CollectorSourceConfig } from "../src/config/schema.ts";
 import {
 	type CollectionStore,
 	type RegistryEntry,
@@ -251,7 +252,8 @@ describe("collection orchestration", () => {
 
 	it("wires the two collector configuration gaps", () => {
 		const registry = buildRegistry({ arxivIds: ["2609.00001"] });
-		// GitHub takes no repos here: it reads config/watchlists.yaml itself.
+		// GitHub takes no repos here: its watchlist comes through ctx.watchlists,
+		// populated by runCollection from config/watchlists.yaml.
 		expect(registry.find((e) => e.sourceKey === "github")?.collector.id).toBe("github");
 		// Semantic Scholar's worklist is injected, because it has no feed of its own.
 		expect(registry.find((e) => e.sourceKey === "semantic-scholar")?.collector.id).toBe("semantic-scholar");
@@ -291,10 +293,10 @@ describe("collection orchestration", () => {
 });
 
 /**
- * The config fields on CollectorContext are optional, and every collector treats
- * an absent watchlist as an empty one. That combination compiles perfectly while
- * collecting nothing and reporting success, so the wiring itself needs a test --
- * type-checking it proves nothing.
+ * `watchlists` and `sourceConfig` are required on `CollectorContext` precisely
+ * so a call site can't forget to populate them and silently collect nothing
+ * while reporting success — but that invariant only holds if the wiring here
+ * actually populates them, which type-checking alone can't prove.
  */
 describe("collector configuration reaches the collector", () => {
 	it("hands each collector its watchlists and its own source config", async () => {
@@ -337,8 +339,8 @@ describe("collector configuration reaches the collector", () => {
 		expect(got.userAgent).toBe(appConfig.sources.collectors.sec.userAgent);
 	});
 
-	it("gives a collector whose key is not a real source type no configuration", async () => {
-		let sourceConfig: unknown = "untouched";
+	it("gives a collector whose key is not a real source type permissive defaults", async () => {
+		let sourceConfig: CollectorSourceConfig | undefined;
 		const probe = {
 			id: "fake",
 			sourceType: "web" as const,
@@ -359,6 +361,13 @@ describe("collector configuration reaches the collector", () => {
 			secrets: { secret: async () => "", hasSecret: async () => false },
 		});
 
-		expect(sourceConfig).toBeUndefined();
+		// `sourceConfig` is required on the context on purpose: making it optional is
+		// what let collectors silently receive nothing. So an unregistered key gets
+		// conservative defaults rather than an absent field, and whether a collector
+		// runs at all stays the job of `enabledSourceKeys`.
+		expect(sourceConfig).toBeDefined();
+		expect(sourceConfig?.requiredSecrets).toEqual([]);
+		expect(sourceConfig?.timeoutMs).toBeGreaterThan(0);
+		expect(sourceConfig).not.toBe(loadConfig().sources.collectors.sec);
 	});
 });
