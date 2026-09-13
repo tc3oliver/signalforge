@@ -1,5 +1,0 @@
-{"t":0,"agent":"aruntim","agent_type":"runtime","event":"agent_start","parent_mode":"none"}
-{"t":0,"agent":"afixtur","agent_type":"fixtures","event":"agent_start","parent_mode":"none"}
-{"t":0,"agent":"astores","agent_type":"stores","event":"agent_start","parent_mode":"none"}
-{"t":0,"agent":"aevalr-","agent_type":"evalr","event":"agent_start","parent_mode":"none"}
-{"t":0,"agent":"askillw","agent_type":"skillw","event":"agent_start","parent_mode":"none"}

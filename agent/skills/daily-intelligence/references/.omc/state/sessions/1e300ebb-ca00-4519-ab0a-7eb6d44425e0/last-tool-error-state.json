@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cd /Users/oliver/Developer/src/personal/daily-intelligence && sed -n '1,60p' tests/eval-metrics.test.ts && echo === && grep -rn \\\"export \\\" src/schemas/story.ts src/schemas/manifest.ts src...",
-  "error": "Exit code 1\nimport { describe, expect, it } from \"vitest\";\nimport { evaluate } from \"../src/eval/evaluator.ts\";\nimport { computeMetrics, type EvalInput } from \"../src/eval/metrics.ts\";\nimport type { DailyBrief, DailyBriefStory } from \"../src/schemas/brief.ts\";\nimport type { ItemDecision } from \"../src/schemas/decision.ts\";\nimport type { GoldEvent, GoldTruth, MetricResult } from \"../src/schemas/gold.ts\";\nimport type { DailyManifest } from \"../src/schemas/manifest.ts\";\nimport type { DailyMaterials...",
-  "timestamp": "2026-09-13T08:47:44.460Z",
-  "retry_count": 2
-}
