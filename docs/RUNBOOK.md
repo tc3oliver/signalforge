@@ -30,6 +30,25 @@ before the reboot, it comes back on its own — nothing to reinstall. Confirm
 with `launchctl print gui/$(id -u)/com.dailyintelligence.daily` (should show
 `state = running` or `waiting`).
 
+In short, the standing requirement:
+
+- A LaunchAgent needs a GUI (Aqua) session. After a reboot the user must log
+  in once.
+- The login Keychain and the Pi authentication it holds must be available in
+  that session.
+- Screen lock afterwards is fine; the jobs keep running.
+
+### On the UID in these commands
+
+Everything above is written as `gui/$(id -u)/…` and every script resolves the
+uid the same way at run time (`scripts/install-launchagent.sh`,
+`scripts/uninstall-launchagent.sh`). `gui/501` is what that resolved to on the
+machine where this was validated, and it appears in acceptance evidence for
+that reason — but it is an observation, not a value to copy. Never write a
+literal uid into a script or a plist: the same repo on another account, or the
+same account restored onto another machine, would then point launchctl at a
+session that does not exist.
+
 ## Agent not loaded (outside the reboot case)
 
 ```sh

@@ -1,0 +1,16 @@
+{
+  "curatorActiveTools": [
+    "find_history",
+    "get_daily_inventory",
+    "get_item_detail",
+    "get_story",
+    "get_structured_facts",
+    "list_today_stories",
+    "list_unseen_items",
+    "read_skill_reference",
+    "record_item_decisions",
+    "search_items",
+    "submit_materials",
+    "upsert_story"
+  ]
+}

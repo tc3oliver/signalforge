@@ -1,0 +1,291 @@
+{
+  "date": "2026-09-10",
+  "producedAt": "2026-09-13T09:56:54.476Z",
+  "stories": [
+    {
+      "storyId": "bis-export-controls-mid-tier-accelerators",
+      "tier": "A",
+      "canonicalTitle": "BIS Issues Interim Final Rule Lowering Performance-Density Threshold for Export Controls on Mid-Tier AI Accelerators",
+      "whySelected": "The rule immediately broadens US export controls to accelerator designs previously engineered below the old threshold, changing compliance and product-planning assumptions.",
+      "changeType": "NEW",
+      "importance": 0.9,
+      "novelty": 0.85,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0003",
+        "itm-20260910-0010",
+        "itm-20260910-0014",
+        "itm-20260910-0034"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0010"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "fenwick-quantum-qubit-threshold",
+      "tier": "A",
+      "canonicalTitle": "Fenwick Quantum Group Demonstrates Distance-9 Surface Code Logical Qubit Below Threshold for One Million Cycles",
+      "whySelected": "The experiment materially advances the demonstrated boundary of fault-tolerant quantum computing and is supported by a primary preprint plus independent coverage.",
+      "changeType": "NEW",
+      "importance": 0.85,
+      "novelty": 0.9,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0001",
+        "itm-20260910-0006",
+        "itm-20260910-0045",
+        "itm-20260910-0046"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0001"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "quarrystone-cve-2026-41882",
+      "tier": "A",
+      "canonicalTitle": "Quarrystone Patches Critical Flaw CVE-2026-41882 Exposing Write-Ahead Logs to Unauthenticated Clients",
+      "whySelected": "Operators of affected Quarrystone versions need to assess exposure and patch promptly because the flaw can expose complete write-ahead logs without authentication under a common configuration.",
+      "changeType": "NEW",
+      "importance": 0.85,
+      "novelty": 0.85,
+      "confidence": 0.97,
+      "sourceItemIds": [
+        "itm-20260910-0004",
+        "itm-20260910-0023",
+        "itm-20260910-0051"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0004",
+        "itm-20260910-0051"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "fsb-stablecoin-reserve-rules",
+      "tier": "A",
+      "canonicalTitle": "FSB Mandates Daily Reserve Attestation and 80% Overnight Assets for Large Payment Stablecoins",
+      "whySelected": "The final rule imposes a concrete reserve-composition and disclosure regime on large payment stablecoins, with direct balance-sheet and compliance consequences.",
+      "changeType": "NEW",
+      "importance": 0.85,
+      "novelty": 0.85,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0035",
+        "itm-20260910-0037",
+        "itm-20260910-0043"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0043"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "northbridge-us-east-2-outage",
+      "tier": "A",
+      "canonicalTitle": "Northbridge Cloud us-east-2 Control Plane Disruption Freezes Scaling for Over Six Hours",
+      "whySelected": "The prolonged control-plane failure blocked launches and scaling while leaving workloads running, exposing a consequential resilience gap for customers relying on automated capacity changes.",
+      "changeType": "NEW",
+      "importance": 0.8,
+      "novelty": 0.8,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0008",
+        "itm-20260910-0009",
+        "itm-20260910-0021",
+        "itm-20260910-0036"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0021"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "aperture-nimbus-7-release",
+      "tier": "B",
+      "canonicalTitle": "Aperture Releases Nimbus-7 72B MoE Model Under Restrictive Non-Serving Licence",
+      "whySelected": "The weight release expands deployable model options, but its licence sharply limits third-party serving and requires careful compliance review before external deployment.",
+      "changeType": "NEW",
+      "importance": 0.8,
+      "novelty": 0.85,
+      "confidence": 0.98,
+      "sourceItemIds": [
+        "itm-20260910-0022",
+        "itm-20260910-0069",
+        "itm-20260910-0075"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0022",
+        "itm-20260910-0069",
+        "itm-20260910-0075"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "meridian-long-context-model",
+      "tier": "B",
+      "canonicalTitle": "Meridian Reportedly Tests 2M-Token Context Model with Enterprise Customers",
+      "whySelected": "Independent sourced reporting raises the credibility of a model that could change long-document workflows and retrieval economics, while the lack of official confirmation warrants caution.",
+      "changeType": "RUMOR",
+      "importance": 0.8,
+      "novelty": 0.78,
+      "confidence": 0.7,
+      "sourceItemIds": [
+        "itm-20260910-0015",
+        "itm-20260910-0067",
+        "itm-20260910-0057"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0015",
+        "itm-20260910-0067"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "sable-orm-batch-loss",
+      "tier": "B",
+      "canonicalTitle": "Sable ORM 6.2.0 Bug Silently Drops Rows in Batched Upserts Exceeding Connection Pool",
+      "whySelected": "Silent data loss creates direct operational risk for users of the affected release; the upstream reproduction and independent coverage make the issue actionable despite its unresolved status.",
+      "changeType": "NEW",
+      "importance": 0.78,
+      "novelty": 0.75,
+      "confidence": 0.9,
+      "sourceItemIds": [
+        "itm-20260910-0033",
+        "itm-20260910-0079",
+        "itm-20260910-0077"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0033",
+        "itm-20260910-0079"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "anvil-data-centres-campus-deferrals",
+      "tier": "B",
+      "canonicalTitle": "Anvil Defers Two Data-Centre Campuses as Grid Interconnection Slips to 2029",
+      "whySelected": "The project deferrals are concrete evidence that electricity interconnection queues are delaying new compute capacity rather than merely raising its cost.",
+      "changeType": "NEW",
+      "importance": 0.76,
+      "novelty": 0.78,
+      "confidence": 0.82,
+      "sourceItemIds": [
+        "itm-20260910-0055"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0055"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "rust-1-94-release",
+      "tier": "B",
+      "canonicalTitle": "Rust 1.94 Enables Parallel Compiler Front End by Default and Stabilises Const APIs",
+      "whySelected": "A default compiler-path change can affect build performance and compatibility across the Rust ecosystem, and the release is confirmed by official sources.",
+      "changeType": "NEW",
+      "importance": 0.75,
+      "novelty": 0.8,
+      "confidence": 0.98,
+      "sourceItemIds": [
+        "itm-20260910-0027",
+        "itm-20260910-0071",
+        "itm-20260910-0072"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0027",
+        "itm-20260910-0072",
+        "itm-20260910-0071"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "linux-6-19-deadline-scheduler",
+      "tier": "B",
+      "canonicalTitle": "Linux 6.19 Merge Window Adopts Deadline-Aware Fair Scheduler Rework",
+      "whySelected": "The scheduler rework changes a core kernel mechanism for latency-sensitive tasks and merits early testing by operators with real-time-adjacent workloads.",
+      "changeType": "NEW",
+      "importance": 0.75,
+      "novelty": 0.8,
+      "confidence": 0.97,
+      "sourceItemIds": [
+        "itm-20260910-0032",
+        "itm-20260910-0038",
+        "itm-20260910-0063"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0032",
+        "itm-20260910-0063"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "vantiq-enterprise-renewals-guidance-cut",
+      "tier": "B",
+      "canonicalTitle": "Vantiq Systems Cuts Full-Year Revenue Guidance by 9% as Enterprise Renewals Slip",
+      "whySelected": "The filing-backed outlook cut and concentration in delayed multi-year renewals provide a meaningful signal about enterprise purchasing cycles and Vantiq's execution risk.",
+      "changeType": "NEW",
+      "importance": 0.72,
+      "novelty": 0.75,
+      "confidence": 0.97,
+      "sourceItemIds": [
+        "itm-20260910-0019",
+        "itm-20260910-0064",
+        "itm-20260910-0065"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0019",
+        "itm-20260910-0064"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "accelerator-power-capping-idle-time",
+      "tier": "B",
+      "canonicalTitle": "Measurement Study Identifies Rack-Level Power Capping as Cause of 11% AI Accelerator Idle Time",
+      "whySelected": "The production-cluster measurements identify electrical power limits, rather than scheduling alone, as a material source of lost accelerator utilisation.",
+      "changeType": "NEW",
+      "importance": 0.7,
+      "novelty": 0.75,
+      "confidence": 0.85,
+      "sourceItemIds": [
+        "itm-20260910-0042"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0042"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "us-jobless-claims",
+      "tier": "C",
+      "canonicalTitle": "US Initial Jobless Claims Hold Steady at 214,000",
+      "whySelected": "Retained for macro continuity, but the reading remains within the recent range and does not indicate an inflection.",
+      "changeType": "NEW",
+      "importance": 0.35,
+      "novelty": 0.25,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0011",
+        "itm-20260910-0012"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0012"
+      ],
+      "factRefs": []
+    }
+  ],
+  "emergingSignals": [
+    {
+      "label": "算力瓶頸移出晶片本身",
+      "rationale": "今日三個不相關主體揭示算力供給與利用率同時受晶片之外的約束：BIS 擴大加速器出口限制，生產叢集因機櫃功率上限損失運算時間，Anvil 又因電網併網延誤而推遲園區。三者分屬政策、營運與基礎建設層，卻共同壓縮可實際部署的算力。若只是巧合，後續專案時程與叢集利用率應不再反覆受監管和供電條件拖累。",
+      "storyIds": [
+        "bis-export-controls-mid-tier-accelerators",
+        "accelerator-power-capping-idle-time",
+        "anvil-data-centres-campus-deferrals"
+      ]
+    }
+  ],
+  "curatorNotes": "All 79 items have recorded decisions. Thirteen A/B stories give the Editor adequate choice; routine crypto moves were excluded, and steady jobless claims are retained only as Tier C continuity. Treat the Meridian report as unconfirmed despite improved sourcing."
+}

@@ -91,3 +91,16 @@
 {"ts":"2026-09-13T09:54:57.796Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"aperture-nimbus-7-release","hits":0}
 {"ts":"2026-09-13T09:54:57.800Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"rust-1-94-release","hits":0}
 {"ts":"2026-09-13T09:54:57.804Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"anvil-data-centres-campus-deferrals","hits":0}
+{"ts":"2026-09-13T09:55:26.497Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"quarrystone-cve-2026-41882","changeType":"NEW"}
+{"ts":"2026-09-13T09:55:26.501Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"sable-orm-batch-loss","changeType":"NEW"}
+{"ts":"2026-09-13T09:55:26.505Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"meridian-long-context-model","changeType":"RUMOR"}
+{"ts":"2026-09-13T09:55:26.509Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"linux-6-19-deadline-scheduler","changeType":"NEW"}
+{"ts":"2026-09-13T09:55:26.513Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"aperture-nimbus-7-release","changeType":"NEW"}
+{"ts":"2026-09-13T09:55:26.517Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"rust-1-94-release","changeType":"NEW"}
+{"ts":"2026-09-13T09:55:26.521Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"anvil-data-centres-campus-deferrals","changeType":"NEW"}
+{"ts":"2026-09-13T09:55:33.117Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"vantiq-enterprise-renewals-guidance-cut","changeType":"NEW"}
+{"ts":"2026-09-13T09:55:59.912Z","kind":"tool_call","stage":"CURATOR","tool":"record_item_decisions","recorded":29,"processedItems":79,"totalItems":79,"unseenItems":0}
+{"ts":"2026-09-13T09:56:04.339Z","kind":"tool_call","stage":"CURATOR","tool":"list_today_stories","count":14}
+{"ts":"2026-09-13T09:56:04.345Z","kind":"tool_call","stage":"CURATOR","tool":"get_daily_inventory","date":"2026-09-10","totalItems":79,"itemsBySource":{"arxiv":2,"reddit":11,"rss":28,"web":7,"youtube":2,"hackernews":13,"github":6,"fred":1,"coingecko":6,"sec":2,"semantic-scholar":1},"processedItems":79,"unseenItems":0,"storyCount":14}
+{"ts":"2026-09-13T09:56:54.476Z","kind":"tool_call","stage":"CURATOR","tool":"submit_materials","stories":14}
+{"ts":"2026-09-13T09:56:54.514Z","kind":"run.transition","from":"CURATING","to":"MATERIALS_READY"}

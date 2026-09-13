@@ -22,5 +22,15 @@
       "afterProcessedItems": 20,
       "firedAtProcessedItems": 50
     }
+  },
+  {
+    "attemptId": "138d9780-46b5-4aaf-8834-48dd7f1a9bd2",
+    "stage": "CURATOR",
+    "provider": "openai-codex",
+    "model": "gpt-5.6-sol",
+    "startedAt": "2026-09-13T09:54:35.041Z",
+    "finishedAt": "2026-09-13T09:56:54.483Z",
+    "durationMs": 139442,
+    "status": "SUCCESS"
   }
 ]

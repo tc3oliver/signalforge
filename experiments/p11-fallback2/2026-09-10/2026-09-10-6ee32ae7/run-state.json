@@ -1,10 +1,10 @@
 {
   "runId": "2026-09-10-6ee32ae7",
   "date": "2026-09-10",
-  "status": "CURATING",
+  "status": "MATERIALS_READY",
   "createdAt": "2026-09-13T09:49:54.301Z",
-  "updatedAt": "2026-09-13T09:49:54.317Z",
+  "updatedAt": "2026-09-13T09:56:54.509Z",
   "totalItems": 79,
-  "processedItems": 0,
-  "storyCount": 0
+  "processedItems": 79,
+  "storyCount": 14
 }
