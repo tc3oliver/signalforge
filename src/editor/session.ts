@@ -64,6 +64,10 @@ export async function runEditorStage(opts: EditorStageOptions): Promise<EditorSt
 	let toolCalls = 0;
 	let rejectedSubmissions = 0;
 	let lastError: string | undefined = opts.lastError;
+	// Kept separately from `lastError`, which is cleared once it has been fed back
+	// to the model. Without this the reason a stage failed is gone by the time the
+	// failure is recorded, which is exactly when it is needed.
+	let lastRejection: string | undefined;
 
 	const ctx: EditorContext = {
 		date: opts.date,
@@ -92,6 +96,7 @@ export async function runEditorStage(opts: EditorStageOptions): Promise<EditorSt
 				} catch (err) {
 					rejectedSubmissions += 1;
 					lastError = err instanceof Error ? err.message : String(err);
+					lastRejection = lastError;
 					opts.onEvent?.({ kind: "submit_rejected", stage: "EDITOR", error: lastError });
 					throw err;
 				}
@@ -134,7 +139,8 @@ export async function runEditorStage(opts: EditorStageOptions): Promise<EditorSt
 
 		if (!ctx.submitted) {
 			throw new InvalidAgentOutputError(
-				`Editor did not produce an accepted brief after ${maxNudges} nudges (${rejectedSubmissions} rejected submissions)`,
+				`Editor did not produce an accepted brief after ${maxNudges} nudges (${rejectedSubmissions} rejected submissions)` +
+					(lastRejection ? `. Last rejection: ${lastRejection}` : ". It never called submit_brief."),
 			);
 		}
 

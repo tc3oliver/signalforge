@@ -34,9 +34,19 @@ export function requiredStoryCount(materialCount: number): { min: number; max: n
 	return { min: Math.min(TARGET_MIN_STORIES, max), max };
 }
 
-/** Must Know is a subset, so it cannot exceed what the brief actually carries. */
-function requiredMustKnowCount(storyCount: number): { min: number; max: number } {
-	return { min: Math.min(MIN_MUST_KNOW, storyCount), max: Math.min(MAX_MUST_KNOW, storyCount) };
+/**
+ * Must Know is the handful at the top, not a fixed quota. Three of fifteen is a
+ * selection; three of four is a formality that tells the reader nothing, and
+ * demanding it from an editor with four stories is a rejection loop rather than
+ * an editorial standard. So the floor tracks roughly the top third of the brief,
+ * and 3-5 remains the answer for every normal day.
+ */
+export function requiredMustKnowCount(storyCount: number): { min: number; max: number } {
+	if (storyCount === 0) return { min: 0, max: 0 };
+	return {
+		min: Math.max(1, Math.min(MIN_MUST_KNOW, Math.ceil(storyCount / 3))),
+		max: Math.min(MAX_MUST_KNOW, storyCount),
+	};
 }
 
 function formatIssuePath(path: ReadonlyArray<PropertyKey>): string {

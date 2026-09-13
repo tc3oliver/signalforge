@@ -69,6 +69,11 @@ async function main(): Promise<number> {
 			cwd: join(root, "runs"),
 			...(research ? { research } : {}),
 			log: (msg, fields) => log.info(msg, fields),
+			// Stage events -- tool calls, nudges, and above all the text of a
+			// rejected submission -- go to the run log. Without this the one thing
+			// worth knowing when a stage fails (what the validator actually said)
+			// is discarded, and the log records only that it failed.
+			onEvent: (event) => log.info(String(event["kind"] ?? "event"), event),
 		});
 
 		log.info("pipeline finished", {

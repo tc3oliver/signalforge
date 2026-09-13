@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { requiredStoryCount, validateBrief } from "../src/validator/brief-validator.ts";
+import { requiredMustKnowCount, requiredStoryCount, validateBrief } from "../src/validator/brief-validator.ts";
 import type { BriefValidationContext } from "../src/validator/brief-validator.ts";
 import type { BriefSection, DailyBriefInput, DailyBriefStory } from "../src/schemas/brief.ts";
 import type { DailyManifest } from "../src/schemas/manifest.ts";
@@ -233,9 +233,27 @@ describe("brief size follows what the curator actually found", () => {
 	});
 
 	it("scales Must Know down with the brief instead of demanding three of two", () => {
-		expect(validateBrief(briefWith(2, { mustKnow: 2 }), contextWithMaterials(2))).toEqual({
+		expect(validateBrief(briefWith(2, { mustKnow: 1 }), contextWithMaterials(2))).toEqual({
 			ok: true,
 			errors: [],
 		});
+	});
+
+	it("keeps Must Know a selection rather than a quota", () => {
+		// Three of fifteen is a selection. Three of four is a formality, and
+		// demanding it produces a rejection loop rather than a better brief.
+		expect(requiredMustKnowCount(15)).toEqual({ min: 3, max: 5 });
+		expect(requiredMustKnowCount(10)).toEqual({ min: 3, max: 5 });
+		expect(requiredMustKnowCount(8)).toEqual({ min: 3, max: 5 });
+		expect(requiredMustKnowCount(4)).toEqual({ min: 2, max: 4 });
+		expect(requiredMustKnowCount(2)).toEqual({ min: 1, max: 2 });
+		expect(requiredMustKnowCount(1)).toEqual({ min: 1, max: 1 });
+	});
+
+	it("accepts two Must Know out of four, and rejects none", () => {
+		expect(validateBrief(briefWith(4, { mustKnow: 2 }), contextWithMaterials(4)).ok).toBe(true);
+		const none = validateBrief(briefWith(4, { mustKnow: 0 }), contextWithMaterials(4));
+		expect(none.ok).toBe(false);
+		expect(none.errors.join("\n")).toMatch(/Must Know count is 0/);
 	});
 });

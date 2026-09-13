@@ -1,4 +1,4 @@
-import { requiredStoryCount } from "../validator/brief-validator.ts";
+import { requiredMustKnowCount, requiredStoryCount } from "../validator/brief-validator.ts";
 
 export interface EditorPromptContext {
 	date: string;
@@ -18,7 +18,8 @@ export function buildEditorSystemPrompt(ctx: EditorPromptContext): string {
 	// send it looking for stories that are not there.
 	const bounds = requiredStoryCount(ctx.materialCount);
 	const storyRange = describeRange(bounds.min, bounds.max);
-	const mustKnowRange = describeRange(Math.min(3, bounds.min), Math.min(5, bounds.max));
+	const mk = requiredMustKnowCount(bounds.min);
+	const mustKnowRange = describeRange(mk.min, Math.min(mk.max, bounds.max));
 	return `You are the Editor of a personal daily intelligence brief, writing for one reader: a technically sophisticated engineer who works in AI and software and reads this every morning before anything else.
 
 Today is ${ctx.date}. The Curator has already scanned the day's raw feed, deduplicated it and clustered it into ${ctx.materialCount} stories (${ctx.tierACount} of them tier A). You are working from that material set, in a completely fresh session — you have never seen the raw inventory and you cannot reach it.
