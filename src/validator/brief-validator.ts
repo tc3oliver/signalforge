@@ -72,10 +72,31 @@ export function validateBrief(input: unknown, ctx: BriefValidationContext): Vali
 	const brief = parsed.data;
 
 	const storyBounds = requiredStoryCount(ctx.materials.stories.length);
+	const distinctIds = new Set(brief.stories.map((s) => s.storyId));
+	const repeated = [...distinctIds].filter(
+		(id) => brief.stories.filter((s) => s.storyId === id).length > 1,
+	);
+
+	// True only when the combined message below was emitted, so the per-story
+	// duplicate errors are suppressed exactly when they would repeat it -- and
+	// still reported when the count happened to land in range anyway.
+	let repeatsAlreadyReported = false;
+
 	if (brief.stories.length < storyBounds.min || brief.stories.length > storyBounds.max) {
+		const required =
+			storyBounds.min === storyBounds.max
+				? `exactly ${storyBounds.min}`
+				: `between ${storyBounds.min} and ${storyBounds.max}`;
+		// When the count is only wrong because stories were repeated, saying so in
+		// one sentence is the difference between a fixable rejection and a loop:
+		// "too many stories" and "duplicate storyId" read as two problems, and an
+		// editor that pads to reach a number will try to satisfy both at once.
 		errors.push(
-			`Brief has ${brief.stories.length} stories; it must have between ${storyBounds.min} and ${storyBounds.max}, because the curator supplied ${ctx.materials.stories.length}. Add or remove stories to land in that range.`,
+			repeated.length > 0
+				? `Brief has ${brief.stories.length} entries but only ${distinctIds.size} distinct stories, because ${repeated.map((id) => `"${id}"`).join(", ")} ${repeated.length === 1 ? "appears" : "appear"} more than once. Delete the repeats. The brief must have ${required} stories, and ${distinctIds.size} distinct ${distinctIds.size === 1 ? "story is" : "stories are"} what you have — a short brief is the correct brief on a quiet day.`
+				: `Brief has ${brief.stories.length} stories; it must have ${required}, because the curator supplied ${ctx.materials.stories.length}. Add or remove stories to land in that range.`,
 		);
+		repeatsAlreadyReported = repeated.length > 0;
 	}
 
 	const mustKnowBounds = requiredMustKnowCount(brief.stories.length);
@@ -93,7 +114,7 @@ export function validateBrief(input: unknown, ctx: BriefValidationContext): Vali
 	for (const story of brief.stories) {
 		const where = `brief story "${story.storyId}"`;
 
-		if (seenStoryIds.has(story.storyId)) {
+		if (seenStoryIds.has(story.storyId) && !repeatsAlreadyReported) {
 			errors.push(
 				`Duplicate storyId "${story.storyId}" in the brief. Each story may appear only once; merge the duplicates.`,
 			);
