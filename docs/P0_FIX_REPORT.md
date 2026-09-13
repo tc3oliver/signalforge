@@ -22,13 +22,11 @@ each of these came from.
 | 6 | The suite reported green with the whole DB layer and the security test skipped | Skipping was the only behaviour; there was no strict mode | Fixed |
 | 7 | 920 GitHub items produced 0 stories | The raw `/events` firehose and tag-history backfill were collected wholesale | Fixed |
 
-**Verification status: incomplete.** `pnpm typecheck`, the full unit suite and
-`pnpm build` all pass. `pnpm verify` and the live collection smoke test could not be
-run: **OrbStack wedged during this work — `docker ps` itself does not return, and
-`127.0.0.1:55432` times out.** This is the fourth occurrence of the failure mode named
-in the quality review, and it happened unprompted while nothing was being asked of the
-database. OrbStack also hosts other stacks on this machine, so it was not restarted.
-See "Outstanding" at the end for the exact commands to finish.
+**Verification status: complete.** `pnpm verify` passes end to end — typecheck,
+fixtures, the full suite with **no suite permitted to skip**, and the web build — and a
+live collection confirmed every behavioural prediction on real data. Details in
+"Verification" below. The OrbStack outage that blocked this for an hour turned out to
+have a root cause worth recording; see "The OrbStack hang was not OrbStack".
 
 ---
 
@@ -335,53 +333,90 @@ bug.
 
 ## Verification
 
-Run against the final code state:
+Run against the final code state, after OrbStack was recovered and migration 003 applied:
 
 | Check | Result |
 |---|---|
-| `pnpm typecheck` | **PASS** (exit 0) |
-| `pnpm test` | **687 passed, 45 skipped** (53 files passed, 6 skipped) |
-| `pnpm build` | **PASS** (exit 0) |
-| `pnpm verify` | **NOT RUN — blocked**, see below |
-| Live collection smoke test | **NOT RUN — blocked**, see below |
-| Live GitHub before/after | **DONE** — 1,694 → 25 items, measured against the real API |
+| `pnpm typecheck` | **PASS** |
+| `pnpm verify` | **PASS**, exit 0 (typecheck → fixtures → strict suite → build) |
+| `pnpm test:integration` | **59 files, 732 tests, 0 skipped** |
+| `pnpm build` | **PASS**, 13 routes |
+| `pnpm db:migrate` | `003_collector-health-history.sql` applied |
+| Live collection (`pnpm collect`) | **PASS**, see below |
+| Live GitHub before/after | 1,694 → 25 items against the real API |
 
-The 45 skips are the six Postgres-backed files. Under `pnpm verify` they would be
-failures, which is the point of item 6 — and right now they *would* fail, correctly,
-because the database is unreachable.
+**The strict suite is the headline.** Before this pass, `pnpm test` on a machine with no
+database reported `53 passed | 6 skipped` / `687 passed | 45 skipped`, exit 0, green. It
+now runs **59 of 59 files and 732 of 732 tests with nothing skipped**, including all six
+Postgres-backed suites and the gold-isolation security test — the first time those have
+actually executed rather than silently vanished.
 
-### Outstanding, and why
+(The two `skipped —` lines that appear in that run's output come from
+`tests/verification-gate.test.ts`, which deliberately exercises the skip path with the
+flag unset. They are assertions about the gate, not suites being skipped.)
 
-**OrbStack wedged during this work.** `docker ps` does not return at all. The Postgres
-port is stranger and worth recording precisely: `nc -z 127.0.0.1 55432` **succeeds** —
-OrbStack's port forwarder is still accepting connections — while the actual Postgres
-handshake behind it times out with `CONNECT_TIMEOUT`. So the VM is wedged behind a live
-listener. Nothing was being asked of the database when it happened.
+### Live collection, 2026-09-13 13:52 UTC
 
-That shape is worth keeping in mind for the preflight recommended in the review: a
-TCP-only reachability check would have reported this database as healthy. `probeDatabase`
-gets it right today because it follows the TCP probe with an actual `select 1`, and the
-preflight must do the same rather than trusting the port. This is the fourth occurrence of the failure mode recorded in
-`docs/QUALITY_REVIEW.md` §7, and it is the strongest evidence yet for the preflight
-recommended there — the 05:30 job currently has no idea whether its database exists.
-
-OrbStack was **not** restarted: it hosts this machine's other stacks (miniflux — which
-this project reads from — plus bark, gemini-balance, shopmaster, tesla-tv-hub), so the
-blast radius is wider than this project and the decision is the operator's.
-
-Once OrbStack is back, these finish the verification:
-
-```bash
-docker compose up -d          # or restart OrbStack first
-pnpm db:migrate               # applies 003_collector-health-history.sql
-pnpm verify                   # typecheck -> fixtures -> strict suite -> build
-pnpm collect                  # live collection smoke test
+```
+github          OK        fetched 8      inserted 1
+hackernews      OK        fetched 38     inserted 38
+youtube         DEGRADED  fetched 55     inserted 5
+coingecko       OK        fetched 6      inserted 1
+miniflux        OK        fetched 0      (incremental, nothing new)
+fred            OK        fetched 0      (quiet day — correctly OK, not FAILED)
+semantic-scholar OK       fetched 0      (nothing to enrich)
+arxiv           FAILED    429
+sec / reddit    DISABLED
 ```
 
-Expected from `pnpm collect`: GitHub reports a small, readable item count rather than
-~1,400; CoinGecko and FRED persist facts for the first time (`select count(*) from
-structured_facts` moves off 3); and `source_configs` gains populated `last_success_at`
-/ `last_failure_at` / `last_error` columns.
+Credentials loaded `set: 7, blank: 4` — the `set: 0, blank: 11` reading recorded in the
+quality review was a transient state while the operator was editing the file, not a
+context problem.
+
+**Each fix confirmed on production data:**
+
+| Fix | Evidence |
+|---|---|
+| GitHub narrowed (item 7) | **8 items fetched**, where the same collector previously pulled ~1,400 per run. Through the real pipeline, not a harness. |
+| Fact anchoring (item 3) | `structured_facts` for lineage `default` went **0 → 11** — the first rows the numeric layer has ever persisted. Real readings: BTC 76,809 USD, ETH 2,479.11 USD, plus market cap, 24h volume and the two global facts. Exactly one set (3 assets × 3 + 2 global), so the day-keyed identity is collapsing correctly rather than duplicating. |
+| CoinGecko identity (item 3b) | 11 facts after a run, not 11 × runs-so-far. |
+| Collector health (item 5) | `last_success_at` / `last_failure_at` / `last_error` all populated. **arxiv now shows `consecutive_failures = 14`** — the counter accumulates instead of being wiped, which is precisely the silent-degradation signal that did not exist before. **youtube shows `DEGRADED, consecutive_failures = 1`**: DEGRADED increments now rather than resetting to 0. |
+| Quiet sources not punished (item 4) | `fred` fetched 0 and reports **OK** with `consecutive_failures = 0` and a fresh `last_success_at`. A quiet macro day is a working day. |
+| Run semantics (item 4) | The run is `degraded: true` for the right reason — arXiv FAILED — and not empty, so it was not treated as suspicious. |
+
+---
+
+## The OrbStack hang was not OrbStack
+
+This blocked verification for an hour and the diagnosis is worth keeping, because it
+also explains the three earlier "OrbStack hangs" recorded in `docs/QUALITY_REVIEW.md`.
+
+**Root cause: the host was configured to sleep after 1 minute idle on AC**
+(`pmset -g custom` → `sleep 1`). The chain:
+
+1. Host sleeps → OrbStack suspends the Linux VM (`vmgr.log`: `msg=sleep` at 21:03:45).
+2. macOS subsequently only *DarkWakes* (maintenance wakes). OrbStack resumes the VM
+   only on a real user wake, so **no matching `msg=wake` was ever logged**.
+3. Every `docker` call blocks forever against a suspended guest.
+
+**Three separate liveness signals lied during this**, which is the part worth
+remembering:
+
+- The host-side **port forwarder kept accepting TCP**, so `nc -z 127.0.0.1 55432`
+  succeeded while the Postgres handshake timed out.
+- **`orb status` reported `Running`** throughout — the control plane was healthy; the
+  guest was not.
+- The VM did **not** recover on user interaction, contrary to the obvious expectation.
+  Only `orb stop && orb start` brought it back.
+
+`probeDatabase` in this repo gets it right because it follows the TCP probe with a real
+`select 1`. **Any preflight added later must do the same and must not trust a port, a
+`docker` exit code, or `orb status`.**
+
+Fixed at the source, outside this repo: `~/Developer/setup` now carries
+`scripts/power-settings.sh`, a `System sleep` check in `health.sh`, and Runbook §1.6.
+`sleep` is now `0`. The 05:30 LaunchAgent could not have fired on time before this —
+a `StartCalendarInterval` job does not wake a sleeping Mac and does not schedule a wake.
 
 ---
 
@@ -392,6 +427,9 @@ loop, no web UX. `config/interests.yaml` is still dead config, the
 `find_history` → `changeType` invariant is still unenforced, emerging signals are still
 ungated, and there is still no claim-level grounding. Those are P0-3, P0-5, P1-3 and
 P1-7 in `docs/QUALITY_REVIEW.md` and are intentionally untouched here.
+
+arXiv remains FAILED with a 429 and now carries 14 consecutive failures. That is P1-9
+and is left for after the freeze.
 
 The 5-day observation freeze begins now: no intelligence policy, model or source
 configuration changes, only production evidence.
