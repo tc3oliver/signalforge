@@ -1,47 +1,300 @@
-# Daily Intelligence
+# SignalForge
 
-A personal daily-intelligence pipeline. Collectors gather the day's raw items into
-Postgres; a restricted Pi "Curator" agent scans **every** item, deduplicates and
-clusters them into stories, compares them against a cross-day story ledger, and
-judges novelty and importance; a separate, fresh Pi "Editor" session writes the
-morning brief from the curated materials; deterministic validators gate publication;
-a Next.js reader renders what was published.
+> SignalForge reads the noise so you can read the signal.
 
-It runs on one machine, for one person, on a schedule.
+SignalForge is a self-hosted AI intelligence pipeline that collects information
+from multiple sources, groups duplicate reports into real-world events, tracks
+how stories evolve over time, identifies emerging signals, and produces
+source-grounded daily intelligence briefs.
+
+Not another RSS summarizer. SignalForge reasons over **events and changes**,
+not articles.
+
+```text
+Sources
+  │
+  ▼
+Collectors
+  │
+  ▼
+Normalized Items
+  │
+  ▼
+Pi Curator  ──┬─ Deduplicate
+              ├─ Cluster Events
+              ├─ Compare History
+              ├─ Judge Novelty
+              └─ Select Material
+  │
+  ▼
+Story Ledger
+  │
+  ▼
+Fresh Pi Editor
+  │
+  ▼
+Daily Brief
+  │
+  ▼
+Validator
+  │
+  ▼
+Web
+```
+
+## Why it exists
+
+A feed reader gives you today's articles. That is the wrong unit.
+
+Five outlets writing about one release is one event, not five things to read.
+An article published today is frequently not new information — it is commentary
+on something you were told last week, or a rumour that has now been confirmed,
+or a number that moved in a direction you were already tracking. Sorting that
+out is the work, and it is the work a summarizer does not do: summarizing five
+articles gives you five summaries.
+
+SignalForge is **event-centric, not article-centric**:
+
+```text
+5 articles about the same release
+  → 1 Story
+  → multiple supporting sources
+```
+
+and it records what each day actually changed about that story:
+
+| | |
+|---|---|
+| `NEW` | First time this event has been seen |
+| `UPDATE` | Genuinely new detail on a known story |
+| `ESCALATION` | The situation got more serious |
+| `RESOLUTION` | It concluded |
+| `REVERSAL` | It went the other way |
+| `CONFIRMATION` | A rumour or single-source report is now corroborated |
+| `RUMOR` | Reported, but not yet from a source that settles it |
+| `NO_MATERIAL_CHANGE` | Coverage happened; information did not |
+
+A story marked `NO_MATERIAL_CHANGE` is recorded in the ledger and kept out of
+your brief. That is the difference between tracking events and summarizing
+articles.
+
+## What it is
+
+- **Multi-source collection** — RSS (via Miniflux), GitHub, Hacker News, arXiv,
+  Semantic Scholar, Reddit, YouTube, SEC EDGAR, FRED, CoinGecko, plus scheduled
+  web research.
+- **Event-centric deduplication** — items are clustered into stories; duplicate
+  coverage becomes supporting sources, not extra entries.
+- **Cross-day story ledger** — every story persists, so today is compared
+  against what was already known rather than judged in isolation.
+- **Novelty and change tracking** — the eight change types above.
+- **Emerging signal detection** — weak repeated patterns tracked across days
+  before any single day would justify a story.
+- **Personal interest configuration** — your topics and weights drive both what
+  the curator looks for and how it scores what it finds.
+- **Source-grounded writing** — every claim in a brief resolves to a collected
+  item; fabricated source ids fail validation.
+- **Deterministic validation** — a brief is checked by code, not by asking a
+  model whether it did a good job.
+- **Model-provider fallback** — a three-deep chain; a quota or outage on the
+  primary continues on the next.
+- **Production observability** — per-collector health, per-item decision
+  traces, run state, and a reason for every rejection.
+- **Web UI** — a local reader for briefs, story history, signals and search.
+- **Self-hosted scheduling** — unattended daily runs, macOS LaunchAgent
+  included.
 
 ## What it is not
 
-- **Not a product, and not multi-tenant.** One reader, one machine, one database.
-- **Not publicly reachable.** Postgres binds `127.0.0.1` only, the web app binds
-  `127.0.0.1:3300`, and no public ingress of any kind is permitted — see `AGENTS.md`.
-- **Not an autonomous agent with a shell.** The agent sessions have no bash, no
-  filesystem (beyond one narrowly-rooted skill-reference reader), no arbitrary HTTP,
-  and no credentials. See `docs/SECURITY.md`.
-- **Not rich, on a day with no credentials.** Everything runs, but what reaches the
-  brief is bounded by which connectors have a key. On the first live run, six of ten
-  sources were disabled for want of one and a seventh was rate-limited, so the day's
-  material came almost entirely from Hacker News. See `docs/DATA_SOURCES.md`.
-- **Not supported.** It is published because the design may be useful to read, not
-  because anyone is on call for it. Expect to fix things yourself; see `LICENSE`.
+- **Not a generic RSS reader or news aggregator.** It deliberately throws most
+  of the day away. On a typical day well over 95% of collected items are
+  rejected with a recorded reason.
+- **Not a trading bot.** It tracks market series because they are context; it
+  makes no recommendation and takes no action.
+- **Not an autonomous browser agent.** The agent sessions have no shell, no
+  filesystem beyond one narrowly-rooted policy reader, no arbitrary HTTP and no
+  credentials.
+- **Not multi-tenant.** One reader, one database. Multi-user is not a roadmap
+  item.
+- **Not publicly reachable by design.** Postgres and the web app both bind
+  `127.0.0.1`. Exposing it to the Internet is unsupported.
+- **Not supported.** Published because the design may be useful to read and
+  adapt, not because anyone is on call. See `CONTRIBUTING.md`.
+
+## Quick start
+
+```bash
+git clone <this repository> signalforge && cd signalforge
+pnpm install
+
+cp .env.example .env
+# Edit .env: replace the placeholder password with a locally generated one, in
+# BOTH POSTGRES_PASSWORD and DATABASE_URL.
+
+docker compose up -d                     # Postgres 17 + pgvector, 127.0.0.1 only
+pnpm db:migrate
+
+pnpm setup:check                         # tells you what is ready and what is missing
+```
+
+`pnpm setup:check` is read-only. It starts nothing, writes nothing, and prints
+no credential value — only which names are configured.
+
+> **A note on the name.** The project is SignalForge; several internal
+> identifiers still say `daily-intelligence` — the Docker project and volume,
+> the database name, the secrets-file directory, the scheduler labels. Those are
+> not cosmetic strings: renaming the Compose project orphans the data volume,
+> and renaming the secrets directory breaks an existing install. They are
+> deliberately left alone. Nothing you read in the UI or the docs depends on
+> them.
+
+### See it work before configuring anything
+
+```bash
+pnpm demo                                # synthetic three-day history, "web-dev" lineage
+DI_LINEAGE=web-dev pnpm run web:start    # then open http://127.0.0.1:3300
+```
+
+`pnpm demo` needs no model, no API key and no network. It writes into its own
+lineage and can never touch `default`. `examples/` has the same output as static
+files if you would rather just read it.
+
+### Then make it yours
+
+```bash
+cp config/interests.yaml   config/interests.local.yaml
+cp config/watchlists.yaml  config/watchlists.local.yaml
+$EDITOR config/interests.local.yaml      # your topics, your weights
+```
+
+Every `config/*.yaml` in the repository is a **shipped example**. The file that
+actually runs is `*.local.yaml`, which is gitignored and wins outright when
+present. The shipped interests file is a demonstration of the shape, not a
+recommendation — until you replace it, the brief reflects an example rather
+than you.
+
+Then configure a model chain (below), add any collector credentials you want,
+and run:
+
+```bash
+pnpm collect                             # collection only; reports each source's health
+pnpm daily                               # the full day, ending in a published brief
+```
+
+## Data sources
+
+| Source | Credential | Without it |
+|---|---|---|
+| Hacker News | none | full function |
+| arXiv | none | full function |
+| CoinGecko | none | full function (public tier) |
+| SEC EDGAR | none, but requires a contact User-Agent | disabled until you set one |
+| GitHub | optional `GITHUB_TOKEN` | works unauthenticated at a much lower rate limit; some repos 403 |
+| YouTube | optional `YOUTUBE_API_KEY` | RSS per channel still works; `@handle` resolution and discovery are skipped (`DEGRADED`) |
+| Semantic Scholar | optional `SEMANTIC_SCHOLAR_API_KEY` | works at a lower rate limit |
+| RSS / Miniflux | **required** `MINIFLUX_URL` + `MINIFLUX_API_KEY` | `DISABLED` |
+| Reddit | **required** `REDDIT_CLIENT_ID` + `REDDIT_CLIENT_SECRET` | `DISABLED` |
+| FRED | **required** `FRED_API_KEY` | `DISABLED` |
+| Web research | **required** `TAVILY_API_KEY` (or `EXA_API_KEY`) | the `search_web` tool is not offered to the curator at all |
+
+A missing credential is never an error. The collector reports `DISABLED`, the
+run continues, and the brief is correspondingly thinner. Running with no
+credentials at all is a supported configuration — it is just mostly Hacker News
+and arXiv.
+
+## Model providers
+
+The model chain lives in `config/agent.yaml`, it is read at run time, and the
+first entry is the primary with each later one a fallback:
+
+```yaml
+modelChain:
+  - provider: anthropic
+    model: claude-sonnet-5
+  - provider: openai
+    model: gpt-5.6
+```
+
+`provider` is whatever the installed Pi agent can authenticate as — run
+`pi models` to see what is available to you. Authentication is Pi's, not this
+project's: SignalForge reads existing Pi logins read-only and never stores a
+model credential of its own.
+
+**The committed chain is an example, and probably the wrong one for you.** It
+names subscription-backed providers because that is what the machine this was
+built on had. Nothing in the pipeline depends on which providers these are,
+only that there is at least one and that the first is the most capable. Any
+provider Pi supports — direct API key, subscription, or an OpenAI-compatible
+endpoint you host yourself — works the same way here; whether a given one is
+reachable is a question for `pi auth check`, not for this project.
+
+**Budget for volume, not for requests.** The curator is required to scan *every*
+item collected that day, which on a busy day is well over a thousand. That is a
+deliberate product requirement — a story that is never looked at cannot be
+judged — and it means cost scales with how much you collect, not with how much
+reaches your brief. Price the primary model accordingly, and treat a large
+watchlist as a recurring cost.
+
+## Security model
+
+Detail and the tests that enforce each boundary are in
+[`docs/SECURITY.md`](docs/SECURITY.md); reporting is
+[`.github/SECURITY.md`](.github/SECURITY.md).
+
+- **External content is untrusted.** Everything collected is treated as hostile
+  input and marked as such before an agent sees it. Prompt injection through a
+  collected item is an in-scope vulnerability.
+- **The agent runtime is restricted.** No shell, no filesystem beyond one
+  narrowly-rooted policy reader, no arbitrary HTTP, no credentials. Asserted per
+  run, not just configured.
+- **Secrets live outside the repository** — `~/.config/daily-intelligence/secrets.env`
+  or the OS keychain — and are resolved server-side. Values are never logged,
+  never placed in a command argument, and never included in an error message.
+- **The agent never holds a credential.** Collectors and the research layer run
+  server-side and hand the agent content, never keys.
+- **Third-party providers are a trust boundary.** Item text goes to whichever
+  provider you configure, under their terms.
+
+## Limitations
+
+Stated plainly, because they determine whether this is worth your time.
+
+- **Brief quality is bounded by your model and your source coverage.** The
+  pipeline is deterministic where it can be; the judgement is not. A weaker
+  primary model produces a visibly weaker brief.
+- **The curator is expensive by design.** Scanning every item is the product
+  requirement that makes historical comparison possible, and it is also the
+  single largest cost.
+- **Personalization is keyword and weight driven.** It does not learn from what
+  you actually read. There is no feedback loop yet; interest weights are
+  something you tune by hand.
+- **Historical awareness is only as old as your ledger.** A fresh install has no
+  history, so everything is `NEW` for the first few days and change tracking
+  only becomes useful once days accumulate.
+- **Several connectors are optional and off by default**, so a default install
+  sees much less than a configured one.
+- **Unattended scheduling as shipped is macOS-only.** See Prerequisites.
+- **Emerging signal detection is the least mature part** of the pipeline and the
+  part most likely to change.
 
 ## Where it stands
 
-`pnpm verify`: typecheck, the full suite with **no suite permitted to skip**, and the
-web build. The Postgres-backed suites run against the real database; `pnpm test`
-loads `.env` so they can, and `pnpm verify` fails outright if they cannot — a green
-run that silently skipped the whole data layer is worse than a red one.
+`pnpm verify` is the command that decides whether a change is good: typecheck,
+the full suite with **no suite permitted to skip**, and the web build.
 
-- **Synthetic acceptance:** `p11-b` passes every gate on all three fixture days —
-  `experiments/p11-b/<date>/<run-id>/evaluation.json`, and `docs/reports/PHASE1_REPORT.md`
-  §11 for the before-and-after.
-- **Stability:** three independent lineages, core story selection 0.922 against a
-  0.85 gate — `docs/reports/STABILITY_REPORT.md`.
-- **Model fallback:** validated live, not only in tests. A real primary session
-  decided 50 of 79 items, a quota failure was injected at the worker boundary, and a
-  fresh session on the second model finished the remaining 29.
-- **Live run:** one real end-to-end day, triggered through the installed
-  LaunchAgent — `docs/reports/LIVE_RUN_REPORT.md`.
-- **Everything, in one table:** `docs/reports/FINAL_ACCEPTANCE_REPORT.md`.
+- **Synthetic acceptance:** passes every gate on all three fixture days —
+  `docs/reports/PHASE1_REPORT.md` §11.
+- **Stability:** three independent lineages, core story selection 0.922 against
+  a 0.85 gate — `docs/reports/STABILITY_REPORT.md`.
+- **Model fallback:** validated live. A real primary session decided 50 of 79
+  items, a quota failure was injected at the worker boundary, and a fresh
+  session on the second model finished the remaining 29.
+- **Live run:** real end-to-end days through the installed scheduler —
+  `docs/reports/LIVE_RUN_REPORT.md`.
+- **Honest self-assessment:** `docs/reports/QUALITY_REVIEW.md` is a critical
+  review of this project by its own author, scoring intelligence quality well
+  below engineering quality and saying why. Read it before deciding this is
+  finished software.
 
 ## Prerequisites
 
@@ -62,46 +315,7 @@ Authentication is Pi's, not this project's: it reads the existing Pi logins from
 configuration. This project never stores a model credential of its own.
 `docs/ENVIRONMENT.md` records the versions this was verified against.
 
-## First-time setup
-
-```bash
-pnpm install
-
-cp .env.example .env
-# then edit .env: replace the placeholder password with a locally generated one,
-# in BOTH POSTGRES_PASSWORD and DATABASE_URL.
-
-docker compose -p daily-intelligence up -d     # Postgres 17 + pgvector, 127.0.0.1 only
-pnpm db:migrate
-```
-
-### Choosing the models
-
-`config/agent.yaml` holds the model chain: the first entry is tried first and
-each later one is a cheaper fallback. The daily CLI reads that file, so changing
-providers is a config edit, not a code edit.
-
-```yaml
-modelChain:
-  - provider: anthropic
-    model: claude-sonnet-5
-  - provider: openai
-    model: gpt-5.6
-```
-
-`provider` is whatever the installed Pi agent can authenticate as — run
-`pi models` to see what is available to you. The chain committed here routes
-through subscription-backed providers because that is what the machine it was
-built on has; **if you are setting this up yourself you almost certainly want
-direct-API providers instead.** Nothing in the pipeline depends on which
-providers these are, only that the first is the most capable one you have.
-
-One caveat worth stating plainly: the curator is asked to scan *every* item
-collected that day, which on a busy day is over a thousand. That is a deliberate
-product requirement rather than an oversight, and it makes the run's cost
-proportional to the day's volume. Price the primary model accordingly.
-
-### Credentials
+## Credentials
 
 Collector credentials go in **`~/.config/daily-intelligence/secrets.env`** —
 outside this repository, mode `600` in a `700` directory. It is loaded at worker
@@ -299,3 +513,9 @@ own terms, and a published brief quotes and links them. Nothing collected is
 redistributed here — `runs/`, `briefs/` and `logs/` are gitignored, and the test
 data committed under `experiments/` and `fixtures/` is synthetic. If you run this,
 the collected content is yours to be responsible for.
+
+## Repository topics
+
+Suggested, for anyone cataloguing this: `ai`, `agents`, `llm`, `intelligence`,
+`news-aggregator`, `rss`, `self-hosted`, `daily-brief`, `knowledge-management`,
+`typescript`, `postgresql`.

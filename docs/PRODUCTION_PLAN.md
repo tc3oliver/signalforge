@@ -1,6 +1,6 @@
 # Production Build Plan
 
-Tracking document for taking Daily Intelligence from Phase 1 prototype to a
+Tracking document for taking SignalForge from Phase 1 prototype to a
 production system that runs itself every morning. Every row is closed by tests +
 acceptance evidence, then committed.
 

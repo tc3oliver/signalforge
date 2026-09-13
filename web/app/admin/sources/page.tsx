@@ -5,7 +5,7 @@ import { formatDuration, formatInstant } from "../../../lib/format.ts";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export const metadata = { title: "Sources — Daily Intelligence" };
+export const metadata = { title: "Sources — SignalForge" };
 
 export default async function SourcesPage() {
 	const { sources, throughput, recentRuns } = await loadSourcesPage();

@@ -1,5 +1,10 @@
 # Security
 
+> **Reporting a vulnerability?** Use GitHub's private vulnerability reporting
+> on this repository. See [`.github/SECURITY.md`](../.github/SECURITY.md) for what
+> is in scope and what to include. This document is the threat model, not the
+> reporting policy.
+
 This system reads the open internet unattended, on a machine that also runs other
 people's data, and hands the result to one person who is expected to trust it without
 checking. Everything below is about one of those two problems: hostile input reaching

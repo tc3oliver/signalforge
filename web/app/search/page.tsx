@@ -8,7 +8,7 @@ import { preview } from "../../lib/untrusted.ts";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export const metadata = { title: "Search — Daily Intelligence" };
+export const metadata = { title: "Search — SignalForge" };
 
 export default async function SearchPage({
 	searchParams,

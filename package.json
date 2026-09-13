@@ -1,7 +1,7 @@
 {
-  "name": "daily-intelligence",
+  "name": "signalforge",
   "version": "0.1.0",
-  "description": "A personal daily-intelligence pipeline: collect the day's items, have a restricted agent curate them into stories, and publish a morning brief.",
+  "description": "Self-hosted AI intelligence pipeline that turns noisy multi-source data into deduplicated events, emerging signals, and source-grounded daily briefs.",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -18,6 +18,8 @@
     "db:reset": "tsx --env-file-if-exists=.env src/db/migrate.ts --reset",
     "collect": "tsx --env-file-if-exists=.env src/cli/run-collection.ts",
     "daily": "tsx --env-file-if-exists=.env src/cli/run-daily.ts",
+    "setup:check": "tsx --env-file-if-exists=.env src/cli/setup-check.ts",
+    "demo": "tsx --env-file-if-exists=.env web/scripts/seed-dev.ts",
     "phase1:generate": "tsx src/cli/generate-fixtures.ts",
     "phase1:curate": "tsx src/cli/run-curator.ts",
     "phase1:edit": "tsx src/cli/run-editor.ts",

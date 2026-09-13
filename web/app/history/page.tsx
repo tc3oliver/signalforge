@@ -6,7 +6,7 @@ import { formatDateKey, formatInstant, sectionLabel } from "../../lib/format.ts"
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export const metadata = { title: "History — Daily Intelligence" };
+export const metadata = { title: "History — SignalForge" };
 
 export default async function HistoryPage() {
 	const briefs = await loadBriefHistory(120);

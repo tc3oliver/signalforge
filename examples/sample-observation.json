@@ -1,0 +1,55 @@
+{
+  "_comment": "Synthetic example. One story's ledger history, showing how SignalForge tracks an event rather than an article.",
+  "storyId": "meridian-halyard-3-scheduler",
+  "canonicalTitle": "Meridian replaces the Halyard scheduler",
+  "firstSeen": "2026-01-22",
+  "lastSeen": "2026-04-17",
+  "observations": [
+    {
+      "date": "2026-01-22",
+      "changeType": "NEW",
+      "tier": "B",
+      "summary": "Halyard 2.7 ships a preemptive scheduler behind an experimental flag.",
+      "reachedBrief": true,
+      "supportingItems": [
+        { "sourceType": "rss", "title": "Halyard 2.7 released", "url": "https://meridian.example.com/halyard/2.7" }
+      ]
+    },
+    {
+      "date": "2026-02-14",
+      "changeType": "NO_MATERIAL_CHANGE",
+      "tier": "C",
+      "summary": "Two blog posts benchmark the experimental scheduler. No new information from the vendor.",
+      "reachedBrief": false,
+      "reason": "Commentary on an already-reported change; the ledger entry was updated but the brief was not.",
+      "supportingItems": [
+        { "sourceType": "hackernews", "title": "Benchmarking Halyard's new scheduler", "url": "https://news.example.com/item?id=100234" },
+        { "sourceType": "rss", "title": "We tried preemptive Halyard in production", "url": "https://eng.example.com/halyard-preempt" }
+      ]
+    },
+    {
+      "date": "2026-03-30",
+      "changeType": "RUMOR",
+      "tier": "C",
+      "summary": "A maintainer comment suggests the cooperative scheduler may be removed in 3.0. Not a vendor statement.",
+      "reachedBrief": false,
+      "reason": "Single unofficial source; recorded so that a later confirmation reads as a confirmation.",
+      "supportingItems": [
+        { "sourceType": "github", "title": "comment on meridian/halyard#4471", "url": "https://github.example.com/meridian/halyard/issues/4471" }
+      ]
+    },
+    {
+      "date": "2026-04-17",
+      "changeType": "ESCALATION",
+      "tier": "A",
+      "summary": "Halyard 3.0 removes the cooperative scheduler entirely. No compatibility shim.",
+      "reachedBrief": true,
+      "supportingItems": [
+        { "sourceType": "rss", "title": "Halyard 3.0 release notes", "url": "https://meridian.example.com/halyard/3.0" },
+        { "sourceType": "rss", "title": "Migrating to Halyard 3", "url": "https://docs.example.com/halyard/migrating-to-3" },
+        { "sourceType": "hackernews", "title": "Halyard 3.0 scheduler rewrite", "url": "https://news.example.com/item?id=104991" }
+      ]
+    }
+  ],
+  "_note": "Five separate articles on 2026-04-17 reported this release. They became one observation with three supporting sources, not five stories."
+}

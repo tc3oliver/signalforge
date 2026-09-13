@@ -1,0 +1,22 @@
+# gitleaks configuration for SignalForge.
+#
+# The baseline rules are used unchanged; this file only records the findings
+# that were examined andjudged to be false positives, so that a clean scan means
+# something and CI can fail on anything new.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+[rules.allowlist]
+description = """
+src/fixtures/scenarios.ts declares synthetic story scenarios. Each entry has a
+`key` field holding the story key ("gh-issue-arc" and similar), which the
+generic-api-key rule matches on the field name alone. These are fixture story
+identifiers, not credentials: the file is committed test data and contains no
+secret of any kind.
+"""
+paths = ['''src/fixtures/scenarios\.ts''']
+regexTarget = "line"
+regexes = ['''key:\s*"[a-z0-9-]+"''']

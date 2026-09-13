@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
@@ -20,9 +20,31 @@ function configPath(root: string, file: string): string {
 	return join(root, "config", file);
 }
 
+/**
+ * The local override for a config file: `interests.yaml` -> `interests.local.yaml`.
+ *
+ * Every `config/*.yaml` in the repository is a shipped default that anyone can
+ * read and nobody has to keep. The operator's real configuration -- which
+ * topics they care about, which repositories they watch, which models they pay
+ * for -- is theirs, is often the most personal thing in the checkout, and has
+ * no business being tracked. `*.local.yaml` is gitignored and wins outright
+ * when present.
+ *
+ * Outright, not merged. A deep merge would mean the effective configuration
+ * lived in neither file and could not be read off disk, and the failure mode is
+ * ugly: a default topic the operator thought they had deleted quietly steering
+ * the brief. One file answers for each concern.
+ */
+export function localConfigName(file: string): string {
+	const dot = file.lastIndexOf(".");
+	return `${file.slice(0, dot)}.local${file.slice(dot)}`;
+}
+
 /** Parses one YAML file against its schema, throwing an error naming file + field path on failure. */
 function loadYamlFile<Schema extends z.ZodType>(root: string, file: string, schema: Schema): z.infer<Schema> {
-	const path = configPath(root, file);
+	const local = configPath(root, localConfigName(file));
+	const shipped = configPath(root, file);
+	const path = existsSync(local) ? local : shipped;
 	let raw: string;
 	try {
 		raw = readFileSync(path, "utf8");

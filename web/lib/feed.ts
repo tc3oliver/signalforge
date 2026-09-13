@@ -22,7 +22,7 @@ export function buildBriefFeedXml(
 	briefs: readonly BriefSummary[],
 	options: FeedOptions,
 ): string {
-	const title = options.title ?? "Daily Intelligence";
+	const title = options.title ?? "SignalForge";
 	const self = absolute(options.baseUrl, "/feed.xml");
 	const updated = briefs[0]?.producedAt ?? new Date(0).toISOString();
 

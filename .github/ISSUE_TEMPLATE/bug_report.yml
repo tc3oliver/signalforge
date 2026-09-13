@@ -1,0 +1,56 @@
+name: Bug report
+description: Something behaves differently from what the documentation says
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing: **never paste a credential, token or API key here**, and
+        check that any log excerpt you include does not contain one. Issues are
+        public and permanent.
+
+        This project is unsupported — see CONTRIBUTING.md. A good report may
+        still sit untouched; a report with a reproduction is far more likely to
+        be acted on, by anyone.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you observed, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: The smallest sequence of commands that shows it.
+      placeholder: |
+        1. pnpm setup:check
+        2. pnpm collect
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: Output of `pnpm setup:check` (it prints no secret values), plus your OS.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part
+      options:
+        - Collection (a collector, rate limits, credentials)
+        - Curation (the curator agent, deduplication, story selection)
+        - Writing (the editor agent, the brief itself)
+        - Validation
+        - Web reader
+        - Database / migrations
+        - Scheduling (LaunchAgent or other)
+        - Setup / documentation
+        - Not sure
+    validations:
+      required: true

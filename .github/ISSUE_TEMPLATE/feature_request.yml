@@ -1,0 +1,32 @@
+name: Feature request
+description: Propose a change in behaviour
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Read CONTRIBUTING.md first. The scope of this project is one reader's
+        morning brief, and most feature requests are declined for that reason —
+        generalising it (multi-tenancy, a plugin system, a hosted mode) makes it
+        worse at the only job it has. Forking is an expected and welcome outcome.
+
+        Requests that fit well: a new collector, a correctness fix in how
+        stories are tracked, something that makes the pipeline easier to run.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What you are trying to do, and what stops you. Not the solution yet.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you tried instead
+      description: Configuration, a local patch, a different tool — and why it was not enough.

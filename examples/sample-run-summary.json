@@ -1,0 +1,61 @@
+{
+  "_comment": "Synthetic example. Not produced by a real run; all ids, counts and names are invented.",
+  "runId": "00000000-0000-4000-8000-000000000001",
+  "date": "2026-04-17",
+  "lineage": "default",
+  "state": "PUBLISHED",
+  "degradedReason": "arxiv unavailable: Timeout",
+  "collection": {
+    "windowStart": "2026-04-17T00:00:00.000Z",
+    "windowEnd": "2026-04-18T00:00:00.000Z",
+    "collectors": [
+      { "collectorId": "rss", "health": "OK", "itemsFetched": 214, "latencyMs": 4820 },
+      { "collectorId": "hackernews", "health": "OK", "itemsFetched": 188, "latencyMs": 2210 },
+      { "collectorId": "github", "health": "OK", "itemsFetched": 11, "latencyMs": 6390 },
+      { "collectorId": "coingecko", "health": "OK", "itemsFetched": 6, "latencyMs": 980 },
+      { "collectorId": "fred", "health": "OK", "itemsFetched": 0, "latencyMs": 640, "note": "quiet source; no release scheduled today" },
+      { "collectorId": "youtube", "health": "DEGRADED", "itemsFetched": 3, "latencyMs": 3110, "error": "YOUTUBE_API_KEY absent; handle resolution skipped" },
+      { "collectorId": "arxiv", "health": "FAILED", "itemsFetched": 0, "latencyMs": 45000, "error": "Timeout" },
+      { "collectorId": "sec", "health": "DISABLED", "itemsFetched": 0, "latencyMs": 0 },
+      { "collectorId": "reddit", "health": "DISABLED", "itemsFetched": 0, "latencyMs": 0 },
+      { "collectorId": "semantic-scholar", "health": "OK", "itemsFetched": 0, "latencyMs": 0 }
+    ]
+  },
+  "curation": {
+    "model": "example-provider/example-model-fast",
+    "attempts": 1,
+    "durationMs": 401200,
+    "itemsInWindow": 422,
+    "itemsScanned": 422,
+    "scanCoverage": 1.0,
+    "dispositions": { "IRRELEVANT": 401, "CANDIDATE": 14, "DUPLICATE": 7 },
+    "materials": [
+      { "storyId": "meridian-halyard-3-scheduler", "tier": "A", "changeType": "ESCALATION", "supportingSources": 3 },
+      { "storyId": "northwind-build-log-exposure", "tier": "A", "changeType": "NEW", "supportingSources": 2 },
+      { "storyId": "calder-windowed-recall-reproduction", "tier": "B", "changeType": "CONFIRMATION", "supportingSources": 1 }
+    ]
+  },
+  "writing": {
+    "model": "example-provider/example-model-fast",
+    "attempts": 1,
+    "rejections": 0,
+    "fellBackToModel": null
+  },
+  "validation": {
+    "result": "PASSED",
+    "checks": {
+      "storyCountWithinBound": true,
+      "distinctStoryIds": true,
+      "mustKnowWithinRange": true,
+      "sourceItemIdsResolve": true,
+      "fabricatedSourceIds": 0,
+      "factRefsValid": true
+    }
+  },
+  "publication": {
+    "stories": 3,
+    "mustKnow": 2,
+    "emergingSignals": 1,
+    "producedAt": "2026-04-17T05:31:48.000Z"
+  }
+}

@@ -1,32 +1,25 @@
-# Scheduled Tavily discovery queries: run on a cadence to surface stories that
-# keyword-based collectors (rss/github/hackernews) would miss entirely.
+# Scheduled web-research queries -- SHIPPED DEFAULT.
+#
+# These run on a cadence to surface stories that the keyword-driven collectors
+# (rss, github, hackernews) would miss entirely, because nothing in your feeds
+# happened to carry them. They cost a web-search call each and need a research
+# credential (TAVILY_API_KEY, with Exa as the fallback route); with no such
+# credential the whole discovery pass is skipped and the run continues.
+#
+# Copy to `discovery.local.yaml` (gitignored, wins outright) and write queries
+# for your own topics. `topicIds` must name ids that exist in your interests
+# config -- that is how a discovered item inherits a weight.
+#
+# An empty `queries: []` is valid and disables discovery entirely.
 queries:
-  - id: coding-agent-landscape
-    query: "new coding agent OR AI agent release Claude Code OpenCode"
+  - id: ai-model-releases
+    query: "new open weight model release"
     schedule: daily
     maxResults: 10
-    topicIds: [coding-agents, claude-code, opencode]
+    topicIds: [ai-llm, open-source]
 
-  - id: inference-stack-news
-    query: "vLLM OR ROCm OR AITER inference performance release"
-    schedule: daily
-    maxResults: 10
-    topicIds: [inference, vllm, rocm, aiter]
-
-  - id: open-weight-models
-    query: "new open weight model release Qwen OR DeepSeek OR Hermes"
-    schedule: daily
-    maxResults: 10
-    topicIds: [qwen, deepseek, hermes, local-llm]
-
-  - id: mcp-ecosystem
-    query: "Model Context Protocol MCP server new release"
+  - id: developer-tool-launches
+    query: "developer tool launch OR major release"
     schedule: weekly
     maxResults: 10
-    topicIds: [mcp, developer-tools]
-
-  - id: crypto-macro-weekly
-    query: "Bitcoin Ethereum Solana price outlook Fed rate decision"
-    schedule: weekly
-    maxResults: 10
-    topicIds: [btc, eth, sol, macro]
+    topicIds: [developer-tools]

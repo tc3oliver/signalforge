@@ -6,7 +6,7 @@ import { preview } from "../../lib/untrusted.ts";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export const metadata = { title: "Admin — Daily Intelligence" };
+export const metadata = { title: "Admin — SignalForge" };
 
 export default async function AdminHomePage() {
 	const recent = await loadRecentItemsForAdmin(25);

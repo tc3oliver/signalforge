@@ -1,4 +1,4 @@
-# Daily Intelligence — web reader
+# SignalForge — web reader
 
 A Next.js (App Router, TypeScript) reader for the briefs this repo produces. It
 renders what the pipeline has already published to Postgres and does nothing

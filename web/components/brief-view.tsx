@@ -214,7 +214,7 @@ export function BriefView({ data }: { data: BriefPageData }) {
 
 	return (
 		<>
-			<h1>Daily Intelligence</h1>
+			<h1>SignalForge</h1>
 			<p className="dateline">
 				{formatDateKey(brief.date)} · produced {formatInstant(brief.producedAt)} ·{" "}
 				{brief.stories.length} stories

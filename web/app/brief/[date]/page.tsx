@@ -10,7 +10,7 @@ const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function generateMetadata({ params }: { params: Promise<{ date: string }> }) {
 	const { date } = await params;
-	return { title: `Daily Intelligence — ${DATE_KEY.test(date) ? formatDateKey(date) : date}` };
+	return { title: `SignalForge — ${DATE_KEY.test(date) ? formatDateKey(date) : date}` };
 }
 
 export default async function BriefByDatePage({

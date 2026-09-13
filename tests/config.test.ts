@@ -114,7 +114,7 @@ describe("config validation errors", () => {
 		const result = SourcesConfig.safeParse({
 			collectors: {
 				...config.sources.collectors,
-				sec: { ...config.sources.collectors.sec, enabled: true, userAgent: "Daily Intelligence oliver@example.com" },
+				sec: { ...config.sources.collectors.sec, enabled: true, userAgent: "SignalForge contact@example.com" },
 			},
 		});
 		expect(result.success).toBe(true);

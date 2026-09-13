@@ -48,7 +48,7 @@ describe("decideReset", () => {
 	it("refuses a non-loopback host even with the flag and a TTY", () => {
 		const decision = decideReset({
 			...base,
-			host: "10.10.10.10",
+			host: "203.0.113.10", // RFC 5737 documentation address, deliberately not a real host
 			isTTY: true,
 			argv: ["--reset", `${DROP_FLAG}=daily_intelligence`],
 		});

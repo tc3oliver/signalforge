@@ -6,7 +6,13 @@ const API_BASE = "https://export.arxiv.org/api/query";
 // arXiv's usage guidance asks for >= 3s between requests from a single client.
 const MIN_REQUEST_INTERVAL_MS = 3_000;
 const PAGE_SIZE = 50;
-const USER_AGENT = "daily-intelligence/0.1 (+https://github.com/oliver; contact: research collector)";
+/*
+ * arXiv asks clients to identify themselves. This one names the software, not
+ * the operator: a personal account URL in a shipped default would be sent from
+ * every installation, attributing everyone else's traffic to one person.
+ * Operators who want their own contact on the header set ARXIV_USER_AGENT.
+ */
+const USER_AGENT = process.env["ARXIV_USER_AGENT"]?.trim() || "signalforge/0.1 (+https://github.com/signalforge)";
 
 const DEFAULT_CATEGORIES = ["cs.CL", "cs.LG", "cs.AI", "cs.DC"];
 

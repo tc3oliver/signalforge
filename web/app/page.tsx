@@ -14,7 +14,7 @@ export default async function TodayPage() {
 	if (!date) {
 		return (
 			<>
-				<h1>Daily Intelligence</h1>
+				<h1>SignalForge</h1>
 				<p className="lede">
 					No brief has been published yet. Once a run completes, the most recent brief appears
 					here.
@@ -29,7 +29,7 @@ export default async function TodayPage() {
 	if (!data) {
 		return (
 			<>
-				<h1>Daily Intelligence</h1>
+				<h1>SignalForge</h1>
 				<p className="lede">
 					The latest brief ({date}) could not be loaded. Its rows may have been removed while
 					this page was rendering.

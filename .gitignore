@@ -15,3 +15,9 @@ briefs/
 # repository, so this line is belt and braces: it only matters if someone ever
 # copies that file in here, which is exactly when it would matter most.
 secrets.env
+
+# Operator configuration. Every config/*.yaml in the repository is a shipped
+# default; the real one is *.local.yaml, wins outright when present, and is
+# nobody else's business -- interests and watchlists in particular are as
+# personal as a bookmarks file.
+config/*.local.yaml

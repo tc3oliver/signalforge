@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { userInfo } from "node:os";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
@@ -14,12 +15,40 @@ export type KeychainMapping = {
 };
 
 /**
+ * The Keychain account these mappings look under.
+ *
+ * A generic-password item is addressed by (service, account), and the account
+ * for a per-user item is the login name of whoever created it. That used to be
+ * written here as a literal, which is both a stranger's name in someone else's
+ * checkout and simply wrong for them: the item they created is under *their*
+ * login, not the author's. Resolved at run time it is correct for everybody,
+ * and on the machine this was written on it resolves to exactly the value the
+ * literal used to hold.
+ *
+ * `KEYCHAIN_ACCOUNT` overrides it for the case where the item was deliberately
+ * filed under a different account name.
+ */
+export function keychainAccount(env: NodeJS.ProcessEnv = process.env): string {
+	const override = env["KEYCHAIN_ACCOUNT"]?.trim();
+	if (override) return override;
+	try {
+		return userInfo().username;
+	} catch {
+		// userInfo() throws when there is no passwd entry for the uid, which
+		// happens inside some containers. There is no sensible account to guess
+		// at that point; an empty one simply finds nothing, which is the same
+		// outcome as any other Keychain miss.
+		return "";
+	}
+}
+
+/**
  * Known logical-secret -> Keychain (service, account) mappings. Extend this as
  * new collectors are wired up; a name with no mapping simply cannot be found
  * in the Keychain (env can still supply it).
  */
 export const KEYCHAIN_MAPPINGS: Readonly<Record<string, KeychainMapping>> = Object.freeze({
-	TAVILY_API_KEY: { service: "pi-tavily", account: "oliver" },
+	TAVILY_API_KEY: { service: "pi-tavily", account: keychainAccount() },
 });
 
 /** Injectable for tests: never invoke the real Keychain in a unit test. */

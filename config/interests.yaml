@@ -1,11 +1,19 @@
-# Reader interest profile. Drives prompt construction (what to look for) and
-# scoring (how to weight what was found). Weight is 0-1 relative importance;
-# keywords/aliases feed both keyword prefilters and story-scoring prompts.
+# Reader interest profile -- SHIPPED DEFAULT.
 #
-# What is committed here is one particular reader's profile, kept in the repo as
-# a worked example of the shape rather than as a default anybody should inherit.
-# It is the single largest determinant of what ends up in your brief: replace it
-# with your own topics before the output means anything to you.
+# This is an example, not a recommendation. Copy it to `interests.local.yaml`
+# (gitignored, and it wins outright when present) and replace every topic with
+# your own before the brief means anything to you.
+#
+# This file is the single largest determinant of what reaches your brief. It
+# drives prompt construction (what the curator is told to look for) and scoring
+# (how it weighs what it found).
+#
+#   id       stable key; referenced by discovery.yaml topicIds
+#   label    human name, used in prompts and in the web reader
+#   weight   0-1 relative importance. Reserve 1.0 for a handful of things, or
+#            everything is important and nothing is.
+#   keywords literal strings matched against titles and summaries
+#   aliases  alternate spellings for the same topic
 topics:
   - id: ai-llm
     label: AI / LLM
@@ -13,116 +21,26 @@ topics:
     keywords: [ai, "artificial intelligence", llm, "large language model", "foundation model"]
     aliases: [genai, "generative ai"]
 
-  - id: inference
-    label: Inference
-    weight: 0.85
-    keywords: [inference, "inference engine", serving, "token throughput", quantization, kv-cache]
-    aliases: ["model serving"]
-
-  - id: coding-agents
-    label: Coding Agents
-    weight: 0.95
-    keywords: ["coding agent", "ai agent", "agentic coding", "autonomous coding", "code generation"]
-    aliases: ["agentic ide"]
-
-  - id: claude-code
-    label: Claude Code
-    weight: 1.0
-    keywords: ["claude code", "claude agent sdk", anthropic]
-    aliases: ["claude cli"]
-
-  - id: opencode
-    label: OpenCode
-    weight: 0.7
-    keywords: [opencode]
-    aliases: []
-
-  - id: hermes
-    label: Hermes
-    weight: 0.6
-    keywords: [hermes, "nous hermes", "nous research"]
-    aliases: []
-
-  - id: qwen
-    label: Qwen
-    weight: 0.75
-    keywords: [qwen, "alibaba qwen"]
-    aliases: []
-
-  - id: deepseek
-    label: DeepSeek
-    weight: 0.85
-    keywords: [deepseek]
-    aliases: []
-
-  - id: vllm
-    label: vLLM
-    weight: 0.8
-    keywords: [vllm, "paged attention"]
-    aliases: []
-
-  - id: rocm
-    label: ROCm
-    weight: 0.7
-    keywords: [rocm, "amd gpu", "amd instinct"]
-    aliases: []
-
-  - id: aiter
-    label: AITER
-    weight: 0.65
-    keywords: [aiter, "ai tensor engine for rocm"]
-    aliases: []
-
-  - id: local-llm
-    label: Local LLM
-    weight: 0.9
-    keywords: ["local llm", "on-device model", ollama, llama.cpp, mlx, "self-hosted model"]
-    aliases: []
-
   - id: developer-tools
     label: Developer Tools
-    weight: 0.75
-    keywords: ["developer tools", "devtools", "developer productivity", ide, cli]
-    aliases: []
-
-  - id: mcp
-    label: MCP
-    weight: 0.9
-    keywords: ["model context protocol", mcp, "mcp server"]
-    aliases: []
+    weight: 0.8
+    keywords: ["developer tools", "build system", compiler, "package manager", ide]
+    aliases: [devtools, tooling]
 
   - id: open-source
     label: Open Source
     weight: 0.7
-    keywords: ["open source", "open-source", oss, "open weights"]
-    aliases: []
+    keywords: ["open source", "open-weight", license, foundation, maintainer]
+    aliases: [oss, floss]
 
-  - id: research
-    label: Research
+  - id: security
+    label: Security
     weight: 0.75
-    keywords: [research, paper, arxiv, benchmark, "state of the art"]
-    aliases: []
+    keywords: [vulnerability, cve, breach, exploit, "supply chain", advisory]
+    aliases: [infosec, appsec]
 
-  - id: btc
-    label: BTC
-    weight: 0.7
-    keywords: [bitcoin, btc]
-    aliases: []
-
-  - id: eth
-    label: ETH
-    weight: 0.65
-    keywords: [ethereum, eth, "layer 2", "smart contract"]
-    aliases: []
-
-  - id: sol
-    label: SOL
+  - id: infrastructure
+    label: Infrastructure
     weight: 0.6
-    keywords: [solana, sol]
-    aliases: []
-
-  - id: macro
-    label: Macro
-    weight: 0.8
-    keywords: ["federal reserve", "interest rates", inflation, cpi, "jobs report", unemployment, "yield curve", "fomc", "monetary policy"]
-    aliases: ["macroeconomics"]
+    keywords: [kubernetes, database, postgres, observability, "cloud provider", outage]
+    aliases: [devops, sre, platform]

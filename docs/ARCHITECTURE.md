@@ -1,5 +1,46 @@
 # Architecture
 
+## What SignalForge is organised around
+
+**SignalForge is event-centric, not article-centric.** That is the product
+decision the rest of this document serves.
+
+A feed reader's unit is the article. SignalForge's unit is the event, and the
+distinction is not cosmetic:
+
+```text
+5 articles about the same release
+  → 1 Story
+  → multiple supporting sources
+```
+
+Which leads to the sentence that most of the pipeline exists to act on:
+
+```text
+Today's article  ≠  Today's new information
+```
+
+Most of what is published on any given day is coverage of something already
+known: commentary on last week's release, a second outlet reporting the same
+filing, a rumour repeated. Treating those as new is what makes a summarizer
+exhausting to read. So a story is not judged in isolation — it is compared
+against the ledger, and what gets recorded is what *changed*:
+
+| Change type | Meaning |
+|---|---|
+| `NEW` | First observation of this event |
+| `UPDATE` | Genuinely new detail on a known story |
+| `ESCALATION` | The situation became more serious |
+| `RESOLUTION` | It concluded |
+| `REVERSAL` | It went the other way |
+| `CONFIRMATION` | A rumour or single-source report is now corroborated |
+| `RUMOR` | Reported, but not from a source that settles it |
+| `NO_MATERIAL_CHANGE` | Coverage happened; information did not |
+
+`NO_MATERIAL_CHANGE` is the load-bearing one. A story in that state is updated
+in the ledger and deliberately kept out of the brief — the system did the
+reading so that you do not have to.
+
 ## The one idea
 
 A Pi session is a conversation, not a memory. It ends, it overflows, it dies with the

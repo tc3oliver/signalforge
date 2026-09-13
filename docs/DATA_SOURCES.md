@@ -45,7 +45,7 @@ would make the effective configuration impossible to read off the files.
 
 The `pi-tavily` Keychain item is still unreadable by this project: its ACL admits the
 binary that created it, not `/usr/bin/security`, so `security find-generic-password
--s pi-tavily -a oliver -w` exits 36. That has not been worked around, and nothing
+-s pi-tavily -a "$(id -un)" -w` exits 36. That has not been worked around, and nothing
 about the macOS item was changed. `TAVILY_API_KEY` in `secrets.env` simply wins the
 environment-first half of the resolution order, and a live search through the
 production provider returns results. Both facts were verified in the same run.

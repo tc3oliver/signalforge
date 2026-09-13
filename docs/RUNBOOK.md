@@ -1,6 +1,6 @@
 # Runbook
 
-Failure playbooks for Daily Intelligence's operations layer. Pair with
+Failure playbooks for SignalForge's operations layer. Pair with
 `docs/OPERATIONS.md` for the normal-day reference.
 
 ## The machine must be logged in

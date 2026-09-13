@@ -103,7 +103,7 @@ export function renderBriefMarkdown(brief: DailyBrief, opts: RenderOptions): str
 	const items = new Map(opts.items.map((i) => [i.id, i] as const));
 	const anchors = buildAnchors(brief.stories);
 
-	const lines: string[] = [`# Daily Intelligence — ${brief.date}`, ""];
+	const lines: string[] = [`# SignalForge — ${brief.date}`, ""];
 
 	const mustKnow = brief.stories.filter((s) => s.mustKnow);
 	// Stories filed directly under MUST_KNOW have no topical home, so they are

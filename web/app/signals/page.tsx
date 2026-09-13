@@ -7,7 +7,7 @@ import type { SignalState } from "../../../src/db/signals.ts";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export const metadata = { title: "Signals — Daily Intelligence" };
+export const metadata = { title: "Signals — SignalForge" };
 
 /** Lifecycle order, strongest first; a fading signal belongs at the bottom. */
 const STATE_ORDER: readonly SignalState[] = ["confirmed", "strengthening", "emerging", "fading"];

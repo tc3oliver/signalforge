@@ -4,7 +4,7 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-	title: "Daily Intelligence",
+	title: "SignalForge",
 	description: "Daily briefing reader. Published rows only — no model runs on a request.",
 	// The reader is LAN/localhost only; nothing here should ever be indexed.
 	robots: { index: false, follow: false },
@@ -17,7 +17,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 				<header className="masthead">
 					<div className="masthead-inner">
 						<Link href="/" className="wordmark">
-							Daily Intelligence
+							SignalForge
 						</Link>
 						<nav aria-label="Sections">
 							<Link href="/">Today</Link>

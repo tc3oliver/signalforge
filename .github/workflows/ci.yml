@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Nothing here needs a credential of any kind. No model provider is contacted,
+# no collector reaches the network, and no repository secret is read. A fork's
+# pull request gets exactly the same run as a push to main.
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # The Postgres-backed suites are not optional. Running them against a real
+    # server is the entire point of `pnpm verify`; a CI job that skipped them
+    # and reported green would be worse than no CI, because it would certify
+    # the data layer it never touched.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: signalforge
+          POSTGRES_PASSWORD: signalforge
+          POSTGRES_DB: signalforge_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U signalforge"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgres://signalforge:signalforge@127.0.0.1:5432/signalforge_test
+      # Makes a missing database a hard failure rather than a silent skip.
+      DI_REQUIRE_INTEGRATION: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations
+        run: pnpm run db:migrate
+
+      - name: Verify
+        # typecheck -> fixtures -> full suite (no skips permitted) -> web build
+        run: pnpm run verify
+
+      - name: Assert no test was skipped
+        # `pnpm verify` already fails when the database is unreachable, but a
+        # suite can also skip itself for its own reasons. This makes the count
+        # itself the assertion, so a green CI run means every test executed.
+        run: |
+          pnpm exec vitest --run --reporter=json --outputFile=/tmp/vitest.json
+          node -e '
+            const r = require("/tmp/vitest.json");
+            const skipped = r.numPendingTests + r.numTodoTests;
+            console.log(`${r.numTotalTests} tests, ${skipped} skipped`);
+            if (skipped > 0) { console.error("FAIL: tests were skipped"); process.exit(1); }
+          '
+
+  secrets:
+    name: secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_CONFIG: .gitleaks.toml
