@@ -77,6 +77,9 @@ names what to start.
 CI runs `pnpm verify` against a real Postgres service and then asserts the
 skipped-test count is zero.
 
+The fixture harness, fault injection, run artifacts and how to read a failed
+run are in [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+
 ## Acceptance expectations
 
 Some of this project's rules exist because breaking them is tempting and

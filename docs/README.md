@@ -10,6 +10,9 @@ does not, that is a defect.
 | Document | Answers |
 |---|---|
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Why the system is shaped this way, and where each guarantee is enforced |
+| [`CREDENTIALS.md`](CREDENTIALS.md) | Model authentication (Pi's) versus collector credentials (SignalForge's), and where each lives |
+| [`DEVELOPMENT.md`](DEVELOPMENT.md) | Running, testing, the fixture harness, fault injection, run artifacts, inspecting a failed run |
+| [`INTELLIGENCE_BACKLOG.md`](INTELLIGENCE_BACKLOG.md) | Post-freeze intelligence changes: evidence, design, tests, acceptance criteria |
 | [`ENVIRONMENT.md`](ENVIRONMENT.md) | Verified versions, model IDs, config surface and environment variables |
 | [`SECURITY.md`](SECURITY.md) | Threat model, and the code and tests that enforce it |
 | [`DATA_SOURCES.md`](DATA_SOURCES.md) | Per-collector endpoints, credentials, incrementality and current status |
