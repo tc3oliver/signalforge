@@ -28,7 +28,7 @@ away from working. Details in "Optional connectors" below.
 | Web | **PASS** | 10 routes, HTTP 200, real data, loopback only |
 | LaunchAgent | **PASS** | both agents installed and triggered by hand; both reached Postgres |
 | Security | **PASS** | restricted runtime asserted per session; global Pi untouched; no credential in any log |
-| Tests | **PASS** | 53 files, 637 tests, none skipped |
+| Tests | **PASS** | 54 files, 646 tests, none skipped |
 | Typecheck | **PASS** | clean |
 | Build | **PASS** | 13 routes |
 
@@ -108,7 +108,19 @@ fetched, inserted, latency and required secret *names*.
 | reddit | **DISABLED** | disabled in config; needs client id + secret |
 | youtube | **DISABLED** | disabled in config; needs an API key |
 
-Three defects found and fixed here, all of the same shape — a source that was
+A fourth, found by an independent web sweep: **Hacker News text was stored as
+raw HTML.** `text` arrives with `<p>` and `<a>` tags and every slash
+entity-encoded, and the normalizer passed it through, so the curator read
+`GB&#x2F;s` and a link-only submission became a wall of anchor markup with the
+URL buried in an attribute. The agent-visible fields now get plain text —
+`raw.body` still keeps the provider's exact bytes — and 72 rows normalized
+before the fix were repaired from those stored payloads by
+`src/ops/renormalize-hackernews.ts`, which is idempotent and invents nothing.
+A title is only entity-decoded, never tag-stripped: stripping would silently
+erase an injection attempt that has no text content, which the agent should
+see rather than be spared.
+
+Three further defects, all of the same shape — a source that was
 simply not there afterwards, with nothing to say so:
 
 - **HackerNews took all three ranked lists whole** (~1500 requests behind a 5/sec
@@ -252,7 +264,7 @@ Run on the final code state, not quoted from earlier:
 
 ```
 pnpm typecheck    clean
-pnpm test         53 files, 637 tests, all passing, none skipped
+pnpm test         54 files, 646 tests, all passing, none skipped
 pnpm build        typecheck + next build, 13 routes
 ```
 
@@ -307,7 +319,11 @@ Enabling web research is the operator's call: grant access to that item, or set
    scheduled run if it happens overnight.
 7. **`emerging_signal_stability` is 0.444.** Expected for a marginal judgement;
    see `docs/STABILITY_REPORT.md`.
-8. **The human score is unscored.** "Would I read this every morning?" is not
+8. **`scripts/lib-db-env.sh` needs bash.** It parses `DATABASE_URL` with
+   `BASH_REMATCH`, which zsh — the default shell here — does not provide.
+   Sourcing it from zsh used to fail several lines later with a message that
+   blamed the env file; it now says what is actually wrong.
+9. **The human score is unscored.** "Would I read this every morning?" is not
    something this repository can answer.
 
 ## Documents

@@ -1,5 +1,6 @@
 import type { Collector, CollectorContext, CollectorResult } from "./types.ts";
 import { CollectedItem } from "./types.ts";
+import { decodeHtmlEntities, htmlToText } from "./html-text.ts";
 import { RequestBudget, TokenBucket, fetchWithRetry, mapWithConcurrency } from "./http.ts";
 
 const BASE_URL = "https://hacker-news.firebaseio.com/v0";
@@ -161,14 +162,26 @@ async function fetchItem(
 	return body as HnItem;
 }
 
+function titleOf(hnItem: HnItem): string {
+	const decoded = hnItem.title === undefined ? "" : decodeHtmlEntities(hnItem.title).trim();
+	return decoded === "" ? `HN item ${hnItem.id}` : decoded;
+}
+
 function toCollectedItem(hnItem: HnItem, fetchedAt: string): CollectedItem {
+	// `text` is HTML: paragraphs, anchors, and every slash and apostrophe
+	// entity-encoded. The agent-visible fields get plain text; `raw.body` below
+	// still carries the provider's exact bytes.
+	const text = hnItem.text === undefined ? undefined : htmlToText(hnItem.text);
 	return CollectedItem.parse({
 		sourceType: "hackernews",
 		sourceName: "hackernews",
 		externalId: String(hnItem.id),
-		title: hnItem.title ?? `HN item ${hnItem.id}`,
-		summary: hnItem.text ?? "",
-		body: hnItem.text,
+		// Only entities are decoded in a title: the API does not send HTML there,
+		// and stripping tags from one would silently erase an injection attempt
+		// that has no text content -- which the agent should see, not be spared.
+		title: titleOf(hnItem),
+		summary: text ?? "",
+		...(text === undefined ? {} : { body: text }),
 		url: hnItem.url ?? `https://news.ycombinator.com/item?id=${hnItem.id}`,
 		author: hnItem.by,
 		publishedAt: hnItem.time ? new Date(hnItem.time * 1000).toISOString() : fetchedAt,

@@ -16,9 +16,20 @@
 
 # Populates PGHOST/PGPORT/PGDATABASE/PGUSER(/PGPASSWORD) in the caller's shell
 # and exports them for pg_dump/psql/createdb to pick up. Returns non-zero
-# (never exits — this is sourced) on any resolution failure.
+# (never exits -- this is sourced) on any resolution failure.
 resolve_db_env() {
 	local env_file="$1"
+
+	# This file parses DATABASE_URL with =~ and BASH_REMATCH, which zsh does not
+	# provide. Sourced from an interactive zsh -- the default shell here -- the
+	# match silently yields nothing and the failure surfaces several lines later
+	# as "PGHOST/PGPORT/... must be resolvable", which points at the env file
+	# rather than at the shell. Say the real thing instead.
+	if [ -z "${BASH_VERSION:-}" ]; then
+		echo "resolve_db_env: this library requires bash — it parses DATABASE_URL with BASH_REMATCH, and this shell is not bash." >&2
+		echo "  Run the script directly (./scripts/backup-db.sh), or wrap it: bash -c 'source scripts/lib-db-env.sh; resolve_db_env .env; ...'" >&2
+		return 1
+	fi
 
 	if [[ ! -f "${env_file}" ]]; then
 		echo "resolve_db_env: env file not found: ${env_file}" >&2
