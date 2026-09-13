@@ -121,11 +121,20 @@ describe("sentence helpers", () => {
 		]);
 	});
 
-	it("takes whole leading sentences that fit, never a partial one", () => {
-		const text = "Short one. This second sentence is quite a bit longer than the first.";
-		expect(leadSentences(text, 20)).toBe("Short one.");
+	it("takes whole leading sentences that fit; a substantive first sentence is never cut", () => {
+		const first = "This opening sentence already carries the substance of the day.";
+		const text = `${first} This second sentence is quite a bit longer than the first.`;
+		expect(leadSentences(text, 70)).toBe(first);
 		expect(leadSentences(text, 200)).toBe(text);
-		expect(leadSentences(text, 200, 1)).toBe("Short one.");
+		expect(leadSentences(text, 200, 1)).toBe(first);
+	});
+
+	it("clips the second sentence in after a short lead-in that does not fit with it", () => {
+		const text = "Short one. This second sentence is quite a bit longer than the first.";
+		const out = leadSentences(text, 30);
+		expect(out.startsWith("Short one. This second")).toBe(true);
+		expect(out.endsWith("…")).toBe(true);
+		expect(out.length).toBeLessThanOrEqual(30);
 	});
 
 	it("clips a single over-long sentence with an ellipsis rather than returning nothing", () => {

@@ -266,3 +266,23 @@ describe("sentence joining", () => {
 		expect(leadSentences("First. Second.", 200)).toBe("First. Second.");
 	});
 });
+
+describe("short lead-in openers", () => {
+	it("clips the second sentence in when the first is a short lead-in that says nothing", async () => {
+		const { leadSentences, SHORT_LEAD_CHARS } = await import("../web/lib/dashboard.ts");
+		const lead = "今日呈現出強烈對比。";
+		const body = "一方面，前沿 AI 競爭出現重大轉折：".repeat(12) + "結束。";
+		expect(lead.length).toBeLessThan(SHORT_LEAD_CHARS);
+		const out = leadSentences(`${lead}${body}`, 200);
+		expect(out.startsWith(`${lead}一方面，前沿 AI`)).toBe(true);
+		expect(out.endsWith("…")).toBe(true);
+		expect(out.length).toBeLessThanOrEqual(200);
+	});
+
+	it("leaves a first sentence alone when it already carries content or is the only one", async () => {
+		const { leadSentences } = await import("../web/lib/dashboard.ts");
+		const full = "今天沒有重大模型發布，較值得注意的是 Agent 安全研究與 GitHub 的基礎設施事故。";
+		expect(leadSentences(`${full}${"很長的第二句".repeat(40)}。`, 200)).toBe(full);
+		expect(leadSentences("短句。", 200)).toBe("短句。");
+	});
+});

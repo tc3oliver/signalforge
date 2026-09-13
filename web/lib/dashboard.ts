@@ -54,24 +54,51 @@ export function splitSentences(text: string): string[] {
 }
 
 /**
+ * Below this length a lone opening sentence is treated as a lead-in rather
+ * than a summary, and the next sentence is clipped in after it.
+ */
+export const SHORT_LEAD_CHARS = 40;
+
+/**
  * The first whole sentences of `text` that fit inside `maxChars`. Always at
  * least one sentence; a first sentence that is itself too long is clipped with
  * an ellipsis rather than dropped, because an empty hero is worse than a long one.
+ *
+ * A very short first sentence followed by one that does not fit is the
+ * pattern of a throat-clearing opener ("今日……呈現出強烈對比。") with the
+ * substance in sentence two. In that case the second sentence is clipped in,
+ * so the hero carries actual content rather than only the lead-in.
  */
 export function leadSentences(text: string, maxChars: number, maxSentences = 2): string {
 	const sentences = splitSentences(text);
 	if (sentences.length === 0) return "";
 	let out = "";
+	let taken = 0;
 	for (const sentence of sentences.slice(0, maxSentences)) {
-		// CJK sentences run together; only ASCII-terminated ones take a space.
-		const joiner = out === "" ? "" : /[。！？]$/.test(out) ? "" : " ";
-		const candidate = `${out}${joiner}${sentence}`;
+		const candidate = `${out}${joiner(out)}${sentence}`;
 		if (candidate.length > maxChars) break;
 		out = candidate;
+		taken++;
 	}
-	if (out !== "") return out;
-	const first = sentences[0] ?? "";
-	return `${first.slice(0, Math.max(1, maxChars - 1)).trimEnd()}…`;
+	if (out === "") {
+		const first = sentences[0] ?? "";
+		return clip(first, maxChars);
+	}
+	const next = sentences[taken];
+	if (taken === 1 && maxSentences > 1 && out.length < SHORT_LEAD_CHARS && next !== undefined) {
+		return clip(`${out}${joiner(out)}${next}`, maxChars);
+	}
+	return out;
+}
+
+/** CJK sentences run together; only ASCII-terminated ones take a space. */
+function joiner(before: string): string {
+	if (before === "") return "";
+	return /[。！？]$/.test(before) ? "" : " ";
+}
+
+function clip(text: string, maxChars: number): string {
+	return `${text.slice(0, Math.max(1, maxChars - 1)).trimEnd()}…`;
 }
 
 /** The change types that mean something moved; NO_MATERIAL_CHANGE is not one of them. */
