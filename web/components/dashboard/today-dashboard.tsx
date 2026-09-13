@@ -1,0 +1,45 @@
+import Link from "next/link";
+import type { DashboardView } from "../../lib/dashboard.ts";
+import { formatDateKey } from "../../lib/format.ts";
+import { DailyAnalysisPreview } from "./analysis-preview.tsx";
+import { MustKnowGrid } from "./must-know.tsx";
+import { NewSinceMorning } from "./new-since-morning.tsx";
+import { EmergingSignals } from "./signal-card.tsx";
+import { StorySection } from "./story-section.tsx";
+import { TodayHero } from "./today-hero.tsx";
+import { WatchNext } from "./watch-next.tsx";
+import { WhatChanged } from "./what-changed.tsx";
+
+/*
+ * The Today page, top to bottom:
+ *
+ *   Level 1  hero + must know          -- what matters, in seconds
+ *   Level 2  what changed, signals,    -- the day scanned, in minutes
+ *            compact sections
+ *   Level 3  is /story/[id]            -- reading, when it is worth it
+ *
+ * New-since-morning is an inbox and sits last. The full brief is /brief/[date].
+ */
+export function TodayDashboard({ view }: { view: DashboardView }) {
+	return (
+		<div className="dashboard">
+			<TodayHero view={view} />
+			<MustKnowGrid cards={view.mustKnow} />
+			<div className="two-up">
+				<WhatChanged rows={view.changes} />
+				<EmergingSignals signals={view.signals} />
+			</div>
+			{view.sections.map((section) => (
+				<StorySection key={section.key} section={section} date={view.date} />
+			))}
+			<DailyAnalysisPreview analysis={view.analysis} date={view.date} />
+			<WatchNext entries={view.watchNext} />
+			<NewSinceMorning feed={view.newSinceMorning} />
+			<p className="full-brief">
+				<Link href={`/brief/${view.date}`}>
+					Full brief for {formatDateKey(view.date)} <span aria-hidden="true">→</span>
+				</Link>
+			</p>
+		</div>
+	);
+}

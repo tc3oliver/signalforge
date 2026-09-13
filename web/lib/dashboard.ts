@@ -1,0 +1,319 @@
+import type { DailyBrief, DailyBriefStory, ConfidenceLevel } from "../../src/schemas/brief.ts";
+import type { ChangeType, StoryLedgerEntry } from "../../src/schemas/story.ts";
+import type { EmergingSignal, SignalState } from "../../src/db/signals.ts";
+import type { LateItem } from "../../src/db/items.ts";
+import { TOPICAL_SECTIONS } from "./sections.ts";
+import { confidenceLevelFromScore } from "./format.ts";
+
+/*
+ * The dashboard view model. Everything on the Today page is derived here, as a
+ * pure function of rows the pipeline already published, so the page component
+ * only draws and the derivation is testable without React or a database.
+ *
+ * Nothing in this file adds information. The hero line is the opening of the
+ * editor's own daily analysis; a card's takeaway is the opening of its "why it
+ * matters"; change types and importance come from the story ledger; source
+ * counts are the length of the cited id list. When a value is missing it is
+ * left out, never guessed -- a dashboard that fills gaps stops being evidence.
+ */
+
+export type ImportanceLevel = "HIGH" | "MEDIUM" | "LOW";
+
+/**
+ * Presentation buckets for the ledger's 0..1 importance score. This is a
+ * reading aid, not an editorial threshold: the pipeline's own selection gates
+ * are untouched by it and the raw score stays visible on the story page.
+ */
+export function importanceLevelFromScore(score: number): ImportanceLevel {
+	if (score >= 0.75) return "HIGH";
+	if (score >= 0.45) return "MEDIUM";
+	return "LOW";
+}
+
+/**
+ * A sentence ends at a CJK terminator, or at an ASCII one that is followed by
+ * whitespace or the end of the text -- so "Homebrew 7.0.0" stays one token.
+ */
+export function splitSentences(text: string): string[] {
+	const flat = text.replace(/\s+/g, " ").trim();
+	const out: string[] = [];
+	let start = 0;
+	for (let i = 0; i < flat.length; i++) {
+		const ch = flat[i] ?? "";
+		const cjkEnd = ch === "。" || ch === "！" || ch === "？";
+		const asciiEnd =
+			(ch === "." || ch === "!" || ch === "?") && (i + 1 === flat.length || flat[i + 1] === " ");
+		if (!cjkEnd && !asciiEnd) continue;
+		const sentence = flat.slice(start, i + 1).trim();
+		if (sentence !== "") out.push(sentence);
+		start = i + 1;
+	}
+	const tail = flat.slice(start).trim();
+	if (tail !== "") out.push(tail);
+	return out;
+}
+
+/**
+ * The first whole sentences of `text` that fit inside `maxChars`. Always at
+ * least one sentence; a first sentence that is itself too long is clipped with
+ * an ellipsis rather than dropped, because an empty hero is worse than a long one.
+ */
+export function leadSentences(text: string, maxChars: number, maxSentences = 2): string {
+	const sentences = splitSentences(text);
+	if (sentences.length === 0) return "";
+	let out = "";
+	for (const sentence of sentences.slice(0, maxSentences)) {
+		const candidate = out === "" ? sentence : `${out} ${sentence}`;
+		if (candidate.length > maxChars) break;
+		out = candidate;
+	}
+	if (out !== "") return out;
+	const first = sentences[0] ?? "";
+	return `${first.slice(0, Math.max(1, maxChars - 1)).trimEnd()}…`;
+}
+
+/** The change types that mean something moved; NO_MATERIAL_CHANGE is not one of them. */
+const CHANGE_PRIORITY: readonly ChangeType[] = [
+	"ESCALATION",
+	"REVERSAL",
+	"RESOLUTION",
+	"UPDATE",
+	"CONFIRMATION",
+	"RUMOR",
+	"NEW",
+];
+
+/** True for a change type that counts as an update to something already known. */
+export function isUpdateChange(type: ChangeType | undefined): boolean {
+	return type !== undefined && type !== "NEW" && type !== "NO_MATERIAL_CHANGE";
+}
+
+export interface StoryCardView {
+	storyId: string;
+	title: string;
+	section: string;
+	mustKnow: boolean;
+	/** From the ledger row for the same story and date; absent when there is none. */
+	changeType: ChangeType | undefined;
+	importance: ImportanceLevel | undefined;
+	confidence: ConfidenceLevel;
+	/** Opening sentence(s) of the editor's "why it matters". */
+	takeaway: string;
+	sourceCount: number;
+}
+
+export interface MustKnowCardView extends StoryCardView {
+	/** 1-based display rank, in the order the editor listed the stories. */
+	rank: number;
+}
+
+export interface ChangeRowView {
+	storyId: string;
+	title: string;
+	changeType: ChangeType;
+}
+
+export interface SignalCardView {
+	label: string;
+	summary: string;
+	state: SignalState | undefined;
+	confidence: ConfidenceLevel | undefined;
+	storyCount: number;
+	/** Distinct cited items across the signal's stories that are in this brief. */
+	sourceCount: number;
+	/** Inclusive day span between first and last observation, when tracked. */
+	daySpan: number | undefined;
+	storyIds: string[];
+}
+
+export interface SectionView {
+	key: string;
+	heading: string;
+	rows: StoryCardView[];
+	/** How many stories the section holds beyond `rows`. */
+	overflow: number;
+	total: number;
+}
+
+export interface LateItemView {
+	itemId: string;
+	title: string;
+	sourceName: string;
+	url: string | undefined;
+	fetchedAt: string;
+	storyId: string | undefined;
+}
+
+export interface DashboardView {
+	date: string;
+	producedAt: string;
+	hero: {
+		summary: string;
+		stats: {
+			stories: number;
+			mustKnow: number;
+			updates: number;
+			signals: number;
+			newSinceMorning: number;
+		};
+	};
+	mustKnow: MustKnowCardView[];
+	changes: ChangeRowView[];
+	signals: SignalCardView[];
+	sections: SectionView[];
+	/** `capped` means the query hit its fetch limit, so `total` is a floor, not a count. */
+	newSinceMorning: { total: number; capped: boolean; items: LateItemView[] };
+	analysis: { preview: string; full: string; truncated: boolean };
+	watchNext: string[];
+}
+
+export interface DashboardInput {
+	brief: DailyBrief;
+	/** Ledger rows for the brief's date, any order; matched by storyId. */
+	ledger: readonly StoryLedgerEntry[];
+	/** Tracked signal records; matched to the brief's signals by label. */
+	signalRecords: readonly EmergingSignal[];
+	lateItems: readonly LateItem[];
+}
+
+export const DASHBOARD_LIMITS = Object.freeze({
+	heroChars: 200,
+	takeawayChars: 96,
+	changes: 6,
+	sectionRows: 4,
+	lateItems: 3,
+	analysisChars: 320,
+	signalChars: 160,
+	/** How many late items the page read asks for; at this many the count is shown as a floor. */
+	lateItemsFetch: 200,
+});
+
+export function buildDashboard(input: DashboardInput): DashboardView {
+	const { brief, lateItems } = input;
+	const ledger = new Map(input.ledger.map((entry) => [entry.storyId, entry] as const));
+	const cards = brief.stories.map((story) => toCard(story, ledger.get(story.storyId)));
+
+	const mustKnow = cards
+		.filter((card) => card.mustKnow)
+		.map((card, index) => ({ ...card, rank: index + 1 }));
+
+	const changes = buildChanges(cards);
+	const signals = brief.emergingSignals.map((signal) =>
+		toSignalCard(signal, brief.stories, input.signalRecords),
+	);
+
+	const sections: SectionView[] = [];
+	for (const [key, heading] of TOPICAL_SECTIONS) {
+		const rows = cards.filter((card) => card.section === key);
+		if (rows.length === 0) continue;
+		sections.push({
+			key,
+			heading,
+			rows: rows.slice(0, DASHBOARD_LIMITS.sectionRows),
+			overflow: Math.max(0, rows.length - DASHBOARD_LIMITS.sectionRows),
+			total: rows.length,
+		});
+	}
+
+	const analysisFull = brief.dailyAnalysis.trim();
+	const analysisPreview = leadSentences(analysisFull, DASHBOARD_LIMITS.analysisChars, 3);
+
+	return {
+		date: brief.date,
+		producedAt: brief.producedAt,
+		hero: {
+			summary: leadSentences(analysisFull, DASHBOARD_LIMITS.heroChars),
+			stats: {
+				stories: brief.stories.length,
+				mustKnow: mustKnow.length,
+				updates: cards.filter((card) => isUpdateChange(card.changeType)).length,
+				signals: brief.emergingSignals.length,
+				newSinceMorning: lateItems.length,
+			},
+		},
+		mustKnow,
+		changes,
+		signals,
+		sections,
+		newSinceMorning: {
+			total: lateItems.length,
+			capped: lateItems.length >= DASHBOARD_LIMITS.lateItemsFetch,
+			items: lateItems.slice(0, DASHBOARD_LIMITS.lateItems).map((item) => ({
+				itemId: item.itemId,
+				title: item.title,
+				sourceName: item.sourceName,
+				url: item.url,
+				fetchedAt: item.fetchedAt,
+				storyId: item.storyId,
+			})),
+		},
+		analysis: {
+			preview: analysisPreview,
+			full: analysisFull,
+			truncated: analysisPreview.length < analysisFull.length,
+		},
+		watchNext: brief.watchNext.map((entry) => entry.trim()).filter((entry) => entry !== ""),
+	};
+}
+
+function toCard(story: DailyBriefStory, entry: StoryLedgerEntry | undefined): StoryCardView {
+	return {
+		storyId: story.storyId,
+		title: story.title,
+		section: story.section,
+		mustKnow: story.mustKnow,
+		changeType: entry?.changeType,
+		importance: entry === undefined ? undefined : importanceLevelFromScore(entry.importance),
+		confidence: story.confidence,
+		takeaway: leadSentences(story.whyItMatters, DASHBOARD_LIMITS.takeawayChars, 1),
+		sourceCount: story.sourceItemIds.length,
+	};
+}
+
+/**
+ * One line per story that changed, strongest kind of change first, in editor
+ * order within a kind. Stories with no ledger row have no known change and are
+ * left out rather than labelled.
+ */
+function buildChanges(cards: readonly StoryCardView[]): ChangeRowView[] {
+	const rows: ChangeRowView[] = [];
+	for (const type of CHANGE_PRIORITY) {
+		for (const card of cards) {
+			if (card.changeType !== type) continue;
+			rows.push({ storyId: card.storyId, title: card.title, changeType: type });
+		}
+	}
+	return rows.slice(0, DASHBOARD_LIMITS.changes);
+}
+
+function toSignalCard(
+	signal: DailyBrief["emergingSignals"][number],
+	stories: readonly DailyBriefStory[],
+	records: readonly EmergingSignal[],
+): SignalCardView {
+	const record = records.find((r) => r.label === signal.label);
+	const linked = new Set(signal.storyIds);
+	const sources = new Set<string>();
+	for (const story of stories) {
+		if (!linked.has(story.storyId)) continue;
+		for (const id of story.sourceItemIds) sources.add(id);
+	}
+	return {
+		label: signal.label,
+		summary: leadSentences(signal.body, DASHBOARD_LIMITS.signalChars, 2),
+		state: record?.state,
+		confidence: record === undefined ? undefined : confidenceLevelFromScore(record.confidence),
+		storyCount: signal.storyIds.length,
+		sourceCount: sources.size,
+		daySpan: record === undefined ? undefined : daySpan(record.firstSeenAt, record.lastSeenAt),
+		storyIds: [...signal.storyIds],
+	};
+}
+
+function daySpan(first: string, last: string): number | undefined {
+	const a = Date.parse(first);
+	const b = Date.parse(last);
+	if (Number.isNaN(a) || Number.isNaN(b)) return undefined;
+	const days = Math.floor((b - a) / 86_400_000);
+	return Math.max(1, days + 1);
+}

@@ -12,7 +12,13 @@
     "noEmit": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "types": ["node"]
+    "types": ["node"],
+    "jsx": "react-jsx",
+    "paths": {
+      "react": ["./web/node_modules/@types/react"],
+      "react/jsx-runtime": ["./web/node_modules/@types/react/jsx-runtime"],
+      "react-dom/server": ["./web/node_modules/@types/react-dom/server"]
+    }
   },
   "include": ["src/**/*.ts", "tests/**/*.ts"]
 }

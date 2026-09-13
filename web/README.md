@@ -49,8 +49,8 @@ story, a fact or a decision is.
 
 | Route | What it shows |
 |---|---|
-| `/` | The latest published brief, plus "New Since Morning" |
-| `/brief/[date]` | A historical brief, same rendering |
+| `/` | Today dashboard: hero (date, the analysis's opening line, counts), must-know cards, what changed, emerging signals, compact topical sections, analysis preview, watch next, and a short "new since morning" inbox at the bottom |
+| `/brief/[date]` | The full long-form brief: the same hero and cards first, then every story in full, signals, the whole analysis, watch next |
 | `/story/[id]` | Summary, timeline across days, primary/all sources, related stories, historical context |
 | `/history` | Every published brief, newest first |
 | `/signals` | `emerging_signals` grouped by lifecycle state |
@@ -60,6 +60,13 @@ story, a fact or a decision is.
 | `/admin/sources` | Collector health, throughput, latency, credential-blocked sources |
 | `/admin/item/[id]` | "Why did this item not reach the brief?" — the full trace |
 | `/feed.xml` | Atom index of published briefs |
+
+The dashboard is a pure derivation of published rows -- `web/lib/dashboard.ts`
+turns the brief, its ledger rows for the day, the tracked signal records and
+the late items into a view model; nothing on the page is generated for the
+page. Change type and importance come from `story_ledger` (the brief story
+carries neither), source counts are the length of the cited id list, and the
+hero line is the first sentence or two of `dailyAnalysis`.
 
 Sections on a brief page follow the fixed order Must Know, AI/LLM,
 Developer/Open Source, Research, Crypto/Market, Macro, Companies, Emerging
@@ -89,8 +96,8 @@ pnpm run web:seed            # development data (see below)
 `DATABASE_URL` is a plain server variable — never `NEXT_PUBLIC_` — and
 `web/lib/db.ts` throws if it is ever pulled into a client bundle.
 
-The server binds `127.0.0.1` only. This machine is LAN compute and this reader
-has no authentication; do not expose it beyond loopback.
+The server binds `127.0.0.1` by default; `WEB_HOST` and `WEB_PORT` override
+that. `/admin` is off unless `SIGNALFORGE_ADMIN=1`. There is no authentication.
 
 ## Development data
 

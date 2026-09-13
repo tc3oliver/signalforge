@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 import { FactList } from "../../../components/facts.tsx";
 import { SourceList } from "../../../components/sources.tsx";
 import { Field, Tag } from "../../../components/bits.tsx";
+import { ChangeBadge, ConfidenceBadge, ImportanceBadge } from "../../../components/badges.tsx";
+import { importanceLevelFromScore } from "../../../lib/dashboard.ts";
+import type { ConfidenceLevel } from "../../../../src/schemas/brief.ts";
 import { loadStoryPage } from "../../../lib/queries.ts";
 import {
-	changeTypeLabel,
-	confidenceDisplay,
 	confidenceLevelFromScore,
 	formatDateKey,
 	formatInstant,
@@ -35,9 +36,9 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 	const published = appearances[0];
 	// Published prose is preferred where it exists; the ledger's own reason is
 	// the fallback so a story that never reached a brief still explains itself.
-	const confidence = published
-		? confidenceDisplay(published.confidence)
-		: confidenceDisplay(confidenceLevelFromScore(latest.confidence));
+	const confidence: ConfidenceLevel = published
+		? (published.confidence as ConfidenceLevel)
+		: confidenceLevelFromScore(latest.confidence);
 	const earlier = appearances.slice(1);
 
 	return (
@@ -48,11 +49,10 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 				{formatInstant(latest.firstSeenAt)} · last seen {formatInstant(latest.lastSeenAt)}
 			</p>
 			<p className="meta">
-				<Tag tone="accent">{changeTypeLabel(latest.changeType)}</Tag>
+				<ImportanceBadge level={importanceLevelFromScore(latest.importance)} />
+				<ChangeBadge type={latest.changeType} />
 				<Tag>{storyStatusLabel(latest.status)}</Tag>
-				<Tag tone={confidence.tone}>
-					信心 {confidence.label} ({confidence.level})
-				</Tag>
+				<ConfidenceBadge level={confidence} />
 				<span>importance {formatScore(latest.importance)}</span>
 				<span>novelty {formatScore(latest.novelty)}</span>
 				<span>relevance {formatScore(latest.relevance)}</span>
@@ -67,14 +67,14 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 
 			<section aria-labelledby="story-summary">
 				<h2 id="story-summary">Summary</h2>
-				<Field label="什麼發生了">
+				<Field label="What happened">
 					{published ? published.whatHappened : latest.reason}
 				</Field>
 				{published ? (
 					<>
-						<Field label="為何重要">{published.whyItMatters}</Field>
-						<Field label="有什麼變化">{published.whatChanged}</Field>
-						<Field label="影響">{published.impact}</Field>
+						<Field label="Why it matters">{published.whyItMatters}</Field>
+						<Field label="What changed">{published.whatChanged}</Field>
+						<Field label="Impact">{published.impact}</Field>
 					</>
 				) : (
 					<p className="lede">
@@ -94,7 +94,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 						return (
 							<li key={entry.date}>
 								<strong>{formatDateKey(entry.date)}</strong>{" "}
-								<Tag tone="accent">{changeTypeLabel(entry.changeType)}</Tag>{" "}
+								<ChangeBadge type={entry.changeType} />{" "}
 								<Tag>{storyStatusLabel(entry.status)}</Tag>
 								<div>{entry.canonicalTitle}</div>
 								<div className="host">{entry.reason}</div>
@@ -156,7 +156,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 									</Link>
 								</h3>
 								<p className="meta">
-									<Tag>{changeTypeLabel(entry.changeType)}</Tag>
+									<ChangeBadge type={entry.changeType} />
 									<span>{formatDateKey(entry.date)}</span>
 								</p>
 								<p className="host">

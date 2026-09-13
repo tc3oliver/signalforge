@@ -41,6 +41,7 @@ import {
 	findRelatedStories,
 	getLatestStory,
 	listDecisionsForItem,
+	listStoriesForDate,
 	listStoryItemRoles,
 	listStoryTimeline,
 	type DatedItemDecision,
@@ -52,6 +53,7 @@ import type { NormalizedItem } from "../../src/schemas/item.ts";
 import type { StoryLedgerEntry } from "../../src/schemas/story.ts";
 import { db, LINEAGE } from "./db.ts";
 import { collectFactRefs, collectSourceItemIds } from "./sections.ts";
+import { DASHBOARD_LIMITS } from "./dashboard.ts";
 
 /*
  * Page-shaped reads. Every function here is a composition of the repo's own
@@ -67,6 +69,10 @@ export interface BriefPageData {
 	facts: StructuredFact[];
 	items: NormalizedItem[];
 	lateItems: LateItem[];
+	/** Ledger rows for the same date: the source of each story's change type and importance. */
+	ledger: StoryLedgerEntry[];
+	/** Tracked signal records, for lifecycle state and confidence next to the brief's signals. */
+	signalRecords: EmergingSignal[];
 	neighbours: { previous: string | undefined; next: string | undefined };
 }
 
@@ -74,11 +80,15 @@ export async function loadBriefPage(date: string): Promise<BriefPageData | undef
 	const sql = db();
 	const brief = await getBrief(sql, LINEAGE, date);
 	if (!brief) return undefined;
-	const [facts, items, lateItems, summaries] = await Promise.all([
+	const [facts, items, lateItems, summaries, ledger, signalRecords] = await Promise.all([
 		getFacts(sql, LINEAGE, collectFactRefs(brief)),
 		getNormalizedItems(sql, LINEAGE, collectSourceItemIds(brief)),
-		listItemsFetchedAfterMorningRun(sql, LINEAGE, date),
+		// The dashboard states how many arrived; when this cap is reached it
+		// says so rather than presenting the page size as the count.
+		listItemsFetchedAfterMorningRun(sql, LINEAGE, date, 0.6, DASHBOARD_LIMITS.lateItemsFetch),
 		listBriefSummaries(sql, LINEAGE, 400),
+		listStoriesForDate(sql, LINEAGE, date),
+		listSignals(sql, LINEAGE),
 	]);
 	// Neighbours come from the published set, not from calendar arithmetic: a
 	// day with no brief must not produce a dead link in the pager.
@@ -89,6 +99,8 @@ export async function loadBriefPage(date: string): Promise<BriefPageData | undef
 		facts,
 		items,
 		lateItems,
+		ledger,
+		signalRecords,
 		neighbours: {
 			previous: index >= 0 ? dates[index + 1] : undefined,
 			next: index > 0 ? dates[index - 1] : undefined,

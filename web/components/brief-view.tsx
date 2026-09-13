@@ -1,42 +1,41 @@
 import Link from "next/link";
-import { ADMIN_ENABLED } from "../lib/admin.ts";
 import type { DailyBriefStory } from "../../src/schemas/brief.ts";
 import type { StructuredFact } from "../../src/schemas/fact.ts";
 import type { NormalizedItem } from "../../src/schemas/item.ts";
-import type { LateItem } from "../../src/db/items.ts";
 import { buildAnchors, buildBriefSections, type BriefSectionView } from "../lib/sections.ts";
-import {
-	changeTypeLabel,
-	confidenceDisplay,
-	formatDateKey,
-	formatInstant,
-	formatScore,
-	formatTimeOfDay,
-} from "../lib/format.ts";
-import { preview, safeExternalUrl } from "../lib/untrusted.ts";
+import { buildDashboard, type DashboardView, type StoryCardView } from "../lib/dashboard.ts";
+import { formatDateKey } from "../lib/format.ts";
 import type { BriefPageData } from "../lib/queries.ts";
+import { ChangeBadge, ConfidenceBadge, ImportanceBadge } from "./badges.tsx";
+import { MustKnowGrid } from "./dashboard/must-know.tsx";
+import { NewSinceMorning } from "./dashboard/new-since-morning.tsx";
+import { EmergingSignals } from "./dashboard/signal-card.tsx";
+import { TodayHero } from "./dashboard/today-hero.tsx";
+import { WatchNext } from "./dashboard/watch-next.tsx";
 import { FactList } from "./facts.tsx";
 import { SourceList } from "./sources.tsx";
-import { Field, Tag } from "./bits.tsx";
+import { Field } from "./bits.tsx";
 
 /*
- * The brief, rendered from the same rules as src/renderer/markdown.ts: fixed
- * section order, empty sections omitted rather than shown empty, numbers pulled
- * from the fact store by reference, and every source a link to its original.
+ * The full brief: the same hero and must-know cards as the dashboard first, so
+ * a historical brief opens the way today does, and only then the long-form
+ * stories in the renderer's fixed section order, with empty sections omitted,
+ * numbers pulled from the fact store by reference, and every source a link.
  */
 
 function StoryArticle({
 	story,
+	card,
 	anchor,
 	facts,
 	items,
 }: {
 	story: DailyBriefStory;
+	card: StoryCardView | undefined;
 	anchor: string;
 	facts: readonly StructuredFact[];
 	items: Map<string, NormalizedItem>;
 }) {
-	const confidence = confidenceDisplay(story.confidence);
 	const sources = story.sourceItemIds
 		.map((id) => items.get(id))
 		.filter((item): item is NormalizedItem => item !== undefined);
@@ -46,191 +45,140 @@ function StoryArticle({
 			<h3 id={anchor}>
 				<Link href={`/story/${encodeURIComponent(story.storyId)}`}>{story.title}</Link>
 			</h3>
-			<p className="meta">
-				{story.mustKnow ? <Tag tone="accent">Must know</Tag> : null}
-				<Tag tone={confidence.tone}>
-					信心 {confidence.label} ({confidence.level})
-				</Tag>
-				<span className="mono">{story.storyId}</span>
+			<p className="badges">
+				{story.mustKnow ? <span className="badge importance-high">Must know</span> : null}
+				<ImportanceBadge level={card?.importance} />
+				<ChangeBadge type={card?.changeType} />
+				<ConfidenceBadge level={story.confidence} />
 			</p>
-			<Field label="什麼發生了">{story.whatHappened}</Field>
-			<Field label="為何重要">{story.whyItMatters}</Field>
-			<Field label="有什麼變化">{story.whatChanged}</Field>
-			<Field label="影響">{story.impact}</Field>
+			<Field label="What happened">{story.whatHappened}</Field>
+			<Field label="Why it matters">{story.whyItMatters}</Field>
+			<Field label="What changed">{story.whatChanged}</Field>
+			<Field label="Impact">{story.impact}</Field>
 			<FactList factRefs={story.factRefs} facts={facts} />
 			<p className="field">
-				<span className="field-label">來源</span>
+				<span className="field-label">Sources</span>
 			</p>
 			<SourceList items={sources} unresolvedIds={unresolved} />
 		</article>
 	);
 }
 
-function SectionBody({
+function StorySectionBody({
 	section,
+	cards,
 	anchors,
 	facts,
 	items,
 }: {
-	section: BriefSectionView;
+	section: Extract<BriefSectionView, { kind: "stories" | "must-know" }>;
+	cards: Map<string, StoryCardView>;
 	anchors: Map<string, string>;
 	facts: readonly StructuredFact[];
 	items: Map<string, NormalizedItem>;
 }) {
-	switch (section.kind) {
-		case "must-know":
-			return (
-				<>
-					{section.highlights.length > 0 ? (
-						<ul className="plain tight">
-							{section.highlights.map((link) => (
-								<li key={link.storyId}>
-									<a href={`#${link.anchor}`}>{link.title}</a>
-								</li>
-							))}
-						</ul>
-					) : null}
-					{section.stories.map((story) => (
-						<StoryArticle
-							key={story.storyId}
-							story={story}
-							anchor={anchors.get(story.storyId) ?? story.storyId}
-							facts={facts}
-							items={items}
-						/>
-					))}
-				</>
-			);
-		case "stories":
-			return (
-				<>
-					{section.stories.map((story) => (
-						<StoryArticle
-							key={story.storyId}
-							story={story}
-							anchor={anchors.get(story.storyId) ?? story.storyId}
-							facts={facts}
-							items={items}
-						/>
-					))}
-				</>
-			);
-		case "signals":
-			return (
-				<>
-					{section.signals.map((signal) => (
-						<div key={signal.label} className="panel">
-							<h3 style={{ marginTop: 0 }}>{signal.label}</h3>
-							<p>{signal.body}</p>
-							{signal.storyIds.length > 0 ? (
-								<p className="meta">
-									{signal.storyIds.map((id) => (
-										<Link key={id} href={`/story/${encodeURIComponent(id)}`} className="mono">
-											{id}
-										</Link>
-									))}
-								</p>
-							) : null}
-						</div>
-					))}
-				</>
-			);
-		case "analysis":
-			return (
-				<>
-					{section.body.split(/\n{2,}/).map((paragraph, index) => (
-						<p key={index}>{paragraph}</p>
-					))}
-				</>
-			);
-		case "watch-next":
-			return (
-				<ul className="plain tight">
-					{section.entries.map((entry) => (
-						<li key={entry}>{entry}</li>
-					))}
-				</ul>
-			);
-	}
-}
-
-/**
- * Items whose bytes arrived after the day's first run was created. They are not
- * part of the published brief — they are what the next run will see — so they
- * are shown as a clearly separated area rather than folded into a section.
- */
-function NewSinceMorning({ items }: { items: readonly LateItem[] }) {
-	if (items.length === 0) return null;
 	return (
-		<section className="panel alert" aria-labelledby="new-since-morning">
-			<h2 id="new-since-morning" style={{ marginTop: 0, border: "none" }}>
-				New Since Morning
-			</h2>
-			<p className="lede" style={{ marginBottom: 8 }}>
-				Collected after this day&apos;s first run was created, so not yet part of the brief
-				below.
-			</p>
-			<ul className="sources">
-				{items.map((item) => {
-					const href = safeExternalUrl(item.url);
-					return (
-						<li key={item.itemId}>
-							{href ? (
-								<a href={href} target="_blank" rel="noreferrer noopener nofollow external">
-									{item.title}
-								</a>
-							) : (
-								<span>{item.title}</span>
-							)}{" "}
-							<span className="host">
-								{item.sourceName} · fetched {formatTimeOfDay(item.fetchedAt)}
-								{item.importance === undefined
-									? ""
-									: ` · importance ${formatScore(item.importance)}`}
-								{item.changeType === undefined ? "" : ` · ${changeTypeLabel(item.changeType)}`}
-							</span>
-							{item.storyId ? (
-								<>
-									{" "}
-									<Link href={`/story/${encodeURIComponent(item.storyId)}`}>story</Link>
-								</>
-							) : null}{" "}
-							{ADMIN_ENABLED ? (
-								<Link href={`/admin/item/${encodeURIComponent(item.itemId)}`} className="host">
-									trace
-								</Link>
-							) : null}
-							{item.summary ? <div className="host">{preview(item.summary, 160)}</div> : null}
-						</li>
-					);
-				})}
-			</ul>
-		</section>
+		<>
+			{section.stories.map((story) => (
+				<StoryArticle
+					key={story.storyId}
+					story={story}
+					card={cards.get(story.storyId)}
+					anchor={anchors.get(story.storyId) ?? story.storyId}
+					facts={facts}
+					items={items}
+				/>
+			))}
+		</>
 	);
 }
 
 export function BriefView({ data }: { data: BriefPageData }) {
 	const { brief, facts, items, lateItems, neighbours } = data;
+	const view: DashboardView = buildDashboard({
+		brief,
+		ledger: data.ledger,
+		signalRecords: data.signalRecords,
+		lateItems,
+	});
+	const cards = new Map<string, StoryCardView>();
+	for (const section of view.sections) {
+		for (const row of section.rows) cards.set(row.storyId, row);
+	}
+	for (const card of view.mustKnow) cards.set(card.storyId, card);
 	const anchors = buildAnchors(brief.stories);
 	const sections = buildBriefSections(brief);
 	const itemsById = new Map(items.map((i) => [i.id, i] as const));
 
 	return (
-		<>
-			<h1>SignalForge</h1>
-			<p className="dateline">
-				{formatDateKey(brief.date)} · produced {formatInstant(brief.producedAt)} ·{" "}
-				{brief.stories.length} stories
-			</p>
+		<div className="dashboard">
+			<TodayHero view={view} />
+			<MustKnowGrid cards={view.mustKnow} />
 
-			<NewSinceMorning items={lateItems} />
+			{sections.map((section) => {
+				switch (section.kind) {
+					case "must-know":
+						// Every must-know story is already a card above; only stories
+						// filed directly under MUST_KNOW have no topical section to live in.
+						if (section.stories.length === 0) return null;
+						return (
+							<section key={section.key} aria-labelledby={`section-${section.key}`}>
+								<h2 id={`section-${section.key}`} className="block-label">
+									{section.heading}
+								</h2>
+								<StorySectionBody
+									section={section}
+									cards={cards}
+									anchors={anchors}
+									facts={facts}
+									items={itemsById}
+								/>
+							</section>
+						);
+					case "stories":
+						return (
+							<section key={section.key} aria-labelledby={`section-${section.key}`}>
+								<h2 id={`section-${section.key}`} className="block-label">
+									{section.heading}
+								</h2>
+								<StorySectionBody
+									section={section}
+									cards={cards}
+									anchors={anchors}
+									facts={facts}
+									items={itemsById}
+								/>
+							</section>
+						);
+					case "signals":
+						return (
+							<div key={section.key} id={`section-${section.key}`}>
+								<EmergingSignals signals={view.signals} />
+							</div>
+						);
+					case "analysis":
+						return (
+							<section key={section.key} aria-labelledby={`section-${section.key}`}>
+								<h2 id={`section-${section.key}`} className="block-label">
+									{section.heading}
+								</h2>
+								<div className="brief-analysis">
+									{section.body.split(/\n{2,}/).map((paragraph, index) => (
+										<p key={index}>{paragraph}</p>
+									))}
+								</div>
+							</section>
+						);
+					case "watch-next":
+						return (
+							<div key={section.key} id={`section-${section.key}`}>
+								<WatchNext entries={section.entries} />
+							</div>
+						);
+				}
+			})}
 
-			{sections.map((section) => (
-				<section key={section.key} aria-labelledby={`section-${section.key}`}>
-					<h2 id={`section-${section.key}`}>{section.heading}</h2>
-					<SectionBody section={section} anchors={anchors} facts={facts} items={itemsById} />
-				</section>
-			))}
+			<NewSinceMorning feed={view.newSinceMorning} />
 
 			<nav className="pager" aria-label="Other briefs">
 				{neighbours.previous ? (
@@ -246,6 +194,6 @@ export function BriefView({ data }: { data: BriefPageData }) {
 					<span />
 				)}
 			</nav>
-		</>
+		</div>
 	);
 }

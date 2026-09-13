@@ -40,6 +40,7 @@ const MONTHS = [
 	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEKDAY_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 function pad(n: number): string {
 	return n < 10 ? `0${n}` : String(n);
@@ -54,6 +55,27 @@ export function formatDateKey(date: string): string {
 	if (Number.isNaN(parsed.getTime())) return date;
 	const month = MONTHS[Number(m) - 1] ?? m;
 	return `${WEEKDAYS[parsed.getUTCDay()]}, ${Number(d)} ${month} ${y}`;
+}
+
+/** "2026-09-13" -> "SEP 13 · SUNDAY", the dashboard's date banner. */
+export function formatDateBanner(date: string): string {
+	const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+	if (!match) return date;
+	const m = match[2] ?? "";
+	const d = match[3] ?? "";
+	const parsed = new Date(`${date}T00:00:00.000Z`);
+	if (Number.isNaN(parsed.getTime())) return date;
+	const month = (MONTHS[Number(m) - 1] ?? m).toUpperCase();
+	const weekday = WEEKDAY_LONG[parsed.getUTCDay()] ?? "";
+	return `${month} ${Number(d)} · ${weekday.toUpperCase()}`;
+}
+
+/** ISO instant -> "12:29", for a feed that states its timezone once in its heading. */
+export function formatClock(iso: string | undefined): string {
+	if (!iso) return "—";
+	const parsed = new Date(iso);
+	if (Number.isNaN(parsed.getTime())) return iso;
+	return `${pad(parsed.getUTCHours())}:${pad(parsed.getUTCMinutes())}`;
 }
 
 /** ISO instant -> "13 Sep 2026 06:00 UTC". Invalid input is returned unchanged. */

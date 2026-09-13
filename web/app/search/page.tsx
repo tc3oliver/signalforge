@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { Tag } from "../../components/bits.tsx";
+import { ConfidenceBadge } from "../../components/badges.tsx";
+import type { ConfidenceLevel } from "../../../src/schemas/brief.ts";
 import { SourceLink } from "../../components/sources.tsx";
 import { loadSearch } from "../../lib/queries.ts";
-import { confidenceDisplay, formatDateKey, sectionLabel } from "../../lib/format.ts";
+import { formatDateKey, sectionLabel } from "../../lib/format.ts";
 import { preview } from "../../lib/untrusted.ts";
 
 export const dynamic = "force-dynamic";
@@ -53,7 +55,6 @@ export default async function SearchPage({
 						<section aria-labelledby="hits-briefs">
 							<h2 id="hits-briefs">Brief Stories</h2>
 							{briefHits.map((hit) => {
-								const confidence = confidenceDisplay(hit.confidence);
 								return (
 									<article key={`${hit.date}:${hit.storyId}`} className="story">
 										<h3>
@@ -65,7 +66,7 @@ export default async function SearchPage({
 											<Link href={`/brief/${hit.date}`}>{formatDateKey(hit.date)}</Link>
 											<Tag>{sectionLabel(hit.section)}</Tag>
 											{hit.mustKnow ? <Tag tone="accent">Must know</Tag> : null}
-											<Tag tone={confidence.tone}>信心 {confidence.label}</Tag>
+											<ConfidenceBadge level={hit.confidence as ConfidenceLevel} />
 											<span className="host">rank {hit.rank.toFixed(4)}</span>
 										</p>
 										<p>{preview(hit.whatHappened, 260)}</p>

@@ -15,30 +15,40 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 	return (
 		<html lang="zh-Hant">
 			<body>
+				<a href="#content" className="skip-link">
+					Skip to content
+				</a>
 				<header className="masthead">
 					<div className="masthead-inner">
 						<Link href="/" className="wordmark">
 							SignalForge
 						</Link>
-						<nav aria-label="Sections">
+						<nav aria-label="Sections" className="primary-nav">
 							<Link href="/">Today</Link>
 							<Link href="/history">History</Link>
 							<Link href="/signals">Signals</Link>
-							<Link href="/search">Search</Link>
-							{ADMIN_ENABLED ? <Link href="/admin">Admin</Link> : null}
 						</nav>
-						<form action="/search" method="get" role="search">
-							<input
-								type="search"
-								name="q"
-								placeholder="Search briefs and items"
-								aria-label="Search briefs and items"
-							/>
-							<button type="submit">Search</button>
-						</form>
+						<div className="masthead-tools">
+							<form action="/search" method="get" role="search" className="search-compact">
+								<label htmlFor="site-search" className="sr-only">
+									Search briefs and items
+								</label>
+								<input id="site-search" type="search" name="q" placeholder="Search" />
+								<button type="submit" className="sr-only">
+									Search
+								</button>
+							</form>
+							{ADMIN_ENABLED ? (
+								<Link href="/admin" className="admin-link">
+									Admin
+								</Link>
+							) : null}
+						</div>
 					</div>
 				</header>
-				<main className="shell">{children}</main>
+				<main id="content" className="shell">
+					{children}
+				</main>
 				<footer className="site">
 					Served from Postgres. Every number is read from the structured fact store by
 					reference; no language model runs while a page is rendered.{" "}
