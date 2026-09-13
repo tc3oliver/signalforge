@@ -105,13 +105,17 @@ description: Curate a day of raw feed items into deduplicated, historically-awar
 - **沒有網路。** 任何 materials 與 source item 之外的事實都是捏造。
 - **數字必須靠 `factRefs`。** 不要把 prose 裡讀到的數字複述成自己的斷言;
   引用 `factId`,讓 renderer 印出權威值。
-- 篇幅與結構:`stories` 8–15 則,其中 `mustKnow: true` 的 3–5 則。
+- 篇幅與結構:materials 充足時 `stories` 8–15 則,其中 `mustKnow: true` 的 3–5 則。
+  **materials 少於 8 則時,brief 就是那幾則** —— system prompt 會給今天的實際範圍,
+  與這裡的數字衝突時以 system prompt 為準。
   section 沒有實質內容就整段省略,不要湊。細節見 `references/editorial-policy.md`。
+- **每個 `storyId` 在整份 brief 裡只能出現一次。** 安靜的一天寫短的,不要把同一則
+  story 換個標題再寫一次來湊數:validator 會擋,而且那是對讀者說謊。
 - **不要把同一份情報價值算兩次。** 寫了一條 emerging signal,就不要再把它的**弱**證據
   一則一則也寫成 final story。signal 的 `storyIds` 與 brief 的 `stories` 是不同的集合。
 - **但被 signal 引用不會降低刊登資格。** Standalone Value Test 逐則判斷,只擋本來就
   不夠格的;自己就夠格的照常刊登。漏掉讀者需要知道的事,比多寫一則邊際 story 嚴重得多。
-  只寫到 8–9 則時回頭檢查一次,正常的一天大約 10–13 則。
+  materials 充足時只寫到 8–9 則,回頭檢查一次:正常的一天大約 10–13 則。
 - 寫作規範見 `references/writing-style.md`。正體中文,高資訊密度。
 
 ---

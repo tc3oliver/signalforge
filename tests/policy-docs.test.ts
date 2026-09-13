@@ -304,3 +304,29 @@ describe("policy documents do not encode fixture answers", () => {
 		}
 	});
 });
+
+describe("a quiet day is covered by the policy, not only by the validator", () => {
+	const editorial = ref("editorial-policy.md");
+	const skill = readFileSync(join(SKILL_DIR, "SKILL.md"), "utf8");
+
+	it("says the brief may be shorter than eight when the materials are", () => {
+		// The live failure this comes from: the system prompt asked for four
+		// stories, the skill text said a normal day is 10-13, and three different
+		// models resolved the contradiction by writing each of the four twice.
+		expect(editorial).toMatch(/materials 少於 8 則/);
+		expect(skill).toMatch(/materials 少於 8 則/);
+	});
+
+	it("forbids reaching a number by repeating a story", () => {
+		expect(editorial).toMatch(/不要把同一則 story 寫兩次/);
+		expect(editorial).toMatch(/每個 `storyId` 在整份 brief 裡只能出現一次/);
+		expect(skill).toMatch(/每個 `storyId` 在整份 brief 裡只能出現一次/);
+	});
+
+	it("says which instruction wins when the two disagree", () => {
+		// A policy document cannot know today's material count, so it has to defer
+		// rather than compete with the prompt that does.
+		expect(editorial).toMatch(/以 system prompt 為準/);
+		expect(skill).toMatch(/以 system prompt 為準/);
+	});
+});
