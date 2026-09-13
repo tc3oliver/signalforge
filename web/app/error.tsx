@@ -14,11 +14,11 @@ export default function ErrorBoundary({
 }) {
 	return (
 		<>
-			<h1>This page could not be rendered</h1>
+			<h1>這一頁無法顯示</h1>
 			<p className="lede">{error.message}</p>
 			{error.digest ? <p className="mono">digest {error.digest}</p> : null}
 			<button type="button" onClick={reset}>
-				Try again
+				再試一次
 			</button>
 		</>
 	);

@@ -23,8 +23,8 @@ export function FactList({
 				if (resolution.status === "missing") {
 					return (
 						<li key={resolution.factId} className="missing">
-							<span className="mono">{resolution.factId}</span> — no stored value for this
-							reference; nothing is shown in its place.
+							<span className="mono">{resolution.factId}</span>
+							：這個引用沒有對應的儲存值，此處不補任何數字。
 						</li>
 					);
 				}
@@ -32,10 +32,10 @@ export function FactList({
 				return (
 					<li key={resolution.factId}>
 						{line.label}: <span className="fact-value">{line.value}</span>
-						{line.previous === undefined ? null : <> (prev {line.previous})</>}
+						{line.previous === undefined ? null : <>（前值 {line.previous}）</>}
 						{line.change === undefined ? null : <> {line.change}</>}
 						{" · "}
-						<span className="host">as of {formatInstant(line.asOf)}</span>
+						<span className="host">截至 {formatInstant(line.asOf)}</span>
 					</li>
 				);
 			})}

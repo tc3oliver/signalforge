@@ -1,4 +1,5 @@
 import type { BriefSection, DailyBrief, DailyBriefStory } from "../../src/schemas/brief.ts";
+import { sectionLabel } from "./format.ts";
 
 /*
  * The brief's shape, decided in one pure function so the page component only
@@ -7,16 +8,22 @@ import type { BriefSection, DailyBrief, DailyBriefStory } from "../../src/schema
  *
  * The rules mirror src/renderer/markdown.ts deliberately: the web reader and
  * the markdown export must never disagree about what today's brief contains.
+ * Only the heading text differs: the reader is Traditional Chinese, the
+ * markdown artifact keeps its English headings.
  */
 
-/** Topical sections in fixed output order. MUST_KNOW is handled separately. */
+/**
+ * Topical sections in fixed output order, with the reader-facing heading.
+ * MUST_KNOW is handled separately. Headings are the Chinese names from
+ * format.ts; the keys mirror the markdown renderer exactly.
+ */
 export const TOPICAL_SECTIONS: ReadonlyArray<readonly [BriefSection, string]> = [
-	["AI_LLM", "AI / LLM"],
-	["DEVELOPER_OSS", "Developer / Open Source"],
-	["RESEARCH", "Research"],
-	["CRYPTO_MARKET", "Crypto / Market"],
-	["MACRO", "Macro"],
-	["COMPANIES", "Companies"],
+	["AI_LLM", sectionLabel("AI_LLM")],
+	["DEVELOPER_OSS", sectionLabel("DEVELOPER_OSS")],
+	["RESEARCH", sectionLabel("RESEARCH")],
+	["CRYPTO_MARKET", sectionLabel("CRYPTO_MARKET")],
+	["MACRO", sectionLabel("MACRO")],
+	["COMPANIES", sectionLabel("COMPANIES")],
 ];
 
 /** The full published order, including the three trailing prose sections. */
@@ -44,16 +51,16 @@ export type BriefSectionView =
 	| {
 			kind: "must-know";
 			key: "MUST_KNOW";
-			heading: "Must Know";
+			heading: "今日必看";
 			/** Cross-links to every must-know story, wherever it is filed. */
 			highlights: StoryLink[];
 			/** Stories filed directly under MUST_KNOW have no topical home. */
 			stories: DailyBriefStory[];
 	  }
 	| { kind: "stories"; key: BriefSection; heading: string; stories: DailyBriefStory[] }
-	| { kind: "signals"; key: "EMERGING_SIGNALS"; heading: "Emerging Signals"; signals: BriefSignal[] }
-	| { kind: "analysis"; key: "DAILY_ANALYSIS"; heading: "Daily Analysis"; body: string }
-	| { kind: "watch-next"; key: "WATCH_NEXT"; heading: "Watch Next"; entries: string[] };
+	| { kind: "signals"; key: "EMERGING_SIGNALS"; heading: "值得觀察的趨勢"; signals: BriefSignal[] }
+	| { kind: "analysis"; key: "DAILY_ANALYSIS"; heading: "今日觀察"; body: string }
+	| { kind: "watch-next"; key: "WATCH_NEXT"; heading: "接下來關注"; entries: string[] };
 
 /** GitHub-flavoured heading anchor, with a deterministic collision suffix. */
 export function slugify(title: string): string {
@@ -95,7 +102,7 @@ export function buildBriefSections(brief: DailyBrief): BriefSectionView[] {
 		views.push({
 			kind: "must-know",
 			key: "MUST_KNOW",
-			heading: "Must Know",
+			heading: "今日必看",
 			highlights,
 			stories: mustKnowOnly,
 		});
@@ -111,7 +118,7 @@ export function buildBriefSections(brief: DailyBrief): BriefSectionView[] {
 		views.push({
 			kind: "signals",
 			key: "EMERGING_SIGNALS",
-			heading: "Emerging Signals",
+			heading: "值得觀察的趨勢",
 			signals: brief.emergingSignals.map((s) => ({
 				label: s.label,
 				body: s.body,
@@ -124,14 +131,14 @@ export function buildBriefSections(brief: DailyBrief): BriefSectionView[] {
 		views.push({
 			kind: "analysis",
 			key: "DAILY_ANALYSIS",
-			heading: "Daily Analysis",
+			heading: "今日觀察",
 			body: brief.dailyAnalysis,
 		});
 	}
 
 	const watchNext = brief.watchNext.filter((entry) => entry.trim() !== "");
 	if (watchNext.length > 0) {
-		views.push({ kind: "watch-next", key: "WATCH_NEXT", heading: "Watch Next", entries: watchNext });
+		views.push({ kind: "watch-next", key: "WATCH_NEXT", heading: "接下來關注", entries: watchNext });
 	}
 
 	return views;

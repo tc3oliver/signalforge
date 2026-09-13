@@ -98,18 +98,18 @@ describe("Today page markup", () => {
 	const html = render();
 
 	it("opens with the hero: date, label, the analysis opening, and counts", () => {
-		expect(html).toContain("SEP 13 · SUNDAY");
-		expect(html).toContain("Today in 60 seconds");
+		expect(html).toContain("9 月 13 日 · 星期日");
+		expect(html).toContain("60 秒掌握今天");
 		expect(html).toContain("HERO_OPENING_SENTENCE.");
-		expect(html).toMatch(/<strong>3<\/strong> stories/);
-		expect(html).toMatch(/<strong>2<\/strong> must know/);
-		expect(html).toMatch(/<strong>1<\/strong> update/);
-		expect(html).toMatch(/<strong>1<\/strong> signal/);
+		expect(html).toMatch(/<strong>3<\/strong> 則事件/);
+		expect(html).toMatch(/<strong>2<\/strong> 則必看/);
+		expect(html).toMatch(/<strong>1<\/strong> 則有新進展/);
+		expect(html).toMatch(/<strong>1<\/strong> 個值得觀察的趨勢/);
 	});
 
 	it("puts hero, must know, what changed and the signal before anything else", () => {
 		const order = [
-			html.indexOf("Today in 60 seconds"),
+			html.indexOf("60 秒掌握今天"),
 			html.indexOf('id="must-know"'),
 			html.indexOf('id="what-changed"'),
 			html.indexOf('id="emerging-signals"'),
@@ -132,11 +132,11 @@ describe("Today page markup", () => {
 	it("renders must-know as ranked cards with badges, one takeaway and a source count", () => {
 		expect(html).toContain(">01<");
 		expect(html).toContain(">02<");
-		expect(html).toContain("Importance </span>HIGH");
-		expect(html).toContain(">New<");
-		expect(html).toContain(">Update<");
+		expect(html).toContain("重要程度：</span>重要");
+		expect(html).toContain(">新<");
+		expect(html).toContain(">更新<");
 		expect(html).toContain("External evaluation may become the norm.");
-		expect(html).toContain("3 sources");
+		expect(html).toContain("3 個來源");
 		expect(html).toContain('href="/story/st-1#story-sources"');
 	});
 
@@ -152,8 +152,8 @@ describe("Today page markup", () => {
 	it("shows what changed as one line per change with a text badge", () => {
 		const block = html.slice(html.indexOf('id="what-changed"'), html.indexOf('id="emerging-signals"'));
 		expect(block).toContain("GitHub outage root cause");
-		expect(block).toContain(">Update<");
-		expect(block).toContain(">New<");
+		expect(block).toContain(">更新<");
+		expect(block).toContain(">新<");
 	});
 
 	it("links into the section on the full brief when a section overflows", () => {
@@ -162,7 +162,7 @@ describe("Today page markup", () => {
 		);
 		const out = render({ brief: { ...brief, stories: [...brief.stories, ...many] } });
 		expect(out).toContain('href="/brief/2026-09-13#section-RESEARCH"');
-		expect(out).toContain("View all 6");
+		expect(out).toContain("全部 6 則");
 	});
 
 	it("has no link into /admin", () => {
@@ -176,22 +176,25 @@ describe("Today page empty states", () => {
 			brief: { ...brief, emergingSignals: [] },
 			ledger: [ledger({ changeType: "NO_MATERIAL_CHANGE" })],
 		});
-		expect(out).toContain("No material changes since the previous brief.");
+		expect(out).toContain("與前一天相比，沒有實質變化。");
 		expect(out).not.toContain('id="emerging-signals"');
-		expect(out).not.toContain("Emerging signal");
+		expect(out).not.toContain("值得觀察的趨勢");
 	});
 
-	it("shows a capped late-item count as a floor", () => {
+	it("never shows the late-item backlog as a number, however large it is", () => {
 		const items = Array.from({ length: 200 }, (_, i) => late({ itemId: `l${i}` }));
 		const out = render({ lateItems: items });
-		expect(out).toContain("200+");
-		expect(out).toContain("At least 197 more collected");
+		expect(out).not.toContain("200");
+		expect(out).not.toContain("197");
+		expect(out).toContain("其餘項目會在下一次整理時處理。");
+		// Only the first few items are listed.
+		expect(out.match(/class="inbox-time"/g)?.length).toBe(3);
 	});
 
 	it("omits the inbox entirely when nothing arrived after the morning run", () => {
 		const out = render({ lateItems: [] });
 		expect(out).not.toContain('id="new-since-morning"');
-		expect(out).not.toContain("new since morning");
+		expect(out).not.toContain("今日新增");
 	});
 });
 

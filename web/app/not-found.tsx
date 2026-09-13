@@ -3,13 +3,11 @@ import Link from "next/link";
 export default function NotFound() {
 	return (
 		<>
-			<h1>Not found</h1>
-			<p className="lede">
-				No published brief, story or item matches that address in this lineage.
-			</p>
+			<h1>找不到這一頁</h1>
+			<p className="lede">沒有任何已發布的日期、事件或項目對應到這個網址。</p>
 			<p>
-				<Link href="/">Latest brief</Link> · <Link href="/history">History</Link> ·{" "}
-				<Link href="/search">Search</Link>
+				<Link href="/">今日</Link> · <Link href="/history">歷史</Link> ·{" "}
+				<Link href="/search">搜尋</Link>
 			</p>
 		</>
 	);

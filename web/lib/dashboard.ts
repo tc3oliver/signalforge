@@ -63,7 +63,9 @@ export function leadSentences(text: string, maxChars: number, maxSentences = 2):
 	if (sentences.length === 0) return "";
 	let out = "";
 	for (const sentence of sentences.slice(0, maxSentences)) {
-		const candidate = out === "" ? sentence : `${out} ${sentence}`;
+		// CJK sentences run together; only ASCII-terminated ones take a space.
+		const joiner = out === "" ? "" : /[。！？]$/.test(out) ? "" : " ";
+		const candidate = `${out}${joiner}${sentence}`;
 		if (candidate.length > maxChars) break;
 		out = candidate;
 	}

@@ -12,7 +12,7 @@ export function MustKnowGrid({ cards }: { cards: readonly MustKnowCardView[] }) 
 	return (
 		<section className="block" aria-labelledby="must-know">
 			<h2 id="must-know" className="block-label">
-				Must know
+				今日必看
 			</h2>
 			<ol className="must-know">
 				{cards.map((card) => (

@@ -46,18 +46,18 @@ function StoryArticle({
 				<Link href={`/story/${encodeURIComponent(story.storyId)}`}>{story.title}</Link>
 			</h3>
 			<p className="badges">
-				{story.mustKnow ? <span className="badge importance-high">Must know</span> : null}
+				{story.mustKnow ? <span className="badge importance-high">必看</span> : null}
 				<ImportanceBadge level={card?.importance} />
 				<ChangeBadge type={card?.changeType} />
 				<ConfidenceBadge level={story.confidence} />
 			</p>
-			<Field label="What happened">{story.whatHappened}</Field>
-			<Field label="Why it matters">{story.whyItMatters}</Field>
-			<Field label="What changed">{story.whatChanged}</Field>
-			<Field label="Impact">{story.impact}</Field>
+			<Field label="發生了什麼">{story.whatHappened}</Field>
+			<Field label="為什麼值得注意">{story.whyItMatters}</Field>
+			<Field label="最新變化">{story.whatChanged}</Field>
+			<Field label="可能影響">{story.impact}</Field>
 			<FactList factRefs={story.factRefs} facts={facts} />
 			<p className="field">
-				<span className="field-label">Sources</span>
+				<span className="field-label">資料來源</span>
 			</p>
 			<SourceList items={sources} unresolvedIds={unresolved} />
 		</article>
@@ -180,7 +180,7 @@ export function FullBriefView({ data }: { data: BriefPageData }) {
 
 			<NewSinceMorning feed={view.newSinceMorning} />
 
-			<nav className="pager" aria-label="Other briefs">
+			<nav className="pager" aria-label="其他日期">
 				{neighbours.previous ? (
 					<Link href={`/brief/${neighbours.previous}`}>
 						← {formatDateKey(neighbours.previous)}

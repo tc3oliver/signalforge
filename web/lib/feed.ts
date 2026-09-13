@@ -29,8 +29,8 @@ export function buildBriefFeedXml(
 	const entries = briefs.map((brief) => {
 		const link = absolute(options.baseUrl, `/brief/${encodeURIComponent(brief.date)}`);
 		const summary =
-			`${brief.storyCount} stories, ${brief.mustKnowCount} must-know` +
-			(brief.headline ? ` — ${brief.headline}` : "");
+			`${brief.storyCount} 則事件，${brief.mustKnowCount} 則必看` +
+			(brief.headline ? `：${brief.headline}` : "");
 		return [
 			"\t<entry>",
 			`\t\t<title>${escapeXmlText(`${title} — ${brief.date}`)}</title>`,

@@ -28,6 +28,31 @@ export function confidenceDisplay(level: string): ConfidenceDisplay {
 	return CONFIDENCE[level as ConfidenceLevel] ?? { label: level, level: "LOW", tone: "bad" };
 }
 
+/*
+ * Reader-facing wording. "可信度" is how much the evidence supports the claim,
+ * which is what a reader wants to know; "信心" would describe the model's own
+ * certainty, which is not the point. The enum never reaches the page.
+ */
+const CONFIDENCE_LABEL: Record<ConfidenceLevel, string> = {
+	HIGH: "可信度高",
+	MEDIUM: "可信度中等",
+	LOW: "可信度低",
+};
+
+export function confidenceLabel(level: string): string {
+	return CONFIDENCE_LABEL[level as ConfidenceLevel] ?? level;
+}
+
+const IMPORTANCE_LABEL: Record<"HIGH" | "MEDIUM" | "LOW", string> = {
+	HIGH: "重要",
+	MEDIUM: "一般",
+	LOW: "次要",
+};
+
+export function importanceLabel(level: string): string {
+	return IMPORTANCE_LABEL[level as "HIGH" | "MEDIUM" | "LOW"] ?? level;
+}
+
 /** Ledger confidence is a 0..1 score; the brief uses three buckets. */
 export function confidenceLevelFromScore(score: number): ConfidenceLevel {
 	if (score >= 0.75) return "HIGH";
@@ -35,29 +60,23 @@ export function confidenceLevelFromScore(score: number): ConfidenceLevel {
 	return "LOW";
 }
 
-const MONTHS = [
-	"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const WEEKDAY_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
 
 function pad(n: number): string {
 	return n < 10 ? `0${n}` : String(n);
 }
 
-/** "2026-09-13" -> "Sun, 13 Sep 2026". Invalid input is returned unchanged. */
+/** "2026-09-13" -> "2026 年 9 月 13 日（日）". Invalid input is returned unchanged. */
 export function formatDateKey(date: string): string {
 	const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
 	if (!match) return date;
 	const [, y, m, d] = match;
 	const parsed = new Date(`${date}T00:00:00.000Z`);
 	if (Number.isNaN(parsed.getTime())) return date;
-	const month = MONTHS[Number(m) - 1] ?? m;
-	return `${WEEKDAYS[parsed.getUTCDay()]}, ${Number(d)} ${month} ${y}`;
+	return `${y} 年 ${Number(m)} 月 ${Number(d)} 日（${WEEKDAYS[parsed.getUTCDay()]}）`;
 }
 
-/** "2026-09-13" -> "SEP 13 · SUNDAY", the dashboard's date banner. */
+/** "2026-09-13" -> "9 月 13 日 · 星期日", the dashboard's date banner. */
 export function formatDateBanner(date: string): string {
 	const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
 	if (!match) return date;
@@ -65,9 +84,7 @@ export function formatDateBanner(date: string): string {
 	const d = match[3] ?? "";
 	const parsed = new Date(`${date}T00:00:00.000Z`);
 	if (Number.isNaN(parsed.getTime())) return date;
-	const month = (MONTHS[Number(m) - 1] ?? m).toUpperCase();
-	const weekday = WEEKDAY_LONG[parsed.getUTCDay()] ?? "";
-	return `${month} ${Number(d)} · ${weekday.toUpperCase()}`;
+	return `${Number(m)} 月 ${Number(d)} 日 · 星期${WEEKDAYS[parsed.getUTCDay()]}`;
 }
 
 /** ISO instant -> "12:29", for a feed that states its timezone once in its heading. */
@@ -78,13 +95,12 @@ export function formatClock(iso: string | undefined): string {
 	return `${pad(parsed.getUTCHours())}:${pad(parsed.getUTCMinutes())}`;
 }
 
-/** ISO instant -> "13 Sep 2026 06:00 UTC". Invalid input is returned unchanged. */
+/** ISO instant -> "2026-09-13 06:00 UTC". Invalid input is returned unchanged. */
 export function formatInstant(iso: string | undefined): string {
 	if (!iso) return "—";
 	const parsed = new Date(iso);
 	if (Number.isNaN(parsed.getTime())) return iso;
-	const month = MONTHS[parsed.getUTCMonth()] ?? "";
-	return `${parsed.getUTCDate()} ${month} ${parsed.getUTCFullYear()} ` +
+	return `${parsed.getUTCFullYear()}-${pad(parsed.getUTCMonth() + 1)}-${pad(parsed.getUTCDate())} ` +
 		`${pad(parsed.getUTCHours())}:${pad(parsed.getUTCMinutes())} UTC`;
 }
 
@@ -111,25 +127,45 @@ export function formatDuration(ms: number | undefined): string {
 	return `${minutes}m ${pad(seconds)}s`;
 }
 
+/*
+ * Change types, presentation only. The ledger enum is untouched; these are the
+ * words a reader sees. The full form is used in prose and tooltips, the short
+ * form where a badge has no room to wrap.
+ */
 const CHANGE_TYPE_LABEL: Record<ChangeType, string> = {
-	NEW: "New",
-	UPDATE: "Update",
-	ESCALATION: "Escalation",
-	RESOLUTION: "Resolution",
-	REVERSAL: "Reversal",
-	CONFIRMATION: "Confirmation",
-	RUMOR: "Rumour",
-	NO_MATERIAL_CHANGE: "No material change",
+	NEW: "新事件",
+	UPDATE: "新進展",
+	ESCALATION: "情勢升高",
+	RESOLUTION: "已告一段落",
+	REVERSAL: "出現反轉",
+	CONFIRMATION: "已確認",
+	RUMOR: "尚未證實",
+	NO_MATERIAL_CHANGE: "無實質新進展",
+};
+
+const CHANGE_TYPE_SHORT: Record<ChangeType, string> = {
+	NEW: "新",
+	UPDATE: "更新",
+	ESCALATION: "升溫",
+	RESOLUTION: "已結束",
+	REVERSAL: "反轉",
+	CONFIRMATION: "確認",
+	RUMOR: "未證實",
+	NO_MATERIAL_CHANGE: "無變化",
 };
 
 export function changeTypeLabel(value: string): string {
 	return CHANGE_TYPE_LABEL[value as ChangeType] ?? value;
 }
 
+export function changeTypeShortLabel(value: string): string {
+	return CHANGE_TYPE_SHORT[value as ChangeType] ?? value;
+}
+
 const STATUS_LABEL: Record<StoryStatus, string> = {
-	OPEN: "Open",
-	RESOLVED: "Resolved",
-	DORMANT: "Dormant",
+	OPEN: "追蹤中",
+	RESOLVED: "已結束",
+	DORMANT: "暫無動靜",
 };
 
 export function storyStatusLabel(value: string): string {
@@ -137,10 +173,10 @@ export function storyStatusLabel(value: string): string {
 }
 
 const SIGNAL_STATE_LABEL: Record<SignalState, string> = {
-	emerging: "Emerging",
-	strengthening: "Strengthening",
-	confirmed: "Confirmed",
-	fading: "Fading",
+	emerging: "剛浮現",
+	strengthening: "持續增強",
+	confirmed: "已成形",
+	fading: "逐漸淡出",
 };
 
 export function signalStateLabel(value: string): string {
@@ -163,14 +199,19 @@ export function dispositionLabel(value: string | undefined): string {
 	return DISPOSITION_LABEL[value as Disposition] ?? value;
 }
 
+/*
+ * Section names as a Taiwanese engineer would say them. Established technical
+ * terms stay in English; "AI / LLM" is the name, not a phrase to translate.
+ * The section enum and the markdown renderer's English headings are untouched.
+ */
 const SECTION_LABEL: Record<string, string> = {
-	MUST_KNOW: "Must Know",
+	MUST_KNOW: "今日必看",
 	AI_LLM: "AI / LLM",
-	DEVELOPER_OSS: "Developer / Open Source",
-	RESEARCH: "Research",
-	CRYPTO_MARKET: "Crypto / Market",
-	MACRO: "Macro",
-	COMPANIES: "Companies",
+	DEVELOPER_OSS: "開發工具 / Open Source",
+	RESEARCH: "研究",
+	CRYPTO_MARKET: "Crypto / Web3",
+	MACRO: "總體經濟",
+	COMPANIES: "產業動態",
 };
 
 export function sectionLabel(value: string): string {

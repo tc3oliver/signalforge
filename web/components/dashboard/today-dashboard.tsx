@@ -18,7 +18,7 @@ import { WhatChanged } from "./what-changed.tsx";
  *            compact sections
  *   Level 3  is /story/[id]            -- reading, when it is worth it
  *
- * New-since-morning is an inbox and sits last. The full brief is /brief/[date].
+ * New-since-morning is an inbox and sits last. The full day is /brief/[date].
  */
 export function TodayDashboard({ view }: { view: DashboardView }) {
 	return (
@@ -37,7 +37,7 @@ export function TodayDashboard({ view }: { view: DashboardView }) {
 			<NewSinceMorning feed={view.newSinceMorning} />
 			<p className="full-brief">
 				<Link href={`/brief/${view.date}`}>
-					Full brief for {formatDateKey(view.date)} <span aria-hidden="true">→</span>
+					{formatDateKey(view.date)} 完整內容 <span aria-hidden="true">→</span>
 				</Link>
 			</p>
 		</div>

@@ -71,7 +71,11 @@ hero line is the first sentence or two of `dailyAnalysis`.
 Sections on a brief page follow the fixed order Must Know, AI/LLM,
 Developer/Open Source, Research, Crypto/Market, Macro, Companies, Emerging
 Signals, Daily Analysis, Watch Next — and a section with no material content is
-omitted entirely rather than rendered empty.
+omitted entirely rather than rendered empty. Those are the working names; the
+reader shows the Traditional Chinese labels in `docs/LANGUAGE_STYLE.md`
+(今日必看, AI / LLM, 開發工具 / Open Source, 研究, Crypto / Web3, 總體經濟,
+產業動態, 值得觀察的趨勢, 今日觀察, 接下來關注), and enum values never reach a
+public page. `/admin` keeps the raw terminology.
 
 ## Installing and running
 

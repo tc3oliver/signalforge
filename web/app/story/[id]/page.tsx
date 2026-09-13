@@ -8,6 +8,7 @@ import { importanceLevelFromScore } from "../../../lib/dashboard.ts";
 import type { ConfidenceLevel } from "../../../../src/schemas/brief.ts";
 import { loadStoryPage } from "../../../lib/queries.ts";
 import {
+	confidenceLabel,
 	confidenceLevelFromScore,
 	formatDateKey,
 	formatInstant,
@@ -23,7 +24,7 @@ export const runtime = "nodejs";
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params;
 	const data = await loadStoryPage(decodeURIComponent(id));
-	return { title: data ? `${data.latest.canonicalTitle} — SignalForge` : "Story not found" };
+	return { title: data ? `${data.latest.canonicalTitle} — SignalForge` : "找不到事件 — SignalForge" };
 }
 
 export default async function StoryPage({ params }: { params: Promise<{ id: string }> }) {
@@ -45,49 +46,44 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 		<>
 			<h1>{latest.canonicalTitle}</h1>
 			<p className="dateline">
-				<span className="mono">{latest.storyId}</span> · first seen{" "}
-				{formatInstant(latest.firstSeenAt)} · last seen {formatInstant(latest.lastSeenAt)}
+				<span className="mono">{latest.storyId}</span> · 首次出現{" "}
+				{formatInstant(latest.firstSeenAt)} · 最近更新 {formatInstant(latest.lastSeenAt)}
 			</p>
 			<p className="meta">
 				<ImportanceBadge level={importanceLevelFromScore(latest.importance)} />
 				<ChangeBadge type={latest.changeType} />
 				<Tag>{storyStatusLabel(latest.status)}</Tag>
 				<ConfidenceBadge level={confidence} />
-				<span>importance {formatScore(latest.importance)}</span>
-				<span>novelty {formatScore(latest.novelty)}</span>
-				<span>relevance {formatScore(latest.relevance)}</span>
 				{published ? (
 					<Link href={`/brief/${published.date}`}>
-						in the {formatDateKey(published.date)} brief · {sectionLabel(published.section)}
+						收錄於 {formatDateKey(published.date)} · {sectionLabel(published.section)}
 					</Link>
 				) : (
-					<Tag tone="warn">never selected into a brief</Tag>
+					<Tag tone="warn">尚未收錄到任何一天的重點</Tag>
 				)}
 			</p>
 
 			<section aria-labelledby="story-summary">
-				<h2 id="story-summary">Summary</h2>
-				<Field label="What happened">
+				<h2 id="story-summary">摘要</h2>
+				<Field label="發生了什麼">
 					{published ? published.whatHappened : latest.reason}
 				</Field>
 				{published ? (
 					<>
-						<Field label="Why it matters">{published.whyItMatters}</Field>
-						<Field label="What changed">{published.whatChanged}</Field>
-						<Field label="Impact">{published.impact}</Field>
+						<Field label="為什麼值得注意">{published.whyItMatters}</Field>
+						<Field label="最新變化">{published.whatChanged}</Field>
+						<Field label="可能影響">{published.impact}</Field>
 					</>
 				) : (
 					<p className="lede">
-						This story is in the ledger but was not selected into a published brief, so it has
-						no editorial “why it matters”, “what changed” or “impact” text. The curator&apos;s
-						recorded reason above is what exists.
+						這個事件有被追蹤，但沒有被選入任何一天的重點，所以沒有「為什麼值得注意」「最新變化」「可能影響」的內容。上面顯示的是篩選階段記錄的理由。
 					</p>
 				)}
 				<FactList factRefs={latest.factRefs} facts={facts} />
 			</section>
 
 			<section aria-labelledby="story-timeline">
-				<h2 id="story-timeline">Timeline</h2>
+				<h2 id="story-timeline">時間線</h2>
 				<ol className="timeline">
 					{timeline.map((entry) => {
 						const appearance = appearances.find((a) => a.date === entry.date);
@@ -99,16 +95,16 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 								<div>{entry.canonicalTitle}</div>
 								<div className="host">{entry.reason}</div>
 								<div className="meta">
-									<span>importance {formatScore(entry.importance)}</span>
-									<span>novelty {formatScore(entry.novelty)}</span>
-									<span>confidence {formatScore(entry.confidence)}</span>
-									<span>{entry.sourceItemIds.length} sources</span>
+									<span className="host">重要性 {formatScore(entry.importance)}</span>
+									<span className="host">新穎度 {formatScore(entry.novelty)}</span>
+									<span className="host">可信度 {formatScore(entry.confidence)}</span>
+									<span>{entry.sourceItemIds.length} 個來源</span>
 									{appearance ? (
 										<Link href={`/brief/${entry.date}`}>
-											published in {sectionLabel(appearance.section)}
+											收錄於 {sectionLabel(appearance.section)}
 										</Link>
 									) : (
-										<span>not selected that day</span>
+										<span>當天未選入</span>
 									)}
 								</div>
 							</li>
@@ -119,25 +115,25 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 
 			{primarySources.length > 0 ? (
 				<section aria-labelledby="story-primary">
-					<h2 id="story-primary">Primary Sources</h2>
+					<h2 id="story-primary">主要來源</h2>
 					<SourceList items={primarySources} />
 				</section>
 			) : null}
 
 			<section aria-labelledby="story-sources">
-				<h2 id="story-sources">All Sources</h2>
+				<h2 id="story-sources">全部來源</h2>
 				<SourceList items={allSources} unresolvedIds={data.unresolvedSourceIds} />
 			</section>
 
 			{signals.length > 0 ? (
 				<section aria-labelledby="story-signals">
-					<h2 id="story-signals">Signals Citing This Story</h2>
+					<h2 id="story-signals">相關趨勢</h2>
 					<ul className="plain tight">
 						{signals.map((signal) => (
 							<li key={signal.signalId}>
 								<Link href="/signals">{signal.label}</Link>{" "}
 								<Tag>{signalStateLabel(signal.state)}</Tag>{" "}
-								<span className="host">confidence {formatScore(signal.confidence)}</span>
+								<span className="host">{confidenceLabel(confidenceLevelFromScore(signal.confidence))}</span>
 							</li>
 						))}
 					</ul>
@@ -146,7 +142,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 
 			{related.length > 0 ? (
 				<section aria-labelledby="story-related">
-					<h2 id="story-related">Related Stories</h2>
+					<h2 id="story-related">相關事件</h2>
 					<div className="cards">
 						{related.map(({ entry, sharedItemCount, tokenOverlap }) => (
 							<div key={entry.storyId} className="card">
@@ -161,8 +157,8 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 								</p>
 								<p className="host">
 									{sharedItemCount > 0
-										? `${sharedItemCount} shared source item${sharedItemCount === 1 ? "" : "s"}`
-										: `${formatScore(tokenOverlap)} title/reason token overlap`}
+										? `共用 ${sharedItemCount} 個來源項目`
+										: `標題與理由的詞彙重疊 ${formatScore(tokenOverlap)}`}
 								</p>
 							</div>
 						))}
@@ -171,11 +167,10 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 			) : null}
 
 			<section aria-labelledby="story-history">
-				<h2 id="story-history">Historical Context</h2>
+				<h2 id="story-history">歷史脈絡</h2>
 				<p>
-					Tracked across {timeline.length} day{timeline.length === 1 ? "" : "s"} since{" "}
-					{formatInstant(latest.firstSeenAt)}, published in {appearances.length} brief
-					{appearances.length === 1 ? "" : "s"}.
+					自 {formatInstant(latest.firstSeenAt)} 起追蹤 {timeline.length} 天，收錄於{" "}
+					{appearances.length} 天的重點。
 				</p>
 				{earlier.length > 0 ? (
 					<ul className="plain tight">
@@ -189,7 +184,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 						))}
 					</ul>
 				) : (
-					<p className="lede">No earlier published appearance of this story.</p>
+					<p className="lede">這個事件之前沒有被收錄過。</p>
 				)}
 			</section>
 		</>

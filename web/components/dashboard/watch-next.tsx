@@ -4,7 +4,7 @@ export function WatchNext({ entries }: { entries: readonly string[] }) {
 	return (
 		<section className="block" aria-labelledby="watch-next">
 			<h2 id="watch-next" className="block-label">
-				Watch next
+				接下來關注
 			</h2>
 			<ul className="watch-list">
 				{entries.map((entry) => (

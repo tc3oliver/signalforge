@@ -105,7 +105,7 @@ describe("full brief view", () => {
 		for (const text of ["FULL_WHAT_HAPPENED_TEXT", "FULL_WHAT_CHANGED_TEXT", "FULL_IMPACT_TEXT"]) {
 			expect(html).toContain(text);
 		}
-		for (const label of ["What happened", "Why it matters", "What changed", "Impact", "Sources"]) {
+		for (const label of ["發生了什麼", "為什麼值得注意", "最新變化", "可能影響", "資料來源"]) {
 			expect(html).toContain(label);
 		}
 		expect(html).toContain("ITEM_TITLE_it-1");

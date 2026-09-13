@@ -27,7 +27,7 @@ export function SourceLink({ item }: { item: NormalizedItem }) {
 				<span>{item.title}</span>
 			)}
 			{host ? <span className="host"> ({host})</span> : null}
-			{href ? null : <span className="host"> (no usable link recorded)</span>}
+			{href ? null : <span className="host">（未記錄可用連結）</span>}
 			{ADMIN_ENABLED ? (
 				<>
 					{" · "}
@@ -58,7 +58,7 @@ export function SourceList({
 			{unresolvedIds.map((id) => (
 				<li key={id}>
 					<span className="mono">{id}</span>
-					<span className="host"> — cited by the story but missing from the item store</span>
+					<span className="host">：事件有引用，但項目庫中找不到這個項目</span>
 				</li>
 			))}
 		</ul>

@@ -11,10 +11,10 @@ export function WhatChanged({ rows }: { rows: readonly ChangeRowView[] }) {
 	return (
 		<section className="block" aria-labelledby="what-changed">
 			<h2 id="what-changed" className="block-label">
-				What changed
+				最新變化
 			</h2>
 			{rows.length === 0 ? (
-				<p className="empty">No material changes since the previous brief.</p>
+				<p className="empty">與前一天相比，沒有實質變化。</p>
 			) : (
 				<ul className="change-list">
 					{rows.map((row) => (

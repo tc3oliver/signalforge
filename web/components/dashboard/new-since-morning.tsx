@@ -5,22 +5,20 @@ import { safeExternalUrl } from "../../lib/untrusted.ts";
 
 /**
  * The inbox: items collected after the day's first run, which the next run
- * will see and this brief has not. A short feed at the bottom of the page --
+ * will see and today's page has not. A short feed at the bottom of the page --
  * timestamp, title, source -- not an intelligence product.
+ *
+ * No backlog count. The product's job is to digest the feed for the reader, so
+ * the page shows the few most recent items and says the rest will be handled
+ * at the next run. The exact number is on the admin pages.
  */
 export function NewSinceMorning({ feed }: { feed: DashboardView["newSinceMorning"] }) {
 	if (feed.total === 0) return null;
 	return (
 		<section className="block inbox" aria-labelledby="new-since-morning">
-			<div className="block-head">
-				<h2 id="new-since-morning" className="block-label">
-					New since morning <span className="block-note">UTC</span>
-				</h2>
-				<span className="view-all">
-					{feed.total}
-					{feed.capped ? "+" : ""} {feed.total === 1 ? "item" : "items"}
-				</span>
-			</div>
+			<h2 id="new-since-morning" className="block-label">
+				今日新增 <span className="block-note">UTC</span>
+			</h2>
 			<ul className="inbox-list">
 				{feed.items.map((item) => {
 					const href = safeExternalUrl(item.url);
@@ -39,7 +37,7 @@ export function NewSinceMorning({ feed }: { feed: DashboardView["newSinceMorning
 							<span className="inbox-source">{item.sourceName}</span>
 							{item.storyId ? (
 								<Link href={`/story/${encodeURIComponent(item.storyId)}`} className="inbox-story">
-									story
+									相關事件
 								</Link>
 							) : null}
 						</li>
@@ -47,10 +45,7 @@ export function NewSinceMorning({ feed }: { feed: DashboardView["newSinceMorning
 				})}
 			</ul>
 			{feed.total > feed.items.length ? (
-				<p className="empty">
-					{feed.capped ? "At least " : ""}
-					{feed.total - feed.items.length} more collected; they will be considered by the next run.
-				</p>
+				<p className="empty">其餘項目會在下一次整理時處理。</p>
 			) : null}
 		</section>
 	);

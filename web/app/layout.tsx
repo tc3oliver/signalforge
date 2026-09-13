@@ -6,7 +6,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
 	title: "SignalForge",
-	description: "Daily briefing reader. Published rows only — no model runs on a request.",
+	description: "每日重點整理。只讀取已發布的資料，頁面呈現時不會執行任何模型。",
 	// The reader is LAN/localhost only; nothing here should ever be indexed.
 	robots: { index: false, follow: false },
 };
@@ -16,26 +16,26 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 		<html lang="zh-Hant">
 			<body>
 				<a href="#content" className="skip-link">
-					Skip to content
+					跳到主要內容
 				</a>
 				<header className="masthead">
 					<div className="masthead-inner">
 						<Link href="/" className="wordmark">
 							SignalForge
 						</Link>
-						<nav aria-label="Sections" className="primary-nav">
-							<Link href="/">Today</Link>
-							<Link href="/history">History</Link>
-							<Link href="/signals">Signals</Link>
+						<nav aria-label="主要導覽" className="primary-nav">
+							<Link href="/">今日</Link>
+							<Link href="/history">歷史</Link>
+							<Link href="/signals">趨勢</Link>
 						</nav>
 						<div className="masthead-tools">
 							<form action="/search" method="get" role="search" className="search-compact">
 								<label htmlFor="site-search" className="sr-only">
-									Search briefs and items
+									搜尋事件與收集項目
 								</label>
-								<input id="site-search" type="search" name="q" placeholder="Search" />
+								<input id="site-search" type="search" name="q" placeholder="搜尋" />
 								<button type="submit" className="sr-only">
-									Search
+									搜尋
 								</button>
 							</form>
 							{ADMIN_ENABLED ? (
@@ -50,9 +50,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 					{children}
 				</main>
 				<footer className="site">
-					Served from Postgres. Every number is read from the structured fact store by
-					reference; no language model runs while a page is rendered.{" "}
-					<Link href="/feed.xml">Atom feed</Link>
+					所有內容都來自已發布的資料。每個數字都依引用從結構化事實庫讀出，頁面呈現時不會執行任何語言模型。{" "}
+					<Link href="/feed.xml">Atom 訂閱</Link>
 				</footer>
 			</body>
 		</html>

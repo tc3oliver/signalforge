@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { SignalCardView } from "../../lib/dashboard.ts";
-import { signalStateLabel } from "../../lib/format.ts";
-import { ConfidenceBadge } from "../badges.tsx";
+import { confidenceLabel, signalStateLabel } from "../../lib/format.ts";
 
 const STATE_ARROW: Record<string, string> = {
 	emerging: "↗",
@@ -10,13 +9,19 @@ const STATE_ARROW: Record<string, string> = {
 	fading: "↓",
 };
 
-/** Rendered only when the brief carries at least one signal; never a placeholder. */
+/**
+ * Rendered only when the brief carries at least one signal; never a placeholder.
+ *
+ * The heading says "值得觀察" rather than anything that sounds settled: most of
+ * these rest on a day or two of evidence, and the card states that evidence
+ * (events, sources, days) next to the confidence so a reader can weigh it.
+ */
 export function EmergingSignals({ signals }: { signals: readonly SignalCardView[] }) {
 	if (signals.length === 0) return null;
 	return (
 		<section className="block" aria-labelledby="emerging-signals">
 			<h2 id="emerging-signals" className="block-label">
-				{signals.length === 1 ? "Emerging signal" : "Emerging signals"}
+				值得觀察的趨勢
 			</h2>
 			<ul className="signal-list">
 				{signals.map((signal) => (
@@ -29,11 +34,9 @@ export function EmergingSignals({ signals }: { signals: readonly SignalCardView[
 
 export function EmergingSignalCard({ signal }: { signal: SignalCardView }) {
 	const evidence = [
-		`${signal.storyCount} ${signal.storyCount === 1 ? "story" : "stories"}`,
-		`${signal.sourceCount} ${signal.sourceCount === 1 ? "source" : "sources"}`,
-		signal.daySpan === undefined
-			? undefined
-			: `${signal.daySpan} ${signal.daySpan === 1 ? "day" : "days"}`,
+		`${signal.storyCount} 個事件`,
+		`${signal.sourceCount} 個來源`,
+		signal.daySpan === undefined ? undefined : `${signal.daySpan} 天`,
 	].filter((part): part is string => part !== undefined);
 	return (
 		<li className="signal-card">
@@ -48,18 +51,16 @@ export function EmergingSignalCard({ signal }: { signal: SignalCardView }) {
 			) : null}
 			<p className="signal-summary">{signal.summary}</p>
 			<dl className="signal-facts">
-				<div>
-					<dt>Evidence</dt>
-					<dd>{evidence.join(" · ")}</dd>
-				</div>
 				{signal.confidence ? (
 					<div>
-						<dt>Confidence</dt>
-						<dd>
-							<ConfidenceBadge level={signal.confidence} />
-						</dd>
+						<dt>可信度</dt>
+						<dd>{confidenceLabel(signal.confidence).replace(/^可信度/, "")}</dd>
 					</div>
 				) : null}
+				<div>
+					<dt>目前依據</dt>
+					<dd>{evidence.join(" · ")}</dd>
+				</div>
 			</dl>
 		</li>
 	);

@@ -198,9 +198,9 @@ describe("display mappings", () => {
 	});
 
 	it("formats dates and instants deterministically in UTC", () => {
-		expect(formatDateKey("2026-09-13")).toBe("Sun, 13 Sep 2026");
+		expect(formatDateKey("2026-09-13")).toBe("2026 年 9 月 13 日（日）");
 		expect(formatDateKey("not-a-date")).toBe("not-a-date");
-		expect(formatInstant("2026-09-13T06:10:30.000Z")).toBe("13 Sep 2026 06:10 UTC");
+		expect(formatInstant("2026-09-13T06:10:30.000Z")).toBe("2026-09-13 06:10 UTC");
 		expect(formatInstant(undefined)).toBe("—");
 		expect(shiftDateKey("2026-09-01", -1)).toBe("2026-08-31");
 		expect(shiftDateKey("bad", 1)).toBeUndefined();
@@ -215,9 +215,10 @@ describe("display mappings", () => {
 	});
 
 	it("labels change types, sections, signal states and dispositions", () => {
-		expect(changeTypeLabel("NO_MATERIAL_CHANGE")).toBe("No material change");
-		expect(sectionLabel("DEVELOPER_OSS")).toBe("Developer / Open Source");
-		expect(signalStateLabel("strengthening")).toBe("Strengthening");
+		expect(changeTypeLabel("NO_MATERIAL_CHANGE")).toBe("無實質新進展");
+		expect(sectionLabel("DEVELOPER_OSS")).toBe("開發工具 / Open Source");
+		expect(signalStateLabel("strengthening")).toBe("持續增強");
+		// Dispositions are admin-only trace wording and stay in English.
 		expect(dispositionLabel("DUPLICATE")).toContain("duplicate");
 		// A missing decision is a coverage gap, not a verdict about the item.
 		expect(dispositionLabel(undefined)).toContain("Never scanned");

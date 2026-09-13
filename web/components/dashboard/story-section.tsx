@@ -17,7 +17,7 @@ export function StorySection({ section, date }: { section: SectionView; date: st
 				</h2>
 				{section.overflow > 0 ? (
 					<Link href={`/brief/${date}#section-${section.key}`} className="view-all">
-						View all {section.total} <span aria-hidden="true">→</span>
+						全部 {section.total} 則 <span aria-hidden="true">→</span>
 					</Link>
 				) : null}
 			</div>
