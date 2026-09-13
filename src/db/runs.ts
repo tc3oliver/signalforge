@@ -1,5 +1,5 @@
 import type { AgentAttempt, RunState, Stage } from "../schemas/run.ts";
-import type { Sql } from "./client.ts";
+import { jsonParam, type Sql } from "./client.ts";
 
 const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
 
@@ -114,8 +114,8 @@ export async function recordAttempt(
 			attempt.attemptId, runId, attempt.stage, attempt.provider, attempt.model,
 			attempt.startedAt, attempt.finishedAt, attempt.durationMs, attempt.status,
 			attempt.failureClass ?? null, attempt.fallbackReason ?? null,
-			attempt.errorMeta === undefined ? null : JSON.stringify(attempt.errorMeta),
-			attempt.faultInjected === undefined ? null : JSON.stringify(attempt.faultInjected),
+			jsonParam(sql, attempt.errorMeta ?? null),
+			jsonParam(sql, attempt.faultInjected ?? null),
 		],
 	);
 }

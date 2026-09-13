@@ -1,7 +1,8 @@
 import type { DailyMaterials } from "../schemas/materials.ts";
-import type { Sql } from "./client.ts";
+import { jsonParam, type Sql } from "./client.ts";
 
-const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
+/* Bind parameter, not inlined SQL: see the note in src/db/items.ts. */
+const ISO = 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"';
 
 /** Whole-document write: the curator submits one materials package per date. */
 export async function saveMaterials(
@@ -19,7 +20,7 @@ export async function saveMaterials(
 				curator_notes = excluded.curator_notes,
 				emerging_signals = excluded.emerging_signals, updated_at = now()`,
 			[lineage, materials.date, runId ?? null, materials.producedAt, materials.curatorNotes,
-				JSON.stringify(materials.emergingSignals)],
+				jsonParam(sql, materials.emergingSignals)],
 		);
 		// Replaced wholesale: a resubmitted package must not leave last attempt's
 		// stories behind as phantom selections.
@@ -45,13 +46,12 @@ export async function getMaterials(
 	lineage: string,
 	date: string,
 ): Promise<DailyMaterials | undefined> {
-	const head = await sql.unsafe<
+	const head = await sql<
 		{ produced_at: string; curator_notes: string; emerging_signals: DailyMaterials["emergingSignals"] }[]
-	>(
-		`select to_char(produced_at at time zone 'utc', ${ISO}) as produced_at, curator_notes, emerging_signals
-		 from daily_materials where lineage = $1 and date = $2`,
-		[lineage, date],
-	);
+	>`
+		select to_char(produced_at at time zone 'utc', ${ISO}) as produced_at, curator_notes, emerging_signals
+		from daily_materials where lineage = ${lineage} and date = ${date}
+	`;
 	const h = head[0];
 	if (!h) return undefined;
 	const stories = await sql<

@@ -1,0 +1,364 @@
+[
+  {
+    "storyId": "ci-build-plugins-malicious-postinstall-exfiltration",
+    "date": "2026-09-11",
+    "canonicalTitle": "九款建置外掛遭植入後門竊取 CI 機密環境變數達 19 小時",
+    "sourceItemIds": [
+      "itm-20260911-0001",
+      "itm-20260911-0020",
+      "itm-20260911-0055",
+      "itm-20260911-0057"
+    ],
+    "primarySourceIds": [
+      "itm-20260911-0057"
+    ],
+    "firstSeenAt": "2026-09-13T09:02:05.823Z",
+    "lastSeenAt": "2026-09-13T09:02:05.823Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.9,
+    "novelty": 0.9,
+    "importance": 0.85,
+    "confidence": 0.95,
+    "reason": "官方安全通告與 GHSA 條目確認，九款週下載量合計 420 萬次之建置外掛遭植入惡意 post-install 腳本，向單一收集主機竊取 CI 變數。影響面廣且需輪替憑證。primary 為官方安全通報。",
+    "factRefs": []
+  },
+  {
+    "storyId": "halcyon-fusion-series-d-contingent-offtake",
+    "date": "2026-09-11",
+    "canonicalTitle": "Halcyon Fusion 完成 14 億美元 D 輪融資，含電力公用事業附條件購電協議",
+    "sourceItemIds": [
+      "itm-20260911-0002",
+      "itm-20260911-0016",
+      "itm-20260911-0056",
+      "itm-20260911-0074"
+    ],
+    "primarySourceIds": [
+      "itm-20260911-0002"
+    ],
+    "firstSeenAt": "2026-09-13T09:02:08.793Z",
+    "lastSeenAt": "2026-09-13T09:02:08.793Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.8,
+    "novelty": 0.85,
+    "importance": 0.8,
+    "confidence": 0.95,
+    "reason": "核融合新創 Halcyon Fusion 完成 14 億美元 D 輪融資，首度將公用事業之附條件電力採購協議（PPA，條件為 2031 年前供電）作為投資條款。primary 為官方新聞稿。",
+    "factRefs": []
+  },
+  {
+    "storyId": "open-tooling-protocol-one-spec-release",
+    "date": "2026-09-11",
+    "canonicalTitle": "四家模型廠商發布 Open Tooling Protocol 1.0 工具調用通訊規範",
+    "sourceItemIds": [
+      "itm-20260911-0003",
+      "itm-20260911-0022",
+      "itm-20260911-0044",
+      "itm-20260911-0080"
+    ],
+    "primarySourceIds": [
+      "itm-20260911-0080"
+    ],
+    "firstSeenAt": "2026-09-13T09:04:13.197Z",
+    "lastSeenAt": "2026-09-13T09:04:13.197Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.88,
+    "novelty": 0.85,
+    "importance": 0.82,
+    "confidence": 0.95,
+    "reason": "四家模型業者發布 OTP 1.0 標準，提供工具調用線路格式、能力協商與強制單次調用資源預算欄位，消除各家適配層。primary 為官方公告。",
+    "factRefs": []
+  },
+  {
+    "storyId": "talos-corvid-robotics-acquisition-talks",
+    "date": "2026-09-11",
+    "canonicalTitle": "媒體就 Talos 擬以 41 億美元收購 Corvid Robotics 報導分歧，談判現狀存疑",
+    "sourceItemIds": [
+      "itm-20260911-0004",
+      "itm-20260911-0021",
+      "itm-20260911-0025",
+      "itm-20260911-0063"
+    ],
+    "primarySourceIds": [
+      "itm-20260911-0025"
+    ],
+    "firstSeenAt": "2026-09-13T09:04:18.479Z",
+    "lastSeenAt": "2026-09-13T09:04:18.479Z",
+    "status": "OPEN",
+    "changeType": "RUMOR",
+    "relevance": 0.8,
+    "novelty": 0.7,
+    "importance": 0.75,
+    "confidence": 0.45,
+    "reason": "Bloomberg 報導收購接近達成，Stratechery 引述消息稱數週前已因賠償條款破局，雙方皆未官方回應或申報，報導互相矛盾。primary 為彭博社報導。",
+    "factRefs": []
+  },
+  {
+    "storyId": "meridian-exchange-withdrawal-freeze-custody-gap",
+    "date": "2026-09-11",
+    "canonicalTitle": "Meridian 交易所因 3.4 億美元託管對帳缺口全面暫停用戶提款",
+    "sourceItemIds": [
+      "itm-20260911-0011",
+      "itm-20260911-0065",
+      "itm-20260911-0066",
+      "itm-20260911-0082"
+    ],
+    "primarySourceIds": [
+      "itm-20260911-0082"
+    ],
+    "firstSeenAt": "2026-09-13T09:04:22.711Z",
+    "lastSeenAt": "2026-09-13T09:04:22.711Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.85,
+    "novelty": 0.9,
+    "importance": 0.85,
+    "confidence": 0.95,
+    "reason": "Meridian 交易所官方公告，內部帳本與合格託管商資產出現 3.4 億美元缺口，已全面凍結提款，但充值功能仍開放引發社群恐慌。primary 為交易所官方公告。",
+    "factRefs": []
+  },
+  {
+    "storyId": "sign-sgd-one-bit-optimizer-state-paper",
+    "date": "2026-09-11",
+    "canonicalTitle": "預印本發表 Sign-SGD 結合張量誤差反饋，以 1-bit 優化器狀態匹敵 AdamW",
+    "sourceItemIds": [
+      "itm-20260911-0013",
+      "itm-20260911-0015",
+      "itm-20260911-0030",
+      "itm-20260911-0034"
+    ],
+    "primarySourceIds": [
+      "itm-20260911-0030"
+    ],
+    "firstSeenAt": "2026-09-13T09:04:26.758Z",
+    "lastSeenAt": "2026-09-13T09:04:26.758Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.85,
+    "novelty": 0.85,
+    "importance": 0.78,
+    "confidence": 0.85,
+    "reason": "Kestrel Institute 預印本論文提出帶有張量誤差反饋之 sign-SGD，在 13B 參數規模下維持 AdamW 損失曲線，大幅縮減記憶體佔用。primary 為 arXiv 預印本。",
+    "factRefs": []
+  },
+  {
+    "storyId": "sable-orm-batched-upsert-data-loss",
+    "date": "2026-09-11",
+    "canonicalTitle": "Sable ORM 漏洞獲官方確認，二分法定界至 6.2.0 連線池釋出變更並有更多生產災情",
+    "sourceItemIds": [
+      "itm-20260911-0017",
+      "itm-20260911-0035",
+      "itm-20260911-0041",
+      "itm-20260911-0068"
+    ],
+    "primarySourceIds": [
+      "itm-20260911-0041"
+    ],
+    "firstSeenAt": "2026-09-13T08:51:27.593Z",
+    "lastSeenAt": "2026-09-13T09:04:31.470Z",
+    "status": "OPEN",
+    "changeType": "UPDATE",
+    "relevance": 0.9,
+    "novelty": 0.8,
+    "importance": 0.85,
+    "confidence": 0.95,
+    "reason": "延續昨日 Sable ORM 資料遺失漏洞，維護者今日正式重現並透過二分法定界至 6.2.0 連線釋出變更（PR #7741），已有更多企業回報生產資料遺失並申請 CVE。primary 為 GitHub 維護者 issue。",
+    "factRefs": []
+  },
+  {
+    "storyId": "northern-grid-large-load-tariff-curtailment",
+    "date": "2026-09-11",
+    "canonicalTitle": "Northern Grid 針對 200MW 以上負載提交新資費方案，附加電力調減義務條款",
+    "sourceItemIds": [
+      "itm-20260911-0019"
+    ],
+    "primarySourceIds": [
+      "itm-20260911-0019"
+    ],
+    "firstSeenAt": "2026-09-13T09:04:35.602Z",
+    "lastSeenAt": "2026-09-13T09:04:35.602Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.75,
+    "novelty": 0.75,
+    "importance": 0.75,
+    "confidence": 0.8,
+    "reason": "電網營運商 Northern Grid 針對 200MW 以上超大型用電戶（如資料中心）提交獨立併網資費方案，並埋入用電高峰調減（curtailment）條款。primary 為 Reddit 社群文件討論。",
+    "factRefs": []
+  },
+  {
+    "storyId": "eu-ai-act-general-purpose-guidance-substantial-modification",
+    "date": "2026-09-11",
+    "canonicalTitle": "歐盟委員會發布通用 AI 指引，明確重大修改認定標準與事故登記要求",
+    "sourceItemIds": [
+      "itm-20260911-0023",
+      "itm-20260911-0067",
+      "itm-20260911-0073",
+      "itm-20260911-0077"
+    ],
+    "primarySourceIds": [
+      "itm-20260911-0073"
+    ],
+    "firstSeenAt": "2026-09-13T09:04:39.892Z",
+    "lastSeenAt": "2026-09-13T09:04:39.892Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.88,
+    "novelty": 0.9,
+    "importance": 0.85,
+    "confidence": 0.95,
+    "reason": "歐盟委員會正式發布通用 AI 模型規範指引，訂立系統性風險運算門檻、14 天事故登記報告義務，並明確微調開發者何時被認定為重大修改。primary 為歐盟執委會官方公報。",
+    "factRefs": []
+  },
+  {
+    "storyId": "us-jobless-claims-weekly",
+    "date": "2026-09-11",
+    "canonicalTitle": "美國公布初領失業救濟人數為 22.1 萬人，勞動市場維持穩定區間",
+    "sourceItemIds": [
+      "itm-20260911-0005",
+      "itm-20260911-0032"
+    ],
+    "primarySourceIds": [
+      "itm-20260911-0005"
+    ],
+    "firstSeenAt": "2026-09-13T08:50:52.608Z",
+    "lastSeenAt": "2026-09-13T09:13:26.520Z",
+    "status": "OPEN",
+    "changeType": "NO_MATERIAL_CHANGE",
+    "relevance": 0.4,
+    "novelty": 0.3,
+    "importance": 0.35,
+    "confidence": 0.95,
+    "reason": "美國勞工部公布初領失業金人數 22.1 萬人，仍在過去六週常態區間內，相較昨日無實質趨勢改變，屬例行數據更新。primary 為 FRED 官方數據發布。",
+    "factRefs": [
+      "fct-20260911-001",
+      "fct-20260911-002"
+    ]
+  },
+  {
+    "storyId": "ashgrove-utilities-dividend-declaration",
+    "date": "2026-09-11",
+    "canonicalTitle": "Ashgrove Utilities 申報每股 0.44 美元季度股利，調升 0.02 美元",
+    "sourceItemIds": [
+      "itm-20260911-0027",
+      "itm-20260911-0043"
+    ],
+    "primarySourceIds": [
+      "itm-20260911-0027"
+    ],
+    "firstSeenAt": "2026-09-13T08:51:18.728Z",
+    "lastSeenAt": "2026-09-13T09:13:30.404Z",
+    "status": "OPEN",
+    "changeType": "UPDATE",
+    "relevance": 0.35,
+    "novelty": 0.4,
+    "importance": 0.3,
+    "confidence": 0.95,
+    "reason": "Ashgrove Utilities 提交 8-K 申報本季配息 0.44 美元，相較前期 0.42 美元調升 0.02 美元，屬例行股利發放變更。primary 為 SEC 8-K 文件。",
+    "factRefs": [
+      "fct-20260911-006",
+      "fct-20260911-007"
+    ]
+  },
+  {
+    "storyId": "kinematics-conditioned-robotics-cross-embodiment-transfer",
+    "date": "2026-09-11",
+    "canonicalTitle": "跨機構研究提出運動學條件化策略，於五款機械手臂實現 88% 零樣本跨本體遷移",
+    "sourceItemIds": [
+      "itm-20260911-0028",
+      "itm-20260911-0036",
+      "itm-20260911-0037",
+      "itm-20260911-0078"
+    ],
+    "primarySourceIds": [
+      "itm-20260911-0028"
+    ],
+    "firstSeenAt": "2026-09-13T09:13:33.798Z",
+    "lastSeenAt": "2026-09-13T09:13:33.798Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.85,
+    "novelty": 0.88,
+    "importance": 0.8,
+    "confidence": 0.9,
+    "reason": "Ridgeway 大學預印本論文發表以運動學描述為條件之單一控制策略，在未見過之五種不同手臂硬體上達成 88% 零樣本操作成功率。primary 為 arXiv 論文。",
+    "factRefs": []
+  },
+  {
+    "storyId": "lumen-fabrication-impairment-capex-guidance-cut",
+    "date": "2026-09-11",
+    "canonicalTitle": "Lumen 認列 18 億美元 3 奈米產能減損並下修資本支出逾 26%",
+    "sourceItemIds": [
+      "itm-20260911-0031",
+      "itm-20260911-0054",
+      "itm-20260911-0059",
+      "itm-20260911-0076"
+    ],
+    "primarySourceIds": [
+      "itm-20260911-0076"
+    ],
+    "firstSeenAt": "2026-09-13T09:13:38.523Z",
+    "lastSeenAt": "2026-09-13T09:13:38.523Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.88,
+    "novelty": 0.9,
+    "importance": 0.85,
+    "confidence": 0.95,
+    "reason": "晶圓代工廠 Lumen 提交 8-K 申報 18 億美元減損，主因單一客戶取消多年期訂單，並將全年度資本支出指引自 84 億美元大砍至 62 億美元，對先進製程需求釋放警訊。primary 為 SEC 8-K。",
+    "factRefs": [
+      "fct-20260911-011",
+      "fct-20260911-012"
+    ]
+  },
+  {
+    "storyId": "halyard-v2-release-work-stealing-scheduler",
+    "date": "2026-09-11",
+    "canonicalTitle": "Halyard 2.0 發布：導入工作竊取排程器、凍結外掛 ABI 並廢棄舊版 YAML 格式",
+    "sourceItemIds": [
+      "itm-20260911-0039",
+      "itm-20260911-0052",
+      "itm-20260911-0053",
+      "itm-20260911-0062",
+      "itm-20260911-0070"
+    ],
+    "primarySourceIds": [
+      "itm-20260911-0070"
+    ],
+    "firstSeenAt": "2026-09-13T09:13:42.877Z",
+    "lastSeenAt": "2026-09-13T09:13:42.877Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.85,
+    "novelty": 0.85,
+    "importance": 0.8,
+    "confidence": 0.95,
+    "reason": "工作負載排程器 Halyard 發布 2.0 正式版，以 work-stealing 執行期取代合作式排程，使 p99 延遲大幅降低，並凍結 2.x 外掛 ABI 與移除舊版 YAML。primary 為官方發布。",
+    "factRefs": []
+  },
+  {
+    "storyId": "meridian-two-million-token-model-testing",
+    "date": "2026-09-11",
+    "canonicalTitle": "Meridian 長文本旗艦模型傳聞持續流傳，無實質新增進展",
+    "sourceItemIds": [
+      "itm-20260911-0045",
+      "itm-20260911-0046",
+      "itm-20260911-0047"
+    ],
+    "primarySourceIds": [
+      "itm-20260911-0046"
+    ],
+    "firstSeenAt": "2026-09-13T08:50:56.726Z",
+    "lastSeenAt": "2026-09-13T09:13:47.084Z",
+    "status": "OPEN",
+    "changeType": "NO_MATERIAL_CHANGE",
+    "relevance": 0.7,
+    "novelty": 0.1,
+    "importance": 0.65,
+    "confidence": 0.55,
+    "reason": "延續昨日 Meridian 200 萬 token 長文本模型傳聞，今日 VentureBeat 與社群討論僅重複昨日報導與揣測，無新增具名消息來源、基準測試或時程，無實質變化。primary 為 VentureBeat 報導。",
+    "factRefs": []
+  }
+]

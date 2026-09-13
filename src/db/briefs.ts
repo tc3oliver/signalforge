@@ -1,7 +1,8 @@
 import type { DailyBrief } from "../schemas/brief.ts";
-import type { Sql } from "./client.ts";
+import { jsonParam, type Sql } from "./client.ts";
 
-const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
+/* Bind parameter, not inlined SQL: see the note in src/db/items.ts. */
+const ISO = 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"';
 
 /**
  * Every editor attempt is kept. A validation failure is only diagnosable if the
@@ -22,8 +23,8 @@ export async function saveDraft(
 			$3, $4::jsonb, $5::timestamptz, $6, $7::jsonb
 		 returning draft_no`,
 		[
-			lineage, date, meta.runId ?? null, JSON.stringify(draft), meta.producedAt,
-			meta.validationStatus ?? "PENDING", JSON.stringify(meta.validationErrors ?? []),
+			lineage, date, meta.runId ?? null, jsonParam(sql, draft), meta.producedAt,
+			meta.validationStatus ?? "PENDING", jsonParam(sql, meta.validationErrors ?? []),
 		],
 	);
 	const row = rows[0];
@@ -48,7 +49,7 @@ export async function saveBrief(
 				emerging_signals = excluded.emerging_signals, updated_at = now()`,
 			[
 				lineage, brief.date, runId ?? null, brief.producedAt, brief.dailyAnalysis,
-				brief.watchNext, JSON.stringify(brief.emergingSignals),
+				brief.watchNext, jsonParam(sql, brief.emergingSignals),
 			],
 		);
 		await tx`delete from daily_brief_stories where lineage = ${lineage} and date = ${brief.date}`;
@@ -73,17 +74,16 @@ export async function getBrief(
 	lineage: string,
 	date: string,
 ): Promise<DailyBrief | undefined> {
-	const head = await sql.unsafe<
+	const head = await sql<
 		{
 			produced_at: string; daily_analysis: string; watch_next: string[];
 			emerging_signals: DailyBrief["emergingSignals"];
 		}[]
-	>(
-		`select to_char(produced_at at time zone 'utc', ${ISO}) as produced_at,
+	>`
+		select to_char(produced_at at time zone 'utc', ${ISO}) as produced_at,
 			daily_analysis, watch_next, emerging_signals
-		 from daily_briefs where lineage = $1 and date = $2`,
-		[lineage, date],
-	);
+		from daily_briefs where lineage = ${lineage} and date = ${date}
+	`;
 	const h = head[0];
 	if (!h) return undefined;
 	const stories = await sql<

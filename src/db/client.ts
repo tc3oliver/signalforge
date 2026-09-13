@@ -9,7 +9,9 @@ import { ProgrammerError } from "../runtime/error-classifier.ts";
  * instead of an ORM layer.
  */
 
-export type Sql = postgres.Sql<Record<string, never>>;
+/** Timestamps stay strings on the way in and on the way out. */
+type DbTypes = { date: postgres.PostgresType<string> };
+export type Sql = postgres.Sql<{ date: string }>;
 
 export interface DbConfig {
 	url?: string;
@@ -45,7 +47,7 @@ export function dbConfigFromEnv(env: NodeJS.ProcessEnv = process.env): DbConfig 
  * `assertReachable` when a stage must fail fast rather than at first query.
  */
 export function createSql(config: DbConfig = dbConfigFromEnv()): Sql {
-	const options: postgres.Options<Record<string, never>> = {
+	const options: postgres.Options<DbTypes> = {
 		max: config.max ?? 10,
 		// Timestamps are carried as ISO strings end to end. Left alone, the driver
 		// hands back Date objects and a round-trip would lose the exact string the
@@ -89,4 +91,14 @@ export async function assertReachable(sql: Sql): Promise<void> {
 			{ cause },
 		);
 	}
+}
+
+/**
+ * jsonb bind parameter. The driver's own `JSONValue` type is narrower than the
+ * domain records that get stored (a `Record<string, unknown>` does not satisfy
+ * it), and an already-stringified value would be double-encoded into a JSON
+ * string, so every jsonb parameter goes through here.
+ */
+export function jsonParam(sql: Sql, value: unknown): ReturnType<Sql["json"]> {
+	return sql.json(value as Parameters<Sql["json"]>[0]);
 }

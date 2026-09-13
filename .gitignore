@@ -4,3 +4,5 @@ fixtures/generated/
 *.log
 .omc/
 .env
+logs/
+backups/

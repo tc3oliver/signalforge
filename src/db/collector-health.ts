@@ -1,5 +1,5 @@
 import type { CollectorHealth, CollectorResult } from "../collectors/types.ts";
-import type { Sql } from "./client.ts";
+import { jsonParam, type Sql } from "./client.ts";
 
 const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
 
@@ -70,7 +70,7 @@ export async function upsertSourceConfig(
 			updated_at = now()`,
 		[
 			config.collectorId, config.sourceType, config.enabled ?? true,
-			JSON.stringify(config.config ?? {}), (config.requiredSecrets ?? []) as string[],
+			jsonParam(sql, config.config ?? {}), (config.requiredSecrets ?? []) as string[],
 		],
 	);
 }

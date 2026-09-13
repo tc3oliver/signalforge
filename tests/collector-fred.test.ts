@@ -67,7 +67,10 @@ describe("fredCollector", () => {
 
 		const result = await runCollect(ctx);
 
-		expect(result.health).toBe("OK");
+		// Other tracked series return no observations in this fixture, which is a
+		// legitimate warning (staleness signal), so overall health is DEGRADED even
+		// though FEDFUNDS itself collected cleanly.
+		expect(result.health).toBe("DEGRADED");
 		const fedFunds = result.facts.find((f) => f.label === "FEDFUNDS");
 		expect(fedFunds?.asOf).toBe("2025-12-01");
 		expect(fedFunds?.value).toBe(5.25);

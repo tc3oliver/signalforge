@@ -1,7 +1,8 @@
 # Working rules for this repository
 
-These are constraints, not preferences. Phase 1 exists to prove one thing, and each
-rule below protects that proof.
+These are constraints, not preferences. This system reads the day's world for one
+person and has to be trusted without being checked, so each rule below protects
+either that trust or the machine it runs on.
 
 ## Do not touch the global Pi installation
 
@@ -42,15 +43,30 @@ rule below protects that proof.
   parse JSON out of an assistant message.
 - Never relax a validator to make a live run pass. A rejected submission is a
   result; record it and let the model correct itself.
-- `submit_materials` enforcing 100% scan coverage is the core Phase 1 guarantee.
+- `submit_materials` enforcing 100% scan coverage is the core guarantee of the whole
+  system.
   It is not negotiable and has no override flag.
 
-## Phase 1 scope
+## Scope
 
-Do not add, in this phase: PostgreSQL, pgvector, Next.js, a LaunchAgent or any
-scheduler, MCP, real collectors (Miniflux, GitHub, HN, arXiv, CoinGecko, FRED, SEC,
-Reddit, YouTube), or live web research. Phase 1 runs offline against synthetic
-fixtures on purpose.
+The project is now a production build: Postgres + pgvector, real collectors, live
+web research, a Next.js front end and a user LaunchAgent are all in scope. See
+`docs/PRODUCTION_PLAN.md` for the staged plan and current status.
+
+What stays out, permanently and for the same reason as before:
+
+- **MCP, and any Pi extension, package or patch.** The unattended worker stays
+  restricted; capability arrives as a project-owned tool, never as a plugin.
+- **Editorial filtering before Pi.** A collector may drop an item only for being an
+  exact duplicate, corrupt, unsupported, or a source-policy violation. "Looks
+  unimportant" is Pi's judgement and making it early is how a pipeline silently
+  stops seeing things.
+- **Public ingress.** This machine is LAN-only compute. No tunnel, no port forward,
+  no publicly reachable database or LLM endpoint.
+
+The synthetic fixtures and gold truth remain the acceptance harness. They are not
+superseded by live data, and their thresholds are not negotiable: a gate that fails
+gets a fixed policy or implementation, never a lowered bar.
 
 ## Before saying something is done
 

@@ -1,8 +1,13 @@
 import type { CollectedItem } from "../collectors/types.ts";
 import type { NormalizedItem } from "../schemas/item.ts";
-import type { Sql } from "./client.ts";
+import { jsonParam, type Sql } from "./client.ts";
 
-const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
+/*
+ * Passed as a bind parameter rather than inlined: `sql.unsafe(query, params)`
+ * hands jsonb back as raw text, so every read that returns a jsonb column has
+ * to go through a tagged template.
+ */
+const ISO = 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"';
 
 export interface RawItemRef {
 	rawItemId: number;
@@ -40,7 +45,7 @@ export async function upsertRawItems(
 					item.sourceType,
 					item.sourceName,
 					item.raw.externalId,
-					JSON.stringify(item.raw.body ?? null),
+					jsonParam(sql, item.raw.body ?? null),
 					item.raw.fetchedAt,
 				],
 			);
@@ -95,7 +100,7 @@ export async function upsertNormalizedItems(
 				[
 					lineage, item.id, item.rawItemId ?? null, item.sourceType, item.sourceName,
 					item.title, item.summary, item.content ?? null, item.url ?? null,
-					item.publishedAt, JSON.stringify(item.metadata ?? {}),
+					item.publishedAt, jsonParam(sql, item.metadata ?? {}),
 					item.embedding ? `[${item.embedding.join(",")}]` : null,
 				],
 			);
@@ -108,18 +113,17 @@ export async function getNormalizedItem(
 	lineage: string,
 	itemId: string,
 ): Promise<NormalizedItem | undefined> {
-	const rows = await sql.unsafe<
+	const rows = await sql<
 		{
 			item_id: string; source_type: string; source_name: string; title: string;
 			summary: string; content: string | null; url: string | null;
 			published_at: string; metadata: Record<string, unknown>;
 		}[]
-	>(
-		`select item_id, source_type, source_name, title, summary, content, url,
+	>`
+		select item_id, source_type, source_name, title, summary, content, url,
 			to_char(published_at at time zone 'utc', ${ISO}) as published_at, metadata
-		 from normalized_items where lineage = $1 and item_id = $2`,
-		[lineage, itemId],
-	);
+		from normalized_items where lineage = ${lineage} and item_id = ${itemId}
+	`;
 	const r = rows[0];
 	if (!r) return undefined;
 	return {
