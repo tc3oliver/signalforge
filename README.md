@@ -365,10 +365,17 @@ pnpm web:start                 # next start on 127.0.0.1:3300
 pnpm web:seed                  # development seed data
 ```
 
+The `/admin` section — run status, model fallbacks, collector health, per-item
+trace — is off unless `SIGNALFORGE_ADMIN=1` is set. Without it those routes 404
+and nothing links to them, so a reader you expose to other people shows briefs
+and nothing about how the deployment is configured or what it failed at.
+
 Both bind loopback by default. `WEB_HOST` and `WEB_PORT` override that, so
-`WEB_HOST=0.0.0.0 pnpm web:start` serves the reader to your LAN. There is no
-authentication in front of it and every route is read-only, so bind it to a
-network you trust and never expose it to the Internet.
+`WEB_HOST=0.0.0.0 pnpm web:start` serves the reader to your LAN. Every route is
+read-only and there is no authentication in front of any of them, so what you
+bind to decides who can read your briefs. Putting it on the public Internet is a
+deliberate choice to publish them; put a reverse proxy and TLS in front if you
+make it.
 
 A web request never invokes a language model. `tests/web-no-llm.test.ts` walks every
 file under `web/` and fails if anything there imports the Pi SDK or the restricted

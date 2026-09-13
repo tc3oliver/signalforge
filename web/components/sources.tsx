@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ADMIN_ENABLED } from "../lib/admin.ts";
 import type { NormalizedItem } from "../../src/schemas/item.ts";
 import { displayHost, safeExternalUrl } from "../lib/untrusted.ts";
 
@@ -27,10 +28,14 @@ export function SourceLink({ item }: { item: NormalizedItem }) {
 			)}
 			{host ? <span className="host"> ({host})</span> : null}
 			{href ? null : <span className="host"> (no usable link recorded)</span>}
-			{" · "}
-			<Link href={`/admin/item/${encodeURIComponent(item.id)}`} className="host">
-				trace
-			</Link>
+			{ADMIN_ENABLED ? (
+				<>
+					{" · "}
+					<Link href={`/admin/item/${encodeURIComponent(item.id)}`} className="host">
+						trace
+					</Link>
+				</>
+			) : null}
 		</>
 	);
 }

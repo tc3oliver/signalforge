@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ADMIN_ENABLED } from "../lib/admin.ts";
 import type { DailyBriefStory } from "../../src/schemas/brief.ts";
 import type { StructuredFact } from "../../src/schemas/fact.ts";
 import type { NormalizedItem } from "../../src/schemas/item.ts";
@@ -194,9 +195,11 @@ function NewSinceMorning({ items }: { items: readonly LateItem[] }) {
 									<Link href={`/story/${encodeURIComponent(item.storyId)}`}>story</Link>
 								</>
 							) : null}{" "}
-							<Link href={`/admin/item/${encodeURIComponent(item.itemId)}`} className="host">
-								trace
-							</Link>
+							{ADMIN_ENABLED ? (
+								<Link href={`/admin/item/${encodeURIComponent(item.itemId)}`} className="host">
+									trace
+								</Link>
+							) : null}
 							{item.summary ? <div className="host">{preview(item.summary, 160)}</div> : null}
 						</li>
 					);

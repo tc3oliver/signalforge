@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { ADMIN_ENABLED } from "../lib/admin.ts";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,7 +25,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 							<Link href="/history">History</Link>
 							<Link href="/signals">Signals</Link>
 							<Link href="/search">Search</Link>
-							<Link href="/admin">Admin</Link>
+							{ADMIN_ENABLED ? <Link href="/admin">Admin</Link> : null}
 						</nav>
 						<form action="/search" method="get" role="search">
 							<input

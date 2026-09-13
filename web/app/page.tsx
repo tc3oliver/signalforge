@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ADMIN_ENABLED } from "../lib/admin.ts";
 import { BriefView } from "../components/brief-view.tsx";
 import { loadBriefPage, loadLatestBriefDate } from "../lib/queries.ts";
 
@@ -19,9 +20,11 @@ export default async function TodayPage() {
 					No brief has been published yet. Once a run completes, the most recent brief appears
 					here.
 				</p>
-				<p>
-					<Link href="/admin/runs">Check run status →</Link>
-				</p>
+				{ADMIN_ENABLED ? (
+					<p>
+						<Link href="/admin/runs">Check run status →</Link>
+					</p>
+				) : null}
 			</>
 		);
 	}
