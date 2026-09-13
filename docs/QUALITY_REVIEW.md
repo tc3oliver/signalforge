@@ -21,10 +21,10 @@ Everything scored below separates two questions that the existing reports confla
 
 | | Score |
 |---|---|
-| Overall Engineering | **8 / 10** |
+| Overall Engineering | **7 / 10** |
 | Overall Intelligence Quality | **4 / 10** |
 | Overall Product Value | **4 / 10** |
-| Production Readiness | **5 / 10** |
+| Production Readiness | **4 / 10** |
 
 **The one-sentence verdict.** The machine is real and the brief is readable, but on the
 single production day that exists, the system did not surface one item about Claude
@@ -851,18 +851,18 @@ Ordered by (probability × damage × how invisible it is).
 | Daily Brief Writing | **7** | Dense, natural Traditional Chinese, zero denylisted filler; templated `impact`, uniform HIGH confidence |
 | Analysis / Insight | **5** | Watch Next is genuinely good; Daily Analysis walks the list; What Changed says nothing eight times |
 | Personalization | **2** | `interests.yaml` is dead config; the reader profile is one hardcoded sentence |
-| Source Grounding | **4** | Ids verified, fabrication impossible; claims unverified, `factRefs` used zero times |
-| Reliability | **5** | Degraded mode and versioning are real; no timeouts, silent downgrades, broken provenance, no alerting |
+| Source Grounding | **3** | Ids verified, fabrication impossible; claims unverified — and the fact layer inserts **zero rows every run** (D15), so `factRefs` cannot be used even in principle |
+| Reliability | **4** | Degraded mode is real; a plain network blip hard-fails the run (D16), no timeouts, silent downgrades, broken provenance, no alerting |
 | Security | **8** | Genuinely strong posture; untested against a real adversary |
-| Observability | **4** | Per-item explainability is excellent; per-run accounting is broken and there is no cost data at all |
+| Observability | **3** | Per-item explainability is excellent; per-run accounting is broken, there is no cost data, and the test suite reports green with the whole DB layer skipped (D17) |
 | Web UX | **5** | Correct, fast, read-only; no feedback, no read state, not reachable where you read |
 
 | Composite | Score |
 |---|---|
-| **Overall Engineering** | **8 / 10** |
+| **Overall Engineering** | **7 / 10** |
 | **Overall Intelligence Quality** | **4 / 10** |
 | **Overall Product Value** | **4 / 10** |
-| **Production Readiness** | **5 / 10** |
+| **Production Readiness** | **4 / 10** |
 
 Weighting, stated explicitly: Engineering is weighted toward isolation, security and the
 correctness of the data plane, where this project is strong. Intelligence Quality is
@@ -1016,3 +1016,175 @@ In roughly this order:
 *Prepared 2026-09-13 by reading the system and then checking it against the database, the
 logs and the published brief. No production code, prompt, threshold or schema was modified
 in the course of this review.*
+
+---
+
+## Addendum — second-pass findings
+
+A deeper pass over the collectors, the runtime, the database layer and the test suite
+produced findings serious enough to change three scores (Source Grounding 4→3, Reliability
+5→4, Observability 4→3, and with them Overall Engineering 8→7 and Production Readiness
+5→4). Each item below was verified in the source or by running the command shown.
+
+### D15 · The entire structured-fact layer inserts zero rows, every run *(CRITICAL)*
+
+`src/pipeline/collection.ts:541-544` keeps only facts whose `sourceItemId` matches an item
+collected in the same run:
+
+```ts
+const knownItemIds = new Set(normalized.map((i) => i.id));
+const facts = result.facts
+  .map((f) => toStructuredFact(f, collector.sourceType))
+  .filter((f) => knownItemIds.has(f.sourceItemId));
+```
+
+The reasoning is sound — a dangling fact reference would corrupt the manifest. But
+`sourceExternalId` is set by **exactly one collector**: a repo-wide search returns
+`sec.ts:133` and the schema definition, and nothing else. FRED returns `items: []` always
+and CoinGecko emits facts with no anchoring item. **Every CoinGecko and FRED fact is
+therefore silently filtered out on every run, with no warning.**
+
+This is the root cause of something I previously reported as a usage gap. `structured_facts`
+holds 3 rows, all seed data; every material and brief story has `fact_refs = {}`. I wrote
+that the fact mechanism was "used zero times". It is worse than that: **the editor could not
+use it if it wanted to, because the facts are never written.** FRED was enabled yesterday
+with a working credential and contributed nothing, and the reason is not that the world was
+quiet — it is this filter. Any claim-level grounding work (P1-7) is blocked behind fixing it.
+
+### D16 · A plain network blip hard-fails the run, with no retry and no fallback *(CRITICAL)*
+
+`src/runtime/error-classifier.ts:169-173` maps `TypeError` → `PROGRAMMER_ERROR`, and
+`model-router.ts:82` maps `PROGRAMMER_ERROR` → `FAIL` — no retry, no fallback, run over.
+undici raises `TypeError: fetch failed` for ordinary network failures, and structural
+classification runs over the whole cause chain *before* the message heuristics at `:272-281`,
+so the outer `TypeError` wins. `:198` has the same shape: `/abort/i` → `USER_ABORT` → `FAIL`,
+ordered ahead of the NETWORK rule at `:197`, so any provider error whose text contains
+"request aborted" terminates the day.
+
+This is the most likely cause of a spurious hard failure in production, and it sits directly
+against the design intent — a three-model fallback chain that a transient socket error
+bypasses entirely.
+
+### D17 · The test suite reports green with the entire database layer skipped *(HIGH)*
+
+Verified by running it both ways:
+
+```
+$ pnpm test                    → Test Files 55 passed | Tests 664 passed
+$ DATABASE_URL= pnpm test      → Test Files 50 passed | 5 skipped
+                                  Tests 622 passed | 42 skipped      EXIT=0
+```
+
+`describe.skipIf(!probe.available)` silently removes `db-items`, `db-migrations`,
+`db-story-repository`, `web-queries` and `pipeline-daily-run` — the whole DB layer and the
+pipeline state machine — and `announceSkip` only `console.log`s into a noisy stream. A sixth,
+`tests/integration/gold-isolation.test.ts:54`, skips on `!haveFixtures` with no announcement
+at all; that is the **security** test asserting gold truth is unreachable from the agent.
+
+**"55 files / 664 tests passing", which I reported yesterday, is not a reproducible claim** —
+it is conditional on Postgres having been reachable, and nothing records whether it was.
+
+### D18 · No test can fail because the output got worse *(HIGH)*
+
+- No test runs a real model; every agent path goes through the fake driver.
+- `src/eval/evaluator.ts` is never run against `eval/gold/` with a threshold by the suite.
+  `eval:run` and `stability:run` exist only as CLI scripts and are never invoked. **The
+  quality gate lives entirely outside CI.**
+- `validateBrief` accepts a brief whose every narrative field is the literal string `"x"` —
+  demonstrated inside the suite itself (`policy-regression.test.ts:294-298` constructs it,
+  `:323` asserts `validation.ok === true`). Filler prose is the test suite's own fixture
+  convention.
+- The scripted fake curator clusters on `metadata.group`, a field the manifest builder
+  stamps on every item — **the fake is handed the answer key**, so no integration test can
+  fail on curation quality even in principle.
+- ~71 of the 664 "tests" (policy-docs, ops-scripts, ops-plist) execute no `src/` code at all;
+  they are markdown and file-permission lints. One asserts a *character count* on prose.
+
+### D19 · Six collectors report FAILED on a benign warning *(HIGH)*
+
+`reddit.ts:194`, `miniflux.ts:142`, `sec.ts:146` and `youtube.ts:200` all use
+`warnings.length > 0 ? (items.length > 0 ? DEGRADED : FAILED)`. So "no subreddits
+configured", or "three companies have no CIK on file", is enough to report FAILED on a day
+when nothing was wrong. I fixed exactly this bug in `fred.ts:139-148` yesterday by splitting
+`problems` from `notes`, and **did not propagate the fix**. That is my omission, and it means
+some of the FAILED/DEGRADED signals in yesterday's health table were not trustworthy.
+
+### D20 · GitHub re-stamps ancient tags as today's news, permanently
+
+`tagToItem` sets `publishedAt: fetchedAt` (tags carry no date in the payload), and
+`src/db/items.ts:96` does `published_at = excluded.published_at` on conflict. Since the item
+id is stable, **every ancient tag is re-dated to "now" on every single run** and floats to the
+top of any recency-ordered view forever. This compounds P0-2: it is not merely that tag
+backfill was noisy once, it is that it renews itself daily.
+
+Relatedly, `coingecko.ts:172` puts the fetch timestamp inside the external id
+(`coingecko-trending-${fetchedAt}`), defeating the unique key by design — a fresh
+`raw_items` and `normalized_items` row on every run, forever.
+
+### D21 · Two more unguarded destructive paths
+
+- `src/runtime/orchestrator.ts:97` — `rmSync(..., { recursive: true, force: true })` on a
+  path built from an unvalidated `experiment` CLI argument. `experiment="../.."` deletes
+  outside the run tree.
+- Combined with D1 (`pnpm db:reset`), the project has two ways to destroy data that a typo
+  can reach.
+
+### D22 · On the global Pi directory — a careful correction
+
+I reported that `refreshOnCreate: true` contradicts its own comment, and that
+`~/.pi/agent/models-store.json` was nonetheless not modified by these runs. A static trace
+through pi 0.85.1 confirms *why*, and it is not the mechanism the comment claims:
+`allowModelNetwork: false` forces `refreshFromNetwork = false`, and every `persist` site in
+both provider implementations sits behind an `if (!allowNetwork) return;` guard. **The
+store's contents were not rewritten, and your constraint held.**
+
+But the "nothing else" claim is still wrong in two ways worth knowing, given that this
+directory is off-limits: the *read* path calls `ensureFileExists()` and writes `"{}"` if the
+file is absent, and proper-lockfile creates and removes `models-store.json.lock` in that
+directory on every read — which is what moved the directory's mtime. Two concurrent runs
+would contend on a lock inside your global Pi config.
+
+One hidden coupling that matters more: **`~/.pi/agent/models.json` does not exist on this
+machine.** All three chain models resolve from the builtin catalog plus the cached global
+`models-store.json`, and with network refresh disabled there is no way to repopulate it. If
+that global cache is ever cleared, every run dies at `ModelResolutionError` with no recovery
+path. The project depends on a global file it does not own and cannot rebuild.
+
+*Recommendation:* set `refreshOnCreate: false` to match the comment. Given
+`allowModelNetwork: false` it changes nothing functional and removes both side effects from
+the global directory.
+
+### D23 · Token accounting is available and was wrongly assumed absent
+
+`cli/benchmark.ts:87` states "The SDK exposes no reliable per-run token or cost total here,
+so this is not guessed" and hardcodes `"N/A"`. That is false for pi 0.85.1, which exposes
+`SessionEntry.usage`, exports `getLastAssistantUsage`, and ships
+`getUsageCostBreakdown(entries)` — grouping attributable cost **by model**, which is exactly
+what the benchmark table's permanently-empty Cost column wants. The project already holds
+the session before `dispose()`. This is a straightforward fix, not an SDK limitation, and it
+matters disproportionately: **cost is the signal that would reveal a chain silently running
+on the wrong model** (D10).
+
+### Revised P0
+
+The priority list in §17 stands, with two insertions and one promotion:
+
+- **P0-1** now also covers **D16** (the `TypeError` → `FAIL` classifier ordering) and
+  **D21** (the unvalidated `experiment` path in `rmSync`). D16 in particular is a one-line
+  reordering that converts a hard run failure into the retry-and-fallback the chain was built
+  for — it belongs ahead of everything else in this document on cost-to-benefit.
+- **P0-6 · Fix the structured-fact anchoring (D15).** Without it the numeric layer is dead,
+  FRED is decorative, and claim-level grounding cannot be built. **Low** complexity: give
+  CoinGecko and FRED an anchoring item, or relax the filter to accept facts anchored to an
+  item already in the store rather than only to one collected in the same run.
+- **P1-10 · Make a missing `DATABASE_URL` fatal in CI (D17), and wire the evaluator against
+  `eval/gold/` with thresholds into the suite (D18).** Until then, "the tests pass" carries
+  less information than it appears to.
+
+Also worth folding into P0-2 when the GitHub collector is touched: D20's permanent
+re-stamping of old tags, and `github.ts:224`, where `fetchConditional`'s first attempt bypasses
+the timeout, the token bucket and the request budget entirely — the budget is consumed only
+in the `catch`.
+
+*Addendum prepared the same day, after a second and deeper pass. Still no production code,
+prompt, threshold or schema was modified.*
