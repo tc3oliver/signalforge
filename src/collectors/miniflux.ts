@@ -1,27 +1,4 @@
-import { fetchWithRetry, TokenBucket } from "./http.ts";
-
-/**
- * Thin per-collector adapter over the shared fetchWithRetry/TokenBucket
- * primitives in ./http.ts (owned by another agent) — gives call sites a
- * small get(url) surface instead of threading bucket/signal through each one.
- */
-function createHttpClient(
-	fetchImpl: typeof fetch,
-	opts: { timeoutMs?: number; retries?: number; rateLimit?: { perSecond: number }; headers?: Record<string, string>; signal?: AbortSignal },
-) {
-	const bucket = opts.rateLimit
-		? new TokenBucket({ capacity: Math.max(1, Math.ceil(opts.rateLimit.perSecond)), refillPerSecond: opts.rateLimit.perSecond })
-		: undefined;
-	return {
-		async get(url: string, extra?: { headers?: Record<string, string> }): Promise<Response> {
-			return fetchWithRetry(
-				url,
-				{ method: "GET", headers: { ...opts.headers, ...extra?.headers } },
-				{ fetchImpl, timeoutMs: opts.timeoutMs, maxAttempts: opts.retries, signal: opts.signal, bucket },
-			);
-		},
-	};
-}
+import { HttpError, TokenBucket, fetchWithRetry } from "./http.ts";
 import type { Collector, CollectorContext, CollectorResult, CollectedItem } from "./types.ts";
 import { UNTRUSTED_EXTERNAL_CONTENT } from "./types.ts";
 
@@ -52,15 +29,17 @@ function parseCursor(raw: string | undefined): number | undefined {
 export const minifluxCollector: Collector = {
 	id: "miniflux",
 	sourceType: "rss",
-	requiredSecrets: ["MINIFLUX_URL", "MINIFLUX_API_KEY"],
+	// The instance URL is operational config (config/sources.yaml's baseUrl for the
+	// "rss" source), not a credential; only the API key is a secret.
+	requiredSecrets: ["MINIFLUX_API_KEY"],
 
 	async check(ctx: CollectorContext) {
-		const hasUrl = await ctx.hasSecret("MINIFLUX_URL");
+		const hasUrl = Boolean(ctx.sourceConfig.baseUrl);
 		const hasKey = await ctx.hasSecret("MINIFLUX_API_KEY");
 		if (!hasUrl || !hasKey) {
-			return { ok: false, detail: "MINIFLUX_URL and MINIFLUX_API_KEY are both required and not fully configured" };
+			return { ok: false, detail: "a baseUrl and MINIFLUX_API_KEY are both required and not fully configured" };
 		}
-		return { ok: true, detail: "MINIFLUX_URL and MINIFLUX_API_KEY present" };
+		return { ok: true, detail: "baseUrl and MINIFLUX_API_KEY present" };
 	},
 
 	async collect(ctx: CollectorContext): Promise<CollectorResult> {
@@ -69,7 +48,7 @@ export const minifluxCollector: Collector = {
 		const warnings: string[] = [];
 		let itemsFetched = 0;
 
-		const hasUrl = await ctx.hasSecret("MINIFLUX_URL");
+		const hasUrl = Boolean(ctx.sourceConfig.baseUrl);
 		const hasKey = await ctx.hasSecret("MINIFLUX_API_KEY");
 		if (!hasUrl || !hasKey) {
 			const finishedAt = ctx.now().toISOString();
@@ -80,22 +59,22 @@ export const minifluxCollector: Collector = {
 				facts: [],
 				itemsFetched: 0,
 				warnings: [],
-				error: "MINIFLUX_URL and MINIFLUX_API_KEY are both required and not fully configured",
+				error: "a baseUrl and MINIFLUX_API_KEY are both required and not fully configured",
 				startedAt,
 				finishedAt,
 				latencyMs: 0,
 			};
 		}
 
-		const baseUrl = (await ctx.secret("MINIFLUX_URL")).replace(/\/$/, "");
+		const baseUrl = (ctx.sourceConfig.baseUrl as string).replace(/\/$/, "");
 		const apiKey = await ctx.secret("MINIFLUX_API_KEY");
-		const client = createHttpClient(ctx.fetch, {
-			timeoutMs: 15_000,
-			retries: 3,
-			rateLimit: { perSecond: 5 },
-			headers: { "X-Auth-Token": apiKey },
-			signal: ctx.signal,
-		});
+		const bucket = new TokenBucket({ capacity: 5, refillPerSecond: 5 });
+		const get = (url: string) =>
+			fetchWithRetry(
+				url,
+				{ headers: { "X-Auth-Token": apiKey } },
+				{ fetchImpl: ctx.fetch, timeoutMs: 15_000, maxAttempts: 3, signal: ctx.signal, bucket },
+			);
 
 		const startAfterId = parseCursor(ctx.cursor);
 		let maxSeenId = startAfterId ?? 0;
@@ -115,11 +94,7 @@ export const minifluxCollector: Collector = {
 
 			const url = `${baseUrl}/v1/entries?${params.toString()}`;
 			try {
-				const res = await client.get(url);
-				if (!res.ok) {
-					warnings.push(`entries request returned ${res.status} at offset ${offset}`);
-					break;
-				}
+				const res = await get(url);
 				const body = (await res.json()) as MinifluxEntriesResponse;
 				if (typeof body.total !== "number" || !Array.isArray(body.entries)) {
 					warnings.push(`malformed entries payload at offset ${offset}`);
@@ -155,7 +130,11 @@ export const minifluxCollector: Collector = {
 				if (body.entries.length === 0) break;
 				offset += PAGE_LIMIT;
 			} catch (err) {
-				warnings.push(`entries request failed at offset ${offset}: ${(err as Error).message}`);
+				warnings.push(
+					err instanceof HttpError
+						? `entries request returned ${err.status} at offset ${offset}`
+						: `entries request failed at offset ${offset}: ${(err as Error).message}`,
+				);
 				break;
 			}
 		}

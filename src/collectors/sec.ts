@@ -1,36 +1,6 @@
-import { fetchWithRetry, TokenBucket } from "./http.ts";
-
-/**
- * Thin per-collector adapter over the shared fetchWithRetry/TokenBucket
- * primitives in ./http.ts (owned by another agent) — gives call sites a
- * small get(url) surface instead of threading bucket/signal through each one.
- */
-function createHttpClient(
-	fetchImpl: typeof fetch,
-	opts: { timeoutMs?: number; retries?: number; rateLimit?: { perSecond: number }; headers?: Record<string, string>; signal?: AbortSignal },
-) {
-	const bucket = opts.rateLimit
-		? new TokenBucket({ capacity: Math.max(1, Math.ceil(opts.rateLimit.perSecond)), refillPerSecond: opts.rateLimit.perSecond })
-		: undefined;
-	return {
-		async get(url: string, extra?: { headers?: Record<string, string> }): Promise<Response> {
-			return fetchWithRetry(
-				url,
-				{ method: "GET", headers: { ...opts.headers, ...extra?.headers } },
-				{ fetchImpl, timeoutMs: opts.timeoutMs, maxAttempts: opts.retries, signal: opts.signal, bucket },
-			);
-		},
-	};
-}
+import { HttpError, TokenBucket, fetchWithRetry } from "./http.ts";
 import type { Collector, CollectorContext, CollectorResult, CollectedItem, CollectedFact } from "./types.ts";
 import { UNTRUSTED_EXTERNAL_CONTENT } from "./types.ts";
-
-/** Watchlist of CIKs (zero-padded to 10 digits, as SEC requires) to poll. */
-const WATCHLIST: { cik: string; name: string }[] = [
-	{ cik: "0000320193", name: "Apple Inc." },
-	{ cik: "0000789019", name: "Microsoft Corp." },
-	{ cik: "0001652044", name: "Alphabet Inc." },
-];
 
 const TRACKED_FORMS = new Set(["8-K", "10-Q", "10-K", "S-3", "424B", "4"]);
 
@@ -57,11 +27,13 @@ interface SubmissionsResponse {
 export const secCollector: Collector = {
 	id: "sec",
 	sourceType: "sec",
-	requiredSecrets: ["SEC_USER_AGENT"],
+	// SEC's contact User-Agent is mandated by their policy but is not a credential
+	// (it's a public, loggable string); it comes through ctx.config, not ctx.secret.
+	requiredSecrets: [],
 
 	async check(ctx: CollectorContext) {
-		const hasUa = await ctx.hasSecret("SEC_USER_AGENT");
-		if (!hasUa) {
+		const userAgent = await ctx.config("SEC_USER_AGENT");
+		if (!userAgent) {
 			return { ok: false, detail: "SEC_USER_AGENT is required (SEC policy mandates a descriptive contact UA)" };
 		}
 		return { ok: true, detail: "SEC_USER_AGENT present" };
@@ -74,8 +46,8 @@ export const secCollector: Collector = {
 		const warnings: string[] = [];
 		let itemsFetched = 0;
 
-		const hasUa = await ctx.hasSecret("SEC_USER_AGENT");
-		if (!hasUa) {
+		const userAgent = await ctx.config("SEC_USER_AGENT");
+		if (!userAgent) {
 			const finishedAt = ctx.now().toISOString();
 			return {
 				collectorId: "sec",
@@ -91,27 +63,24 @@ export const secCollector: Collector = {
 			};
 		}
 
-		const userAgent = await ctx.secret("SEC_USER_AGENT");
 		// SEC's stated limit is 10 req/sec across all their endpoints.
-		const client = createHttpClient(ctx.fetch, {
-			timeoutMs: 15_000,
-			retries: 3,
-			rateLimit: { perSecond: 10 },
-			headers: { "User-Agent": userAgent },
-			signal: ctx.signal,
-		});
+		const bucket = new TokenBucket({ capacity: 10, refillPerSecond: 10 });
+		const headers = { "User-Agent": userAgent };
 
 		let health: "OK" | "DEGRADED" | "FAILED" = "OK";
 		const sinceIso = ctx.since.toISOString().slice(0, 10);
 
-		for (const company of WATCHLIST) {
+		// Only companies with a looked-up CIK can be polled; a null CIK is a
+		// documented gap in the watchlist, not a collection failure.
+		const companies = ctx.watchlists.sec_companies.filter((c): c is typeof c & { cik: string } => c.cik !== null);
+		const skipped = ctx.watchlists.sec_companies.length - companies.length;
+		if (skipped > 0) warnings.push(`${skipped} watchlisted compan${skipped === 1 ? "y has" : "ies have"} no CIK on file, skipped`);
+		if (ctx.watchlists.sec_companies.length === 0) warnings.push("no SEC companies configured");
+
+		for (const company of companies) {
 			const url = `https://data.sec.gov/submissions/CIK${company.cik}.json`;
 			try {
-				const res = await client.get(url);
-				if (!res.ok) {
-					warnings.push(`${company.name} (${company.cik}) returned ${res.status}`);
-					continue;
-				}
+				const res = await fetchWithRetry(url, { headers }, { fetchImpl: ctx.fetch, timeoutMs: 15_000, maxAttempts: 3, signal: ctx.signal, bucket });
 				const body = (await res.json()) as SubmissionsResponse;
 				const recent = body.filings?.recent;
 				if (!recent || !Array.isArray(recent.form) || !Array.isArray(recent.filingDate)) {
@@ -165,7 +134,11 @@ export const secCollector: Collector = {
 					});
 				}
 			} catch (err) {
-				warnings.push(`${company.name} (${company.cik}) request failed: ${(err as Error).message}`);
+				if (err instanceof HttpError) {
+					warnings.push(`${company.name} (${company.cik}) returned ${err.status}`);
+				} else {
+					warnings.push(`${company.name} (${company.cik}) request failed: ${(err as Error).message}`);
+				}
 			}
 		}
 

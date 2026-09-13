@@ -2,12 +2,17 @@ import { z } from "zod";
 
 export const RunStatus = z.enum([
 	"CREATED",
+	"COLLECTING",
+	"COLLECTED",
 	"CURATING",
 	"MATERIALS_READY",
 	"WRITING",
 	"DRAFT_READY",
 	"VALIDATING",
+	"PUBLISHED",
+	// Kept for back-compat with rows/readers written before PUBLISHED existed.
 	"COMPLETED",
+	"COLLECTION_FAILED",
 	"CURATION_FAILED",
 	"EDITOR_FAILED",
 	"VALIDATION_FAILED",
@@ -82,6 +87,12 @@ export const RunState = z
 		processedItems: z.number(),
 		storyCount: z.number(),
 		failureReason: z.string().optional(),
+		/**
+		 * Orthogonal to `status`: non-null means the run is DEGRADED (e.g. one
+		 * collector failed) *and* says why, independent of whether it still
+		 * reached PUBLISHED. Null/absent means healthy.
+		 */
+		degradedReason: z.string().optional(),
 	})
 	.strict();
 export type RunState = z.infer<typeof RunState>;

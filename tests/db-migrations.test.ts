@@ -67,4 +67,41 @@ describe.skipIf(!probe.available)("migrations", () => {
 		expect(second.applied).toEqual([]);
 		expect(second.skipped).toEqual(loadMigrations().map((f) => f.name));
 	});
+
+	it("daily_runs.status accepts the full production state machine", async () => {
+		const states = [
+			"CREATED", "COLLECTING", "COLLECTED", "CURATING", "MATERIALS_READY", "WRITING",
+			"DRAFT_READY", "VALIDATING", "PUBLISHED",
+			"COLLECTION_FAILED", "CURATION_FAILED", "EDITOR_FAILED", "VALIDATION_FAILED",
+		];
+		for (const status of states) {
+			const runId = `status-check-${status}`;
+			await sql`
+				insert into daily_runs (run_id, date, status)
+				values (${runId}, '2026-09-13', ${status})
+				on conflict (run_id) do update set status = excluded.status
+			`;
+		}
+		const rows = await sql<{ status: string }[]>`
+			select status from daily_runs where run_id like 'status-check-%'
+		`;
+		expect(rows.map((r) => r.status).sort()).toEqual([...states].sort());
+	});
+
+	it("rejects a status outside the allowed state machine", async () => {
+		await expect(
+			sql`insert into daily_runs (run_id, date, status) values ('status-check-bogus', '2026-09-13', 'NOT_A_REAL_STATE')`,
+		).rejects.toThrow();
+	});
+
+	it("daily_runs.degraded_reason is nullable and independent of status", async () => {
+		await sql`
+			insert into daily_runs (run_id, date, status, degraded_reason)
+			values ('status-check-degraded', '2026-09-13', 'PUBLISHED', 'Reddit unavailable')
+		`;
+		const [row] = await sql<{ degraded_reason: string | null }[]>`
+			select degraded_reason from daily_runs where run_id = 'status-check-degraded'
+		`;
+		expect(row?.degraded_reason).toBe("Reddit unavailable");
+	});
 });

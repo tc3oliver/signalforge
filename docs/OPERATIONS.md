@@ -70,6 +70,16 @@ instance runs in OrbStack via this repo's `compose.yaml`), written to
 `backups/` **inside the repo**, never to `/Volumes/Data` — a scheduled
 LaunchAgent cannot reliably reach an external volume on this machine.
 
+`pg_dump`/`psql`/`createdb` all run **inside** the `daily-intelligence-postgres`
+container via `docker exec` — there is no Postgres client on this host, and
+running inside the container also guarantees the client version always
+matches the server. Both scripts refuse to run (with the exact
+`docker compose -p daily-intelligence up -d` command to fix it) if that
+container isn't up, and every `docker` call is scoped to it by name — this
+machine also runs other unrelated stacks (miniflux, bark, gemini-balance,
+shopmaster, tesla-tv-hub) in the same Docker engine that must never be
+reachable from these scripts.
+
 ```sh
 ./scripts/backup-db.sh
 ```

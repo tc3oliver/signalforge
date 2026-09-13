@@ -1,5 +1,3 @@
-import { readFile } from "node:fs/promises";
-import { parse as parseYaml } from "yaml";
 import type { Collector, CollectorContext, CollectorResult } from "./types.ts";
 import { CollectedItem } from "./types.ts";
 import { HttpError, RequestBudget, TokenBucket, fetchWithRetry } from "./http.ts";
@@ -72,27 +70,11 @@ function parseCursor(raw: string | undefined): GithubCursor {
 	return {};
 }
 
-let cachedRepos: string[] | undefined;
-
-/** Reads the watched-repo list from config/watchlists.yaml. Read-only; that file is owned by another agent. */
-async function loadWatchedRepos(): Promise<string[]> {
-	if (cachedRepos) return cachedRepos;
-	try {
-		const raw = await readFile(new URL("../../config/watchlists.yaml", import.meta.url), "utf8");
-		const parsed = parseYaml(raw) as { github_repos?: unknown };
-		const repos = Array.isArray(parsed.github_repos) ? parsed.github_repos.filter((r): r is string => typeof r === "string") : [];
-		cachedRepos = repos;
-		return repos;
-	} catch {
-		cachedRepos = [];
-		return [];
-	}
-}
-
 export class GitHubCollector implements Collector {
 	readonly id = "github";
 	readonly sourceType = "github" as const;
 	readonly requiredSecrets: readonly string[] = [];
+	/** Explicit override, used by tests for hermetic fixtures; production defaults to ctx.watchlists.github_repos. */
 	#repos?: string[];
 
 	constructor(opts?: { repos?: string[] }) {
@@ -123,7 +105,7 @@ export class GitHubCollector implements Collector {
 		};
 		if (token) headers["authorization"] = `Bearer ${token}`;
 
-		const repos = this.#repos ?? (await loadWatchedRepos());
+		const repos = this.#repos ?? ctx.watchlists.github_repos;
 		let health: CollectorResult["health"] = "OK";
 		let error: string | undefined;
 		let sawRateLimit = false;

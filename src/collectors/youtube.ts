@@ -1,35 +1,12 @@
-import { fetchWithRetry, TokenBucket } from "./http.ts";
-
-/**
- * Thin per-collector adapter over the shared fetchWithRetry/TokenBucket
- * primitives in ./http.ts (owned by another agent) — gives call sites a
- * small get(url) surface instead of threading bucket/signal through each one.
- */
-function createHttpClient(
-	fetchImpl: typeof fetch,
-	opts: { timeoutMs?: number; retries?: number; rateLimit?: { perSecond: number }; headers?: Record<string, string>; signal?: AbortSignal },
-) {
-	const bucket = opts.rateLimit
-		? new TokenBucket({ capacity: Math.max(1, Math.ceil(opts.rateLimit.perSecond)), refillPerSecond: opts.rateLimit.perSecond })
-		: undefined;
-	return {
-		async get(url: string, extra?: { headers?: Record<string, string> }): Promise<Response> {
-			return fetchWithRetry(
-				url,
-				{ method: "GET", headers: { ...opts.headers, ...extra?.headers } },
-				{ fetchImpl, timeoutMs: opts.timeoutMs, maxAttempts: opts.retries, signal: opts.signal, bucket },
-			);
-		},
-	};
-}
+import { HttpError, TokenBucket, fetchWithRetry } from "./http.ts";
 import type { Collector, CollectorContext, CollectorResult, CollectedItem } from "./types.ts";
 import { UNTRUSTED_EXTERNAL_CONTENT } from "./types.ts";
 
-/** Channels polled via RSS (no key needed) and queries used for Data API discovery (key required). */
-const CHANNELS: { id: string; name: string }[] = [
-	{ id: "UCbY9xX3_jW5c5aH7C6-Y7Hg", name: "Anthropic" },
-	{ id: "UCZaT_X_mc0BI-djXOlfhqWQ", name: "Two Minute Papers" },
-];
+/**
+ * Queries used for Data API discovery (key required). Channels come from
+ * config/watchlists.yaml (ctx.watchlists.youtube_channels) as channel ids; there
+ * is no schema field for discovery queries yet, so this stays a documented default.
+ */
 const DISCOVERY_QUERIES = ["claude code", "local llm inference"];
 
 /** YouTube Data API takes the key as a query param; never let it reach a log or raw payload. */
@@ -73,26 +50,21 @@ export const youtubeCollector: Collector = {
 		const warnings: string[] = [];
 		let itemsFetched = 0;
 
-		const client = createHttpClient(ctx.fetch, {
-			timeoutMs: 15_000,
-			retries: 3,
-			rateLimit: { perSecond: 2 },
-			signal: ctx.signal,
-		});
+		const channelIds = ctx.watchlists.youtube_channels;
+		const bucket = new TokenBucket({ capacity: 2, refillPerSecond: 2 });
+		const get = (url: string) => fetchWithRetry(url, {}, { fetchImpl: ctx.fetch, timeoutMs: 15_000, maxAttempts: 3, signal: ctx.signal, bucket });
+
+		if (channelIds.length === 0) warnings.push("no YouTube channels configured");
 
 		// --- RSS per channel: no key required, always attempted ---
-		for (const channel of CHANNELS) {
-			const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${channel.id}`;
+		for (const channelId of channelIds) {
+			const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
 			try {
-				const res = await client.get(url);
-				if (!res.ok) {
-					warnings.push(`RSS for ${channel.name} returned ${res.status}`);
-					continue;
-				}
+				const res = await get(url);
 				const xml = await res.text();
 				const entries = parseAtomFeed(xml);
 				if (entries.length === 0) {
-					warnings.push(`RSS for ${channel.name}: no parsable entries (possibly malformed feed)`);
+					warnings.push(`RSS for ${channelId}: no parsable entries (possibly malformed feed)`);
 					continue;
 				}
 				const fetchedAt = ctx.now().toISOString();
@@ -101,20 +73,22 @@ export const youtubeCollector: Collector = {
 					const externalId = `youtube-${entry.id}`;
 					items.push({
 						sourceType: "youtube",
-						sourceName: `YouTube: ${channel.name}`,
+						sourceName: `YouTube: ${entry.author ?? channelId}`,
 						externalId,
 						title: entry.title,
 						summary: entry.title,
 						url: entry.link ?? `https://www.youtube.com/watch?v=${entry.id}`,
-						author: entry.author ?? channel.name,
+						author: entry.author ?? channelId,
 						publishedAt: entry.published ?? fetchedAt,
-						metadata: { channelId: channel.id },
+						metadata: { channelId },
 						trust: UNTRUSTED_EXTERNAL_CONTENT,
 						raw: { externalId, body: entry, fetchedAt },
 					});
 				}
 			} catch (err) {
-				warnings.push(`RSS for ${channel.name} request failed: ${(err as Error).message}`);
+				warnings.push(
+					err instanceof HttpError ? `RSS for ${channelId} returned ${err.status}` : `RSS for ${channelId} request failed: ${(err as Error).message}`,
+				);
 			}
 		}
 
@@ -127,11 +101,7 @@ export const youtubeCollector: Collector = {
 					query,
 				)}&key=${apiKey}`;
 				try {
-					const res = await client.get(url);
-					if (!res.ok) {
-						warnings.push(`Data API search "${query}" returned ${res.status} for ${redactUrl(url)}`);
-						continue;
-					}
+					const res = await get(url);
 					const body = (await res.json()) as {
 						items?: { id?: { videoId?: string }; snippet?: { title?: string; channelTitle?: string; publishedAt?: string; description?: string } }[];
 					};
@@ -165,7 +135,11 @@ export const youtubeCollector: Collector = {
 						});
 					}
 				} catch (err) {
-					warnings.push(`Data API search "${query}" request failed: ${(err as Error).message}`);
+					warnings.push(
+						err instanceof HttpError
+							? `Data API search "${query}" returned ${err.status} for ${redactUrl(url)}`
+							: `Data API search "${query}" request failed: ${(err as Error).message}`,
+					);
 				}
 			}
 		}

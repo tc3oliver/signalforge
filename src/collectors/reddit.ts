@@ -1,32 +1,12 @@
-import { fetchWithRetry, TokenBucket } from "./http.ts";
-
-/**
- * Thin per-collector adapter over the shared fetchWithRetry/TokenBucket
- * primitives in ./http.ts (owned by another agent) — gives call sites a
- * small get(url) surface instead of threading bucket/signal through each one.
- */
-function createHttpClient(
-	fetchImpl: typeof fetch,
-	opts: { timeoutMs?: number; retries?: number; rateLimit?: { perSecond: number }; headers?: Record<string, string>; signal?: AbortSignal },
-) {
-	const bucket = opts.rateLimit
-		? new TokenBucket({ capacity: Math.max(1, Math.ceil(opts.rateLimit.perSecond)), refillPerSecond: opts.rateLimit.perSecond })
-		: undefined;
-	return {
-		async get(url: string, extra?: { headers?: Record<string, string> }): Promise<Response> {
-			return fetchWithRetry(
-				url,
-				{ method: "GET", headers: { ...opts.headers, ...extra?.headers } },
-				{ fetchImpl, timeoutMs: opts.timeoutMs, maxAttempts: opts.retries, signal: opts.signal, bucket },
-			);
-		},
-	};
-}
+import { HttpError, TokenBucket, fetchWithRetry } from "./http.ts";
 import type { Collector, CollectorContext, CollectorResult, CollectedItem } from "./types.ts";
 import { UNTRUSTED_EXTERNAL_CONTENT } from "./types.ts";
 
-/** Subreddits and keyword searches tracked by default. */
-const SUBREDDITS = ["LocalLLaMA", "MachineLearning", "singularity"];
+/**
+ * Keyword searches tracked by default. Subreddits come from config/watchlists.yaml
+ * (ctx.watchlists.subreddits); there is no schema field for keyword searches yet,
+ * so this stays a documented default.
+ */
 const SEARCH_QUERIES = ["claude code", "mcp server"];
 
 const DEFAULT_USER_AGENT = "daily-intelligence/0.1 (personal reading digest; contact via repo owner)";
@@ -51,7 +31,6 @@ interface RedditListing {
 }
 
 async function fetchOAuthToken(
-	client: { get(url: string, o?: unknown): Promise<Response> },
 	fetchImpl: typeof fetch,
 	clientId: string,
 	clientSecret: string,
@@ -111,17 +90,14 @@ export const redditCollector: Collector = {
 		const warnings: string[] = [];
 		let itemsFetched = 0;
 
+		const subreddits = ctx.watchlists.subreddits;
 		const hasClientId = await ctx.hasSecret("REDDIT_CLIENT_ID");
 		const hasClientSecret = await ctx.hasSecret("REDDIT_CLIENT_SECRET");
 		const useOAuth = hasClientId && hasClientSecret;
 
-		const client = createHttpClient(ctx.fetch, {
-			timeoutMs: 15_000,
-			retries: 3,
-			rateLimit: { perSecond: useOAuth ? 1 : 0.5 },
-			headers: { "User-Agent": DEFAULT_USER_AGENT },
-			signal: ctx.signal,
-		});
+		const bucket = new TokenBucket({ capacity: 1, refillPerSecond: useOAuth ? 1 : 0.5 });
+		const get = (url: string, headers: Record<string, string>) =>
+			fetchWithRetry(url, { headers }, { fetchImpl: ctx.fetch, timeoutMs: 15_000, maxAttempts: 3, signal: ctx.signal, bucket });
 
 		let token: string | undefined;
 		let health: "OK" | "DEGRADED" | "FAILED" = "OK";
@@ -129,7 +105,6 @@ export const redditCollector: Collector = {
 		if (useOAuth) {
 			try {
 				token = await fetchOAuthToken(
-					client,
 					ctx.fetch,
 					await ctx.secret("REDDIT_CLIENT_ID"),
 					await ctx.secret("REDDIT_CLIENT_SECRET"),
@@ -144,14 +119,12 @@ export const redditCollector: Collector = {
 		const base = token ? "https://oauth.reddit.com" : "https://www.reddit.com";
 		const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
-		for (const subreddit of SUBREDDITS) {
+		if (subreddits.length === 0) warnings.push("no subreddits configured");
+
+		for (const subreddit of subreddits) {
 			const url = `${base}/r/${subreddit}/new.json?limit=25`;
 			try {
-				const res = await client.get(url, { headers: { ...authHeaders, "User-Agent": DEFAULT_USER_AGENT } });
-				if (!res.ok) {
-					warnings.push(`r/${subreddit} returned ${res.status}`);
-					continue;
-				}
+				const res = await get(url, { ...authHeaders, "User-Agent": DEFAULT_USER_AGENT });
 				const body = (await res.json()) as RedditListing;
 				const children = body.data?.children;
 				if (!Array.isArray(children)) {
@@ -168,18 +141,16 @@ export const redditCollector: Collector = {
 					items.push(item);
 				}
 			} catch (err) {
-				warnings.push(`r/${subreddit} request failed: ${(err as Error).message}`);
+				warnings.push(
+					err instanceof HttpError ? `r/${subreddit} returned ${err.status}` : `r/${subreddit} request failed: ${(err as Error).message}`,
+				);
 			}
 		}
 
 		for (const query of SEARCH_QUERIES) {
 			const url = `${base}/search.json?q=${encodeURIComponent(query)}&sort=new&limit=25`;
 			try {
-				const res = await client.get(url, { headers: { ...authHeaders, "User-Agent": DEFAULT_USER_AGENT } });
-				if (!res.ok) {
-					warnings.push(`search "${query}" returned ${res.status}`);
-					continue;
-				}
+				const res = await get(url, { ...authHeaders, "User-Agent": DEFAULT_USER_AGENT });
 				const body = (await res.json()) as RedditListing;
 				const children = body.data?.children;
 				if (!Array.isArray(children)) {
@@ -196,7 +167,9 @@ export const redditCollector: Collector = {
 					items.push(item);
 				}
 			} catch (err) {
-				warnings.push(`search "${query}" request failed: ${(err as Error).message}`);
+				warnings.push(
+					err instanceof HttpError ? `search "${query}" returned ${err.status}` : `search "${query}" request failed: ${(err as Error).message}`,
+				);
 			}
 		}
 

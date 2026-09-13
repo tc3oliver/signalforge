@@ -11,18 +11,20 @@ export async function upsertRun(
 ): Promise<void> {
 	await sql.unsafe(
 		`insert into daily_runs (run_id, lineage, date, status, total_items, processed_items,
-			story_count, failure_reason, created_at, updated_at)
-		 values ($1,$2,$3,$4,$5,$6,$7,$8,$9::timestamptz,$10::timestamptz)
+			story_count, failure_reason, degraded_reason, created_at, updated_at)
+		 values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::timestamptz,$11::timestamptz)
 		 on conflict (run_id) do update set
 			status = excluded.status,
 			total_items = excluded.total_items,
 			processed_items = excluded.processed_items,
 			story_count = excluded.story_count,
 			failure_reason = excluded.failure_reason,
+			degraded_reason = excluded.degraded_reason,
 			updated_at = excluded.updated_at`,
 		[
 			run.runId, lineage, run.date, run.status, run.totalItems, run.processedItems,
-			run.storyCount, run.failureReason ?? null, run.createdAt, run.updatedAt,
+			run.storyCount, run.failureReason ?? null, run.degradedReason ?? null,
+			run.createdAt, run.updatedAt,
 		],
 	);
 }

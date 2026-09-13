@@ -119,8 +119,15 @@ considering `--force`:
 
 ```sh
 ./scripts/restore-db.sh --file backups/<name>.sql.gz
-psql --dbname <PGDATABASE>_restore_test -c 'select count(*) from stories;'   # sanity check, adjust to actual schema
+docker exec daily-intelligence-postgres sh -c \
+	'psql -U "$POSTGRES_USER" -d daily_intelligence_restore_test -c "select count(*) from schema_migrations;"'
 ```
+
+(`psql`/`createdb` run inside the container, same as the backup/restore scripts
+themselves — there is no Postgres client on the host. `--target` is
+deliberately omitted above: the restore guard only accepts the production
+name, with `--force`, the default scratch name shown here, or a name
+prefixed with `daily_intelligence_` — see docs/OPERATIONS.md.)
 
 Only restore over production (`--force`) as a deliberate, confirmed decision
 — never as an automated or scripted recovery step.
