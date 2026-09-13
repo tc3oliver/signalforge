@@ -1,0 +1,1365 @@
+{
+  "date": "2026-09-12",
+  "generatedAt": "2026-09-12T23:59:00.000Z",
+  "items": [
+    {
+      "id": "itm-20260912-0001",
+      "sourceType": "web",
+      "sourceName": "Weather Desk",
+      "title": "Unseasonably mild week ahead before a cold snap",
+      "summary": "Regional weather forecast.",
+      "url": "https://weatherdesk.example.com/unseasonably-mild-week-ahead-before-a-cold-snap",
+      "publishedAt": "2026-09-12T05:28:00.000Z",
+      "metadata": {
+        "author": "D. Moreau",
+        "wordCount": 1304
+      }
+    },
+    {
+      "id": "itm-20260912-0002",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Basalt licence screenshot looks fabricated",
+      "summary": "Front page discussion thread. A third thread repeats the licence claim and adds a screenshot that cannot be verified and does not name a version or a date.",
+      "url": "https://news.ycombinator.com/item?id=41269469",
+      "publishedAt": "2026-09-12T06:21:00.000Z",
+      "metadata": {
+        "score": 1155,
+        "commentCount": 377,
+        "hnId": 44256323,
+        "domain": "basalt.example.com"
+      }
+    },
+    {
+      "id": "itm-20260912-0003",
+      "sourceType": "reddit",
+      "sourceName": "r/gamedev",
+      "title": "Screenshot allegedly showing the Basalt v7 licence terms",
+      "summary": "Community thread in r/gamedev. A third thread repeats the licence claim and adds a screenshot that cannot be verified and does not name a version or a date.",
+      "url": "https://reddit.com/r/gamedev/comments/8tru/screenshot-allegedly-showing-the-basalt-v7-licen",
+      "publishedAt": "2026-09-12T06:21:00.000Z",
+      "metadata": {
+        "subreddit": "gamedev",
+        "upvotes": 8678,
+        "commentCount": 482,
+        "flair": "Question"
+      }
+    },
+    {
+      "id": "itm-20260912-0004",
+      "sourceType": "sec",
+      "sourceName": "SEC EDGAR",
+      "title": "Ashgrove Utilities Corp. Form 8-K, Item 8.01 dividend declaration",
+      "summary": "Filing text from EDGAR. Ashgrove Utilities filed an 8-K declaring a quarterly dividend of 0.44 dollars per share, payable next quarter to holders of record at month end.",
+      "content": "Filing text from EDGAR. Ashgrove Utilities filed an 8-K declaring a quarterly dividend of 0.44 dollars per share, payable next quarter to holders of record at month end.\n\nContext reported alongside the item is limited to what Ashgrove Utilities has said publicly so far.\n\nA dividend declaration in line with the prior quarter is administrative, not informative. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://sec.gov/Archives/edgar/data/1342925/ashgrove-utilities-corp-form-8-k-item-8-01-divid.htm",
+      "publishedAt": "2026-09-12T06:23:00.000Z",
+      "metadata": {
+        "cik": "1876896",
+        "formType": "8-K",
+        "ticker": "ASHG"
+      }
+    },
+    {
+      "id": "itm-20260912-0005",
+      "sourceType": "web",
+      "sourceName": "Keelson Bridge Newsroom",
+      "title": "Incident report: unauthorised minting on the destination chain",
+      "summary": "Keelson Bridge published this as a primary source document. An attacker replayed validator signatures from a deprecated message format to mint wrapped assets on the destination chain without a matching lock, draining roughly 190 million dollars over forty minutes.",
+      "content": "Keelson Bridge published this as a primary source document. An attacker replayed validator signatures from a deprecated message format to mint wrapped assets on the destination chain without a matching lock, draining roughly 190 million dollars over forty minutes.\n\nThe bridge is paused and one exchange has frozen 31 million dollars of the outflow.\n\nThe deprecated format was still accepted by the verifier contract, which is a decommissioning failure rather than a cryptographic one. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://keelsonbridgenewsroom.example.com/incident-report-unauthorised-minting-on-the-dest",
+      "publishedAt": "2026-09-12T06:32:00.000Z",
+      "metadata": {
+        "author": "Keelson Bridge Communications",
+        "wordCount": 1042
+      }
+    },
+    {
+      "id": "itm-20260912-0006",
+      "sourceType": "rss",
+      "sourceName": "The Information",
+      "title": "Meridian confirms the long-context model it would not discuss last week",
+      "summary": "Reporting from The Information. Meridian Labs published a model card for Meridian 3 Opus confirming a two-million-token context window, a 4x price reduction per output token against Meridian 2.5, and general availability in three regions.",
+      "content": "Reporting from The Information. Meridian Labs published a model card for Meridian 3 Opus confirming a two-million-token context window, a 4x price reduction per output token against Meridian 2.5, and general availability in three regions.\n\nThird-party long-context evaluations are not yet published, so quality at full context length remains unverified.\n\nThe rumour reported two days ago is now a primary-source fact, and the pricing move is the part the earlier coverage got wrong. Further reporting is expected as Meridian Labs and the affected downstream projects respond.",
+      "url": "https://theinformation.example.com/meridian-confirms-the-long-context-model-it-woul",
+      "publishedAt": "2026-09-12T06:38:00.000Z",
+      "metadata": {
+        "author": "M. Lindqvist",
+        "wordCount": 1661,
+        "section": "technology"
+      }
+    },
+    {
+      "id": "itm-20260912-0007",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "In-place pod resize is finally stable",
+      "summary": "Front page discussion thread. Kubernetes 1.36 promotes in-place pod vertical resize to stable, removes the in-tree cloud provider shims entirely, and deprecates the legacy endpoints API.",
+      "url": "https://news.ycombinator.com/item?id=41053306",
+      "publishedAt": "2026-09-12T06:39:00.000Z",
+      "metadata": {
+        "score": 642,
+        "commentCount": 616,
+        "hnId": 42110545,
+        "domain": "kubernetes.example.com"
+      }
+    },
+    {
+      "id": "itm-20260912-0008",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Dogecoin slips 2.60% in quiet trading",
+      "summary": "Dogecoin changed -2.60% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/dogecoin",
+      "publishedAt": "2026-09-12T06:42:00.000Z",
+      "metadata": {
+        "symbol": "DOGE",
+        "priceUsd": 0.1821,
+        "change24hPct": -2.6,
+        "marketCapUsd": 7662079164,
+        "volume24hUsd": 27387983543
+      }
+    },
+    {
+      "id": "itm-20260912-0009",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Avalanche edges up 0.40% in quiet trading",
+      "summary": "Avalanche changed 0.40% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/avalanche",
+      "publishedAt": "2026-09-12T06:45:00.000Z",
+      "metadata": {
+        "symbol": "AVAX",
+        "priceUsd": 32.88,
+        "change24hPct": 0.4,
+        "marketCapUsd": 459526560714,
+        "volume24hUsd": 37024541681
+      }
+    },
+    {
+      "id": "itm-20260912-0010",
+      "sourceType": "reddit",
+      "sourceName": "r/economics",
+      "title": "Two governors on the same day is not a coincidence",
+      "summary": "Community thread in r/economics. Two governors said in prepared remarks that the policy rate is likely to stay at its current level through at least the first quarter, explicitly citing the shelter deceleration in the morning's inflation data.",
+      "url": "https://reddit.com/r/economics/comments/ibi6/two-governors-on-the-same-day-is-not-a-coinciden",
+      "publishedAt": "2026-09-12T07:02:00.000Z",
+      "metadata": {
+        "subreddit": "economics",
+        "upvotes": 7517,
+        "commentCount": 559,
+        "flair": "News"
+      }
+    },
+    {
+      "id": "itm-20260912-0011",
+      "sourceType": "rss",
+      "sourceName": "SD Times",
+      "title": "Halyard 2.0: what is new for pipeline authors",
+      "summary": "Reporting from SD Times. Follow-on coverage summarises yesterday's release notes without new benchmarks, adoption numbers or migration reports from real deployments.",
+      "content": "Reporting from SD Times. Follow-on coverage summarises yesterday's release notes without new benchmarks, adoption numbers or migration reports from real deployments.\n\nContext reported alongside the item is limited to what Halyard has said publicly so far.\n\nNothing has changed about what Halyard 2.0 is or what upgrading costs. Further reporting is expected as Halyard and the affected downstream projects respond.",
+      "url": "https://sdtimes.example.com/halyard-2-0-what-is-new-for-pipeline-authors",
+      "publishedAt": "2026-09-12T07:11:00.000Z",
+      "metadata": {
+        "author": "J. Okonkwo",
+        "wordCount": 519,
+        "section": "business"
+      }
+    },
+    {
+      "id": "itm-20260912-0012",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Meridian 3 Opus is live, and the price cut is the real story",
+      "summary": "Front page discussion thread. Meridian Labs published a model card for Meridian 3 Opus confirming a two-million-token context window, a 4x price reduction per output token against Meridian 2.5, and general availability in three regions.",
+      "url": "https://news.ycombinator.com/item?id=42041742",
+      "publishedAt": "2026-09-12T07:45:00.000Z",
+      "metadata": {
+        "score": 1405,
+        "commentCount": 102,
+        "hnId": 44531023,
+        "domain": "meridianlabs.example.com"
+      }
+    },
+    {
+      "id": "itm-20260912-0013",
+      "sourceType": "reddit",
+      "sourceName": "r/kubernetes",
+      "title": "1.36 removed the in-tree providers and our upgrade plan just doubled",
+      "summary": "Community thread in r/kubernetes. Kubernetes 1.36 promotes in-place pod vertical resize to stable, removes the in-tree cloud provider shims entirely, and deprecates the legacy endpoints API.",
+      "url": "https://reddit.com/r/kubernetes/comments/j50j/1-36-removed-the-in-tree-providers-and-our-upgra",
+      "publishedAt": "2026-09-12T08:00:00.000Z",
+      "metadata": {
+        "subreddit": "kubernetes",
+        "upvotes": 3667,
+        "commentCount": 552,
+        "flair": "News"
+      }
+    },
+    {
+      "id": "itm-20260912-0014",
+      "sourceType": "reddit",
+      "sourceName": "r/investing",
+      "title": "Told you so: Corvid denies the Talos deal",
+      "summary": "Community thread in r/investing. Corvid Robotics issued a statement saying no acquisition agreement exists and that discussions with any counterparty ended in August, and the outlet that reported an imminent deal appended a correction.",
+      "url": "https://reddit.com/r/investing/comments/h9dj/told-you-so-corvid-denies-the-talos-deal",
+      "publishedAt": "2026-09-12T08:36:00.000Z",
+      "metadata": {
+        "subreddit": "investing",
+        "upvotes": 3570,
+        "commentCount": 651,
+        "flair": "Resource"
+      }
+    },
+    {
+      "id": "itm-20260912-0015",
+      "sourceType": "youtube",
+      "sourceName": "YouTube",
+      "title": "Cleaning a keyboard that has not been cleaned in four years",
+      "summary": "Satisfying cleaning video with no technical content.",
+      "url": "https://youtube.example.com/cleaning-a-keyboard-that-has-not-been-cleaned-in",
+      "publishedAt": "2026-09-12T08:48:00.000Z",
+      "metadata": {
+        "channel": "YouTube",
+        "viewCount": 748025,
+        "durationSec": 257
+      }
+    },
+    {
+      "id": "itm-20260912-0016",
+      "sourceType": "rss",
+      "sourceName": "Reuters",
+      "title": "Governors point to an extended hold",
+      "summary": "Reporting from Reuters. Two governors said in prepared remarks that the policy rate is likely to stay at its current level through at least the first quarter, explicitly citing the shelter deceleration in the morning's inflation data.",
+      "content": "Reporting from Reuters. Two governors said in prepared remarks that the policy rate is likely to stay at its current level through at least the first quarter, explicitly citing the shelter deceleration in the morning's inflation data.\n\nThe remarks are individual governor views, not a committee statement.\n\nThe explicit link to the data release converts the print from a data point into a policy signal for the next two meetings. Further reporting is expected as Reserve Board and the affected downstream projects respond.",
+      "url": "https://reuters.example.com/governors-point-to-an-extended-hold",
+      "publishedAt": "2026-09-12T08:54:00.000Z",
+      "metadata": {
+        "author": "T. Abadi",
+        "wordCount": 803,
+        "section": "markets"
+      }
+    },
+    {
+      "id": "itm-20260912-0017",
+      "sourceType": "web",
+      "sourceName": "Tessellate Newsroom",
+      "title": "Announcing the Tessellate T400 inference accelerator",
+      "summary": "Tessellate published this as a primary source document. Tessellate announced an inference accelerator with 6 terabytes per second of memory bandwidth and 288 gigabytes of capacity per package, shipping to cloud partners this quarter.",
+      "content": "Tessellate published this as a primary source document. Tessellate announced an inference accelerator with 6 terabytes per second of memory bandwidth and 288 gigabytes of capacity per package, shipping to cloud partners this quarter.\n\nIndependent benchmarks are not yet available and the announced price is per-package, not per-system.\n\nMemory bandwidth, not arithmetic, sets decode throughput, so a 1.7x bandwidth step translates almost directly into tokens per second. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://tessellatenewsroom.example.com/announcing-the-tessellate-t400-inference-acceler",
+      "publishedAt": "2026-09-12T08:56:00.000Z",
+      "metadata": {
+        "author": "Tessellate Communications",
+        "wordCount": 592
+      }
+    },
+    {
+      "id": "itm-20260912-0018",
+      "sourceType": "github",
+      "sourceName": "github.com/sable-data/sable-orm",
+      "title": "Release 6.2.4: fix connection release ordering, add batch>pool regression suite",
+      "summary": "Repository activity on sable-data/sable-orm. Sable ORM 6.2.4 restores the pre-6.2 connection release ordering, adds a regression test that runs batch sizes above pool size in CI, and ships a detection script that reports whether a database is missing rows.",
+      "content": "Repository activity on sable-data/sable-orm. Sable ORM 6.2.4 restores the pre-6.2 connection release ordering, adds a regression test that runs batch sizes above pool size in CI, and ships a detection script that reports whether a database is missing rows.\n\nThe maintainers published a post-mortem describing why the original change passed review.\n\nThe immediate risk is closed for anyone who upgrades, but affected teams still have to audit writes made while running 6.2.0 through 6.2.3. Further reporting is expected as Sable and the affected downstream projects respond.",
+      "url": "https://github.com/sable-data/sable-orm/issues/1537",
+      "publishedAt": "2026-09-12T09:03:00.000Z",
+      "metadata": {
+        "repo": "sable-data/sable-orm",
+        "number": 9329,
+        "stars": 13581,
+        "openIssues": 1380,
+        "labels": [
+          "needs-triage"
+        ],
+        "state": "open"
+      }
+    },
+    {
+      "id": "itm-20260912-0019",
+      "sourceType": "rss",
+      "sourceName": "Pet Corner",
+      "title": "Signs your cat is bored and what to do about it",
+      "summary": "Pet behaviour advice.",
+      "url": "https://petcorner.example.com/signs-your-cat-is-bored-and-what-to-do-about-it",
+      "publishedAt": "2026-09-12T09:12:00.000Z",
+      "metadata": {
+        "author": "P. Andersson",
+        "wordCount": 716
+      }
+    },
+    {
+      "id": "itm-20260912-0020",
+      "sourceType": "github",
+      "sourceName": "github.com/tessellate/tessellate-runtime",
+      "title": "tessellate-runtime: add T400 backend and bandwidth-aware kv cache layout",
+      "summary": "Repository activity on tessellate/tessellate-runtime. Tessellate announced an inference accelerator with 6 terabytes per second of memory bandwidth and 288 gigabytes of capacity per package, shipping to cloud partners this quarter.",
+      "content": "Repository activity on tessellate/tessellate-runtime. Tessellate announced an inference accelerator with 6 terabytes per second of memory bandwidth and 288 gigabytes of capacity per package, shipping to cloud partners this quarter.\n\nIndependent benchmarks are not yet available and the announced price is per-package, not per-system.\n\nMemory bandwidth, not arithmetic, sets decode throughput, so a 1.7x bandwidth step translates almost directly into tokens per second. Further reporting is expected as Tessellate and the affected downstream projects respond.",
+      "url": "https://github.com/tessellate/tessellate-runtime/issues/7769",
+      "publishedAt": "2026-09-12T09:24:00.000Z",
+      "metadata": {
+        "repo": "tessellate/tessellate-runtime",
+        "number": 2020,
+        "stars": 20350,
+        "openIssues": 547,
+        "labels": [
+          "needs-triage"
+        ],
+        "state": "closed"
+      }
+    },
+    {
+      "id": "itm-20260912-0021",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Show HN: I made a website that tells you if it is Tuesday",
+      "summary": "Single-purpose novelty site.",
+      "url": "https://hackernews.example.com/show-hn-i-made-a-website-that-tells-you-if-it-is",
+      "publishedAt": "2026-09-12T09:25:00.000Z",
+      "metadata": {
+        "score": 26,
+        "commentCount": 142,
+        "hnId": 44174765
+      }
+    },
+    {
+      "id": "itm-20260912-0022",
+      "sourceType": "rss",
+      "sourceName": "Culture Column",
+      "title": "The return of the very long album",
+      "summary": "Music criticism piece.",
+      "url": "https://culturecolumn.example.com/the-return-of-the-very-long-album",
+      "publishedAt": "2026-09-12T09:33:00.000Z",
+      "metadata": {
+        "author": "K. Mensah",
+        "wordCount": 339
+      }
+    },
+    {
+      "id": "itm-20260912-0023",
+      "sourceType": "reddit",
+      "sourceName": "r/devops",
+      "title": "Anyone actually migrated off YAML v1 yet? Asking for a Friday deploy",
+      "summary": "Community thread in r/devops. Follow-on coverage summarises yesterday's release notes without new benchmarks, adoption numbers or migration reports from real deployments.",
+      "url": "https://reddit.com/r/devops/comments/bwks/anyone-actually-migrated-off-yaml-v1-yet-asking-",
+      "publishedAt": "2026-09-12T09:46:00.000Z",
+      "metadata": {
+        "subreddit": "devops",
+        "upvotes": 6994,
+        "commentCount": 454,
+        "flair": "Question"
+      }
+    },
+    {
+      "id": "itm-20260912-0024",
+      "sourceType": "fred",
+      "sourceName": "FRED",
+      "title": "CPILFESL: Core CPI for All Urban Consumers, August 2026 release",
+      "summary": "Series release from the FRED economic data service. Core CPI rose 0.14% on the month and 2.4% year over year in August, below the 2.6% consensus, with shelter decelerating for a fourth consecutive month.",
+      "content": "Series release from the FRED economic data service. Core CPI rose 0.14% on the month and 2.4% year over year in August, below the 2.6% consensus, with shelter decelerating for a fourth consecutive month.\n\nHeadline CPI was 2.7% year over year; the goods component turned negative.\n\nA fourth month of shelter deceleration is the component that moves rate expectations, and futures repriced the next meeting within minutes. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://fred.stlouisfed.org/release?rid=495",
+      "publishedAt": "2026-09-12T10:00:00.000Z",
+      "metadata": {
+        "seriesId": "ICSA",
+        "releaseName": "Bureau of Labor Statistics scheduled release",
+        "frequency": "Monthly"
+      }
+    },
+    {
+      "id": "itm-20260912-0025",
+      "sourceType": "youtube",
+      "sourceName": "YouTube",
+      "title": "Walking through the 1-bit optimizer paper and its reproductions",
+      "summary": "Video explainer from Yannic Kilcher. The headline claim survives at the tested scale but the memory saving at frontier scale is roughly half what the abstract implies.",
+      "url": "https://youtube.com/watch?v=frkyxb",
+      "publishedAt": "2026-09-12T10:20:00.000Z",
+      "metadata": {
+        "channel": "Yannic Kilcher",
+        "viewCount": 381829,
+        "durationSec": 1817
+      }
+    },
+    {
+      "id": "itm-20260912-0026",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Bitcoin edges up 1.19% in quiet trading",
+      "summary": "Bitcoin changed 1.19% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/bitcoin",
+      "publishedAt": "2026-09-12T10:21:00.000Z",
+      "metadata": {
+        "symbol": "BTC",
+        "priceUsd": 72087.76,
+        "change24hPct": 1.19,
+        "marketCapUsd": 700702010852,
+        "volume24hUsd": 40308701803
+      }
+    },
+    {
+      "id": "itm-20260912-0027",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Chainlink edges up 0.43% in quiet trading",
+      "summary": "Chainlink changed 0.43% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/chainlink",
+      "publishedAt": "2026-09-12T10:30:00.000Z",
+      "metadata": {
+        "symbol": "LINK",
+        "priceUsd": 19.16,
+        "change24hPct": 0.43,
+        "marketCapUsd": 1167504387372,
+        "volume24hUsd": 26415601406
+      }
+    },
+    {
+      "id": "itm-20260912-0028",
+      "sourceType": "web",
+      "sourceName": "Corvid Robotics Newsroom",
+      "title": "Statement regarding market speculation",
+      "summary": "Corvid Robotics published this as a primary source document. Corvid Robotics issued a statement saying no acquisition agreement exists and that discussions with any counterparty ended in August, and the outlet that reported an imminent deal appended a correction.",
+      "content": "Corvid Robotics published this as a primary source document. Corvid Robotics issued a statement saying no acquisition agreement exists and that discussions with any counterparty ended in August, and the outlet that reported an imminent deal appended a correction.\n\nTalos Industrial declined to comment beyond confirming it is not in active discussions.\n\nThe primary-source statement reverses yesterday's leading report; the contradicting account was the accurate one. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://corvidroboticsnewsroom.example.com/statement-regarding-market-speculation",
+      "publishedAt": "2026-09-12T10:58:00.000Z",
+      "metadata": {
+        "author": "Corvid Robotics Communications",
+        "wordCount": 464
+      }
+    },
+    {
+      "id": "itm-20260912-0029",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Rates are on hold and the shelter component is the stated reason",
+      "summary": "Front page discussion thread. Two governors said in prepared remarks that the policy rate is likely to stay at its current level through at least the first quarter, explicitly citing the shelter deceleration in the morning's inflation data.",
+      "url": "https://news.ycombinator.com/item?id=44422859",
+      "publishedAt": "2026-09-12T11:16:00.000Z",
+      "metadata": {
+        "score": 345,
+        "commentCount": 267,
+        "hnId": 43562893,
+        "domain": "reserveboard.example.com"
+      }
+    },
+    {
+      "id": "itm-20260912-0030",
+      "sourceType": "github",
+      "sourceName": "github.com/keelson/keelson-contracts",
+      "title": "keelson-contracts: reject deprecated message format in verifier",
+      "summary": "Repository activity on keelson/keelson-contracts. An attacker replayed validator signatures from a deprecated message format to mint wrapped assets on the destination chain without a matching lock, draining roughly 190 million dollars over forty minutes.",
+      "content": "Repository activity on keelson/keelson-contracts. An attacker replayed validator signatures from a deprecated message format to mint wrapped assets on the destination chain without a matching lock, draining roughly 190 million dollars over forty minutes.\n\nThe bridge is paused and one exchange has frozen 31 million dollars of the outflow.\n\nThe deprecated format was still accepted by the verifier contract, which is a decommissioning failure rather than a cryptographic one. Further reporting is expected as Keelson Bridge and the affected downstream projects respond.",
+      "url": "https://github.com/keelson/keelson-contracts/issues/9317",
+      "publishedAt": "2026-09-12T11:36:00.000Z",
+      "metadata": {
+        "repo": "keelson/keelson-contracts",
+        "number": 7945,
+        "stars": 8101,
+        "openIssues": 1061,
+        "labels": [
+          "regression"
+        ],
+        "state": "open"
+      }
+    },
+    {
+      "id": "itm-20260912-0031",
+      "sourceType": "web",
+      "sourceName": "Local Bulletin",
+      "title": "Weekend market returns to the town square",
+      "summary": "Community events notice.",
+      "url": "https://localbulletin.example.com/weekend-market-returns-to-the-town-square",
+      "publishedAt": "2026-09-12T11:45:00.000Z",
+      "metadata": {
+        "author": "K. Mensah",
+        "wordCount": 1062
+      }
+    },
+    {
+      "id": "itm-20260912-0032",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "6 TB/s is the number that matters for decode",
+      "summary": "Front page discussion thread. Tessellate announced an inference accelerator with 6 terabytes per second of memory bandwidth and 288 gigabytes of capacity per package, shipping to cloud partners this quarter.",
+      "url": "https://news.ycombinator.com/item?id=44086220",
+      "publishedAt": "2026-09-12T11:48:00.000Z",
+      "metadata": {
+        "score": 692,
+        "commentCount": 107,
+        "hnId": 43764426,
+        "domain": "tessellate.example.com"
+      }
+    },
+    {
+      "id": "itm-20260912-0033",
+      "sourceType": "rss",
+      "sourceName": "Auto Trends",
+      "title": "First drive: the updated compact crossover is fine, mostly",
+      "summary": "Consumer vehicle review covering ride and interior.",
+      "url": "https://autotrends.example.com/first-drive-the-updated-compact-crossover-is-fin",
+      "publishedAt": "2026-09-12T11:55:00.000Z",
+      "metadata": {
+        "author": "K. Mensah",
+        "wordCount": 1304
+      }
+    },
+    {
+      "id": "itm-20260912-0034",
+      "sourceType": "rss",
+      "sourceName": "The Register",
+      "title": "Northbridge starts selling compute by the watt",
+      "summary": "Reporting from The Register. Northbridge Cloud introduced an instance family whose price varies with a committed power envelope rather than with instance hours alone.",
+      "content": "Reporting from The Register. Northbridge Cloud introduced an instance family whose price varies with a committed power envelope rather than with instance hours alone.\n\nContext reported alongside the item is limited to what Northbridge Cloud has said publicly so far.\n\nMetering compute by watts rather than by time changes the unit economics customers optimise against. Further reporting is expected as Northbridge Cloud and the affected downstream projects respond.",
+      "url": "https://theregister.example.com/northbridge-starts-selling-compute-by-the-watt",
+      "publishedAt": "2026-09-12T12:02:00.000Z",
+      "metadata": {
+        "author": "J. Okonkwo",
+        "wordCount": 769,
+        "section": "technology"
+      }
+    },
+    {
+      "id": "itm-20260912-0035",
+      "sourceType": "rss",
+      "sourceName": "Bloomberg",
+      "title": "Correction: Corvid Robotics deal report retracted",
+      "summary": "Reporting from Bloomberg. Corvid Robotics issued a statement saying no acquisition agreement exists and that discussions with any counterparty ended in August, and the outlet that reported an imminent deal appended a correction.",
+      "content": "Reporting from Bloomberg. Corvid Robotics issued a statement saying no acquisition agreement exists and that discussions with any counterparty ended in August, and the outlet that reported an imminent deal appended a correction.\n\nTalos Industrial declined to comment beyond confirming it is not in active discussions.\n\nThe primary-source statement reverses yesterday's leading report; the contradicting account was the accurate one. Further reporting is expected as Corvid Robotics and the affected downstream projects respond.",
+      "url": "https://bloomberg.example.com/correction-corvid-robotics-deal-report-retracted",
+      "publishedAt": "2026-09-12T12:08:00.000Z",
+      "metadata": {
+        "author": "A. Ferreira",
+        "wordCount": 2119,
+        "section": "technology"
+      }
+    },
+    {
+      "id": "itm-20260912-0036",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "The old message format was never removed from the verifier",
+      "summary": "Front page discussion thread. An attacker replayed validator signatures from a deprecated message format to mint wrapped assets on the destination chain without a matching lock, draining roughly 190 million dollars over forty minutes.",
+      "url": "https://news.ycombinator.com/item?id=43290047",
+      "publishedAt": "2026-09-12T12:11:00.000Z",
+      "metadata": {
+        "score": 1130,
+        "commentCount": 60,
+        "hnId": 42841326,
+        "domain": "keelsonbridge.example.com"
+      }
+    },
+    {
+      "id": "itm-20260912-0037",
+      "sourceType": "rss",
+      "sourceName": "Stratechery",
+      "title": "The shelter component is finally doing what the models said it would",
+      "summary": "Analysis from Stratechery. A fourth month of shelter deceleration is the component that moves rate expectations, and futures repriced the next meeting within minutes.",
+      "content": "Analysis from Stratechery. Core CPI rose 0.14% on the month and 2.4% year over year in August, below the 2.6% consensus, with shelter decelerating for a fourth consecutive month.\n\nHeadline CPI was 2.7% year over year; the goods component turned negative.\n\nA fourth month of shelter deceleration is the component that moves rate expectations, and futures repriced the next meeting within minutes. Further reporting is expected as Bureau of Labor Statistics and the affected downstream projects respond.",
+      "url": "https://stratechery.example.com/the-shelter-component-is-finally-doing-what-the-",
+      "publishedAt": "2026-09-12T12:43:00.000Z",
+      "metadata": {
+        "author": "J. Okonkwo",
+        "wordCount": 2228,
+        "section": "policy"
+      }
+    },
+    {
+      "id": "itm-20260912-0038",
+      "sourceType": "github",
+      "sourceName": "github.com/meridian-labs/meridian-sdk",
+      "title": "meridian-sdk v9.0.0: add meridian-3-opus, raise max_context to 2097152",
+      "summary": "Repository activity on meridian-labs/meridian-sdk. Meridian Labs published a model card for Meridian 3 Opus confirming a two-million-token context window, a 4x price reduction per output token against Meridian 2.5, and general availability in three regions.",
+      "content": "Repository activity on meridian-labs/meridian-sdk. Meridian Labs published a model card for Meridian 3 Opus confirming a two-million-token context window, a 4x price reduction per output token against Meridian 2.5, and general availability in three regions.\n\nThird-party long-context evaluations are not yet published, so quality at full context length remains unverified.\n\nThe rumour reported two days ago is now a primary-source fact, and the pricing move is the part the earlier coverage got wrong. Further reporting is expected as Meridian Labs and the affected downstream projects respond.",
+      "url": "https://github.com/meridian-labs/meridian-sdk/issues/8155",
+      "publishedAt": "2026-09-12T12:51:00.000Z",
+      "metadata": {
+        "repo": "meridian-labs/meridian-sdk",
+        "number": 8737,
+        "stars": 15326,
+        "openIssues": 263,
+        "labels": [
+          "enhancement"
+        ],
+        "state": "open"
+      }
+    },
+    {
+      "id": "itm-20260912-0039",
+      "sourceType": "rss",
+      "sourceName": "InfoQ",
+      "title": "Patch released for Sable ORM data-loss bug",
+      "summary": "Reporting from InfoQ. Sable ORM 6.2.4 restores the pre-6.2 connection release ordering, adds a regression test that runs batch sizes above pool size in CI, and ships a detection script that reports whether a database is missing rows.",
+      "content": "Reporting from InfoQ. Sable ORM 6.2.4 restores the pre-6.2 connection release ordering, adds a regression test that runs batch sizes above pool size in CI, and ships a detection script that reports whether a database is missing rows.\n\nThe maintainers published a post-mortem describing why the original change passed review.\n\nThe immediate risk is closed for anyone who upgrades, but affected teams still have to audit writes made while running 6.2.0 through 6.2.3. Further reporting is expected as Sable and the affected downstream projects respond.",
+      "url": "https://infoq.example.com/patch-released-for-sable-orm-data-loss-bug",
+      "publishedAt": "2026-09-12T13:11:00.000Z",
+      "metadata": {
+        "author": "J. Okonkwo",
+        "wordCount": 1751,
+        "section": "markets"
+      }
+    },
+    {
+      "id": "itm-20260912-0040",
+      "sourceType": "rss",
+      "sourceName": "PR Newswire",
+      "title": "Ashgrove Utilities declares quarterly dividend of 0.44 dollars",
+      "summary": "Reporting from PR Newswire. Ashgrove Utilities filed an 8-K declaring a quarterly dividend of 0.44 dollars per share, payable next quarter to holders of record at month end.",
+      "content": "Reporting from PR Newswire. Ashgrove Utilities filed an 8-K declaring a quarterly dividend of 0.44 dollars per share, payable next quarter to holders of record at month end.\n\nContext reported alongside the item is limited to what Ashgrove Utilities has said publicly so far.\n\nA dividend declaration in line with the prior quarter is administrative, not informative. Further reporting is expected as Ashgrove Utilities and the affected downstream projects respond.",
+      "url": "https://prnewswire.example.com/ashgrove-utilities-declares-quarterly-dividend-o",
+      "publishedAt": "2026-09-12T13:22:00.000Z",
+      "metadata": {
+        "author": "A. Ferreira",
+        "wordCount": 1250,
+        "section": "business"
+      }
+    },
+    {
+      "id": "itm-20260912-0041",
+      "sourceType": "rss",
+      "sourceName": "Reuters",
+      "title": "Core inflation cools to 2.4%, below forecasts",
+      "summary": "Reporting from Reuters. Core CPI rose 0.14% on the month and 2.4% year over year in August, below the 2.6% consensus, with shelter decelerating for a fourth consecutive month.",
+      "content": "Reporting from Reuters. Core CPI rose 0.14% on the month and 2.4% year over year in August, below the 2.6% consensus, with shelter decelerating for a fourth consecutive month.\n\nHeadline CPI was 2.7% year over year; the goods component turned negative.\n\nA fourth month of shelter deceleration is the component that moves rate expectations, and futures repriced the next meeting within minutes. Further reporting is expected as Bureau of Labor Statistics and the affected downstream projects respond.",
+      "url": "https://reuters.example.com/core-inflation-cools-to-2-4-below-forecasts",
+      "publishedAt": "2026-09-12T13:39:00.000Z",
+      "metadata": {
+        "author": "S. Nakamura",
+        "wordCount": 1182,
+        "section": "technology"
+      }
+    },
+    {
+      "id": "itm-20260912-0042",
+      "sourceType": "reddit",
+      "sourceName": "r/LocalLLaMA",
+      "title": "Meridian 3 Opus is out - here is what the model card actually says",
+      "summary": "Community thread in r/LocalLLaMA. Meridian Labs published a model card for Meridian 3 Opus confirming a two-million-token context window, a 4x price reduction per output token against Meridian 2.5, and general availability in three regions.",
+      "url": "https://reddit.com/r/LocalLLaMA/comments/hix8/meridian-3-opus-is-out-here-is-what-the-model-ca",
+      "publishedAt": "2026-09-12T13:41:00.000Z",
+      "metadata": {
+        "subreddit": "LocalLLaMA",
+        "upvotes": 3360,
+        "commentCount": 420,
+        "flair": "Question"
+      }
+    },
+    {
+      "id": "itm-20260912-0043",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Corvid Robotics denies the acquisition, outlet issues correction",
+      "summary": "Front page discussion thread. Corvid Robotics issued a statement saying no acquisition agreement exists and that discussions with any counterparty ended in August, and the outlet that reported an imminent deal appended a correction.",
+      "url": "https://news.ycombinator.com/item?id=41334158",
+      "publishedAt": "2026-09-12T13:48:00.000Z",
+      "metadata": {
+        "score": 1377,
+        "commentCount": 170,
+        "hnId": 43348698,
+        "domain": "corvidrobotics.example.com"
+      }
+    },
+    {
+      "id": "itm-20260912-0044",
+      "sourceType": "rss",
+      "sourceName": "Auto Trends",
+      "title": "Five things to check before a long autumn drive",
+      "summary": "Routine seasonal vehicle maintenance checklist.",
+      "url": "https://autotrends.example.com/five-things-to-check-before-a-long-autumn-drive",
+      "publishedAt": "2026-09-12T13:53:00.000Z",
+      "metadata": {
+        "author": "D. Moreau",
+        "wordCount": 939
+      }
+    },
+    {
+      "id": "itm-20260912-0045",
+      "sourceType": "web",
+      "sourceName": "Listicle Central",
+      "title": "21 kitchen gadgets under fifty that people swear by",
+      "summary": "Product listicle with affiliate links.",
+      "url": "https://listiclecentral.example.com/21-kitchen-gadgets-under-fifty-that-people-swear",
+      "publishedAt": "2026-09-12T14:03:00.000Z",
+      "metadata": {
+        "author": "P. Andersson",
+        "wordCount": 913
+      }
+    },
+    {
+      "id": "itm-20260912-0046",
+      "sourceType": "youtube",
+      "sourceName": "YouTube",
+      "title": "Cosy autumn desk setup tour",
+      "summary": "Desk aesthetics video.",
+      "url": "https://youtube.example.com/cosy-autumn-desk-setup-tour",
+      "publishedAt": "2026-09-12T14:16:00.000Z",
+      "metadata": {
+        "channel": "YouTube",
+        "viewCount": 55744,
+        "durationSec": 1719
+      }
+    },
+    {
+      "id": "itm-20260912-0047",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "The boxed warning is doing a lot of work in this approval",
+      "summary": "Front page discussion thread. The regulator approved Larkspur Bio's oral therapy for a rare metabolic disorder but attached a boxed warning for hepatic injury and required a post-marketing registry.",
+      "url": "https://news.ycombinator.com/item?id=41776817",
+      "publishedAt": "2026-09-12T15:05:00.000Z",
+      "metadata": {
+        "score": 339,
+        "commentCount": 84,
+        "hnId": 42635529,
+        "domain": "larkspurbio.example.com"
+      }
+    },
+    {
+      "id": "itm-20260912-0048",
+      "sourceType": "reddit",
+      "sourceName": "r/MachineLearning",
+      "title": "We need to stop citing these benchmarks until they are rebuilt",
+      "summary": "Community thread in r/MachineLearning. An n-gram and paraphrase audit of six standard evaluation suites finds that between 4% and 31% of test items appear in common pretraining corpora, with the worst contamination in the two most cited suites.",
+      "url": "https://reddit.com/r/MachineLearning/comments/kyvz/we-need-to-stop-citing-these-benchmarks-until-th",
+      "publishedAt": "2026-09-12T15:06:00.000Z",
+      "metadata": {
+        "subreddit": "MachineLearning",
+        "upvotes": 540,
+        "commentCount": 445,
+        "flair": "Resource"
+      }
+    },
+    {
+      "id": "itm-20260912-0049",
+      "sourceType": "github",
+      "sourceName": "github.com/kestrel-inst/contam-audit",
+      "title": "contam-audit: released contaminated item lists and detection tooling",
+      "summary": "Repository activity on kestrel-inst/contam-audit. An n-gram and paraphrase audit of six standard evaluation suites finds that between 4% and 31% of test items appear in common pretraining corpora, with the worst contamination in the two most cited suites.",
+      "content": "Repository activity on kestrel-inst/contam-audit. An n-gram and paraphrase audit of six standard evaluation suites finds that between 4% and 31% of test items appear in common pretraining corpora, with the worst contamination in the two most cited suites.\n\nThe audit tooling and the contaminated item lists are released alongside the paper.\n\nReported scores on the affected suites are not comparable across models trained on different corpus snapshots, which undercuts a large body of published comparisons. Further reporting is expected as Kestrel Institute and the affected downstream projects respond.",
+      "url": "https://github.com/kestrel-inst/contam-audit/issues/1796",
+      "publishedAt": "2026-09-12T15:11:00.000Z",
+      "metadata": {
+        "repo": "kestrel-inst/contam-audit",
+        "number": 1620,
+        "stars": 41185,
+        "openIssues": 156,
+        "labels": [
+          "release"
+        ],
+        "state": "closed"
+      }
+    },
+    {
+      "id": "itm-20260912-0050",
+      "sourceType": "rss",
+      "sourceName": "CoinDesk",
+      "title": "Bridge loses 190 million dollars to signature replay",
+      "summary": "Reporting from CoinDesk. An attacker replayed validator signatures from a deprecated message format to mint wrapped assets on the destination chain without a matching lock, draining roughly 190 million dollars over forty minutes.",
+      "content": "Reporting from CoinDesk. An attacker replayed validator signatures from a deprecated message format to mint wrapped assets on the destination chain without a matching lock, draining roughly 190 million dollars over forty minutes.\n\nThe bridge is paused and one exchange has frozen 31 million dollars of the outflow.\n\nThe deprecated format was still accepted by the verifier contract, which is a decommissioning failure rather than a cryptographic one. Further reporting is expected as Keelson Bridge and the affected downstream projects respond.",
+      "url": "https://coindesk.example.com/bridge-loses-190-million-dollars-to-signature-re",
+      "publishedAt": "2026-09-12T15:34:00.000Z",
+      "metadata": {
+        "author": "T. Abadi",
+        "wordCount": 1413,
+        "section": "policy"
+      }
+    },
+    {
+      "id": "itm-20260912-0051",
+      "sourceType": "github",
+      "sourceName": "github.com/kestrel-inst/onebit-opt",
+      "title": "onebit-opt: reproduction results and the bf16 error-feedback caveat",
+      "summary": "Repository activity on kestrel-inst/onebit-opt. Two independent groups reproduced the 13B result within 0.4% loss but report divergence above 30B parameters unless error feedback is kept in bf16, which returns part of the claimed memory saving.",
+      "content": "Repository activity on kestrel-inst/onebit-opt. Two independent groups reproduced the 13B result within 0.4% loss but report divergence above 30B parameters unless error feedback is kept in bf16, which returns part of the claimed memory saving.\n\nThe authors have acknowledged the scale caveat and say a revised version is in preparation.\n\nThe headline claim survives at the tested scale but the memory saving at frontier scale is roughly half what the abstract implies. Further reporting is expected as Kestrel Institute and the affected downstream projects respond.",
+      "url": "https://github.com/kestrel-inst/onebit-opt/issues/5324",
+      "publishedAt": "2026-09-12T15:55:00.000Z",
+      "metadata": {
+        "repo": "kestrel-inst/onebit-opt",
+        "number": 4859,
+        "stars": 93229,
+        "openIssues": 1287,
+        "labels": [
+          "enhancement"
+        ],
+        "state": "open"
+      }
+    },
+    {
+      "id": "itm-20260912-0052",
+      "sourceType": "web",
+      "sourceName": "Deals Roundup",
+      "title": "Every laptop discount worth looking at right now",
+      "summary": "Aggregated retail discounts refreshed daily.",
+      "url": "https://dealsroundup.example.com/every-laptop-discount-worth-looking-at-right-now",
+      "publishedAt": "2026-09-12T15:58:00.000Z",
+      "metadata": {
+        "author": "L. Rossi",
+        "wordCount": 1060
+      }
+    },
+    {
+      "id": "itm-20260912-0053",
+      "sourceType": "rss",
+      "sourceName": "STAT",
+      "title": "Larkspur therapy approved with a boxed warning",
+      "summary": "Reporting from STAT. The regulator approved Larkspur Bio's oral therapy for a rare metabolic disorder but attached a boxed warning for hepatic injury and required a post-marketing registry.",
+      "content": "Reporting from STAT. The regulator approved Larkspur Bio's oral therapy for a rare metabolic disorder but attached a boxed warning for hepatic injury and required a post-marketing registry.\n\nPricing has not been announced and the registry requirement adds an ongoing compliance cost.\n\nThe boxed warning narrows the realistic prescribing population well below the company's addressable-market slide. Further reporting is expected as Larkspur Bio and the affected downstream projects respond.",
+      "url": "https://stat.example.com/larkspur-therapy-approved-with-a-boxed-warning",
+      "publishedAt": "2026-09-12T16:03:00.000Z",
+      "metadata": {
+        "author": "M. Lindqvist",
+        "wordCount": 657,
+        "section": "technology"
+      }
+    },
+    {
+      "id": "itm-20260912-0054",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Solana edges up 3.10% in quiet trading",
+      "summary": "Solana changed 3.10% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/solana",
+      "publishedAt": "2026-09-12T16:19:00.000Z",
+      "metadata": {
+        "symbol": "SOL",
+        "priceUsd": 192.18,
+        "change24hPct": 3.1,
+        "marketCapUsd": 510529286477,
+        "volume24hUsd": 5938691083
+      }
+    },
+    {
+      "id": "itm-20260912-0055",
+      "sourceType": "rss",
+      "sourceName": "Lifestyle Daily",
+      "title": "Nine sheet-pan dinners that take under thirty minutes",
+      "summary": "Seasonal recipe roundup aimed at weeknight cooking.",
+      "url": "https://lifestyledaily.example.com/nine-sheet-pan-dinners-that-take-under-thirty-mi",
+      "publishedAt": "2026-09-12T16:24:00.000Z",
+      "metadata": {
+        "author": "D. Moreau",
+        "wordCount": 530
+      }
+    },
+    {
+      "id": "itm-20260912-0056",
+      "sourceType": "rss",
+      "sourceName": "MarketWatch",
+      "title": "Jobless claims little changed at 208,000",
+      "summary": "Reporting from MarketWatch. Initial jobless claims printed at 208,000, inside the range of the past six weeks and consistent with an unchanged labour market.",
+      "content": "Reporting from MarketWatch. Initial jobless claims printed at 208,000, inside the range of the past six weeks and consistent with an unchanged labour market.\n\nContext reported alongside the item is limited to what Department of Labor has said publicly so far.\n\nA print inside the recent range carries no new information for policy. Further reporting is expected as Department of Labor and the affected downstream projects respond.",
+      "url": "https://marketwatch.example.com/jobless-claims-little-changed-at-208-000",
+      "publishedAt": "2026-09-12T17:09:00.000Z",
+      "metadata": {
+        "author": "T. Abadi",
+        "wordCount": 1511,
+        "section": "business"
+      }
+    },
+    {
+      "id": "itm-20260912-0057",
+      "sourceType": "web",
+      "sourceName": "Kubernetes Newsroom",
+      "title": "Kubernetes v1.36: release announcement",
+      "summary": "Kubernetes published this as a primary source document. Kubernetes 1.36 promotes in-place pod vertical resize to stable, removes the in-tree cloud provider shims entirely, and deprecates the legacy endpoints API.",
+      "content": "Kubernetes published this as a primary source document. Kubernetes 1.36 promotes in-place pod vertical resize to stable, removes the in-tree cloud provider shims entirely, and deprecates the legacy endpoints API.\n\nClusters still relying on in-tree cloud providers cannot upgrade without migrating first.\n\nIn-place resize removes the restart that vertical autoscaling has always cost, which changes what workloads can be autoscaled at all. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://kubernetesnewsroom.example.com/kubernetes-v1-36-release-announcement",
+      "publishedAt": "2026-09-12T17:09:00.000Z",
+      "metadata": {
+        "author": "Kubernetes Communications",
+        "wordCount": 1474
+      }
+    },
+    {
+      "id": "itm-20260912-0058",
+      "sourceType": "web",
+      "sourceName": "Local Bulletin",
+      "title": "Roadworks on the ring road extended by two weeks",
+      "summary": "Local transport notice affecting one city.",
+      "url": "https://localbulletin.example.com/roadworks-on-the-ring-road-extended-by-two-weeks",
+      "publishedAt": "2026-09-12T17:14:00.000Z",
+      "metadata": {
+        "author": "L. Rossi",
+        "wordCount": 899
+      }
+    },
+    {
+      "id": "itm-20260912-0059",
+      "sourceType": "reddit",
+      "sourceName": "r/economics",
+      "title": "CPI print is in and the shelter lag is breaking",
+      "summary": "Community thread in r/economics. Core CPI rose 0.14% on the month and 2.4% year over year in August, below the 2.6% consensus, with shelter decelerating for a fourth consecutive month.",
+      "url": "https://reddit.com/r/economics/comments/45q2/cpi-print-is-in-and-the-shelter-lag-is-breaking",
+      "publishedAt": "2026-09-12T17:26:00.000Z",
+      "metadata": {
+        "subreddit": "economics",
+        "upvotes": 1325,
+        "commentCount": 26,
+        "flair": "Question"
+      }
+    },
+    {
+      "id": "itm-20260912-0060",
+      "sourceType": "rss",
+      "sourceName": "Sports Desk",
+      "title": "Transfer window closes with three deadline-day moves",
+      "summary": "Summary of completed transfers and fees.",
+      "url": "https://sportsdesk.example.com/transfer-window-closes-with-three-deadline-day-m",
+      "publishedAt": "2026-09-12T17:32:00.000Z",
+      "metadata": {
+        "author": "K. Mensah",
+        "wordCount": 700
+      }
+    },
+    {
+      "id": "itm-20260912-0061",
+      "sourceType": "reddit",
+      "sourceName": "r/MachineLearning",
+      "title": "Reproduction thread: 1-bit optimizer at 30B diverges",
+      "summary": "Community thread in r/MachineLearning. Two independent groups reproduced the 13B result within 0.4% loss but report divergence above 30B parameters unless error feedback is kept in bf16, which returns part of the claimed memory saving.",
+      "url": "https://reddit.com/r/MachineLearning/comments/hp04/reproduction-thread-1-bit-optimizer-at-30b-diver",
+      "publishedAt": "2026-09-12T17:35:00.000Z",
+      "metadata": {
+        "subreddit": "MachineLearning",
+        "upvotes": 4767,
+        "commentCount": 159,
+        "flair": "News"
+      }
+    },
+    {
+      "id": "itm-20260912-0062",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Ask HN: what chair are you using?",
+      "summary": "Recurring low-signal furniture thread.",
+      "url": "https://hackernews.example.com/ask-hn-what-chair-are-you-using",
+      "publishedAt": "2026-09-12T17:40:00.000Z",
+      "metadata": {
+        "score": 160,
+        "commentCount": 77,
+        "hnId": 41576695
+      }
+    },
+    {
+      "id": "itm-20260912-0063",
+      "sourceType": "rss",
+      "sourceName": "Gadget Weekly",
+      "title": "The 14 best wireless earbuds you can buy this autumn",
+      "summary": "A refreshed buying guide with affiliate links and no new testing since spring.",
+      "url": "https://gadgetweekly.example.com/the-14-best-wireless-earbuds-you-can-buy-this-au",
+      "publishedAt": "2026-09-12T17:49:00.000Z",
+      "metadata": {
+        "author": "L. Rossi",
+        "wordCount": 1120
+      }
+    },
+    {
+      "id": "itm-20260912-0064",
+      "sourceType": "web",
+      "sourceName": "Reserve Board Newsroom",
+      "title": "Remarks on the policy outlook",
+      "summary": "Reserve Board published this as a primary source document. Two governors said in prepared remarks that the policy rate is likely to stay at its current level through at least the first quarter, explicitly citing the shelter deceleration in the morning's inflation data.",
+      "content": "Reserve Board published this as a primary source document. Two governors said in prepared remarks that the policy rate is likely to stay at its current level through at least the first quarter, explicitly citing the shelter deceleration in the morning's inflation data.\n\nThe remarks are individual governor views, not a committee statement.\n\nThe explicit link to the data release converts the print from a data point into a policy signal for the next two meetings. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://reserveboardnewsroom.example.com/remarks-on-the-policy-outlook",
+      "publishedAt": "2026-09-12T17:57:00.000Z",
+      "metadata": {
+        "author": "Reserve Board Communications",
+        "wordCount": 1164
+      }
+    },
+    {
+      "id": "itm-20260912-0065",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Ethereum slips 3.01% in quiet trading",
+      "summary": "Ethereum changed -3.01% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/ethereum",
+      "publishedAt": "2026-09-12T18:01:00.000Z",
+      "metadata": {
+        "symbol": "ETH",
+        "priceUsd": 3695.32,
+        "change24hPct": -3.01,
+        "marketCapUsd": 916030873793,
+        "volume24hUsd": 22775923034
+      }
+    },
+    {
+      "id": "itm-20260912-0066",
+      "sourceType": "sec",
+      "sourceName": "SEC EDGAR",
+      "title": "Larkspur Bio Inc. Form 8-K, Item 8.01 regulatory approval",
+      "summary": "Filing text from EDGAR. The regulator approved Larkspur Bio's oral therapy for a rare metabolic disorder but attached a boxed warning for hepatic injury and required a post-marketing registry.",
+      "content": "Filing text from EDGAR. The regulator approved Larkspur Bio's oral therapy for a rare metabolic disorder but attached a boxed warning for hepatic injury and required a post-marketing registry.\n\nPricing has not been announced and the registry requirement adds an ongoing compliance cost.\n\nThe boxed warning narrows the realistic prescribing population well below the company's addressable-market slide. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://sec.gov/Archives/edgar/data/1490217/larkspur-bio-inc-form-8-k-item-8-01-regulatory-a.htm",
+      "publishedAt": "2026-09-12T18:14:00.000Z",
+      "metadata": {
+        "cik": "1255614",
+        "formType": "10-Q",
+        "ticker": "LARK"
+      }
+    },
+    {
+      "id": "itm-20260912-0067",
+      "sourceType": "github",
+      "sourceName": "github.com/tessellate/tessellate-runtime",
+      "title": "tessellate-runtime: report measured joules per token per device",
+      "summary": "Repository activity on tessellate/tessellate-runtime. The runtime can now report joules per generated token per device, sampled from the on-board power telemetry rather than estimated.",
+      "content": "Repository activity on tessellate/tessellate-runtime. The runtime can now report joules per generated token per device, sampled from the on-board power telemetry rather than estimated.\n\nContext reported alongside the item is limited to what Tessellate has said publicly so far.\n\nEnergy per token becomes a measurable service-level quantity rather than a modelling assumption. Further reporting is expected as Tessellate and the affected downstream projects respond.",
+      "url": "https://github.com/tessellate/tessellate-runtime/issues/2723",
+      "publishedAt": "2026-09-12T18:30:00.000Z",
+      "metadata": {
+        "repo": "tessellate/tessellate-runtime",
+        "number": 1283,
+        "stars": 76222,
+        "openIssues": 1338,
+        "labels": [
+          "regression"
+        ],
+        "state": "closed"
+      }
+    },
+    {
+      "id": "itm-20260912-0068",
+      "sourceType": "github",
+      "sourceName": "github.com/kubernetes/kubernetes",
+      "title": "kubernetes v1.36.0: in-place pod resize GA, in-tree providers removed",
+      "summary": "Repository activity on kubernetes/kubernetes. Kubernetes 1.36 promotes in-place pod vertical resize to stable, removes the in-tree cloud provider shims entirely, and deprecates the legacy endpoints API.",
+      "content": "Repository activity on kubernetes/kubernetes. Kubernetes 1.36 promotes in-place pod vertical resize to stable, removes the in-tree cloud provider shims entirely, and deprecates the legacy endpoints API.\n\nClusters still relying on in-tree cloud providers cannot upgrade without migrating first.\n\nIn-place resize removes the restart that vertical autoscaling has always cost, which changes what workloads can be autoscaled at all. Further reporting is expected as Kubernetes and the affected downstream projects respond.",
+      "url": "https://github.com/kubernetes/kubernetes/issues/4461",
+      "publishedAt": "2026-09-12T18:31:00.000Z",
+      "metadata": {
+        "repo": "kubernetes/kubernetes",
+        "number": 5910,
+        "stars": 13329,
+        "openIssues": 966,
+        "labels": [
+          "regression"
+        ],
+        "state": "open"
+      }
+    },
+    {
+      "id": "itm-20260912-0069",
+      "sourceType": "youtube",
+      "sourceName": "YouTube",
+      "title": "Halyard 2.0 walkthrough and upgrade demo",
+      "summary": "Video explainer from The Changelog. Nothing has changed about what Halyard 2.0 is or what upgrading costs.",
+      "url": "https://youtube.com/watch?v=22xlil",
+      "publishedAt": "2026-09-12T18:35:00.000Z",
+      "metadata": {
+        "channel": "The Changelog",
+        "viewCount": 423866,
+        "durationSec": 544
+      }
+    },
+    {
+      "id": "itm-20260912-0070",
+      "sourceType": "web",
+      "sourceName": "Larkspur Bio Newsroom",
+      "title": "Approval letter and prescribing information",
+      "summary": "Larkspur Bio published this as a primary source document. The regulator approved Larkspur Bio's oral therapy for a rare metabolic disorder but attached a boxed warning for hepatic injury and required a post-marketing registry.",
+      "content": "Larkspur Bio published this as a primary source document. The regulator approved Larkspur Bio's oral therapy for a rare metabolic disorder but attached a boxed warning for hepatic injury and required a post-marketing registry.\n\nPricing has not been announced and the registry requirement adds an ongoing compliance cost.\n\nThe boxed warning narrows the realistic prescribing population well below the company's addressable-market slide. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://larkspurbionewsroom.example.com/approval-letter-and-prescribing-information",
+      "publishedAt": "2026-09-12T19:11:00.000Z",
+      "metadata": {
+        "author": "Larkspur Bio Communications",
+        "wordCount": 1108
+      }
+    },
+    {
+      "id": "itm-20260912-0071",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Sable ORM 6.2.4 and the post-mortem on how the row loss shipped",
+      "summary": "Front page discussion thread. Sable ORM 6.2.4 restores the pre-6.2 connection release ordering, adds a regression test that runs batch sizes above pool size in CI, and ships a detection script that reports whether a database is missing rows.",
+      "url": "https://news.ycombinator.com/item?id=44814672",
+      "publishedAt": "2026-09-12T19:21:00.000Z",
+      "metadata": {
+        "score": 696,
+        "commentCount": 375,
+        "hnId": 43299390,
+        "domain": "sable.example.com"
+      }
+    },
+    {
+      "id": "itm-20260912-0072",
+      "sourceType": "rss",
+      "sourceName": "Wellness Digest",
+      "title": "Six stretches for people who sit all day",
+      "summary": "Illustrated stretching routine.",
+      "url": "https://wellnessdigest.example.com/six-stretches-for-people-who-sit-all-day",
+      "publishedAt": "2026-09-12T19:30:00.000Z",
+      "metadata": {
+        "author": "D. Moreau",
+        "wordCount": 415
+      }
+    },
+    {
+      "id": "itm-20260912-0073",
+      "sourceType": "fred",
+      "sourceName": "FRED",
+      "title": "ICSA: Initial Claims, week ending 2026-09-12",
+      "summary": "Series release from the FRED economic data service. Initial jobless claims printed at 208,000, inside the range of the past six weeks and consistent with an unchanged labour market.",
+      "content": "Series release from the FRED economic data service. Initial jobless claims printed at 208,000, inside the range of the past six weeks and consistent with an unchanged labour market.\n\nContext reported alongside the item is limited to what Department of Labor has said publicly so far.\n\nA print inside the recent range carries no new information for policy. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://fred.stlouisfed.org/release?rid=438",
+      "publishedAt": "2026-09-12T19:59:00.000Z",
+      "metadata": {
+        "seriesId": "CPILFESL",
+        "releaseName": "Department of Labor scheduled release",
+        "frequency": "Weekly"
+      }
+    },
+    {
+      "id": "itm-20260912-0074",
+      "sourceType": "reddit",
+      "sourceName": "r/food",
+      "title": "Made pasta from scratch for the first time",
+      "summary": "Photo post of a home-cooked meal.",
+      "url": "https://rfood.example.com/made-pasta-from-scratch-for-the-first-time",
+      "publishedAt": "2026-09-12T20:08:00.000Z",
+      "metadata": {
+        "subreddit": "food",
+        "upvotes": 2994,
+        "commentCount": 591
+      }
+    },
+    {
+      "id": "itm-20260912-0075",
+      "sourceType": "reddit",
+      "sourceName": "r/hardware",
+      "title": "T400 specs are out and the capacity per package is the surprise",
+      "summary": "Community thread in r/hardware. Tessellate announced an inference accelerator with 6 terabytes per second of memory bandwidth and 288 gigabytes of capacity per package, shipping to cloud partners this quarter.",
+      "url": "https://reddit.com/r/hardware/comments/41jc/t400-specs-are-out-and-the-capacity-per-package-",
+      "publishedAt": "2026-09-12T20:08:00.000Z",
+      "metadata": {
+        "subreddit": "hardware",
+        "upvotes": 6469,
+        "commentCount": 459,
+        "flair": "Discussion"
+      }
+    },
+    {
+      "id": "itm-20260912-0076",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "31% contamination in the suite everyone quotes",
+      "summary": "Front page discussion thread. An n-gram and paraphrase audit of six standard evaluation suites finds that between 4% and 31% of test items appear in common pretraining corpora, with the worst contamination in the two most cited suites.",
+      "url": "https://news.ycombinator.com/item?id=41677719",
+      "publishedAt": "2026-09-12T20:14:00.000Z",
+      "metadata": {
+        "score": 665,
+        "commentCount": 619,
+        "hnId": 44501923,
+        "domain": "kestrelinstitute.example.com"
+      }
+    },
+    {
+      "id": "itm-20260912-0077",
+      "sourceType": "web",
+      "sourceName": "Meridian Labs Newsroom",
+      "title": "Introducing Meridian 3 Opus",
+      "summary": "Meridian Labs published this as a primary source document. Meridian Labs published a model card for Meridian 3 Opus confirming a two-million-token context window, a 4x price reduction per output token against Meridian 2.5, and general availability in three regions.",
+      "content": "Meridian Labs published this as a primary source document. Meridian Labs published a model card for Meridian 3 Opus confirming a two-million-token context window, a 4x price reduction per output token against Meridian 2.5, and general availability in three regions.\n\nThird-party long-context evaluations are not yet published, so quality at full context length remains unverified.\n\nThe rumour reported two days ago is now a primary-source fact, and the pricing move is the part the earlier coverage got wrong. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://meridianlabsnewsroom.example.com/introducing-meridian-3-opus",
+      "publishedAt": "2026-09-12T20:24:00.000Z",
+      "metadata": {
+        "author": "Meridian Labs Communications",
+        "wordCount": 1071
+      }
+    },
+    {
+      "id": "itm-20260912-0078",
+      "sourceType": "arxiv",
+      "sourceName": "arXiv cs.LG",
+      "title": "Measuring test-set contamination in six standard evaluation suites",
+      "summary": "Preprint posted to arXiv. An n-gram and paraphrase audit of six standard evaluation suites finds that between 4% and 31% of test items appear in common pretraining corpora, with the worst contamination in the two most cited suites.",
+      "content": "Preprint posted to arXiv. An n-gram and paraphrase audit of six standard evaluation suites finds that between 4% and 31% of test items appear in common pretraining corpora, with the worst contamination in the two most cited suites.\n\nThe audit tooling and the contaminated item lists are released alongside the paper.\n\nReported scores on the affected suites are not comparable across models trained on different corpus snapshots, which undercuts a large body of published comparisons. Further reporting is expected as Kestrel Institute and the affected downstream projects respond.",
+      "url": "https://arxiv.org/abs/2609.09569",
+      "publishedAt": "2026-09-12T20:34:00.000Z",
+      "metadata": {
+        "arxivId": "2609.15593",
+        "primaryCategory": "quant-ph",
+        "authorCount": 14,
+        "version": 1
+      }
+    },
+    {
+      "id": "itm-20260912-0079",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "The 1-bit optimizer paper does not hold above 30B without bf16 error feedback",
+      "summary": "Front page discussion thread. Two independent groups reproduced the 13B result within 0.4% loss but report divergence above 30B parameters unless error feedback is kept in bf16, which returns part of the claimed memory saving.",
+      "url": "https://news.ycombinator.com/item?id=42483117",
+      "publishedAt": "2026-09-12T20:53:00.000Z",
+      "metadata": {
+        "score": 502,
+        "commentCount": 302,
+        "hnId": 43981854,
+        "domain": "kestrelinstitute.example.com"
+      }
+    },
+    {
+      "id": "itm-20260912-0080",
+      "sourceType": "web",
+      "sourceName": "Coupon Feed",
+      "title": "Promo codes that still work this week",
+      "summary": "Aggregated discount codes.",
+      "url": "https://couponfeed.example.com/promo-codes-that-still-work-this-week",
+      "publishedAt": "2026-09-12T21:50:00.000Z",
+      "metadata": {
+        "author": "L. Rossi",
+        "wordCount": 483
+      }
+    },
+    {
+      "id": "itm-20260912-0081",
+      "sourceType": "reddit",
+      "sourceName": "r/gaming",
+      "title": "Patch notes are up and they nerfed the shotgun again",
+      "summary": "Community reaction to a live-service game balance patch.",
+      "url": "https://rgaming.example.com/patch-notes-are-up-and-they-nerfed-the-shotgun-a",
+      "publishedAt": "2026-09-12T22:59:00.000Z",
+      "metadata": {
+        "subreddit": "gaming",
+        "upvotes": 19053,
+        "commentCount": 1349
+      }
+    }
+  ],
+  "facts": [
+    {
+      "factId": "fct-20260912-001",
+      "kind": "filing",
+      "label": "Ashgrove Utilities quarterly dividend per share",
+      "value": 0.44,
+      "unit": "usd",
+      "asOf": "2026-09-12T06:23:00.000Z",
+      "sourceItemId": "itm-20260912-0004",
+      "previousValue": 0.42
+    },
+    {
+      "factId": "fct-20260912-002",
+      "kind": "filing",
+      "label": "Ashgrove Utilities shares outstanding",
+      "value": 412300000,
+      "unit": "shares",
+      "asOf": "2026-09-12T06:23:00.000Z",
+      "sourceItemId": "itm-20260912-0004"
+    },
+    {
+      "factId": "fct-20260912-003",
+      "kind": "crypto",
+      "label": "Dogecoin spot price",
+      "value": 0.1821,
+      "unit": "usd",
+      "asOf": "2026-09-12T06:42:00.000Z",
+      "sourceItemId": "itm-20260912-0008",
+      "previousValue": 0.187,
+      "changePct": -2.6
+    },
+    {
+      "factId": "fct-20260912-004",
+      "kind": "crypto",
+      "label": "Avalanche spot price",
+      "value": 32.88,
+      "unit": "usd",
+      "asOf": "2026-09-12T06:45:00.000Z",
+      "sourceItemId": "itm-20260912-0009",
+      "previousValue": 32.75,
+      "changePct": 0.4
+    },
+    {
+      "factId": "fct-20260912-005",
+      "kind": "macro",
+      "label": "Core CPI year over year",
+      "value": 2.4,
+      "unit": "percent",
+      "asOf": "2026-09-12T10:00:00.000Z",
+      "sourceItemId": "itm-20260912-0024",
+      "previousValue": 2.7,
+      "changePct": -11.11
+    },
+    {
+      "factId": "fct-20260912-006",
+      "kind": "macro",
+      "label": "Core CPI month over month",
+      "value": 0.14,
+      "unit": "percent",
+      "asOf": "2026-09-12T10:00:00.000Z",
+      "sourceItemId": "itm-20260912-0024",
+      "previousValue": 0.21,
+      "changePct": -33.33
+    },
+    {
+      "factId": "fct-20260912-007",
+      "kind": "macro",
+      "label": "Shelter CPI year over year",
+      "value": 3.1,
+      "unit": "percent",
+      "asOf": "2026-09-12T10:00:00.000Z",
+      "sourceItemId": "itm-20260912-0024",
+      "previousValue": 3.6,
+      "changePct": -13.89
+    },
+    {
+      "factId": "fct-20260912-008",
+      "kind": "crypto",
+      "label": "Bitcoin spot price",
+      "value": 72087.76,
+      "unit": "usd",
+      "asOf": "2026-09-12T10:21:00.000Z",
+      "sourceItemId": "itm-20260912-0026",
+      "previousValue": 71240,
+      "changePct": 1.19
+    },
+    {
+      "factId": "fct-20260912-009",
+      "kind": "crypto",
+      "label": "Chainlink spot price",
+      "value": 19.16,
+      "unit": "usd",
+      "asOf": "2026-09-12T10:30:00.000Z",
+      "sourceItemId": "itm-20260912-0027",
+      "previousValue": 19.08,
+      "changePct": 0.43
+    },
+    {
+      "factId": "fct-20260912-010",
+      "kind": "crypto",
+      "label": "Solana spot price",
+      "value": 192.18,
+      "unit": "usd",
+      "asOf": "2026-09-12T16:19:00.000Z",
+      "sourceItemId": "itm-20260912-0054",
+      "previousValue": 186.4,
+      "changePct": 3.1
+    },
+    {
+      "factId": "fct-20260912-011",
+      "kind": "crypto",
+      "label": "Ethereum spot price",
+      "value": 3695.32,
+      "unit": "usd",
+      "asOf": "2026-09-12T18:01:00.000Z",
+      "sourceItemId": "itm-20260912-0065",
+      "previousValue": 3810,
+      "changePct": -3.01
+    },
+    {
+      "factId": "fct-20260912-012",
+      "kind": "macro",
+      "label": "Initial jobless claims",
+      "value": 208000,
+      "unit": "persons",
+      "asOf": "2026-09-12T19:59:00.000Z",
+      "sourceItemId": "itm-20260912-0073",
+      "previousValue": 221000,
+      "changePct": -5.88
+    },
+    {
+      "factId": "fct-20260912-013",
+      "kind": "macro",
+      "label": "Initial jobless claims, four-week moving average",
+      "value": 214500,
+      "unit": "persons",
+      "asOf": "2026-09-12T19:59:00.000Z",
+      "sourceItemId": "itm-20260912-0073"
+    }
+  ]
+}

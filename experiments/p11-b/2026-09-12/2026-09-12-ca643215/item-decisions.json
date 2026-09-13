@@ -1,0 +1,541 @@
+[
+  {
+    "itemId": "itm-20260912-0001",
+    "disposition": "IRRELEVANT",
+    "reason": "地方氣象預報，非技術、政策或商業事件",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0002",
+    "disposition": "IRRELEVANT",
+    "reason": "未經證實之授權變更截圖與社群討論，無版本或日期且疑為造假",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0003",
+    "disposition": "IRRELEVANT",
+    "reason": "未經證實之授權條款截圖轉貼，缺乏可查證事實",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0004",
+    "disposition": "CANDIDATE",
+    "storyId": "ashgrove-dividend-declaration",
+    "reason": "Ashgrove Utilities 向 SEC 申報 Form 8-K 宣告季度股利每股 0.44 美元，為一手申報文件",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0005",
+    "disposition": "CANDIDATE",
+    "storyId": "keelson-bridge-replay-exploit",
+    "reason": "Keelson Bridge 官方事故報告，詳述簽章重放漏洞導致 1.9 億美元損失之機制，為權威一手來源",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0006",
+    "disposition": "CANDIDATE",
+    "storyId": "meridian-3-opus-release",
+    "reason": "The Information 報導 Meridian 3 Opus 模型卡發布與價格調降細節",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0007",
+    "disposition": "CANDIDATE",
+    "storyId": "kubernetes-v1-36-release",
+    "reason": "HN 討論串探討 Kubernetes 1.36 正式版 in-place pod resize 與 provider shim 移除之架構衝擊",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0008",
+    "disposition": "IRRELEVANT",
+    "reason": "加密貨幣日常價格波動無催化劑或結構性機制說明",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0009",
+    "disposition": "IRRELEVANT",
+    "reason": "加密貨幣日常價格波動無催化劑或結構性機制說明",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0010",
+    "disposition": "CANDIDATE",
+    "storyId": "fed-governors-rate-outlook",
+    "reason": "Reddit 討論兩位聯準會理事同日發言表態利率維持至明年初之政策涵義",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0011",
+    "disposition": "DUPLICATE",
+    "storyId": "halyard-v2-release",
+    "reason": "SD Times 轉述昨日 Halyard 2.0 發布內容，無新增事實或實測數據",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0012",
+    "disposition": "DUPLICATE",
+    "storyId": "meridian-3-opus-release",
+    "reason": "HN 討論串轉述 Meridian 3 Opus 發布與降價，指向同一官方公告，無新增事實",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0013",
+    "disposition": "DUPLICATE",
+    "storyId": "kubernetes-v1-36-release",
+    "reason": "Reddit 討論 Kubernetes 1.36 移除 in-tree cloud provider shims 之升級因應，屬同版本發布之討論",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0014",
+    "disposition": "CANDIDATE",
+    "storyId": "corvid-talos-acquisition-talks",
+    "reason": "Reddit 社群討論 Corvid 否認併購與彭博發布更正，提供社群反應紀錄",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0015",
+    "disposition": "IRRELEVANT",
+    "reason": "鍵盤清潔生活類影片，無技術或決策價值",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0016",
+    "disposition": "CANDIDATE",
+    "storyId": "fed-governors-rate-outlook",
+    "reason": "路透社報導兩位聯準會理事講稿內容，確認政策利率延長凍結之官方立場",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0017",
+    "disposition": "CANDIDATE",
+    "storyId": "tessellate-t400-accelerator",
+    "reason": "Tessellate 官方新聞稿宣布推出 T400 推論晶片，為一手公告來源",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0018",
+    "disposition": "CANDIDATE",
+    "storyId": "sable-orm-batch-loss-bug",
+    "reason": "Sable ORM 官方 release 6.2.4 修復連線釋放漏洞並附偵測腳本，為官方一手發布",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0019",
+    "disposition": "IRRELEVANT",
+    "reason": "寵物行為照顧指南，非專業領域情報",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0020",
+    "disposition": "DUPLICATE",
+    "storyId": "tessellate-t400-accelerator",
+    "reason": "tessellate-runtime 程式庫新增 T400 支援，為 T400 發布之相應代碼提交，指向同一發布事件",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0021",
+    "disposition": "IRRELEVANT",
+    "reason": "趣味單一功能網站，無實質技術價值",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0022",
+    "disposition": "IRRELEVANT",
+    "reason": "音樂與文化評論文章，非相關領域",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0023",
+    "disposition": "DUPLICATE",
+    "storyId": "halyard-v2-release",
+    "reason": "Reddit 討論昨日 Halyard 2.0 廢棄 YAML v1 之遷移問題，無新增事實",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0024",
+    "disposition": "CANDIDATE",
+    "storyId": "us-core-cpi-august-2026",
+    "reason": "FRED 官方發布 8 月核心 CPI 系列數據，月增 0.14%、年增 2.4%，為官方數據一手來源",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0025",
+    "disposition": "CANDIDATE",
+    "storyId": "sign-sgd-1bit-optimizer",
+    "reason": "Yannic Kilcher 針對昨日 Sign-SGD 1-bit optimizer 論文之重現與大模型參數量級限制之技術分析",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0026",
+    "disposition": "IRRELEVANT",
+    "reason": "比特幣日常微幅波動，無結構性催化劑說明",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0027",
+    "disposition": "IRRELEVANT",
+    "reason": "Chainlink 日常微幅波動，無結構性催化劑說明",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0028",
+    "disposition": "CANDIDATE",
+    "storyId": "corvid-talos-acquisition-talks",
+    "reason": "Corvid Robotics 官方聲明澄清並無收購協議且談判早已終止，為權威一手來源",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0029",
+    "disposition": "DUPLICATE",
+    "storyId": "fed-governors-rate-outlook",
+    "reason": "HN 轉述聯準會理事關於住房通膨與利率政策之準備演講，無新增事實",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0030",
+    "disposition": "DUPLICATE",
+    "storyId": "keelson-bridge-replay-exploit",
+    "reason": "keelson-contracts 代碼庫修復 PR 拒絕棄用格式，為資產損失事件之修復代碼，屬同一事件成員",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0031",
+    "disposition": "IRRELEVANT",
+    "reason": "地方市集社區公告，無關專業技術或商業決策",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0032",
+    "disposition": "DUPLICATE",
+    "storyId": "tessellate-t400-accelerator",
+    "reason": "HN 討論串轉述 Tessellate T400 記憶體頻寬數據，無新增事實",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0033",
+    "disposition": "IRRELEVANT",
+    "reason": "消費性汽車試駕評測，無技術決策影響",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0034",
+    "disposition": "CANDIDATE",
+    "storyId": "northbridge-watt-pricing",
+    "reason": "The Register 報導 Northbridge Cloud 推出瓦特功耗上限計費執行個體，改變雲端推論定價模式",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0035",
+    "disposition": "DUPLICATE",
+    "storyId": "corvid-talos-acquisition-talks",
+    "reason": "彭博發布更正聲明撤回 Corvid 併購報導，為更正記錄，指向同一事件",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0036",
+    "disposition": "DUPLICATE",
+    "storyId": "keelson-bridge-replay-exploit",
+    "reason": "HN 討論串轉述 Keelson Bridge 舊訊息格式未從驗證器移除之細節，指向同一事故報告",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0037",
+    "disposition": "DUPLICATE",
+    "storyId": "us-core-cpi-august-2026",
+    "reason": "Stratechery 針對 8 月 CPI 住房通膨減速數據與市場定價之分析評論，無新增獨立事實",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0038",
+    "disposition": "DUPLICATE",
+    "storyId": "meridian-3-opus-release",
+    "reason": "meridian-sdk v9.0.0 程式庫支援 Meridian 3 Opus，為官方發布之相應套件提交",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0039",
+    "disposition": "DUPLICATE",
+    "storyId": "sable-orm-batch-loss-bug",
+    "reason": "InfoQ 報導 Sable ORM 6.2.4 補丁與資料遺失漏洞修復，指向同一 GitHub release",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0040",
+    "disposition": "DUPLICATE",
+    "storyId": "ashgrove-dividend-declaration",
+    "reason": "PR Newswire 轉發 Ashgrove Utilities 季度股利宣告新聞稿，無新增事實",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0041",
+    "disposition": "DUPLICATE",
+    "storyId": "us-core-cpi-august-2026",
+    "reason": "路透社報導美國 8 月核心 CPI 年增率降至 2.4%，轉述官方統計數據，無新增事實",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0042",
+    "disposition": "DUPLICATE",
+    "storyId": "meridian-3-opus-release",
+    "reason": "Reddit 討論 Meridian 3 Opus 模型卡參數與定價，無新增獨立事實",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0043",
+    "disposition": "DUPLICATE",
+    "storyId": "corvid-talos-acquisition-talks",
+    "reason": "HN 討論串轉述 Corvid 官方否認聲明與媒體撤稿更正，無新增事實",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0044",
+    "disposition": "IRRELEVANT",
+    "reason": "秋季常規行車檢查清單，消費性生活指南",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0045",
+    "disposition": "IRRELEVANT",
+    "reason": "帶有分潤連結之廚房小工具清單文章，純屬內容農場導購",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0046",
+    "disposition": "IRRELEVANT",
+    "reason": "居家辦公桌面佈置純視覺影片，無技術實質內容",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0047",
+    "disposition": "CANDIDATE",
+    "storyId": "larkspur-oral-therapy-approval",
+    "reason": "HN 討論 Larkspur Bio 口服罕見疾病藥物核准附帶之黑框警告與追蹤要求",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0048",
+    "disposition": "CANDIDATE",
+    "storyId": "benchmark-contamination-audit",
+    "reason": "Reddit 討論標準評估數據集受預訓練語料污染問題，引發基準重建倡議",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0049",
+    "disposition": "CANDIDATE",
+    "storyId": "benchmark-contamination-audit",
+    "reason": "kestrel-inst/contam-audit 開源基準數據污染偵測工具與受污染項目清單，為一手工具釋出",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0050",
+    "disposition": "DUPLICATE",
+    "storyId": "keelson-bridge-replay-exploit",
+    "reason": "CoinDesk 報導 Keelson Bridge 遭簽章重放損失 1.9 億美元，轉述官方事故報告，無新增事實",
+    "decidedAt": "2026-09-13T09:35:12.047Z"
+  },
+  {
+    "itemId": "itm-20260912-0051",
+    "disposition": "CANDIDATE",
+    "storyId": "sign-sgd-1bit-optimizer",
+    "reason": "kestrel-inst/onebit-opt 官方程式庫發布重現結果與 30B 參數量級需 bf16 誤差反饋之重要限制，為一手技術來源",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0052",
+    "disposition": "IRRELEVANT",
+    "reason": "消費性筆記型電腦折扣清單，無技術與決策價值",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0053",
+    "disposition": "DUPLICATE",
+    "storyId": "larkspur-oral-therapy-approval",
+    "reason": "STAT 報導 Larkspur Bio 口服藥獲准與黑框警告，轉述監管核准內容，無新增事實",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0054",
+    "disposition": "IRRELEVANT",
+    "reason": "加密貨幣日常價格微幅波動，無機制說明或實質催化劑",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0055",
+    "disposition": "IRRELEVANT",
+    "reason": "日常家常食譜介紹，非專業情報領域",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0056",
+    "disposition": "DUPLICATE",
+    "storyId": "us-jobless-claims-20260912",
+    "reason": "MarketWatch 轉述初領失業救濟金人數 20.8 萬人，無新增事實",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0057",
+    "disposition": "CANDIDATE",
+    "storyId": "kubernetes-v1-36-release",
+    "reason": "Kubernetes 官方發布 1.36 正式版公告，詳述 in-place pod resize GA 與 API 廢棄細節，為一手權威來源",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0058",
+    "disposition": "IRRELEVANT",
+    "reason": "單一城市地方道路工程通告，無普遍技術或商業影響",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0059",
+    "disposition": "DUPLICATE",
+    "storyId": "us-core-cpi-august-2026",
+    "reason": "Reddit 討論 8 月 CPI 數據與住房通膨放緩現象，無新增事實",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0060",
+    "disposition": "IRRELEVANT",
+    "reason": "職業體育轉會市場即時新聞，非技術或決策範疇",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0061",
+    "disposition": "DUPLICATE",
+    "storyId": "sign-sgd-1bit-optimizer",
+    "reason": "Reddit 討論 1-bit optimizer 於 30B 參數發散之重現成果，指向同一 repo issue 討論",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0062",
+    "disposition": "IRRELEVANT",
+    "reason": "辦公椅社群閒聊貼文，低訊噪比生活討論",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0063",
+    "disposition": "IRRELEVANT",
+    "reason": "消費性無線耳機推薦清單與分潤導購，無技術實質內容",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0064",
+    "disposition": "CANDIDATE",
+    "storyId": "fed-governors-rate-outlook",
+    "reason": "聯準會官方發布兩位理事演講全文，確認政策利率可能維持至明年初，為一手權威來源",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0065",
+    "disposition": "IRRELEVANT",
+    "reason": "以太幣日常價格波動無結構性催化劑說明",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0066",
+    "disposition": "DUPLICATE",
+    "storyId": "larkspur-oral-therapy-approval",
+    "reason": "Larkspur Bio 向 SEC 申報 Form 8-K 披露藥品核准與處方資訊，指向同一核准事件",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0067",
+    "disposition": "DUPLICATE",
+    "storyId": "tessellate-t400-accelerator",
+    "reason": "tessellate-runtime 新增晶片每 token 焦耳功耗遙測回報，擴充 T400 運行庫功能，指向同一硬體生態發布",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0068",
+    "disposition": "CANDIDATE",
+    "storyId": "kubernetes-v1-36-release",
+    "reason": "kubernetes/kubernetes 官方發布 1.36.0 GitHub release tag，為權威發布版本來源",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0069",
+    "disposition": "DUPLICATE",
+    "storyId": "halyard-v2-release",
+    "reason": "YouTube 影片展示昨日 Halyard 2.0 升級步驟，無新增實質事實",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0070",
+    "disposition": "CANDIDATE",
+    "storyId": "larkspur-oral-therapy-approval",
+    "reason": "Larkspur Bio 官方發布核准通知信與完整處方資訊，為權威一手來源",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0071",
+    "disposition": "DUPLICATE",
+    "storyId": "sable-orm-batch-loss-bug",
+    "reason": "HN 轉述 Sable ORM 6.2.4 補丁與資料遺失事後檢討，指向同一修復發布",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0072",
+    "disposition": "IRRELEVANT",
+    "reason": "日常久坐伸展運動指南，非相關專業領域情報",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0073",
+    "disposition": "CANDIDATE",
+    "storyId": "us-jobless-claims-20260912",
+    "reason": "FRED 發布當週初次申請失業救濟人數為 20.8 萬人，為官方統計一手來源",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0074",
+    "disposition": "IRRELEVANT",
+    "reason": "自製義大利麵生活分享照片貼文，低訊噪比社群內容",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0075",
+    "disposition": "DUPLICATE",
+    "storyId": "tessellate-t400-accelerator",
+    "reason": "Reddit 討論 Tessellate T400 晶片封裝記憶體規格，轉述官方新聞稿，無新增事實",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0076",
+    "disposition": "DUPLICATE",
+    "storyId": "benchmark-contamination-audit",
+    "reason": "HN 討論基準測試污染審計結果，指向同一 arXiv 論文與開源工具，無新增獨立事實",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0077",
+    "disposition": "CANDIDATE",
+    "storyId": "meridian-3-opus-release",
+    "reason": "Meridian Labs 官方新聞稿宣布 Meridian 3 Opus 正式發布，為官方權威一手來源",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0078",
+    "disposition": "CANDIDATE",
+    "storyId": "benchmark-contamination-audit",
+    "reason": "arXiv 預印本論文發布六大標準評估數據集之污染審計分析，為論文一手來源",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0079",
+    "disposition": "DUPLICATE",
+    "storyId": "sign-sgd-1bit-optimizer",
+    "reason": "HN 轉述 1-bit optimizer 於 30B 模型需保留 bf16 誤差反饋之重現限制，指向同一 repo 討論",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0080",
+    "disposition": "IRRELEVANT",
+    "reason": "促銷優惠券代碼清單，零售廣告內容",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  },
+  {
+    "itemId": "itm-20260912-0081",
+    "disposition": "IRRELEVANT",
+    "reason": "網路遊戲武器平衡性更新玩家抱怨，非技術決策領域",
+    "decidedAt": "2026-09-13T09:35:47.904Z"
+  }
+]

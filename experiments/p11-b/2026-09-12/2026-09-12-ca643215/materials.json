@@ -1,0 +1,302 @@
+{
+  "date": "2026-09-12",
+  "producedAt": "2026-09-13T09:36:21.391Z",
+  "stories": [
+    {
+      "storyId": "meridian-3-opus-release",
+      "tier": "A",
+      "canonicalTitle": "Meridian Labs 發布 Meridian 3 Opus：200 萬 token 長上下文，輸出價格降為前代四分之一",
+      "whySelected": "主力前沿大模型迎來重要版本更新，直接推進上下文長度至 200 萬 token 並顯著降低輸出 token 單價 4 倍，大幅改變長文本推論的經濟性與應用邊界。",
+      "changeType": "NEW",
+      "importance": 0.92,
+      "novelty": 0.9,
+      "confidence": 0.98,
+      "sourceItemIds": [
+        "itm-20260912-0006",
+        "itm-20260912-0012",
+        "itm-20260912-0038",
+        "itm-20260912-0042",
+        "itm-20260912-0077"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0077"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "kubernetes-v1-36-release",
+      "tier": "A",
+      "canonicalTitle": "Kubernetes 1.36 正式發布：Pod 就地垂直縮放達 GA，全面移除樹內雲端供應商 Shim 並廢棄舊 Endpoints API",
+      "whySelected": "雲原生基礎架構的核心升級：長期期待的 in-place pod resize 正式穩定，降低重新調度代價；但同時移除 in-tree cloud providers 與廢棄 legacy endpoints API，迫使所有維運團隊調整升級腳本與驅動。",
+      "changeType": "NEW",
+      "importance": 0.9,
+      "novelty": 0.88,
+      "confidence": 0.99,
+      "sourceItemIds": [
+        "itm-20260912-0007",
+        "itm-20260912-0013",
+        "itm-20260912-0057",
+        "itm-20260912-0068"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0057",
+        "itm-20260912-0068"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "sable-orm-batch-loss-bug",
+      "tier": "A",
+      "canonicalTitle": "Sable ORM 發布 6.2.4 緊急修補版本，修復連線釋放順序致靜默資料遺失並附偵測工具",
+      "whySelected": "延燒三天的重大生產資料遺失漏洞正式迎來官方修補與結案，附帶生產環境資料庫缺列檢測腳本，使用該 ORM 的工程團隊需立即排查與升級。",
+      "changeType": "RESOLUTION",
+      "importance": 0.9,
+      "novelty": 0.75,
+      "confidence": 0.99,
+      "sourceItemIds": [
+        "itm-20260912-0018",
+        "itm-20260912-0039",
+        "itm-20260912-0071"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0018"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "keelson-bridge-replay-exploit",
+      "tier": "A",
+      "canonicalTitle": "Keelson Bridge 遭棄用訊息格式簽章重放攻擊，未鎖定資產即鑄造損失約 1.9 億美元",
+      "whySelected": "跨鏈橋巨額資金失竊案，涉及 1.9 億美元。技術漏洞機制在於驗證合約未移除棄用格式引發簽章重放，對所有跨鏈協議與多重簽章設計具高度警示意義。",
+      "changeType": "NEW",
+      "importance": 0.88,
+      "novelty": 0.9,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260912-0005",
+        "itm-20260912-0030",
+        "itm-20260912-0036",
+        "itm-20260912-0050"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0005"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "tessellate-t400-accelerator",
+      "tier": "A",
+      "canonicalTitle": "Tessellate 發布 T400 推論加速器：每封裝 6 TB/s 記憶體頻寬與 288 GB 容量",
+      "whySelected": "推論晶片市場重大新品，6 TB/s 記憶體頻寬與 288 GB 單封裝大容量直接瞄準前沿大模型推論記憶體頻寬瓶頸，並同步釋出軟體運行庫支援。",
+      "changeType": "NEW",
+      "importance": 0.9,
+      "novelty": 0.9,
+      "confidence": 0.98,
+      "sourceItemIds": [
+        "itm-20260912-0017",
+        "itm-20260912-0020",
+        "itm-20260912-0032",
+        "itm-20260912-0075"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0017"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "benchmark-contamination-audit",
+      "tier": "B",
+      "canonicalTitle": "基準測試污染審計發布：六大常用評估數據集含 4% 至 31% 預訓練污染，開源偵測工具與污染項目清單",
+      "whySelected": "系統性揭露當前最廣泛引用的 AI 基準評估數據集嚴重受預訓練語料污染，動搖多項現有模型評比結論，並開源工具促使社群重建評估標準。",
+      "changeType": "NEW",
+      "importance": 0.86,
+      "novelty": 0.88,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260912-0048",
+        "itm-20260912-0049",
+        "itm-20260912-0076",
+        "itm-20260912-0078"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0078",
+        "itm-20260912-0049"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "sign-sgd-1bit-optimizer",
+      "tier": "B",
+      "canonicalTitle": "研究社群重現 1 位元最佳化器：30B 參數量級出現發散，需保留 bf16 誤差反饋限制顯存節省幅度",
+      "whySelected": "昨日 Sign-SGD 最佳化器成果引起巨大關注，今日社群重現迅速指出邊界限制：在 30B 以上規模無法純 1-bit 收斂，需保留 bf16 反饋，務實修正了技術預期。",
+      "changeType": "UPDATE",
+      "importance": 0.85,
+      "novelty": 0.75,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260912-0025",
+        "itm-20260912-0051",
+        "itm-20260912-0061",
+        "itm-20260912-0079"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0051"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "us-core-cpi-august-2026",
+      "tier": "B",
+      "canonicalTitle": "美國 8 月核心 CPI 年增率降至 2.4%，住房通膨連續四個月降溫",
+      "whySelected": "通膨數據低於預期，且最頑固的住房通膨連續 4 個月放緩，為總體經濟與利率路徑提供關鍵宏觀背景。引用官方結構化數據事實。",
+      "changeType": "NEW",
+      "importance": 0.85,
+      "novelty": 0.8,
+      "confidence": 0.99,
+      "sourceItemIds": [
+        "itm-20260912-0024",
+        "itm-20260912-0037",
+        "itm-20260912-0041",
+        "itm-20260912-0059"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0024"
+      ],
+      "factRefs": [
+        "fct-20260912-005",
+        "fct-20260912-006",
+        "fct-20260912-007"
+      ]
+    },
+    {
+      "storyId": "fed-governors-rate-outlook",
+      "tier": "B",
+      "canonicalTitle": "兩位聯準會理事同日表態：政策利率或維持現行水準至少至明年第一季，直指住房通膨放緩",
+      "whySelected": "聯準會官員在通膨發布同日迅速且罕見一致表態，將利率預期定錨至明年初，直接影響科技融資與資本支出環境。獨立於統計數據成案。",
+      "changeType": "NEW",
+      "importance": 0.84,
+      "novelty": 0.78,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260912-0010",
+        "itm-20260912-0016",
+        "itm-20260912-0029",
+        "itm-20260912-0064"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0064"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "northbridge-watt-pricing",
+      "tier": "B",
+      "canonicalTitle": "Northbridge Cloud 推出瓦特計費執行個體，定價依承諾功耗上限而非純執行時數計價",
+      "whySelected": "開創按功率上限計費的新型雲端定價模式，顛覆以 CPU-hour / GPU-hour 為中心的經濟模型，影響基礎設施成本最佳化策略。",
+      "changeType": "NEW",
+      "importance": 0.82,
+      "novelty": 0.85,
+      "confidence": 0.85,
+      "sourceItemIds": [
+        "itm-20260912-0034"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0034"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "corvid-talos-acquisition-talks",
+      "tier": "B",
+      "canonicalTitle": "Corvid Robotics 發布聲明否認 Talos 收購傳聞，彭博等媒體撤回報導並更正",
+      "whySelected": "昨日焦點併購傳聞方向反轉，當事方正式闢謠且主流財經媒體發布更正，徹底結案昨日的未決爭議。",
+      "changeType": "REVERSAL",
+      "importance": 0.82,
+      "novelty": 0.8,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260912-0014",
+        "itm-20260912-0028",
+        "itm-20260912-0035",
+        "itm-20260912-0043"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0028"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "larkspur-oral-therapy-approval",
+      "tier": "C",
+      "canonicalTitle": "監管機構批准 Larkspur Bio 口服罕見疾病新藥，附加肝損傷黑框警告並要求售後登記追蹤",
+      "whySelected": "生技監管實質動態，雖屬罕見疾病但黑框警告條件嚴格，供涉及生醫技術領域讀者參考。",
+      "changeType": "NEW",
+      "importance": 0.78,
+      "novelty": 0.8,
+      "confidence": 0.99,
+      "sourceItemIds": [
+        "itm-20260912-0047",
+        "itm-20260912-0053",
+        "itm-20260912-0066",
+        "itm-20260912-0070"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0070"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "us-jobless-claims-20260912",
+      "tier": "C",
+      "canonicalTitle": "美國勞工部公布初領失業救濟人數為 20.8 萬人，維持於穩定低檔區間",
+      "whySelected": "例行勞動市場週數據，就業指標持穩，作為宏觀參考。引用結構化官方事實。",
+      "changeType": "NEW",
+      "importance": 0.55,
+      "novelty": 0.4,
+      "confidence": 0.99,
+      "sourceItemIds": [
+        "itm-20260912-0056",
+        "itm-20260912-0073"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0073"
+      ],
+      "factRefs": [
+        "fct-20260912-012",
+        "fct-20260912-013"
+      ]
+    },
+    {
+      "storyId": "ashgrove-dividend-declaration",
+      "tier": "C",
+      "canonicalTitle": "Ashgrove Utilities 宣布配發每股 0.44 美元季度股利",
+      "whySelected": "公用事業例行股利發放公告，技術讀者相關度較低，留作企業申報底稿備選。引用 SEC 申報事實。",
+      "changeType": "NEW",
+      "importance": 0.3,
+      "novelty": 0.35,
+      "confidence": 0.99,
+      "sourceItemIds": [
+        "itm-20260912-0004",
+        "itm-20260912-0040"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0004"
+      ],
+      "factRefs": [
+        "fct-20260912-001",
+        "fct-20260912-002"
+      ]
+    }
+  ],
+  "emergingSignals": [
+    {
+      "label": "運算基礎設施的能耗計量轉向一等原語",
+      "rationale": "雲端服務商與硬體運行時正迅速將電力與功耗從被動設施成本轉換為軟體直接可調度的計量原語。Northbridge Cloud 正式推出以瓦特功耗上限（power envelope）計價的算力執行個體；硬體層面 Tessellate 於 runtime 直接回報晶片每 token 實際消耗焦耳數；結合昨日 Halyard 推出機架電力排程外掛，顯示在推論成本高漲下，功耗正全面滲透至系統計費與調度層面。反證在於：若此趨勢為假，雲端與運行時將回歸傳統按核按時數計費，能耗指標將僅停留在資料中心底層監控而不暴露至使用者層。",
+      "storyIds": [
+        "northbridge-watt-pricing",
+        "tessellate-t400-accelerator"
+      ]
+    }
+  ],
+  "curatorNotes": "今日 81 則 raw feed 處理完畢，已全部記錄 disposition。篩選收斂出 11 則當日候選 story（A 級 5 則，B 級 4 則，C 級 2 則），另有 3 則過往事件（halyard-v2-release 等）為討論重複。核心亮點包含：Meridian 3 Opus 釋出 2M 上下文與大降價、Kubernetes 1.36 GA、Sable ORM 嚴重資料遺失修復結案、Keelson Bridge 遭 1.9 億美元重放攻擊、美國核心 CPI 與 Fed 理事政策表態。在能源與算力方面，觀察到運算調度與硬體架構將能耗指標納入一等計量原語的新興趨勢。"
+}
