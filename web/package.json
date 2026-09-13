@@ -3,9 +3,9 @@
 	"version": "0.1.0",
 	"private": true,
 	"scripts": {
-		"dev": "next dev -H 127.0.0.1 -p 3300",
+		"dev": "next dev -H ${WEB_HOST:-127.0.0.1} -p ${WEB_PORT:-3300}",
 		"build": "next build",
-		"start": "next start -H 127.0.0.1 -p 3300"
+		"start": "next start -H ${WEB_HOST:-127.0.0.1} -p ${WEB_PORT:-3300}"
 	},
 	"dependencies": {
 		"next": "15.5.4",

@@ -365,6 +365,11 @@ pnpm web:start                 # next start on 127.0.0.1:3300
 pnpm web:seed                  # development seed data
 ```
 
+Both bind loopback by default. `WEB_HOST` and `WEB_PORT` override that, so
+`WEB_HOST=0.0.0.0 pnpm web:start` serves the reader to your LAN. There is no
+authentication in front of it and every route is read-only, so bind it to a
+network you trust and never expose it to the Internet.
+
 A web request never invokes a language model. `tests/web-no-llm.test.ts` walks every
 file under `web/` and fails if anything there imports the Pi SDK or the restricted
 runtime. See `web/README.md` for the route list.
