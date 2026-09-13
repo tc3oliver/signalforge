@@ -404,8 +404,13 @@ describe.skipIf(!probe.available)("web read projections", () => {
 		// The config payload itself is never returned, only its key names.
 		expect(JSON.stringify(mine)).not.toContain("24h");
 
-		const runs = await listCollectionRuns(sql, 50);
+		// A generous limit on purpose: this asserts the shape of the projection,
+		// not the size of the admin page's window. With 50 it passed only while
+		// the table was nearly empty, and started failing the moment real
+		// collection runs accumulated ahead of the seeded one.
+		const runs = await listCollectionRuns(sql, 5_000);
 		const run = runs.find((r) => r.collectionRunId === `cr-${suffix}`);
+		expect(run).toBeDefined();
 		expect(run?.health).toBe("DEGRADED");
 		expect(run?.error).toBe("upstream 503");
 		expect(run?.warnings).toEqual(["partial page"]);

@@ -1,6 +1,6 @@
 # Stability report
 
-Generated: 2026-09-13T09:54:43.179Z
+Generated: 2026-09-13T10:05:15.546Z
 Experiments: p11-b, p11-c, p11-d
 Model(s) observed: gemini-3.8-flash
 Dates: 2026-09-10, 2026-09-11, 2026-09-12
@@ -18,6 +18,20 @@ which would measure phrasing rather than agreement.
 
 The four metrics below it are recorded as measurements, not gates: they
 describe where two independent lineages agree and where they diverge.
+
+### How to read the other four
+
+`must_know_stability` and `cluster_stability` measure the same kind of
+agreement as the gate and should sit near it. `change_type_stability` is a
+per-story label match, so it moves in larger steps on a small brief.
+
+`emerging_signal_stability` is expected to be the lowest of the five, and a
+low number here is not the same kind of finding as a low number above. A
+signal is a weak pattern across items none of which earned a story slot;
+whether a given day contains one at all is a judgement call at the margin,
+and a day with one signal in one lineage and none in another scores zero
+for that day however reasonable both readings were. Treat it as a measure
+of how marginal the day was, not of whether the pipeline is reproducible.
 
 ## Overall (mean across dates)
 
