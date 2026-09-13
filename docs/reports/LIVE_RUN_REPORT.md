@@ -4,7 +4,7 @@
 > operator supplied credentials — its brief is kept as
 > `briefs/2026-09-13/2026-09-13.v1.*` and as drafts 1-3 in the database. The run
 > made with Miniflux, GitHub, FRED, YouTube and Tavily enabled is
-> `docs/CONNECTOR_ENABLEMENT_REPORT.md`, which doubles the day's stories from four
+> `docs/reports/CONNECTOR_ENABLEMENT_REPORT.md`, which doubles the day's stories from four
 > to eight. Everything below remains accurate as a record of what was true then.
 
 The first end-to-end production run: real collectors, real Postgres, real Pi
@@ -199,7 +199,7 @@ production data, not only on fixtures.
 ## Web
 
 Verified against this run's data on a loopback-only production server
-(`next start -H 127.0.0.1 -p 3300`); see `docs/FINAL_ACCEPTANCE_REPORT.md` for
+(`next start -H 127.0.0.1 -p 3300`); see `docs/reports/FINAL_ACCEPTANCE_REPORT.md` for
 the route-by-route results.
 
 ## Untouched

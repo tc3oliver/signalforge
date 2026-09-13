@@ -16,7 +16,7 @@ was re-run with them and doubled from four stories to eight. Two sources remain
 disabled for want of a credential (`reddit`, `sec`) and one runs anonymously
 (`semantic-scholar`), so the status line is unchanged — but it now covers three
 sources rather than six. The full record is
-`docs/CONNECTOR_ENABLEMENT_REPORT.md`.
+`docs/reports/CONNECTOR_ENABLEMENT_REPORT.md`.
 
 ## Results
 
@@ -45,7 +45,7 @@ an empty ledger after the Phase 1.1 policy calibration. All three:
 
 `selected_story_precision` 1.000 on all three days (gate 0.85) and `cluster_f1`
 0.993 / 0.973 / 0.972 (gate 0.90) — the two gates that failed before. Full table
-and the before/after analysis: `docs/PHASE1_REPORT.md` §11.
+and the before/after analysis: `docs/reports/PHASE1_REPORT.md` §11.
 
 No acceptance threshold, gold-truth file or fixture expected answer was changed;
 `git diff 29166c7 HEAD -- eval/gold fixtures` is empty.
@@ -64,7 +64,7 @@ matched by item membership and gold event mapping, never by title string.
 | change_type_stability | 0.934 | measurement |
 | emerging_signal_stability | 0.444 | measurement |
 
-`emerging_signal_stability` is the expected outlier and `docs/STABILITY_REPORT.md`
+`emerging_signal_stability` is the expected outlier and `docs/reports/STABILITY_REPORT.md`
 explains why: a signal is a judgement at the margin, and a day with one signal in
 one lineage and none in another scores zero however reasonable both readings are.
 
@@ -162,7 +162,7 @@ refused, as designed. Verified by restoring, not by the file existing.
 
 ## Live daily run
 
-`docs/LIVE_RUN_REPORT.md` is the full record. In summary: triggered through the
+`docs/reports/LIVE_RUN_REPORT.md` is the full record. In summary: triggered through the
 installed LaunchAgent, 771 real items scanned at 100% coverage, 4 stories
 curated, brief written, validated and published, with the arXiv failure recorded
 as the run's `degraded_reason`. Brief at `briefs/2026-09-13/`.
@@ -290,7 +290,7 @@ by the operator; the remaining three are below.
 | Semantic Scholar | `SEMANTIC_SCHOLAR_API_KEY` | runs anonymously; the public tier answers 429 under load | yes, degraded | a free key raises the rate limit |
 
 Now enabled and verified live: Miniflux, GitHub, FRED, YouTube, and web research
-through Tavily. See `docs/CONNECTOR_ENABLEMENT_REPORT.md`.
+through Tavily. See `docs/reports/CONNECTOR_ENABLEMENT_REPORT.md`.
 
 ### The Tavily credential, specifically
 
@@ -331,7 +331,7 @@ search and the exit-36 Keychain read — were observed in the same run.
    A machine-level instability, not a project defect, but it will interrupt a
    scheduled run if it happens overnight.
 7. **`emerging_signal_stability` is 0.444.** Expected for a marginal judgement;
-   see `docs/STABILITY_REPORT.md`.
+   see `docs/reports/STABILITY_REPORT.md`.
 8. **`scripts/lib-db-env.sh` needs bash.** It parses `DATABASE_URL` with
    `BASH_REMATCH`, which zsh — the default shell here — does not provide.
    Sourcing it from zsh used to fail several lines later with a message that
@@ -350,8 +350,8 @@ search and the exit-36 Keychain read — were observed in the same run.
 | `docs/RUNBOOK.md` | failure playbooks, reboot/login constraint |
 | `docs/SECURITY.md` | threat model, restricted runtime, secrets |
 | `docs/DATA_SOURCES.md` | per-source status and credentials |
-| `docs/PHASE1_REPORT.md` | synthetic acceptance, before and after |
-| `docs/STABILITY_REPORT.md` | three lineages, five metrics |
-| `docs/LIVE_RUN_REPORT.md` | the real end-to-end day |
+| `docs/reports/PHASE1_REPORT.md` | synthetic acceptance, before and after |
+| `docs/reports/STABILITY_REPORT.md` | three lineages, five metrics |
+| `docs/reports/LIVE_RUN_REPORT.md` | the real end-to-end day |
 | `docs/PRODUCTION_PLAN.md` | stage status |
-| `docs/FINAL_ACCEPTANCE_REPORT.md` | this document |
+| `docs/reports/FINAL_ACCEPTANCE_REPORT.md` | this document |

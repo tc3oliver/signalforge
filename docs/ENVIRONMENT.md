@@ -111,8 +111,9 @@ Per-stage tuning also lives in `config/agent.yaml`: `CURATOR` and `EDITOR` each 
 
 ## SDK facts this project depends on
 
-Read from the installed `dist/*.d.ts`, `docs/sdk.md` and `examples/sdk/`, not from
-the public docs site.
+Read from the installed package itself, under
+`node_modules/@earendil-works/pi-coding-agent/` — its `dist/*.d.ts`, its own
+`docs/sdk.md`, and `examples/sdk/` — not from the public docs site.
 
 - `createAgentSession({ noTools: "all", customTools, tools })` yields a session whose
   active tool set is exactly the custom tools. Verified per run in

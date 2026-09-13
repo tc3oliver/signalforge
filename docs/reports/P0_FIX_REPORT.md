@@ -4,7 +4,7 @@ Scope: production correctness, reliability and data integrity only. No intellige
 policy, personalization, feedback loop or web UX was touched, and no skill, prompt,
 threshold, gold file or interest profile was changed.
 
-Date: 2026-09-13. Follows `docs/QUALITY_REVIEW.md`, which is where the evidence for
+Date: 2026-09-13. Follows `docs/reports/QUALITY_REVIEW.md`, which is where the evidence for
 each of these came from.
 
 ---
@@ -246,7 +246,7 @@ actionable message under the strict flag.
 
 ### The 920 items, analysed
 
-Production evidence (`docs/QUALITY_REVIEW.md`): 920 GitHub items decided, **0
+Production evidence (`docs/reports/QUALITY_REVIEW.md`): 920 GitHub items decided, **0
 candidates, 0 stories** — about 71% of the day's corpus for zero output — and the
 curator's rejection reasons collapsed into ~119 templated strings in per-repo blocks of
 exactly 30, i.e. it stopped reading them individually.
@@ -389,7 +389,7 @@ context problem.
 ## The OrbStack hang was not OrbStack
 
 This blocked verification for an hour and the diagnosis is worth keeping, because it
-also explains the three earlier "OrbStack hangs" recorded in `docs/QUALITY_REVIEW.md`.
+also explains the three earlier "OrbStack hangs" recorded in `docs/reports/QUALITY_REVIEW.md`.
 
 **Root cause: the host was configured to sleep after 1 minute idle on AC**
 (`pmset -g custom` → `sleep 1`). The chain:
@@ -426,7 +426,7 @@ Per the scope of this pass: no intelligence policy, no personalization, no feedb
 loop, no web UX. `config/interests.yaml` is still dead config, the
 `find_history` → `changeType` invariant is still unenforced, emerging signals are still
 ungated, and there is still no claim-level grounding. Those are P0-3, P0-5, P1-3 and
-P1-7 in `docs/QUALITY_REVIEW.md` and are intentionally untouched here.
+P1-7 in `docs/reports/QUALITY_REVIEW.md` and are intentionally untouched here.
 
 arXiv remains FAILED with a 429 and now carries 14 consecutive failures. That is P1-9
 and is left for after the freeze.

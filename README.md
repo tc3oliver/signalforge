@@ -33,16 +33,16 @@ loads `.env` so they can, and `pnpm verify` fails outright if they cannot — a 
 run that silently skipped the whole data layer is worse than a red one.
 
 - **Synthetic acceptance:** `p11-b` passes every gate on all three fixture days —
-  `experiments/p11-b/<date>/<run-id>/evaluation.json`, and `docs/PHASE1_REPORT.md`
+  `experiments/p11-b/<date>/<run-id>/evaluation.json`, and `docs/reports/PHASE1_REPORT.md`
   §11 for the before-and-after.
 - **Stability:** three independent lineages, core story selection 0.922 against a
-  0.85 gate — `docs/STABILITY_REPORT.md`.
+  0.85 gate — `docs/reports/STABILITY_REPORT.md`.
 - **Model fallback:** validated live, not only in tests. A real primary session
   decided 50 of 79 items, a quota failure was injected at the worker boundary, and a
   fresh session on the second model finished the remaining 29.
 - **Live run:** one real end-to-end day, triggered through the installed
-  LaunchAgent — `docs/LIVE_RUN_REPORT.md`.
-- **Everything, in one table:** `docs/FINAL_ACCEPTANCE_REPORT.md`.
+  LaunchAgent — `docs/reports/LIVE_RUN_REPORT.md`.
+- **Everything, in one table:** `docs/reports/FINAL_ACCEPTANCE_REPORT.md`.
 
 ## Prerequisites
 
@@ -251,5 +251,9 @@ since the fault fires only once that retry succeeds and no fallback occurs. Use
 | [`docs/OPERATIONS.md`](docs/OPERATIONS.md) | Day-to-day operation of the running system |
 | [`docs/RUNBOOK.md`](docs/RUNBOOK.md) | Incident procedures |
 | [`docs/PRODUCTION_PLAN.md`](docs/PRODUCTION_PLAN.md) | Staged build plan and per-task status |
-| [`docs/PHASE1_REPORT.md`](docs/PHASE1_REPORT.md) | The prototype's measured results and known limitations |
 | [`web/README.md`](web/README.md) | The reader: routes, the no-LLM rule, and how untrusted content is rendered |
+
+Everything above is kept current. Dated evidence — acceptance, live runs, the
+stability measurement, the quality review and the P0 fixes — lives under
+[`docs/reports/`](docs/README.md#reports--point-in-time-not-maintained) and is
+deliberately never updated after the fact.

@@ -354,4 +354,4 @@ connection string appears anywhere in `logs/incremental.out.log` or
 `logs/incremental.err.log`.
 
 The daily agent was triggered the same way and drove a full live run against
-real collected data; `docs/LIVE_RUN_REPORT.md` records it.
+real collected data; `docs/reports/LIVE_RUN_REPORT.md` records it.

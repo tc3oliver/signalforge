@@ -116,7 +116,7 @@ function main(): void {
 	const core = report.overall.find((m) => m.name === CORE_STORY_SELECTION_METRIC);
 	const gatePassed = core?.mean !== null && core?.mean !== undefined && core.mean >= CORE_STORY_SELECTION_GATE;
 
-	const outDir = join(root, "docs");
+	const outDir = join(root, "docs", "reports");
 	writeJsonAtomic(join(outDir, "stability.json"), report);
 	writeTextAtomic(join(outDir, "STABILITY_REPORT.md"), renderStabilityMarkdown(report));
 

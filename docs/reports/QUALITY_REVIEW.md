@@ -277,7 +277,7 @@ terms:
   `editorial-policy.md` is elaborated across three separate files to prevent exactly this,
   and it did not prevent it.
 
-**Quantitative support:** `docs/stability.json` records `emerging_signal_stability` at
+**Quantitative support:** `docs/reports/stability.json` records `emerging_signal_stability` at
 **0.333–0.444** across repeated runs, against 0.91–1.00 for must-know and 0.98–0.995 for
 clustering. The existing report explains this away as a judgement call at the margin. That
 explanation is too generous: a component that agrees with itself one time in three is not

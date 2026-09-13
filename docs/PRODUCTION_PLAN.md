@@ -71,10 +71,10 @@ Status values: `TODO` / `WIP` / `DONE` / `BLOCKED_EXTERNAL`
 
 | # | Task | Status |
 |---|---|---|
-| 6.1 | Live end-to-end daily run on real sources | DONE — see `docs/LIVE_RUN_REPORT.md` |
-| 6.2 | Web acceptance | DONE — see `docs/FINAL_ACCEPTANCE_REPORT.md` |
+| 6.1 | Live end-to-end daily run on real sources | DONE — see `docs/reports/LIVE_RUN_REPORT.md` |
+| 6.2 | Web acceptance | DONE — see `docs/reports/FINAL_ACCEPTANCE_REPORT.md` |
 | 6.3 | LaunchAgent manual trigger acceptance | DONE — both agents kickstarted |
-| 6.4 | `docs/FINAL_ACCEPTANCE_REPORT.md` | DONE |
+| 6.4 | `docs/reports/FINAL_ACCEPTANCE_REPORT.md` | DONE |
 
 ## Requires the user (collected here, raised at the end)
 

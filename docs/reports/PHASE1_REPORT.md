@@ -246,7 +246,7 @@ is likewise only covered by tests.
 2. **Single model; three repetitions on one day.** Every live number is
    `gemini-3.8-flash`; there is still no cross-model comparison — see §13 for why that
    sweep was not run. Variance is no longer unmeasured: three independent lineages
-   (`p11-b`, `p11-c`, `p11-d`) exist and `docs/STABILITY_REPORT.md` reports
+   (`p11-b`, `p11-c`, `p11-d`) exist and `docs/reports/STABILITY_REPORT.md` reports
    `core_story_selection_stability` 0.922 against a 0.85 gate. That comparison is
    across lineages on a single date, not across all three days.
 3. **`DailyMaterials.stories` has no lower bound** but the editor needs 8–15. If a
@@ -488,7 +488,7 @@ reads as the plan that was followed.
 **Then make the result trustworthy.**
 
 4. ~~Run each day ≥ 3 times to get variance~~ — **partly done**. Three lineages exist
-   but are compared on 2026-09-10 only; see `docs/STABILITY_REPORT.md` and §9 item 2.
+   but are compared on 2026-09-10 only; see `docs/reports/STABILITY_REPORT.md` and §9 item 2.
 5. Run the cross-model sweep once quota is confirmed, and compare the three models on
    the same fixtures. **Still open.**
 6. ~~Deliberately fail a provider in a live run to validate fallback outside tests~~ —
