@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SourceType } from "../schemas/item.ts";
+import type { CollectorSourceConfig, WatchlistsConfig } from "../config/schema.ts";
 
 /**
  * Everything a collector emits is external text written by someone else. It is
@@ -81,6 +82,26 @@ export interface CollectorContext {
 	secret: (name: string) => Promise<string>;
 	/** Whether a secret exists, without reading it. */
 	hasSecret: (name: string) => Promise<boolean>;
+	/**
+	 * This collector's slice of config/watchlists.yaml. The single mechanism for
+	 * "what should I track" — a collector never hardcodes a watchlist as a module
+	 * constant and never reads the YAML file itself. Tests inject a fixture here
+	 * so nothing ever touches the real file.
+	 */
+	watchlists: WatchlistsConfig;
+	/**
+	 * This collector's own entry from config/sources.yaml (enabled flag, baseUrl,
+	 * rate limit, timeout, page size). Read-only; a collector adjusts its own
+	 * behaviour from this rather than re-deriving operational settings itself.
+	 */
+	sourceConfig: CollectorSourceConfig;
+	/**
+	 * Non-secret scalar configuration not covered by a typed schema field yet
+	 * (e.g. SEC's mandatory contact User-Agent, which is public and loggable,
+	 * not a credential). Resolves to undefined when absent — unlike `secret`,
+	 * which throws. Never redacted, since by definition it holds no credential.
+	 */
+	config: (name: string) => Promise<string | undefined>;
 	fetch: typeof globalThis.fetch;
 	signal?: AbortSignal;
 	log: (msg: string, fields?: Record<string, unknown>) => void;

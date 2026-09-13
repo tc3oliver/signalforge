@@ -415,31 +415,59 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
 				};
 			}
 
-			const refs = await options.store.persistRaw(result.items, collectionRunId);
-			const inserted = refs.filter((r) => r.inserted).length;
-			const normalized = result.items.map(toNormalizedItem);
-			const rawIds = new Map(refs.map((r) => [itemIdFor(r.sourceType, r.externalId), r.rawItemId]));
-			await options.store.persistItems(normalized, rawIds);
-			for (const item of result.items) {
-				if (item.sourceType === "arxiv") arxivExternalIds.push(item.externalId);
+			// The collection_runs row has to exist before raw items can reference it,
+			// but it is written WITHOUT the cursor first: the cursor is only
+			// advanced once the data it describes is durably stored, so a crash
+			// half way through persistence re-reads the same window next time.
+			await options.store.recordRun(collectionRunId, { ...result, cursor: undefined }, options.runId);
+
+			let inserted = 0;
+			let factsInserted = 0;
+			try {
+				const refs = await options.store.persistRaw(result.items, collectionRunId);
+				inserted = refs.filter((r) => r.inserted).length;
+				const normalized = result.items.map(toNormalizedItem);
+				const rawIds = new Map(refs.map((r) => [itemIdFor(r.sourceType, r.externalId), r.rawItemId]));
+				await options.store.persistItems(normalized, rawIds);
+				for (const item of result.items) {
+					if (item.sourceType === "arxiv") arxivExternalIds.push(item.externalId);
+				}
+
+				// A fact whose source item was not collected would be a dangling
+				// reference in the manifest, so only facts we can anchor are kept.
+				const knownItemIds = new Set(normalized.map((i) => i.id));
+				const facts = result.facts
+					.map((f) => toStructuredFact(f, collector.sourceType))
+					.filter((f) => knownItemIds.has(f.sourceItemId));
+				await options.store.persistFacts(facts);
+				factsInserted = facts.length;
+			} catch (err) {
+				const message = err instanceof Error ? err.message : String(err);
+				log("collector persistence failed", { collector: collector.id, error: message });
+				return {
+					...base,
+					health: "FAILED",
+					itemsFetched: result.itemsFetched,
+					itemsInserted: 0,
+					factsInserted: 0,
+					warnings: result.warnings,
+					error: message,
+					cursorAdvanced: false,
+					latencyMs: result.latencyMs,
+				};
 			}
 
-			// A fact whose source item was not collected would be a dangling
-			// reference in the manifest, so only facts we can anchor are kept.
-			const knownItemIds = new Set(normalized.map((i) => i.id));
-			const facts = result.facts
-				.map((f) => toStructuredFact(f, collector.sourceType))
-				.filter((f) => knownItemIds.has(f.sourceItemId));
-			await options.store.persistFacts(facts);
-
-			await options.store.recordRun(collectionRunId, result, options.runId);
+			// Everything landed: now the cursor may move.
+			if (result.cursor !== undefined) {
+				await options.store.recordRun(collectionRunId, result, options.runId);
+			}
 
 			return {
 				...base,
 				health: result.health,
 				itemsFetched: result.itemsFetched,
 				itemsInserted: inserted,
-				factsInserted: facts.length,
+				factsInserted,
 				warnings: result.warnings,
 				...(result.error === undefined ? {} : { error: result.error }),
 				cursorAdvanced: result.cursor !== undefined,

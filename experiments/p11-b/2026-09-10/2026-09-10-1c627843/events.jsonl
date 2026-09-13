@@ -1,0 +1,48 @@
+{"ts":"2026-09-13T09:18:41.898Z","kind":"run.transition","from":"CREATED","to":"CURATING"}
+{"ts":"2026-09-13T09:18:45.909Z","kind":"tool_call","stage":"CURATOR","tool":"get_daily_inventory","date":"2026-09-10","totalItems":79,"itemsBySource":{"arxiv":2,"reddit":11,"rss":28,"web":7,"youtube":2,"hackernews":13,"github":6,"fred":1,"coingecko":6,"sec":2,"semantic-scholar":1},"processedItems":0,"unseenItems":79,"storyCount":0}
+{"ts":"2026-09-13T09:18:48.387Z","kind":"tool_call","stage":"CURATOR","tool":"list_unseen_items","returned":50,"remaining":29}
+{"ts":"2026-09-13T09:18:51.260Z","kind":"tool_call","stage":"CURATOR","tool":"list_unseen_items","returned":29,"remaining":0}
+{"ts":"2026-09-13T09:18:53.126Z","kind":"tool_call","stage":"CURATOR","tool":"list_today_stories","count":0}
+{"ts":"2026-09-13T09:18:55.869Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"logical qubit surface code error threshold","hits":0}
+{"ts":"2026-09-13T09:18:55.874Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"export rules accelerator threshold performance density","hits":0}
+{"ts":"2026-09-13T09:18:55.879Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Quarrystone CVE replication slot scram","hits":0}
+{"ts":"2026-09-13T09:18:58.148Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Northbridge certificate rotation us-east-2","hits":0}
+{"ts":"2026-09-13T09:18:58.155Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"jobless claims FRED labour market","hits":0}
+{"ts":"2026-09-13T09:18:58.160Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Meridian context window enterprise document review","hits":0}
+{"ts":"2026-09-13T09:18:58.165Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Basalt revenue share licence","hits":0}
+{"ts":"2026-09-13T09:19:00.269Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Vantiq guidance renewal slippage","hits":0}
+{"ts":"2026-09-13T09:19:00.273Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Nimbus-7 Aperture weights licence","hits":0}
+{"ts":"2026-09-13T09:19:00.278Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Rust 1.94 parallel front end compiler","hits":0}
+{"ts":"2026-09-13T09:19:00.281Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"stablecoin daily reserve attestation overnight","hits":0}
+{"ts":"2026-09-13T09:19:02.542Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Linux 6.19 deadline scheduler vruntime","hits":0}
+{"ts":"2026-09-13T09:19:02.549Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Sable ORM batched upsert pool size","hits":0}
+{"ts":"2026-09-13T09:19:02.554Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Anvil data centres substation queue","hits":0}
+{"ts":"2026-09-13T09:19:02.559Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"accelerator power capping idle cluster","hits":0}
+{"ts":"2026-09-13T09:19:04.363Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Ashgrove dividend","hits":0}
+{"ts":"2026-09-13T09:19:06.146Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"a","hits":0}
+{"ts":"2026-09-13T09:19:20.979Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":4}
+{"ts":"2026-09-13T09:19:22.833Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":2}
+{"ts":"2026-09-13T09:19:25.076Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":3}
+{"ts":"2026-09-13T09:19:27.055Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":2}
+{"ts":"2026-09-13T09:19:28.761Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":1}
+{"ts":"2026-09-13T09:19:30.551Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":2}
+{"ts":"2026-09-13T09:19:32.886Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":9}
+{"ts":"2026-09-13T09:19:35.181Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"bis-accelerator-export-threshold","hits":0}
+{"ts":"2026-09-13T09:19:35.187Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"quarrystone-cve-2026-41882","hits":0}
+{"ts":"2026-09-13T09:19:37.320Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"northbridge-useast2-outage","hits":0}
+{"ts":"2026-09-13T09:19:37.326Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"fsb-stablecoin-reserve-rule","hits":0}
+{"ts":"2026-09-13T09:19:39.054Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"surface-code-million-cycle-qubit","hits":0}
+{"ts":"2026-09-13T09:19:39.059Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"sable-orm-batch-loss-bug","hits":0}
+{"ts":"2026-09-13T09:19:40.874Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"rust-1-94-release","hits":0}
+{"ts":"2026-09-13T09:19:40.881Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"aperture-nimbus7-release","hits":0}
+{"ts":"2026-09-13T09:19:42.931Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"linux-6-19-deadline-scheduler","hits":0}
+{"ts":"2026-09-13T09:19:42.936Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"vantiq-guidance-renewal-slippage","hits":0}
+{"ts":"2026-09-13T09:19:44.832Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"meridian-long-context-enterprise","hits":0}
+{"ts":"2026-09-13T09:19:44.838Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"anvil-datacenter-substation-deferral","hits":0}
+{"ts":"2026-09-13T09:19:46.533Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"accelerator-power-capping-idle-study","hits":0}
+{"ts":"2026-09-13T09:19:46.538Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"us-jobless-claims-20260910","hits":0}
+{"ts":"2026-09-13T09:19:48.332Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"ashgrove-utilities-dividend-q3","hits":0}
+{"ts":"2026-09-13T09:19:53.584Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"bis-accelerator-export-threshold","changeType":"NEW"}
+{"ts":"2026-09-13T09:19:53.589Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"quarrystone-cve-2026-41882","changeType":"NEW"}
+{"ts":"2026-09-13T09:19:59.757Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"northbridge-useast2-outage","changeType":"NEW"}
+{"ts":"2026-09-13T09:19:59.762Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"fsb-stablecoin-reserve-rule","changeType":"NEW"}

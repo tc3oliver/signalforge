@@ -1,40 +1,6 @@
-import { fetchWithRetry, TokenBucket } from "./http.ts";
-
-/**
- * Thin per-collector adapter over the shared fetchWithRetry/TokenBucket
- * primitives in ./http.ts (owned by another agent) — gives call sites a
- * small get(url) surface instead of threading bucket/signal through each one.
- */
-function createHttpClient(
-	fetchImpl: typeof fetch,
-	opts: { timeoutMs?: number; retries?: number; rateLimit?: { perSecond: number }; headers?: Record<string, string>; signal?: AbortSignal },
-) {
-	const bucket = opts.rateLimit
-		? new TokenBucket({ capacity: Math.max(1, Math.ceil(opts.rateLimit.perSecond)), refillPerSecond: opts.rateLimit.perSecond })
-		: undefined;
-	return {
-		async get(url: string, extra?: { headers?: Record<string, string> }): Promise<Response> {
-			return fetchWithRetry(
-				url,
-				{ method: "GET", headers: { ...opts.headers, ...extra?.headers } },
-				{ fetchImpl, timeoutMs: opts.timeoutMs, maxAttempts: opts.retries, signal: opts.signal, bucket },
-			);
-		},
-	};
-}
+import { HttpError, TokenBucket, fetchWithRetry } from "./http.ts";
 import type { Collector, CollectorContext, CollectorResult, CollectedItem, CollectedFact } from "./types.ts";
 import { UNTRUSTED_EXTERNAL_CONTENT } from "./types.ts";
-
-/**
- * Assets we track by default. CoinGecko's free/demo tier has no per-project
- * config surface here yet, so this is a fixed watchlist rather than something
- * read from src/config — widen it there once collector config lands.
- */
-const ASSETS: { id: string; symbol: string }[] = [
-	{ id: "bitcoin", symbol: "BTC" },
-	{ id: "ethereum", symbol: "ETH" },
-	{ id: "solana", symbol: "SOL" },
-];
 
 const API_BASE = "https://api.coingecko.com/api/v3";
 
@@ -59,6 +25,14 @@ interface TrendingCoin {
 	item?: { id?: string; symbol?: string; name?: string; market_cap_rank?: number };
 }
 
+/** Describes a request failure (thrown HttpError or transport error) as a warning string. */
+function describeFailure(label: string, url: string | undefined, err: unknown): string {
+	if (err instanceof HttpError) {
+		return url ? `${label} returned ${err.status} for ${redactUrl(url)}` : `${label} returned ${err.status}`;
+	}
+	return `${label} request failed: ${(err as Error).message}`;
+}
+
 export const coingeckoCollector: Collector = {
 	id: "coingecko",
 	sourceType: "coingecko",
@@ -77,16 +51,14 @@ export const coingeckoCollector: Collector = {
 		let health: "OK" | "DEGRADED" | "DISABLED" | "FAILED" = "OK";
 		let itemsFetched = 0;
 
+		const assets = ctx.watchlists.crypto_assets;
 		const hasKey = await ctx.hasSecret("COINGECKO_API_KEY");
 		// Public tier is heavily throttled (~5-15 calls/min); a demo key raises that
 		// somewhat but is still far from the paid pro tier, so we stay conservative.
 		const perSecond = hasKey ? 0.5 : 0.2;
-		const client = createHttpClient(ctx.fetch, {
-			timeoutMs: 15_000,
-			retries: 3,
-			rateLimit: { perSecond },
-			signal: ctx.signal,
-		});
+		const bucket = new TokenBucket({ capacity: Math.max(1, Math.ceil(perSecond)), refillPerSecond: perSecond });
+		const get = (url: string) =>
+			fetchWithRetry(url, {}, { fetchImpl: ctx.fetch, timeoutMs: 15_000, maxAttempts: 3, signal: ctx.signal, bucket });
 
 		const keyParam = hasKey ? `&x_cg_demo_api_key=${await ctx.secret("COINGECKO_API_KEY")}` : "";
 
@@ -94,22 +66,22 @@ export const coingeckoCollector: Collector = {
 			const fetchedAt = ctx.now().toISOString();
 
 			// --- per-asset price/volume/market cap facts ---
-			const ids = ASSETS.map((a) => a.id).join(",");
-			const priceUrl = `${API_BASE}/simple/price?ids=${ids}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true${keyParam}`;
 			let priceJson: Record<string, SimplePriceEntry> | undefined;
-			try {
-				const res = await client.get(priceUrl);
-				if (!res.ok) {
-					warnings.push(`simple/price returned ${res.status} for ${redactUrl(priceUrl)}`);
-				} else {
+			if (assets.length > 0) {
+				const ids = assets.map((a) => a.id).join(",");
+				const priceUrl = `${API_BASE}/simple/price?ids=${ids}&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true${keyParam}`;
+				try {
+					const res = await get(priceUrl);
 					priceJson = (await res.json()) as Record<string, SimplePriceEntry>;
+				} catch (err) {
+					warnings.push(describeFailure("simple/price", priceUrl, err));
 				}
-			} catch (err) {
-				warnings.push(`simple/price request failed: ${(err as Error).message}`);
+			} else {
+				warnings.push("no crypto assets configured");
 			}
 
 			if (priceJson) {
-				for (const asset of ASSETS) {
+				for (const asset of assets) {
 					const entry = priceJson[asset.id];
 					if (!entry || typeof entry.usd !== "number") {
 						warnings.push(`malformed or missing price entry for ${asset.id}`);
@@ -153,77 +125,69 @@ export const coingeckoCollector: Collector = {
 			// --- global market data (total mcap, BTC dominance) ---
 			const globalUrl = `${API_BASE}/global${keyParam ? `?${keyParam.slice(1)}` : ""}`;
 			try {
-				const res = await client.get(globalUrl);
-				if (!res.ok) {
-					warnings.push(`global endpoint returned ${res.status} for ${redactUrl(globalUrl)}`);
-				} else {
-					const body = (await res.json()) as { data?: GlobalData };
-					const data = body.data;
-					const totalMcapUsd = data?.total_market_cap?.usd;
-					const btcDominance = data?.market_cap_percentage?.btc;
-					if (typeof totalMcapUsd === "number") {
-						itemsFetched++;
-						facts.push({
-							kind: "crypto",
-							label: "Total crypto market cap",
-							value: totalMcapUsd,
-							unit: "usd",
-							asOf: fetchedAt,
-							externalId: `coingecko-global-mcap-${fetchedAt}`,
-							metadata: {},
-						});
-					}
-					if (typeof btcDominance === "number") {
-						itemsFetched++;
-						facts.push({
-							kind: "crypto",
-							label: "BTC dominance",
-							value: btcDominance,
-							unit: "percent",
-							asOf: fetchedAt,
-							externalId: `coingecko-btc-dominance-${fetchedAt}`,
-							metadata: {},
-						});
-					}
-					if (!data) warnings.push("malformed global payload: missing data field");
+				const res = await get(globalUrl);
+				const body = (await res.json()) as { data?: GlobalData };
+				const data = body.data;
+				const totalMcapUsd = data?.total_market_cap?.usd;
+				const btcDominance = data?.market_cap_percentage?.btc;
+				if (typeof totalMcapUsd === "number") {
+					itemsFetched++;
+					facts.push({
+						kind: "crypto",
+						label: "Total crypto market cap",
+						value: totalMcapUsd,
+						unit: "usd",
+						asOf: fetchedAt,
+						externalId: `coingecko-global-mcap-${fetchedAt}`,
+						metadata: {},
+					});
 				}
+				if (typeof btcDominance === "number") {
+					itemsFetched++;
+					facts.push({
+						kind: "crypto",
+						label: "BTC dominance",
+						value: btcDominance,
+						unit: "percent",
+						asOf: fetchedAt,
+						externalId: `coingecko-btc-dominance-${fetchedAt}`,
+						metadata: {},
+					});
+				}
+				if (!data) warnings.push("malformed global payload: missing data field");
 			} catch (err) {
-				warnings.push(`global request failed: ${(err as Error).message}`);
+				warnings.push(describeFailure("global", globalUrl, err));
 			}
 
 			// --- trending: a genuine "event", so this becomes an item, not just a fact ---
 			const trendingUrl = `${API_BASE}/search/trending${keyParam ? `?${keyParam.slice(1)}` : ""}`;
 			try {
-				const res = await client.get(trendingUrl);
-				if (!res.ok) {
-					warnings.push(`trending endpoint returned ${res.status} for ${redactUrl(trendingUrl)}`);
+				const res = await get(trendingUrl);
+				const body = (await res.json()) as { coins?: TrendingCoin[] };
+				const coins = (body.coins ?? [])
+					.map((c) => c.item)
+					.filter((c): c is NonNullable<TrendingCoin["item"]> => !!c?.id && !!c.symbol);
+				if (coins.length > 0) {
+					itemsFetched++;
+					const externalId = `coingecko-trending-${fetchedAt}`;
+					const names = coins.map((c) => c.symbol?.toUpperCase()).join(", ");
+					items.push({
+						sourceType: "coingecko",
+						sourceName: "CoinGecko Trending",
+						externalId,
+						title: `Trending on CoinGecko: ${names}`,
+						summary: `Coins currently trending by search volume: ${names}`,
+						url: "https://www.coingecko.com/en/coins/trending",
+						publishedAt: fetchedAt,
+						metadata: { coins: coins.map((c) => ({ id: c.id, symbol: c.symbol, rank: c.market_cap_rank })) },
+						trust: UNTRUSTED_EXTERNAL_CONTENT,
+						raw: { externalId, body, fetchedAt },
+					});
 				} else {
-					const body = (await res.json()) as { coins?: TrendingCoin[] };
-					const coins = (body.coins ?? [])
-						.map((c) => c.item)
-						.filter((c): c is NonNullable<TrendingCoin["item"]> => !!c?.id && !!c.symbol);
-					if (coins.length > 0) {
-						itemsFetched++;
-						const externalId = `coingecko-trending-${fetchedAt}`;
-						const names = coins.map((c) => c.symbol?.toUpperCase()).join(", ");
-						items.push({
-							sourceType: "coingecko",
-							sourceName: "CoinGecko Trending",
-							externalId,
-							title: `Trending on CoinGecko: ${names}`,
-							summary: `Coins currently trending by search volume: ${names}`,
-							url: "https://www.coingecko.com/en/coins/trending",
-							publishedAt: fetchedAt,
-							metadata: { coins: coins.map((c) => ({ id: c.id, symbol: c.symbol, rank: c.market_cap_rank })) },
-							trust: UNTRUSTED_EXTERNAL_CONTENT,
-							raw: { externalId, body, fetchedAt },
-						});
-					} else {
-						warnings.push("malformed trending payload: no coins array");
-					}
+					warnings.push("malformed trending payload: no coins array");
 				}
 			} catch (err) {
-				warnings.push(`trending request failed: ${(err as Error).message}`);
+				warnings.push(describeFailure("trending", trendingUrl, err));
 			}
 		} catch (err) {
 			const finishedAt = ctx.now().toISOString();
@@ -241,8 +205,7 @@ export const coingeckoCollector: Collector = {
 			};
 		}
 
-		if (warnings.length > 0 && facts.length === 0 && items.length === 0) health = "DEGRADED";
-		else if (warnings.length > 0) health = "DEGRADED";
+		if (warnings.length > 0) health = "DEGRADED";
 
 		const finishedAt = ctx.now().toISOString();
 		return {

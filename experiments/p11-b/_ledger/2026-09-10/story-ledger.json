@@ -1,0 +1,99 @@
+[
+  {
+    "storyId": "bis-accelerator-export-threshold",
+    "date": "2026-09-10",
+    "canonicalTitle": "BIS 發布臨時最終規則：下調算力密度門檻，擴大中階 AI 加速晶片出口管制",
+    "sourceItemIds": [
+      "itm-20260910-0003",
+      "itm-20260910-0010",
+      "itm-20260910-0014",
+      "itm-20260910-0034"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0010"
+    ],
+    "firstSeenAt": "2026-09-13T09:19:53.571Z",
+    "lastSeenAt": "2026-09-13T09:19:53.571Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.94,
+    "novelty": 0.88,
+    "importance": 0.92,
+    "confidence": 0.98,
+    "reason": "美國工業安全局 (BIS) 發布 interim final rule，直接調整算力密度門檻，將原本規避舊門檻的中階 AI 加速器納入許可管制範圍，且 30 天內生效無豁免。itm-20260910-0010 為官方新聞稿一手來源。",
+    "factRefs": []
+  },
+  {
+    "storyId": "quarrystone-cve-2026-41882",
+    "date": "2026-09-10",
+    "canonicalTitle": "Quarrystone 修補重大漏洞 CVE-2026-41882，預設配置恐遭未授權讀取 WAL 完整資料庫日誌",
+    "sourceItemIds": [
+      "itm-20260910-0004",
+      "itm-20260910-0023",
+      "itm-20260910-0051",
+      "itm-20260910-0060"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0004"
+    ],
+    "firstSeenAt": "2026-09-13T09:19:53.578Z",
+    "lastSeenAt": "2026-09-13T09:19:53.578Z",
+    "status": "RESOLVED",
+    "changeType": "NEW",
+    "relevance": 0.92,
+    "novelty": 0.9,
+    "importance": 0.9,
+    "confidence": 0.98,
+    "reason": "資料庫 Quarrystone 16 與 17 版發布安全性修復版本 17.4 與 16.8。當停用 SCRAM channel binding 時（多數熱門容器映像檔預設），未授權使用者可建立邏輯複製 slot 取得完整 WAL，等同資料庫洩露。官方公告為 primary。",
+    "factRefs": []
+  },
+  {
+    "storyId": "northbridge-useast2-outage",
+    "date": "2026-09-10",
+    "canonicalTitle": "Northbridge Cloud us-east-2 控制平面因憑證輪替失敗中斷逾 6 小時，執行個體無法擴展與變更",
+    "sourceItemIds": [
+      "itm-20260910-0008",
+      "itm-20260910-0009",
+      "itm-20260910-0021",
+      "itm-20260910-0036",
+      "itm-20260910-0059"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0021"
+    ],
+    "firstSeenAt": "2026-09-13T09:19:59.744Z",
+    "lastSeenAt": "2026-09-13T09:19:59.744Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.88,
+    "novelty": 0.85,
+    "importance": 0.86,
+    "confidence": 0.98,
+    "reason": "Northbridge us-east-2 控制平面因憑證輪替失敗，導致啟動執行個體、自動擴展、負載平衡器設定中斷長達 6 小時 11 分鐘，既有執行中工作負載未受影響。itm-20260910-0021 為官方初步公告。",
+    "factRefs": []
+  },
+  {
+    "storyId": "fsb-stablecoin-reserve-rule",
+    "date": "2026-09-10",
+    "canonicalTitle": "金融穩定委員會發布支付型穩定幣最終規則：規模百億美元以上須每日揭露並持有 80% 隔夜資產",
+    "sourceItemIds": [
+      "itm-20260910-0035",
+      "itm-20260910-0037",
+      "itm-20260910-0043",
+      "itm-20260910-0058"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0043"
+    ],
+    "firstSeenAt": "2026-09-13T09:19:59.752Z",
+    "lastSeenAt": "2026-09-13T09:19:59.752Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.82,
+    "novelty": 0.86,
+    "importance": 0.85,
+    "confidence": 0.98,
+    "reason": "FSB 正式發布監管規則，流通量逾 100 億美元的支付型穩定幣發行商必須每日發布第三方查核儲備，且至少 80% 投資隔夜工具，合規期 180 天。itm-20260910-0043 為 FSB 官方新聞稿。",
+    "factRefs": []
+  }
+]

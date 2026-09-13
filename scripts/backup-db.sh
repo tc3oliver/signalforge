@@ -31,8 +31,18 @@ resolve_db_env "${ENV_FILE}" || fail "could not resolve database connection sett
 # PGPASSWORD is intentionally optional: a .pgpass file is an equally valid way
 # to authenticate and this script must not require one over the other.
 
-command -v pg_dump >/dev/null 2>&1 || fail "pg_dump not found on PATH"
+# pg_dump runs INSIDE the container rather than on the host. There are no
+# Postgres client binaries on this machine, and adding a Homebrew dependency to
+# dump a database this repo already defines in its own compose.yaml would be the
+# wrong trade -- running in the container also guarantees the client version
+# always matches the server version.
+CONTAINER="${DAILY_INTELLIGENCE_PG_CONTAINER:-daily-intelligence-postgres}"
+
+command -v docker >/dev/null 2>&1 || fail "docker not found on PATH"
 command -v gzip >/dev/null 2>&1 || fail "gzip not found on PATH"
+
+docker inspect --format '{{.State.Running}}' "${CONTAINER}" 2>/dev/null | grep -qx true ||
+	fail "container '${CONTAINER}' is not running. Start it with: docker compose -p daily-intelligence up -d"
 
 mkdir -p "${BACKUP_DIR}"
 
@@ -40,11 +50,14 @@ TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 OUT_FILE="${BACKUP_DIR}/${PGDATABASE}-${TIMESTAMP}.sql.gz"
 TMP_FILE="${OUT_FILE}.partial"
 
-echo "backup-db: dumping ${PGDATABASE}@${PGHOST}:${PGPORT} -> ${OUT_FILE}"
+echo "backup-db: dumping ${PGDATABASE} from ${CONTAINER} -> ${OUT_FILE}"
 
-# PGPASSWORD (if set) travels through the environment only -- never as a
-# command-line argument, which would leak into `ps` and shell history.
-pg_dump --no-owner --no-privileges | gzip >"${TMP_FILE}"
+# The password is passed with `--env PGPASSWORD`, which reads the value out of
+# this script's environment rather than taking it as an argument, so it never
+# appears in `ps` output on either the host or inside the container.
+docker exec --env PGPASSWORD --env PGUSER --env PGDATABASE "${CONTAINER}" \
+	pg_dump --no-owner --no-privileges -U "${PGUSER}" -d "${PGDATABASE}" |
+	gzip >"${TMP_FILE}"
 mv -- "${TMP_FILE}" "${OUT_FILE}"
 
 echo "backup-db: wrote $(du -h "${OUT_FILE}" | cut -f1) to ${OUT_FILE}"

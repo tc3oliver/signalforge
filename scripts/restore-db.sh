@@ -80,17 +80,27 @@ elif [[ "${TARGET_DB}" != "${PGDATABASE}${SCRATCH_DB_SUFFIX}" && "${TARGET_DB}" 
 	fail "refusing to restore into '${TARGET_DB}': --target must be '${PGDATABASE}' (with --force), the default scratch db, or a name prefixed with '${PGDATABASE}_'"
 fi
 
-command -v psql >/dev/null 2>&1 || fail "psql not found on PATH"
-command -v createdb >/dev/null 2>&1 || fail "createdb not found on PATH"
+# psql and createdb run INSIDE the container, for the same reasons as
+# backup-db.sh: no Postgres client binaries exist on this host, and running in
+# the container keeps client and server versions in step.
+CONTAINER="${DAILY_INTELLIGENCE_PG_CONTAINER:-daily-intelligence-postgres}"
+
+command -v docker >/dev/null 2>&1 || fail "docker not found on PATH"
 command -v gunzip >/dev/null 2>&1 || fail "gunzip not found on PATH"
+
+docker inspect --format '{{.State.Running}}' "${CONTAINER}" 2>/dev/null | grep -qx true ||
+	fail "container '${CONTAINER}' is not running. Start it with: docker compose -p daily-intelligence up -d"
 
 echo "restore-db: target database = ${TARGET_DB}"
 echo "restore-db: source file     = ${BACKUP_FILE}"
 
 # createdb exits non-zero if the database already exists -- that is fine for
 # a scratch db being reused across test runs.
-createdb --host "${PGHOST}" --port "${PGPORT}" --username "${PGUSER}" "${TARGET_DB}" 2>/dev/null || true
+docker exec --env PGPASSWORD "${CONTAINER}" \
+	createdb -U "${PGUSER}" "${TARGET_DB}" 2>/dev/null || true
 
-gunzip -c -- "${BACKUP_FILE}" | psql --host "${PGHOST}" --port "${PGPORT}" --username "${PGUSER}" --dbname "${TARGET_DB}" --set ON_ERROR_STOP=on
+gunzip -c -- "${BACKUP_FILE}" |
+	docker exec --interactive --env PGPASSWORD "${CONTAINER}" \
+		psql -U "${PGUSER}" -d "${TARGET_DB}" --set ON_ERROR_STOP=on >/dev/null
 
 echo "restore-db: restore into '${TARGET_DB}' complete."

@@ -126,6 +126,46 @@ describe("lib-db-env.sh connection resolution", () => {
 	});
 });
 
+describe("backup-db.sh / restore-db.sh run pg_dump/psql inside the container", () => {
+	for (const name of ["backup-db.sh", "restore-db.sh"] as const) {
+		const content = readFileSync(new URL(name, SCRIPT_DIR), "utf8");
+
+		it(`${name} never requires a Postgres client binary on the host`, () => {
+			expect(content).not.toMatch(/command -v pg_dump/);
+			expect(content).not.toMatch(/command -v psql/);
+			expect(content).not.toMatch(/command -v createdb/);
+		});
+
+		it(`${name} scopes every docker command to the daily-intelligence-postgres container by name`, () => {
+			expect(content).toMatch(/CONTAINER="\$\{DAILY_INTELLIGENCE_PG_CONTAINER:-daily-intelligence-postgres\}"/);
+			// Every `docker exec`/`docker inspect` call must address "${CONTAINER}",
+			// never a literal name, another variable, or (worse) all containers.
+			const dockerCalls = content.match(/docker (exec|inspect)[^\n]*/g) ?? [];
+			expect(dockerCalls.length).toBeGreaterThan(0);
+			for (const call of dockerCalls) {
+				expect(call).toContain('"${CONTAINER}"');
+			}
+		});
+
+		it(`${name} fails with the exact compose command when the container is not running`, () => {
+			expect(content).toMatch(/is not running/);
+			expect(content).toMatch(/docker compose -p daily-intelligence up -d/);
+		});
+
+		it(`${name} passes credentials via docker exec's environment, never as a CLI argument`, () => {
+			expect(content).toMatch(/--env PGPASSWORD/);
+			expect(content).not.toMatch(/PGPASSWORD=\S+\s+(pg_dump|psql|createdb)/);
+		});
+
+		it(`${name} never runs a destructive or engine-wide docker command`, () => {
+			expect(content).not.toMatch(/docker compose[^\n]*down[^\n]*-v/);
+			expect(content).not.toMatch(/volume prune/);
+			expect(content).not.toMatch(/system prune/);
+			expect(content).not.toMatch(/docker (rm|kill|stop)\b/);
+		});
+	}
+});
+
 describe("backup-db.sh safety", () => {
 	const content = readFileSync(new URL("backup-db.sh", SCRIPT_DIR), "utf8");
 
