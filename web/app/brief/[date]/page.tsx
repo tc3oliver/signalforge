@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { BriefView } from "../../../components/brief-view.tsx";
+import { FullBriefView } from "../../../components/brief-view.tsx";
 import { loadBriefPage } from "../../../lib/queries.ts";
 import { formatDateKey } from "../../../lib/format.ts";
 
@@ -24,5 +24,5 @@ export default async function BriefByDatePage({
 	if (!DATE_KEY.test(date)) notFound();
 	const data = await loadBriefPage(date);
 	if (!data) notFound();
-	return <BriefView data={data} />;
+	return <FullBriefView data={data} />;
 }

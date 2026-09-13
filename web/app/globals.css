@@ -1080,12 +1080,20 @@ footer.site {
 		padding: 12px 0;
 	}
 
+	/* The search field cannot fit beside the nav at phone width, so it takes
+	   a full row of its own below it instead of wrapping as an orphan. */
 	.masthead-tools {
 		gap: 10px;
+		flex-basis: 100%;
+		padding-bottom: 10px;
+	}
+
+	.search-compact {
+		flex: 1;
 	}
 
 	.search-compact input[type="search"] {
-		width: 7.5rem;
+		width: 100%;
 	}
 
 	.dashboard {
@@ -1094,7 +1102,8 @@ footer.site {
 	}
 
 	.hero-summary {
-		font-size: 1.15rem;
+		font-size: 1.08rem;
+		line-height: 1.4;
 	}
 
 	.hero-stats {

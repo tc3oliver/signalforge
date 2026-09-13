@@ -93,7 +93,7 @@ function StorySectionBody({
 	);
 }
 
-export function BriefView({ data }: { data: BriefPageData }) {
+export function FullBriefView({ data }: { data: BriefPageData }) {
 	const { brief, facts, items, lateItems, neighbours } = data;
 	const view: DashboardView = buildDashboard({
 		brief,
