@@ -1,0 +1,30 @@
+# Postgres + pgvector for the daily-intelligence data layer.
+#
+# Loopback-only on purpose: this machine is LAN compute, and the datastore must
+# never be reachable from the LAN. The non-default host port avoids colliding
+# with any other Postgres already running here.
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: daily-intelligence-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-daily_intelligence}
+      # Deterministic collation so the token/text ordering in queries does not
+      # drift with the host locale.
+      POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-55432}:5432"
+    volumes:
+      - daily-intelligence-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  daily-intelligence-pgdata:

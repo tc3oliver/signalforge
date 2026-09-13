@@ -3,3 +3,4 @@ runs/
 fixtures/generated/
 *.log
 .omc/
+.env

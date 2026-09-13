@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.dailyintelligence.daily</string>
+
+	<!--
+		Full pipeline: collect -> curate -> edit -> validate -> publish.
+		Fires at 05:30 so a normal run finishes well before 07:00. The target
+		script (`pipeline:daily`) is owned by the pipeline stage of this
+		project, not by this template — see docs/OPERATIONS.md for its
+		current status.
+	-->
+	<key>ProgramArguments</key>
+	<array>
+		<string>{{PNPM_BIN}}</string>
+		<string>run</string>
+		<string>pipeline:daily</string>
+	</array>
+
+	<key>WorkingDirectory</key>
+	<string>{{PROJECT_ROOT}}</string>
+
+	<key>StandardOutPath</key>
+	<string>{{LOG_DIR}}/daily.out.log</string>
+
+	<key>StandardErrorPath</key>
+	<string>{{LOG_DIR}}/daily.err.log</string>
+
+	<!--
+		Deliberately minimal and explicit: a launchd job runs with none of
+		the interactive shell's PATH or aliases, so every binary this job
+		needs must be reachable from this PATH alone.
+	-->
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>{{NODE_BIN_DIR}}:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>NODE_ENV</key>
+		<string>production</string>
+	</dict>
+
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>5</integer>
+		<key>Minute</key>
+		<integer>30</integer>
+	</dict>
+
+	<!--
+		Installer bootstraps the job explicitly; it must not fire on load
+		(e.g. immediately after `launchctl bootstrap` during a re-install).
+	-->
+	<key>RunAtLoad</key>
+	<false/>
+
+	<key>StandardInPath</key>
+	<string>/dev/null</string>
+</dict>
+</plist>

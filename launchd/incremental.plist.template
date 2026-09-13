@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.dailyintelligence.incremental</string>
+
+	<!--
+		Ingestion + normalized-store update only. Must NOT touch the daily
+		brief — that is the daily job's job. Fires at 09:00, 12:00, 15:00,
+		18:00 and 21:00, expressed as five StartCalendarInterval entries.
+	-->
+	<key>ProgramArguments</key>
+	<array>
+		<string>{{PNPM_BIN}}</string>
+		<string>run</string>
+		<string>pipeline:incremental</string>
+	</array>
+
+	<key>WorkingDirectory</key>
+	<string>{{PROJECT_ROOT}}</string>
+
+	<key>StandardOutPath</key>
+	<string>{{LOG_DIR}}/incremental.out.log</string>
+
+	<key>StandardErrorPath</key>
+	<string>{{LOG_DIR}}/incremental.err.log</string>
+
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>{{NODE_BIN_DIR}}:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>NODE_ENV</key>
+		<string>production</string>
+	</dict>
+
+	<key>StartCalendarInterval</key>
+	<array>
+		<dict>
+			<key>Hour</key>
+			<integer>9</integer>
+			<key>Minute</key>
+			<integer>0</integer>
+		</dict>
+		<dict>
+			<key>Hour</key>
+			<integer>12</integer>
+			<key>Minute</key>
+			<integer>0</integer>
+		</dict>
+		<dict>
+			<key>Hour</key>
+			<integer>15</integer>
+			<key>Minute</key>
+			<integer>0</integer>
+		</dict>
+		<dict>
+			<key>Hour</key>
+			<integer>18</integer>
+			<key>Minute</key>
+			<integer>0</integer>
+		</dict>
+		<dict>
+			<key>Hour</key>
+			<integer>21</integer>
+			<key>Minute</key>
+			<integer>0</integer>
+		</dict>
+	</array>
+
+	<key>RunAtLoad</key>
+	<false/>
+
+	<key>StandardInPath</key>
+	<string>/dev/null</string>
+</dict>
+</plist>
