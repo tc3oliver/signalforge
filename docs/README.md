@@ -13,6 +13,8 @@ does not, that is a defect.
 | [`CREDENTIALS.md`](CREDENTIALS.md) | Model authentication (Pi's) versus collector credentials (SignalForge's), and where each lives |
 | [`DEVELOPMENT.md`](DEVELOPMENT.md) | Running, testing, the fixture harness, fault injection, run artifacts, inspecting a failed run |
 | [`INTELLIGENCE_BACKLOG.md`](INTELLIGENCE_BACKLOG.md) | Post-freeze intelligence changes: evidence, design, tests, acceptance criteria |
+| [`LANGUAGE_STYLE.md`](LANGUAGE_STYLE.md) | Traditional Chinese style for the reader's copy and, after the freeze, the Editor's output |
+| [`OBSERVATION_REVIEW.md`](OBSERVATION_REVIEW.md) | The daily freeze review sheet and the queries that trace a missed story through every stage |
 | [`ENVIRONMENT.md`](ENVIRONMENT.md) | Verified versions, model IDs, config surface and environment variables |
 | [`SECURITY.md`](SECURITY.md) | Threat model, and the code and tests that enforce it |
 | [`DATA_SOURCES.md`](DATA_SOURCES.md) | Per-collector endpoints, credentials, incrementality and current status |

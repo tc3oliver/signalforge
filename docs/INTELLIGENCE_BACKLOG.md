@@ -438,6 +438,126 @@ any P1 item above.
 
 ---
 
+## Post-freeze: Chinese editorial style integration
+
+Added 2026-09-14 from the language audit. Specification: `LANGUAGE_STYLE.md`.
+Nothing here is applied to the Editor during the freeze.
+
+### Evidence
+
+The 2026-09-13 production `dailyAnalysis` opens 「今日簡報呈現出前沿技術演進與工程
+現實之間的強烈對比。」 — self-reference to the product form (「簡報」) plus a hype
+frame (「強烈對比」) in the first sentence, which the dashboard lifts verbatim as
+the hero line. That sentence is Editor output, not UI copy; it cannot be fixed
+in `web/` and the reader's hero therefore still shows it until the Editor
+changes. Story prose from the same run repeats 「此為首次進入追蹤之新事件」 as a
+formulaic opener in every `whatChanged` field.
+
+The skill's `references/writing-style.md` already bans 「值得注意的是」,
+「總的來說」 and the anchor voice. It does not ban self-reference (本簡報 / 今日
+簡報 / 本文), does not ban hype frames unless evidence supports them, and does
+not require the opening paragraph to answer whether today was quiet.
+
+### Change (post-freeze, one change set)
+
+1. `agent/skills/daily-intelligence/references/writing-style.md`: add the
+   meta-language ban (rule 4 of `LANGUAGE_STYLE.md`), the hype list (rule 5),
+   the quiet-day requirement (rule 7) and financing ≠ progress (rule 8). Add
+   the four questions the `dailyAnalysis` opening must answer, in order.
+2. `src/editor/prompt.ts`: one line pointing at the updated rules; no change
+   to selection, section assignment or Must Know policy.
+3. A deterministic post-hoc check (not a rejection) over `dailyAnalysis`,
+   `whyItMatters`, `whatChanged`, `impact` for the banned phrase list, written
+   into the run's manual-review artifact as counts per phrase. Promote to a
+   hard gate only after a week shows a near-zero false-positive rate.
+4. Gold evaluation re-run unchanged. Acceptance: selection metrics move by
+   less than run-to-run noise (see `reports/STABILITY_REPORT.md` for the
+   baseline); the phrase counter reads zero on at least three consecutive
+   production days.
+
+Why it must wait: rule 7 changes the shape of the opening paragraph, which is
+the hero line, and rule 8 changes how funding stories are described. Both are
+editorial behaviour and both would confound the observation window.
+
+## Post-freeze: signal state wording versus evidence
+
+The reader now labels every signal 「值得觀察的趨勢」 and shows its evidence
+(events, sources, days) next to a 可信度 word. That is presentation. The
+underlying state machine still advances `emerging → strengthening` on any
+second day of evidence, whether or not the evidence is new (see the Emerging
+Signals audit above), so the state word can outrun the evidence.
+
+Post-freeze change, folded into the signal gates item: distinguish
+
+- **WATCHING** — evidence is weak: one day, or fewer than two distinct events,
+  or one source cluster. Reader wording stays 「值得觀察」 and the confidence
+  word may not exceed 「可信度低」.
+- **EMERGING** — cross-event and cross-day evidence exists: two or more
+  distinct events across two or more days, from more than one source host.
+
+This is an Intelligence change (it alters when a signal is published as more
+than a watch item) and is not made during the freeze.
+
+## Post-freeze: reader prior for AI engineering versus AI industry
+
+The owner's coverage goal, recorded 2026-09-14: **AI 技術濃度高**, and
+**Crypto/Web3 不漏重要事件**.
+
+### Evidence
+
+The 2026-09-13 production run's Must Know set was: a labs-slow-down consensus
+statement, a GitHub outage, an OpenAI IPO comment, a 50 億美元 financing round.
+One of four is engineering-relevant infrastructure; two are industry news that
+led on the size of the number or the fame of the company. No inference,
+serving, quantization, agent-runtime, MCP, eval or open-weight story was
+selected that day, although the collectors returned items in those areas.
+
+### Change (post-freeze, part of P1-1)
+
+The `ReaderProfile` block in P1-1 distinguishes at least three AI strata, as
+priors the Curator and Editor see, not quotas:
+
+- **AI Engineering** — model releases, inference, serving, quantization,
+  vLLM, SGLang, llama.cpp, MLX, ROCm, CUDA, accelerators, agent runtimes,
+  coding agents, MCP, evals, RAG, open-weight models.
+- **AI Research** — agents, reasoning, multimodal, benchmarks, architecture,
+  safety research with engineering relevance.
+- **AI Industry** — funding, IPO, valuation, executive comments, partnerships.
+
+Principle: an AI Industry item does not outrank an AI Engineering item that is
+directly relevant to the reader merely because the amount is large or the
+company is well known. Industry items reach Must Know when they change
+something the reader must act on (pricing, availability, licensing, an
+outage), and are otherwise filed under 產業動態 with a takeaway that says what
+did not change technically.
+
+Weights are priors, not quotas. No section is guaranteed a slot, and a quiet
+day in AI Engineering is reported as quiet.
+
+Acceptance: over the first two post-change weeks, the share of Must Know
+stories tagged AI Engineering or AI Research rises without the gold precision
+metric falling; funding rounds appear in Must Know only with an action-bearing
+takeaway.
+
+## Post-freeze: Crypto / Web3 coverage audit
+
+No source is added and no ranking is changed during the freeze. The freeze
+review template (`OBSERVATION_REVIEW.md`) now records, every day, the
+technical and the Crypto/Web3 stories the owner expected and did not see, and
+traces each through `Raw → Decision → Candidate → Material → Final`. The
+post-freeze decision is made from that trace, not from the impression that
+「Crypto 太少」:
+
+| Where the story stopped | Conclusion | Owner of the fix |
+|---|---|---|
+| No raw item at all | source coverage | sources config (post-freeze) |
+| Raw item, disposition `IRRELEVANT` | Curator relevance / personalization | P1-1 |
+| `CANDIDATE`, no material row | material selection | Curator policy |
+| Material row, no brief story | Editor prioritisation | Editor policy |
+
+Only the first row is a source problem. The table is the reason the trace
+chain is recorded before any source is added.
+
 ## Ordering recommendation
 
 1. **P1-2 first.** It is the smallest change, touches one tool handler and one
@@ -451,4 +571,8 @@ any P1 item above.
    block land on a stable schema and their effect can be measured in eval.
 5. **P1-4** last; it needs the write-endpoint gating decision and has no reader
    until the owner decides to look at the numbers.
-6. Emerging-signal gates and any embedding producer are backlog after all P1s.
+6. Emerging-signal gates (including the WATCHING / EMERGING split above) and any
+   embedding producer are backlog after all P1s.
+7. Chinese editorial style integration is independent of the P1 order and can
+   ship first after the freeze, because it changes wording rather than
+   selection and is verified by the unchanged gold run.
