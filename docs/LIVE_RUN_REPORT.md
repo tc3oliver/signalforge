@@ -108,7 +108,73 @@ path: no re-collection, no re-curation, no second pass over 771 items.
 
 ## Writing, validation and publication
 
-<!-- LIVE_EDITOR_RESULT -->
+| | |
+|---|---|
+| Model | `github-copilot/gemini-3.8-flash` |
+| Attempts on the accepted run | 1, SUCCESS, no rejection and no fallback |
+| Brief stories | **4** (2 Must Know) |
+| Emerging signals | 0 |
+| Validation | PASSED |
+| State | **PUBLISHED** (degraded: arXiv) |
+
+Brief:
+
+- `briefs/2026-09-13/2026-09-13.json`
+- `briefs/2026-09-13/2026-09-13.md`
+- `daily_briefs` row, lineage `default`, run `e3a10340-ec3f-4cf3-b61c-628a6c25b7e4`,
+  produced 11:52:40 UTC
+
+| Story | Section | Must Know |
+|---|---|---|
+| `altman-rules-out-2026-ipo` | COMPANIES | yes |
+| `homebrew-7-0-0-release` | DEVELOPER_OSS | yes |
+| `bengio-agents-deception-alignment` | RESEARCH | no |
+| `revolut-fake-edr-data-breach` | DEVELOPER_OSS | no |
+
+### Deterministic sanity checks
+
+No gold truth exists for a live day, so the brief was checked against what can
+be verified mechanically. Every check passed:
+
+| Check | Result |
+|---|---|
+| Story count within today's bound | 4 of 4 materials |
+| Distinct storyIds | 4 of 4 — no repeats |
+| Must Know count | 2, within 2–4 for a four-story brief |
+| Source item ids resolve | 5 of 5 exist in `normalized_items` |
+| Fabricated source ids | 0 |
+| Duplicate source id inside one story | 0 |
+| factRefs valid | 0 used, 0 invalid |
+| `date` matches the run's date | yes |
+| `producedAt` matches the DB row | yes |
+| Required analysis fields present | dailyAnalysis (302 chars), watchNext (3) |
+| Source URLs reachable | spot-checked, HTTP 200 by both HEAD and ranged GET |
+
+None of this is a model judging its own work: every check is a comparison
+against the database or the network.
+
+### Four attempts were thrown away first, and why
+
+The accepted run above was preceded by four failed editor attempts across all
+three models in the chain. Every one of them wrote each of the four stories
+twice and was rejected for duplication. That looked like a model failure and
+was not: `submit_brief`'s own parameter schema declared `minItems: 8`.
+
+That schema is the contract a model must satisfy to call the tool at all. With
+four stories in the materials, the only payload that could be submitted was one
+the validator would then reject — an unsatisfiable pair of rules, and the models
+were obeying the half that was enforced first. Three independent models
+producing the identical wrong shape was the clue; a genuine editorial failure
+would not have been that uniform.
+
+The floor now lives only in `validateBrief`, which knows the material count, and
+the tool advertises today's real range. The next attempt submitted four stories
+and published on its first try, with no rejection and no fallback.
+
+Two of those four wasted attempts were also invisible at first: the daily CLI
+passed no `onEvent` handler, so the rejection text never reached the log and the
+run recorded only a failure count. That is fixed too — the diagnosis above was
+only possible after it was.
 
 ## Explainability, on this run's data
 
