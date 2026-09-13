@@ -119,3 +119,206 @@ export async function getBrief(
 		})) as DailyBrief["stories"],
 	};
 }
+
+/* -------------------------------------------------------------------------- */
+/* Read-only projections for the web reader (additive; no existing behaviour   */
+/* is changed). These exist here rather than in the web app so there is one    */
+/* data-access layer for daily_briefs, not two.                                */
+/* -------------------------------------------------------------------------- */
+
+export interface BriefSummary {
+	date: string;
+	producedAt: string;
+	storyCount: number;
+	mustKnowCount: number;
+	sections: string[];
+	signalCount: number;
+	headline: string | undefined;
+}
+
+/** Newest first. Drives /history and the "latest brief" redirect on /. */
+export async function listBriefSummaries(
+	sql: Sql,
+	lineage: string,
+	limit = 60,
+): Promise<BriefSummary[]> {
+	const rows = await sql.unsafe<
+		{
+			date: string; produced_at: string; story_count: string; must_know_count: string;
+			sections: string[]; signal_count: string; headline: string | null;
+		}[]
+	>(
+		`select b.date,
+			to_char(b.produced_at at time zone 'utc', ${ISO}) as produced_at,
+			(select count(*) from daily_brief_stories s
+			 where s.lineage = b.lineage and s.date = b.date)::text as story_count,
+			(select count(*) from daily_brief_stories s
+			 where s.lineage = b.lineage and s.date = b.date and s.must_know)::text as must_know_count,
+			coalesce((select array_agg(distinct s.section) from daily_brief_stories s
+			 where s.lineage = b.lineage and s.date = b.date), '{}'::text[]) as sections,
+			jsonb_array_length(b.emerging_signals)::text as signal_count,
+			(select s.title from daily_brief_stories s
+			 where s.lineage = b.lineage and s.date = b.date
+			 order by s.must_know desc, s.ordinal limit 1) as headline
+		 from daily_briefs b
+		 where b.lineage = $1
+		 order by b.date desc
+		 limit $2`,
+		[lineage, limit],
+	);
+	return rows.map((r) => ({
+		date: r.date,
+		producedAt: r.produced_at,
+		storyCount: Number(r.story_count),
+		mustKnowCount: Number(r.must_know_count),
+		sections: r.sections,
+		signalCount: Number(r.signal_count),
+		headline: r.headline ?? undefined,
+	}));
+}
+
+/** The date of the most recent published brief, or undefined if none exists. */
+export async function latestBriefDate(sql: Sql, lineage: string): Promise<string | undefined> {
+	const rows = await sql<{ date: string }[]>`
+		select date from daily_briefs where lineage = ${lineage} order by date desc limit 1
+	`;
+	return rows[0]?.date;
+}
+
+export interface BriefStoryHit {
+	date: string;
+	storyId: string;
+	section: string;
+	mustKnow: boolean;
+	title: string;
+	whatHappened: string;
+	whyItMatters: string;
+	confidence: string;
+	rank: number;
+}
+
+/**
+ * Full-text search over published brief stories using the stored generated
+ * tsvector. Ranking is ts_rank on that vector: explainable, reproducible and
+ * free of any model in the request path.
+ */
+export async function searchBriefStories(
+	sql: Sql,
+	lineage: string,
+	query: string,
+	limit = 25,
+): Promise<BriefStoryHit[]> {
+	if (query.trim() === "") return [];
+	const rows = await sql<
+		{
+			date: string; story_id: string; section: string; must_know: boolean; title: string;
+			what_happened: string; why_it_matters: string; confidence: string; rank: number;
+		}[]
+	>`
+		select date, story_id, section, must_know, title, what_happened, why_it_matters, confidence,
+			ts_rank(search, websearch_to_tsquery('simple', ${query})) as rank
+		from daily_brief_stories
+		where lineage = ${lineage} and search @@ websearch_to_tsquery('simple', ${query})
+		order by rank desc, date desc, ordinal
+		limit ${limit}
+	`;
+	return rows.map((r) => ({
+		date: r.date,
+		storyId: r.story_id,
+		section: r.section,
+		mustKnow: r.must_know,
+		title: r.title,
+		whatHappened: r.what_happened,
+		whyItMatters: r.why_it_matters,
+		confidence: r.confidence,
+		rank: r.rank,
+	}));
+}
+
+export interface BriefAppearance {
+	date: string;
+	section: string;
+	mustKnow: boolean;
+	title: string;
+	whatHappened: string;
+	whyItMatters: string;
+	whatChanged: string;
+	impact: string;
+	confidence: string;
+	sourceItemIds: string[];
+	factRefs: string[];
+}
+
+/** Every published brief a story reached, newest first. */
+export async function briefAppearancesForStory(
+	sql: Sql,
+	lineage: string,
+	storyId: string,
+): Promise<BriefAppearance[]> {
+	const rows = await sql<
+		{
+			date: string; section: string; must_know: boolean; title: string;
+			what_happened: string; why_it_matters: string; what_changed: string; impact: string;
+			confidence: string; source_item_ids: string[]; fact_refs: string[];
+		}[]
+	>`
+		select date, section, must_know, title, what_happened, why_it_matters, what_changed,
+			impact, confidence, source_item_ids, fact_refs
+		from daily_brief_stories
+		where lineage = ${lineage} and story_id = ${storyId}
+		order by date desc
+	`;
+	return rows.map((r) => ({
+		date: r.date,
+		section: r.section,
+		mustKnow: r.must_know,
+		title: r.title,
+		whatHappened: r.what_happened,
+		whyItMatters: r.why_it_matters,
+		whatChanged: r.what_changed,
+		impact: r.impact,
+		confidence: r.confidence,
+		sourceItemIds: r.source_item_ids,
+		factRefs: r.fact_refs,
+	}));
+}
+
+export interface DraftValidationRecord {
+	date: string;
+	draftNo: number;
+	runId: string | undefined;
+	producedAt: string;
+	validationStatus: "PENDING" | "PASSED" | "FAILED";
+	validationErrors: unknown[];
+}
+
+/** Rejected editor drafts, newest first — the validation panel on /admin/runs. */
+export async function listDraftValidationFailures(
+	sql: Sql,
+	lineage: string,
+	limit = 50,
+): Promise<DraftValidationRecord[]> {
+	const rows = await sql.unsafe<
+		{
+			date: string; draft_no: number; run_id: string | null; produced_at: string;
+			validation_status: string; validation_errors: unknown[];
+		}[]
+	>(
+		`select date, draft_no, run_id,
+			to_char(produced_at at time zone 'utc', ${ISO}) as produced_at,
+			validation_status, validation_errors
+		 from daily_brief_drafts
+		 where lineage = $1 and validation_status = 'FAILED'
+		 order by date desc, draft_no desc
+		 limit $2`,
+		[lineage, limit],
+	);
+	return rows.map((r) => ({
+		date: r.date,
+		draftNo: r.draft_no,
+		runId: r.run_id ?? undefined,
+		producedAt: r.produced_at,
+		validationStatus: r.validation_status as DraftValidationRecord["validationStatus"],
+		validationErrors: Array.isArray(r.validation_errors) ? r.validation_errors : [],
+	}));
+}

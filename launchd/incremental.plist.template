@@ -14,7 +14,7 @@
 	<array>
 		<string>{{PNPM_BIN}}</string>
 		<string>run</string>
-		<string>pipeline:incremental</string>
+		<string>collect</string>
 	</array>
 
 	<key>WorkingDirectory</key>

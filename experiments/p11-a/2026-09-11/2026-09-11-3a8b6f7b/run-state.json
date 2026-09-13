@@ -1,10 +1,10 @@
 {
   "runId": "2026-09-11-3a8b6f7b",
   "date": "2026-09-11",
-  "status": "CURATING",
+  "status": "WRITING",
   "createdAt": "2026-09-13T08:56:45.083Z",
-  "updatedAt": "2026-09-13T08:56:45.098Z",
+  "updatedAt": "2026-09-13T09:15:52.916Z",
   "totalItems": 82,
-  "processedItems": 0,
-  "storyCount": 0
+  "processedItems": 82,
+  "storyCount": 17
 }

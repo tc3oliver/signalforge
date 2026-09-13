@@ -12,14 +12,8 @@ Tavily credential, which only a GUI-session job can reach.
 
 | Job | Label | Schedule | Does |
 |---|---|---|---|
-| Daily pipeline | `com.dailyintelligence.daily` | 05:30 | Full run: collect → curate → edit → validate → publish. Targets completion before 07:00. |
-| Incremental ingestion | `com.dailyintelligence.incremental` | 09:00, 12:00, 15:00, 18:00, 21:00 | Ingests new source data and updates the normalized store only. **Never** rewrites the published daily brief. |
-
-The command each job actually runs (`pnpm run pipeline:daily` /
-`pnpm run pipeline:incremental`) is a placeholder until Stage 3 of
-`docs/PRODUCTION_PLAN.md` lands those scripts in `package.json`. The
-LaunchAgent plumbing (scheduling, logging, install/uninstall, verification) is
-complete and tested independently of that script existing.
+| Daily pipeline | `com.dailyintelligence.daily` | 05:30 | Full run: collect → curate → edit → validate → publish. Targets completion before 07:00. Runs `pnpm daily`. |
+| Incremental ingestion | `com.dailyintelligence.incremental` | 09:00, 12:00, 15:00, 18:00, 21:00 | Ingests new source data and updates the normalized store only. **Never** rewrites the published daily brief. Runs `pnpm collect`. |
 
 ## Logs
 

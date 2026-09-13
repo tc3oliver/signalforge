@@ -126,3 +126,138 @@ export async function countAttempts(sql: Sql, runId: string): Promise<number> {
 	`;
 	return Number(rows[0]?.n ?? 0);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Read-only projections for the web reader (additive).                        */
+/* -------------------------------------------------------------------------- */
+
+export interface RunSummary extends RunState {
+	lineage: string;
+}
+
+/** Newest runs first; the run table on /admin/runs. */
+export async function listRecentRuns(
+	sql: Sql,
+	lineage: string,
+	limit = 50,
+): Promise<RunSummary[]> {
+	const rows = await sql.unsafe<
+		{
+			run_id: string; lineage: string; date: string; status: string; total_items: number;
+			processed_items: number; story_count: number; failure_reason: string | null;
+			created_at: string; updated_at: string;
+		}[]
+	>(
+		`select run_id, lineage, date, status, total_items, processed_items, story_count,
+			failure_reason,
+			to_char(created_at at time zone 'utc', ${ISO}) as created_at,
+			to_char(updated_at at time zone 'utc', ${ISO}) as updated_at
+		 from daily_runs where lineage = $1
+		 order by created_at desc limit $2`,
+		[lineage, limit],
+	);
+	return rows.map((r) => ({
+		runId: r.run_id,
+		lineage: r.lineage,
+		date: r.date,
+		status: r.status as RunState["status"],
+		createdAt: r.created_at,
+		updatedAt: r.updated_at,
+		totalItems: r.total_items,
+		processedItems: r.processed_items,
+		storyCount: r.story_count,
+		...(r.failure_reason === null ? {} : { failureReason: r.failure_reason }),
+	}));
+}
+
+export interface AgentRunRow {
+	runId: string;
+	stage: Stage;
+	status: "RUNNING" | "SUCCESS" | "FAILED";
+	provider: string | undefined;
+	model: string | undefined;
+	startedAt: string;
+	finishedAt: string | undefined;
+	durationMs: number | undefined;
+}
+
+/** Per-stage timings for a set of runs, in one query (the stage table). */
+export async function listAgentRuns(
+	sql: Sql,
+	runIds: readonly string[],
+): Promise<AgentRunRow[]> {
+	if (runIds.length === 0) return [];
+	const rows = await sql.unsafe<
+		{
+			run_id: string; stage: string; status: string; provider: string | null;
+			model: string | null; started_at: string; finished_at: string | null;
+			duration_ms: number | null;
+		}[]
+	>(
+		`select run_id, stage, status, provider, model,
+			to_char(started_at at time zone 'utc', ${ISO}) as started_at,
+			to_char(finished_at at time zone 'utc', ${ISO}) as finished_at,
+			duration_ms
+		 from agent_runs where run_id = any($1::text[])
+		 order by run_id, started_at`,
+		[runIds as string[]],
+	);
+	return rows.map((r) => ({
+		runId: r.run_id,
+		stage: r.stage as Stage,
+		status: r.status as AgentRunRow["status"],
+		provider: r.provider ?? undefined,
+		model: r.model ?? undefined,
+		startedAt: r.started_at,
+		finishedAt: r.finished_at ?? undefined,
+		durationMs: r.duration_ms ?? undefined,
+	}));
+}
+
+export interface AttemptRow extends AgentAttempt {
+	runId: string;
+}
+
+/**
+ * Attempt history for a set of runs. A run with more than one attempt per stage
+ * is a fallback event, and `faultInjected` marks the synthetic ones so the
+ * admin view never reports a test fault as a real provider failure.
+ */
+export async function listAttempts(
+	sql: Sql,
+	runIds: readonly string[],
+): Promise<AttemptRow[]> {
+	if (runIds.length === 0) return [];
+	const rows = await sql.unsafe<
+		{
+			attempt_id: string; run_id: string; stage: string; provider: string; model: string;
+			started_at: string; finished_at: string; duration_ms: number; status: string;
+			failure_class: string | null; fallback_reason: string | null;
+			error_meta: Record<string, unknown> | null;
+			fault_injected: AgentAttempt["faultInjected"] | null;
+		}[]
+	>(
+		`select attempt_id, run_id, stage, provider, model,
+			to_char(started_at at time zone 'utc', ${ISO}) as started_at,
+			to_char(finished_at at time zone 'utc', ${ISO}) as finished_at,
+			duration_ms, status, failure_class, fallback_reason, error_meta, fault_injected
+		 from agent_attempts where run_id = any($1::text[])
+		 order by run_id, started_at`,
+		[runIds as string[]],
+	);
+	return rows.map((r) => ({
+		runId: r.run_id,
+		attemptId: r.attempt_id,
+		stage: r.stage as Stage,
+		provider: r.provider,
+		model: r.model,
+		startedAt: r.started_at,
+		finishedAt: r.finished_at,
+		durationMs: r.duration_ms,
+		status: r.status as AgentAttempt["status"],
+		...(r.failure_class === null ? {} : { failureClass: r.failure_class as AgentAttempt["failureClass"] }),
+		...(r.fallback_reason === null ? {} : { fallbackReason: r.fallback_reason }),
+		...(r.error_meta === null ? {} : { errorMeta: r.error_meta }),
+		...(r.fault_injected === null ? {} : { faultInjected: r.fault_injected }),
+	}));
+}

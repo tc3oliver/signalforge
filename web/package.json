@@ -1,0 +1,21 @@
+{
+	"name": "daily-intelligence-web",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"dev": "next dev -H 127.0.0.1 -p 3300",
+		"build": "next build",
+		"start": "next start -H 127.0.0.1 -p 3300"
+	},
+	"dependencies": {
+		"next": "15.5.4",
+		"react": "19.1.1",
+		"react-dom": "19.1.1"
+	},
+	"devDependencies": {
+		"@types/node": "^24.7.0",
+		"@types/react": "^19.1.12",
+		"@types/react-dom": "^19.1.9",
+		"typescript": "^5.9.3"
+	}
+}

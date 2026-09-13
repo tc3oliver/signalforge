@@ -99,3 +99,151 @@ export async function listCollectorStatus(sql: Sql): Promise<CollectorStatus[]> 
 		cursor: r.cursor ?? undefined,
 	}));
 }
+
+/* -------------------------------------------------------------------------- */
+/* Read-only projections for the web reader (additive).                        */
+/* -------------------------------------------------------------------------- */
+
+export interface SourceConfigRow extends CollectorStatus {
+	/**
+	 * Logical secret names the collector needs. Values live in the keychain; a
+	 * disabled source with a non-empty list is almost always a missing
+	 * credential rather than a deliberate switch-off.
+	 */
+	requiredSecrets: string[];
+	/** Config keys only. The config payload itself is never rendered. */
+	configKeys: string[];
+}
+
+export async function listSourceConfigs(sql: Sql): Promise<SourceConfigRow[]> {
+	const rows = await sql.unsafe<
+		{
+			collector_id: string; source_type: string; enabled: boolean;
+			last_health: string | null; last_run_at: string | null;
+			consecutive_failures: number; cursor: string | null;
+			required_secrets: string[]; config_keys: string[];
+		}[]
+	>(
+		`select collector_id, source_type, enabled, last_health,
+			to_char(last_run_at at time zone 'utc', ${ISO}) as last_run_at,
+			consecutive_failures, cursor, required_secrets,
+			coalesce((select array_agg(k order by k) from jsonb_object_keys(config) k), '{}'::text[]) as config_keys
+		 from source_configs order by collector_id`,
+		[],
+	);
+	return rows.map((r) => ({
+		collectorId: r.collector_id,
+		sourceType: r.source_type,
+		enabled: r.enabled,
+		lastHealth: (r.last_health ?? undefined) as CollectorHealth | undefined,
+		lastRunAt: r.last_run_at ?? undefined,
+		consecutiveFailures: r.consecutive_failures,
+		cursor: r.cursor ?? undefined,
+		requiredSecrets: r.required_secrets,
+		configKeys: r.config_keys,
+	}));
+}
+
+export interface CollectorThroughput {
+	collectorId: string;
+	runs: number;
+	itemsFetched: number;
+	itemsInserted: number;
+	avgLatencyMs: number;
+	maxLatencyMs: number;
+	lastError: string | undefined;
+	lastStartedAt: string | undefined;
+}
+
+/**
+ * Fetched vs inserted per collector over a window. They diverge when a source
+ * keeps re-serving the same records, which is the signal that a feed has gone
+ * quiet without failing.
+ */
+export async function collectorThroughput(
+	sql: Sql,
+	sinceHours = 168,
+): Promise<CollectorThroughput[]> {
+	const rows = await sql.unsafe<
+		{
+			collector_id: string; runs: string; items_fetched: string; items_inserted: string;
+			avg_latency_ms: number; max_latency_ms: number; last_error: string | null;
+			last_started_at: string | null;
+		}[]
+	>(
+		`select c.collector_id,
+			count(*)::text as runs,
+			coalesce(sum(c.items_fetched), 0)::text as items_fetched,
+			(select count(*) from raw_items r
+			 where r.collection_run_id in (
+				select c2.collection_run_id from collection_runs c2
+				where c2.collector_id = c.collector_id
+				  and c2.started_at > now() - make_interval(hours => $1)
+			 ))::text as items_inserted,
+			coalesce(avg(c.latency_ms), 0)::float8 as avg_latency_ms,
+			coalesce(max(c.latency_ms), 0) as max_latency_ms,
+			(array_remove(array_agg(c.error order by c.started_at desc), null))[1] as last_error,
+			to_char(max(c.started_at) at time zone 'utc', ${ISO}) as last_started_at
+		 from collection_runs c
+		 where c.started_at > now() - make_interval(hours => $1)
+		 group by c.collector_id
+		 order by c.collector_id`,
+		[sinceHours],
+	);
+	return rows.map((r) => ({
+		collectorId: r.collector_id,
+		runs: Number(r.runs),
+		itemsFetched: Number(r.items_fetched),
+		itemsInserted: Number(r.items_inserted),
+		avgLatencyMs: Math.round(r.avg_latency_ms),
+		maxLatencyMs: r.max_latency_ms,
+		lastError: r.last_error ?? undefined,
+		lastStartedAt: r.last_started_at ?? undefined,
+	}));
+}
+
+export interface CollectionRunRow {
+	collectionRunId: string;
+	runId: string | undefined;
+	collectorId: string;
+	health: CollectorHealth;
+	itemsFetched: number;
+	warnings: string[];
+	error: string | undefined;
+	startedAt: string;
+	finishedAt: string;
+	latencyMs: number;
+}
+
+/** Recent collection runs, newest first — the scan-coverage log. */
+export async function listCollectionRuns(
+	sql: Sql,
+	limit = 50,
+): Promise<CollectionRunRow[]> {
+	const rows = await sql.unsafe<
+		{
+			collection_run_id: string; run_id: string | null; collector_id: string;
+			health: string; items_fetched: number; warnings: string[]; error: string | null;
+			started_at: string; finished_at: string; latency_ms: number;
+		}[]
+	>(
+		`select collection_run_id, run_id, collector_id, health, items_fetched, warnings, error,
+			to_char(started_at at time zone 'utc', ${ISO}) as started_at,
+			to_char(finished_at at time zone 'utc', ${ISO}) as finished_at,
+			latency_ms
+		 from collection_runs order by started_at desc limit $1`,
+		[limit],
+	);
+	return rows.map((r) => ({
+		collectionRunId: r.collection_run_id,
+		runId: r.run_id ?? undefined,
+		collectorId: r.collector_id,
+		health: r.health as CollectorHealth,
+		itemsFetched: r.items_fetched,
+		warnings: r.warnings,
+		error: r.error ?? undefined,
+		startedAt: r.started_at,
+		finishedAt: r.finished_at,
+		latencyMs: r.latency_ms,
+	}));
+}

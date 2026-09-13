@@ -270,3 +270,125 @@ export async function processedItemIdsForDate(
 	`;
 	return new Set(rows.map((r) => r.item_id));
 }
+
+/* -------------------------------------------------------------------------- */
+/* Read-only projections for the web reader (additive).                        */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Every ledger row for a story, oldest first. This is the story's evolution:
+ * one row per day it was touched, carrying that day's change type and scores.
+ */
+export async function listStoryTimeline(
+	sql: Sql,
+	lineage: string,
+	storyId: string,
+): Promise<StoryLedgerEntry[]> {
+	const rows = await sql.unsafe<LedgerRow[]>(
+		`select ${COLUMNS("s")} from story_ledger s
+		 where s.lineage = $1 and s.story_id = $2
+		 order by s.date asc, s.ordinal`,
+		[lineage, storyId],
+	);
+	return rows.map(toEntry);
+}
+
+export interface RelatedStory {
+	entry: StoryLedgerEntry;
+	/** Number of source items this story shares with the subject story. */
+	sharedItemCount: number;
+	/** Fraction of the subject's title/reason tokens this story also uses. */
+	tokenOverlap: number;
+}
+
+/**
+ * Relatedness with a stated rule rather than an opaque score: shared source
+ * items first (two stories citing the same item are provably connected), then
+ * token overlap on the canonical title and reason, using the same tokeniser
+ * the ledger's own history search uses.
+ */
+export async function findRelatedStories(
+	sql: Sql,
+	lineage: string,
+	storyId: string,
+	limit = 8,
+): Promise<RelatedStory[]> {
+	const rows = await sql.unsafe<(LedgerRow & { shared_item_count: string; token_overlap: number })[]>(
+		`with subject as (
+			select s.* from story_ledger s
+			where s.lineage = $1 and s.story_id = $2
+			order by s.date desc limit 1
+		),
+		latest as (
+			select distinct on (s.story_id) s.*
+			from story_ledger s
+			where s.lineage = $1 and s.story_id <> $2
+			order by s.story_id, s.date desc, s.ordinal desc
+		),
+		scored as (
+			select l.*,
+				(select count(*) from unnest(l.source_item_ids) v
+				 where v = any((select source_item_ids from subject))) as shared_item_count,
+				(
+					select count(*)::float8 from unnest(
+						(select ledger_tokens(canonical_title || ' ' || reason) from subject)
+					) q
+					where q <> '' and q = any(ledger_tokens(l.canonical_title || ' ' || l.reason))
+				) / greatest(
+					array_length(
+						(select ledger_tokens(canonical_title || ' ' || reason) from subject), 1
+					), 1
+				) as token_overlap
+			from latest l
+		)
+		select ${COLUMNS("s")}, s.shared_item_count::text as shared_item_count, s.token_overlap
+		from scored s
+		where s.shared_item_count > 0 or s.token_overlap > 0.15
+		order by s.shared_item_count desc, s.token_overlap desc, s.date desc
+		limit $3`,
+		[lineage, storyId, limit],
+	);
+	return rows.map((r) => ({
+		entry: toEntry(r),
+		sharedItemCount: Number(r.shared_item_count),
+		tokenOverlap: r.token_overlap,
+	}));
+}
+
+export interface DatedItemDecision extends ItemDecision {
+	date: string;
+	runId: string | undefined;
+}
+
+/** Every decision ever recorded about an item, newest date first. */
+export async function listDecisionsForItem(
+	sql: Sql,
+	lineage: string,
+	itemId: string,
+): Promise<DatedItemDecision[]> {
+	const rows = await sql.unsafe<(DecisionRow & { date: string; run_id: string | null })[]>(
+		`select ${DECISION_COLUMNS}, date, run_id from item_decisions
+		 where lineage = $1 and item_id = $2 order by date desc`,
+		[lineage, itemId],
+	);
+	return rows.map((r) => ({
+		...toDecision(r),
+		date: r.date,
+		runId: r.run_id ?? undefined,
+	}));
+}
+
+/** Item ids a story cites on a given date, with their PRIMARY/SUPPORTING role. */
+export async function listStoryItemRoles(
+	sql: Sql,
+	lineage: string,
+	storyId: string,
+	date: string,
+): Promise<Array<{ itemId: string; role: "PRIMARY" | "SUPPORTING" }>> {
+	const rows = await sql<{ item_id: string; role: string }[]>`
+		select item_id, role from story_items
+		where lineage = ${lineage} and story_id = ${storyId} and date = ${date}
+		order by role, item_id
+	`;
+	return rows.map((r) => ({ itemId: r.item_id, role: r.role as "PRIMARY" | "SUPPORTING" }));
+}

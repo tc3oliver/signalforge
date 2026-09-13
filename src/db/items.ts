@@ -155,3 +155,163 @@ export async function searchNormalizedItems(
 	`;
 	return rows.map((r) => ({ itemId: r.item_id, title: r.title, rank: r.rank }));
 }
+
+/* -------------------------------------------------------------------------- */
+/* Read-only projections for the web reader (additive).                        */
+/* -------------------------------------------------------------------------- */
+
+const ITEM_COLUMNS = `item_id, source_type, source_name, title, summary, content, url,
+	to_char(published_at at time zone 'utc', ${ISO}) as published_at, metadata`;
+
+interface ItemRow {
+	item_id: string; source_type: string; source_name: string; title: string;
+	summary: string; content: string | null; url: string | null;
+	published_at: string; metadata: Record<string, unknown>;
+}
+
+function toItem(r: ItemRow): NormalizedItem {
+	return {
+		id: r.item_id,
+		sourceType: r.source_type as NormalizedItem["sourceType"],
+		sourceName: r.source_name,
+		title: r.title,
+		summary: r.summary,
+		...(r.content === null ? {} : { content: r.content }),
+		...(r.url === null ? {} : { url: r.url }),
+		publishedAt: r.published_at,
+		metadata: r.metadata,
+	};
+}
+
+/**
+ * Bulk sibling of getNormalizedItem. A story page resolves every source id it
+ * lists, so the per-id round trip would be one query per link.
+ */
+export async function getNormalizedItems(
+	sql: Sql,
+	lineage: string,
+	itemIds: readonly string[],
+): Promise<NormalizedItem[]> {
+	if (itemIds.length === 0) return [];
+	const rows = await sql.unsafe<ItemRow[]>(
+		`select ${ITEM_COLUMNS} from normalized_items
+		 where lineage = $1 and item_id = any($2::text[])`,
+		[lineage, itemIds as string[]],
+	);
+	return rows.map(toItem);
+}
+
+export interface ItemProvenance {
+	item: NormalizedItem;
+	rawItemId: number | undefined;
+	externalId: string | undefined;
+	fetchedAt: string | undefined;
+	collectionRunId: string | undefined;
+	collectorId: string | undefined;
+}
+
+/** Item plus the collection that produced it; the first step of the item trace. */
+export async function getItemProvenance(
+	sql: Sql,
+	lineage: string,
+	itemId: string,
+): Promise<ItemProvenance | undefined> {
+	const rows = await sql.unsafe<
+		(ItemRow & {
+			raw_item_id: string | null; external_id: string | null; fetched_at: string | null;
+			collection_run_id: string | null; collector_id: string | null;
+		})[]
+	>(
+		`select n.item_id, n.source_type, n.source_name, n.title, n.summary, n.content, n.url,
+			to_char(n.published_at at time zone 'utc', ${ISO}) as published_at, n.metadata,
+			n.raw_item_id::text as raw_item_id, r.external_id,
+			to_char(r.fetched_at at time zone 'utc', ${ISO}) as fetched_at,
+			r.collection_run_id, c.collector_id
+		 from normalized_items n
+		 left join raw_items r on r.raw_item_id = n.raw_item_id
+		 left join collection_runs c on c.collection_run_id = r.collection_run_id
+		 where n.lineage = $1 and n.item_id = $2`,
+		[lineage, itemId],
+	);
+	const r = rows[0];
+	if (!r) return undefined;
+	return {
+		item: toItem(r),
+		rawItemId: r.raw_item_id === null ? undefined : Number(r.raw_item_id),
+		externalId: r.external_id ?? undefined,
+		fetchedAt: r.fetched_at ?? undefined,
+		collectionRunId: r.collection_run_id ?? undefined,
+		collectorId: r.collector_id ?? undefined,
+	};
+}
+
+export interface LateItem {
+	itemId: string;
+	title: string;
+	summary: string;
+	sourceName: string;
+	sourceType: string;
+	url: string | undefined;
+	publishedAt: string;
+	fetchedAt: string;
+	disposition: string | undefined;
+	storyId: string | undefined;
+	importance: number | undefined;
+	changeType: string | undefined;
+}
+
+/**
+ * "New since morning": items whose provider bytes were fetched after the first
+ * run of `date` was created. The run's creation time is the cut-off rather than
+ * a wall-clock hour, so a late or re-run morning pass still classifies
+ * correctly. Only items the curator promoted, or that attached to an important
+ * story, surface — an unfiltered list would be the raw firehose.
+ */
+export async function listItemsFetchedAfterMorningRun(
+	sql: Sql,
+	lineage: string,
+	date: string,
+	minImportance = 0.6,
+	limit = 20,
+): Promise<LateItem[]> {
+	const rows = await sql.unsafe<
+		{
+			item_id: string; title: string; summary: string; source_name: string;
+			source_type: string; url: string | null; published_at: string; fetched_at: string;
+			disposition: string | null; story_id: string | null; importance: number | null;
+			change_type: string | null;
+		}[]
+	>(
+		`with morning as (
+			select min(created_at) as at from daily_runs where lineage = $1 and date = $2
+		)
+		select n.item_id, n.title, n.summary, n.source_name, n.source_type, n.url,
+			to_char(n.published_at at time zone 'utc', ${ISO}) as published_at,
+			to_char(r.fetched_at at time zone 'utc', ${ISO}) as fetched_at,
+			d.disposition, d.story_id, sl.importance, sl.change_type
+		 from normalized_items n
+		 join raw_items r on r.raw_item_id = n.raw_item_id
+		 cross join morning m
+		 left join item_decisions d on d.lineage = n.lineage and d.date = $2 and d.item_id = n.item_id
+		 left join story_ledger sl on sl.lineage = n.lineage and sl.date = $2 and sl.story_id = d.story_id
+		 where n.lineage = $1 and m.at is not null and r.fetched_at > m.at
+			and (coalesce(sl.importance, 0) >= $3 or d.disposition = 'CANDIDATE')
+		 order by coalesce(sl.importance, 0) desc, r.fetched_at desc
+		 limit $4`,
+		[lineage, date, minImportance, limit],
+	);
+	return rows.map((r) => ({
+		itemId: r.item_id,
+		title: r.title,
+		summary: r.summary,
+		sourceName: r.source_name,
+		sourceType: r.source_type,
+		url: r.url ?? undefined,
+		publishedAt: r.published_at,
+		fetchedAt: r.fetched_at,
+		disposition: r.disposition ?? undefined,
+		storyId: r.story_id ?? undefined,
+		importance: r.importance ?? undefined,
+		changeType: r.change_type ?? undefined,
+	}));
+}

@@ -7,16 +7,13 @@
 
 	<!--
 		Full pipeline: collect -> curate -> edit -> validate -> publish.
-		Fires at 05:30 so a normal run finishes well before 07:00. The target
-		script (`pipeline:daily`) is owned by the pipeline stage of this
-		project, not by this template — see docs/OPERATIONS.md for its
-		current status.
+		Fires at 05:30 so a normal run finishes well before 07:00.
 	-->
 	<key>ProgramArguments</key>
 	<array>
 		<string>{{PNPM_BIN}}</string>
 		<string>run</string>
-		<string>pipeline:daily</string>
+		<string>daily</string>
 	</array>
 
 	<key>WorkingDirectory</key>

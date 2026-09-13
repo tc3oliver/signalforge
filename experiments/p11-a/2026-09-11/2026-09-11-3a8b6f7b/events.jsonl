@@ -196,3 +196,14 @@
 {"ts":"2026-09-13T09:13:38.530Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"lumen-fabrication-impairment-capex-guidance-cut","changeType":"NEW"}
 {"ts":"2026-09-13T09:13:42.886Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"halyard-v2-release-work-stealing-scheduler","changeType":"NEW"}
 {"ts":"2026-09-13T09:13:47.091Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"meridian-two-million-token-model-testing","changeType":"NO_MATERIAL_CHANGE"}
+{"ts":"2026-09-13T09:13:51.105Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"basalt-engine-revenue-share-licence-rumour","changeType":"NO_MATERIAL_CHANGE"}
+{"ts":"2026-09-13T09:13:54.564Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"halyard-power-rack-power-budget-scheduling-plugin","changeType":"NEW"}
+{"ts":"2026-09-13T09:14:17.893Z","kind":"tool_call","stage":"CURATOR","tool":"record_item_decisions","recorded":50,"processedItems":50,"totalItems":82,"unseenItems":32}
+{"ts":"2026-09-13T09:14:20.971Z","kind":"tool_call","stage":"CURATOR","tool":"list_unseen_items","returned":32,"remaining":0}
+{"ts":"2026-09-13T09:14:36.092Z","kind":"tool_call","stage":"CURATOR","tool":"record_item_decisions","recorded":32,"processedItems":82,"totalItems":82,"unseenItems":0}
+{"ts":"2026-09-13T09:14:39.456Z","kind":"tool_call","stage":"CURATOR","tool":"get_daily_inventory","date":"2026-09-11","totalItems":82,"itemsBySource":{"github":5,"web":10,"hackernews":15,"rss":27,"fred":1,"coingecko":6,"reddit":12,"sec":2,"arxiv":2,"semantic-scholar":2},"processedItems":82,"unseenItems":0,"storyCount":17}
+{"ts":"2026-09-13T09:14:49.364Z","kind":"tool_call","stage":"CURATOR","tool":"list_today_stories","count":17}
+{"ts":"2026-09-13T09:15:52.869Z","kind":"tool_call","stage":"CURATOR","tool":"submit_materials","stories":17}
+{"ts":"2026-09-13T09:15:52.907Z","kind":"run.transition","from":"CURATING","to":"MATERIALS_READY"}
+{"ts":"2026-09-13T09:15:52.921Z","kind":"run.transition","from":"MATERIALS_READY","to":"WRITING"}
+{"ts":"2026-09-13T09:15:54.940Z","kind":"tool_call","stage":"EDITOR","tool":"get_materials","stories":17}

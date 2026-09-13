@@ -1,0 +1,12 @@
+[
+  {
+    "attemptId": "2e56856f-de46-4dbd-814f-ece8f624a53b",
+    "stage": "CURATOR",
+    "provider": "github-copilot",
+    "model": "gemini-3.8-flash",
+    "startedAt": "2026-09-13T08:56:45.107Z",
+    "finishedAt": "2026-09-13T09:15:52.876Z",
+    "durationMs": 1147769,
+    "status": "SUCCESS"
+  }
+]

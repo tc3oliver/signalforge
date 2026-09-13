@@ -25,20 +25,11 @@ fail() {
 	exit 1
 }
 
-[[ -f "${ENV_FILE}" ]] || fail "env file not found: ${ENV_FILE} (expected PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD)"
-
-# shellcheck disable=SC1090
-set -a
-source "${ENV_FILE}"
-set +a
-
-: "${PGHOST:?PGHOST must be set in ${ENV_FILE}}"
-: "${PGPORT:?PGPORT must be set in ${ENV_FILE}}"
-: "${PGDATABASE:?PGDATABASE must be set in ${ENV_FILE}}"
-: "${PGUSER:?PGUSER must be set in ${ENV_FILE}}"
-# PGPASSWORD is intentionally optional here: a .pgpass file is an equally
-# valid way to authenticate and this script must not require one over the
-# other.
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib-db-env.sh"
+resolve_db_env "${ENV_FILE}" || fail "could not resolve database connection settings from ${ENV_FILE}"
+# PGPASSWORD is intentionally optional: a .pgpass file is an equally valid way
+# to authenticate and this script must not require one over the other.
 
 command -v pg_dump >/dev/null 2>&1 || fail "pg_dump not found on PATH"
 command -v gzip >/dev/null 2>&1 || fail "gzip not found on PATH"

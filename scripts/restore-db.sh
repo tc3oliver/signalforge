@@ -61,24 +61,23 @@ done
 [[ -n "${BACKUP_FILE}" ]] || usage
 [[ -f "${BACKUP_FILE}" ]] || fail "backup file not found: ${BACKUP_FILE}"
 
-[[ -f "${ENV_FILE}" ]] || fail "env file not found: ${ENV_FILE} (expected PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD)"
-
-# shellcheck disable=SC1090
-set -a
-source "${ENV_FILE}"
-set +a
-
-: "${PGHOST:?PGHOST must be set in ${ENV_FILE}}"
-: "${PGPORT:?PGPORT must be set in ${ENV_FILE}}"
-: "${PGDATABASE:?PGDATABASE must be set in ${ENV_FILE}}"
-: "${PGUSER:?PGUSER must be set in ${ENV_FILE}}"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib-db-env.sh"
+resolve_db_env "${ENV_FILE}" || fail "could not resolve database connection settings from ${ENV_FILE}"
 
 if [[ -z "${TARGET_DB}" ]]; then
 	TARGET_DB="${PGDATABASE}${SCRATCH_DB_SUFFIX}"
 fi
 
-if [[ "${TARGET_DB}" == "${PGDATABASE}" && "${FORCE}" -ne 1 ]]; then
-	fail "refusing to restore into production database '${PGDATABASE}' without --force"
+if [[ "${TARGET_DB}" == "${PGDATABASE}" ]]; then
+	[[ "${FORCE}" -eq 1 ]] || fail "refusing to restore into production database '${PGDATABASE}' without --force"
+elif [[ "${TARGET_DB}" != "${PGDATABASE}${SCRATCH_DB_SUFFIX}" && "${TARGET_DB}" != "${PGDATABASE}_"* ]]; then
+	# Guards against a mistyped --target landing on an unrelated database.
+	# This machine also runs other services' own Postgres/MySQL databases
+	# (miniflux, bark, gemini-balance, shopmaster, tesla-tv-hub) -- a target
+	# name must be derived from this project's own database name, or this
+	# script refuses outright rather than guessing what the operator meant.
+	fail "refusing to restore into '${TARGET_DB}': --target must be '${PGDATABASE}' (with --force), the default scratch db, or a name prefixed with '${PGDATABASE}_'"
 fi
 
 command -v psql >/dev/null 2>&1 || fail "psql not found on PATH"
