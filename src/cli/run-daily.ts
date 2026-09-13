@@ -1,3 +1,4 @@
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { parseFlags, projectRoot } from "./_args.ts";
 import { loadConfig } from "../config/loader.ts";
@@ -9,6 +10,7 @@ import { createTavilyProvider } from "../research/providers/tavily.ts";
 import { ResearchBudgetTracker, ResearchRouter } from "../research/router.ts";
 import type { CuratorResearchConfig } from "../curator/tools.ts";
 import { createLogger } from "../runtime/logger.ts";
+import { writeJsonAtomic, writeTextAtomic } from "../runtime/atomic-json.ts";
 
 const STAGES: readonly PipelineStage[] = ["collect", "curate", "write", "validate", "publish"];
 
@@ -75,6 +77,22 @@ async function main(): Promise<number> {
 			// is discarded, and the log records only that it failed.
 			onEvent: (event) => log.info(String(event["kind"] ?? "event"), event),
 		});
+
+		// The database is the canonical copy, but a brief that exists only inside
+		// Postgres is not something the reader can keep, diff, grep or hand to
+		// anything else. The pipeline already renders the markdown; discarding it
+		// here was the only reason the day had no file on disk.
+		if (result.state === "PUBLISHED" && result.brief) {
+			const outDir = join(root, "briefs", date);
+			mkdirSync(outDir, { recursive: true });
+			const jsonPath = join(outDir, `${date}.json`);
+			const markdownPath = join(outDir, `${date}.md`);
+			writeJsonAtomic(jsonPath, result.brief);
+			if (result.markdown) writeTextAtomic(markdownPath, result.markdown);
+			log.info("brief written", { json: jsonPath, ...(result.markdown ? { markdown: markdownPath } : {}) });
+			console.log(`brief: ${jsonPath}`);
+			if (result.markdown) console.log(`brief: ${markdownPath}`);
+		}
 
 		log.info("pipeline finished", {
 			runId: result.runId,

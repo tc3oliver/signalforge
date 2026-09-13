@@ -6,3 +6,7 @@ fixtures/generated/
 logs/
 node_modules/
 runs/
+
+# Published briefs are output, not source: the database is canonical and
+# these files are re-rendered from it by `pnpm daily`.
+briefs/
