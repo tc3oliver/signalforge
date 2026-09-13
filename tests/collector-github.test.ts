@@ -79,7 +79,7 @@ function baseHandlers(opts: { rateLimited?: boolean } = {}) {
 }
 
 describe("GitHubCollector", () => {
-	it("collects releases, tags, events, and mechanically-important issues only", async () => {
+	it("collects releases and mechanically-important issues, and never the repository-event firehose", async () => {
 		const collector = new GitHubCollector({ repos: [REPO] });
 		const fetchImpl = baseHandlers();
 		const ctx = makeCtx({ hasSecret: async () => true }, fetchImpl as unknown as typeof fetch);
@@ -88,11 +88,66 @@ describe("GitHubCollector", () => {
 		expect(result.health).toBe("OK");
 		const kinds = result.items.map((i) => i.metadata["kind"]);
 		expect(kinds).toContain("release");
-		expect(kinds).toContain("tag");
-		expect(kinds).toContain("event");
+		// /events is no longer fetched at all: no item may come from it, and no request
+		// may be spent on it.
+		expect(kinds).not.toContain("event");
+		expect(fetchImpl.mock.calls.some((call) => String(call[0]).includes("/events"))).toBe(false);
+		// The tag mirrors the release we already collected, so it is not a second item.
+		expect(kinds).not.toContain("tag");
 		// "Important bug" has a security label -> included; "Minor typo" has none -> excluded.
 		expect(result.items.some((i) => i.title === "Important bug")).toBe(true);
 		expect(result.items.some((i) => i.title === "Minor typo")).toBe(false);
+	});
+
+	it("does not treat every merged pull request as important", async () => {
+		/*
+		 * Measured against the live API, this one clause was most of what survived
+		 * after the event firehose was dropped: on a busy watched repo it admitted
+		 * every CI tweak and test-size adjustment. What actually shipped is
+		 * collected from /releases instead.
+		 */
+		const collector = new GitHubCollector({ repos: [REPO] });
+		const fetchImpl = vi.fn(async (url: string) => {
+			if (url.includes("/issues")) {
+				return jsonResponse([
+					{
+						id: 200,
+						number: 10,
+						title: "ci : cap parallel jobs",
+						body: "",
+						html_url: `https://github.com/${REPO}/pull/10`,
+						state: "closed",
+						user: { login: "someone" },
+						created_at: "2026-09-12T00:00:00Z",
+						updated_at: "2026-09-12T00:00:00Z",
+						labels: [],
+						reactions: { total_count: 1 },
+						pull_request: { url: "x" },
+					},
+					{
+						id: 201,
+						number: 11,
+						title: "fix a breaking API change",
+						body: "",
+						html_url: `https://github.com/${REPO}/pull/11`,
+						state: "closed",
+						user: { login: "someone" },
+						created_at: "2026-09-12T00:00:00Z",
+						updated_at: "2026-09-12T00:00:00Z",
+						labels: ["breaking-change"],
+						reactions: { total_count: 0 },
+						pull_request: { url: "x" },
+					},
+				]);
+			}
+			return jsonResponse([]);
+		});
+		const ctx = makeCtx({ hasSecret: async () => true }, fetchImpl as unknown as typeof fetch);
+		const result = await collector.collect(ctx);
+
+		expect(result.items.some((i) => i.title === "ci : cap parallel jobs")).toBe(false);
+		// A PR clears the same bar as an issue: a label somebody applied, or reactions.
+		expect(result.items.some((i) => i.title === "fix a breaking API change")).toBe(true);
 	});
 
 	it("degrades rather than fails when GITHUB_TOKEN is missing", async () => {
@@ -112,6 +167,7 @@ describe("GitHubCollector", () => {
 		const ctx = makeCtx({ hasSecret: async () => true }, fetchImpl as unknown as typeof fetch);
 		const result = await collector.collect(ctx);
 		expect(result.health).toBe("DEGRADED");
+		expect(result.error).toBeTruthy();
 	});
 
 	it("honours ETag conditional requests: a 304 yields no new items for that endpoint", async () => {
@@ -124,7 +180,6 @@ describe("GitHubCollector", () => {
 				return jsonResponse([{ id: 1, tag_name: "v1.0.0", name: "v1.0.0", html_url: "https://x/release/1", body: "", published_at: "2026-09-10T00:00:00Z" }], { etag: '"releases-etag-1"' });
 			}
 			if (url.includes("/tags")) return jsonResponse([]);
-			if (url.includes("/events")) return jsonResponse([]);
 			if (url.includes("/issues")) return jsonResponse([], { "x-ratelimit-remaining": "100" });
 			throw new Error(`unexpected url ${url}`);
 		});
@@ -136,12 +191,11 @@ describe("GitHubCollector", () => {
 		expect(second.items.some((i) => i.metadata["kind"] === "release")).toBe(false);
 	});
 
-	it("continues to other repos when one repo's request fails", async () => {
+	it("continues to other repos when one repo's request fails, and says so in health", async () => {
 		const fetchImpl = vi.fn().mockImplementation(async (url: string) => {
 			if (url.includes("bad-repo")) throw new Error("network down");
 			if (url.includes("/releases")) return jsonResponse([]);
 			if (url.includes("/tags")) return jsonResponse([]);
-			if (url.includes("/events")) return jsonResponse([]);
 			if (url.includes("/issues")) return jsonResponse([], { "x-ratelimit-remaining": "100" });
 			throw new Error(`unexpected url ${url}`);
 		});
@@ -149,6 +203,16 @@ describe("GitHubCollector", () => {
 		const ctx = makeCtx({ hasSecret: async () => true }, fetchImpl as unknown as typeof fetch);
 		const result = await collector.collect(ctx);
 		expect(result.warnings.some((w) => w.includes("bad-repo"))).toBe(true);
+		expect(result.health).toBe("DEGRADED");
+	});
+
+	it("reports FAILED, not OK, when every watched repo fails", async () => {
+		const fetchImpl = vi.fn().mockImplementation(async () => jsonResponse({ message: "Bad credentials" }, {}, 401));
+		const collector = new GitHubCollector({ repos: ["acme/a", "acme/b"] });
+		const result = await collector.collect(makeCtx({ hasSecret: async () => true }, fetchImpl as unknown as typeof fetch));
+		expect(result.items).toHaveLength(0);
+		expect(result.health).toBe("FAILED");
+		expect(result.error).toContain("2/2");
 	});
 
 	it("is idempotent: the same fixtures collected twice produce the same external ids", async () => {
@@ -159,5 +223,155 @@ describe("GitHubCollector", () => {
 		const result2 = await collector2.collect(makeCtx({ hasSecret: async () => true }, baseHandlers() as unknown as typeof fetch));
 
 		expect(result1.items.map((i) => i.externalId).sort()).toEqual(result2.items.map((i) => i.externalId).sort());
+	});
+});
+
+/**
+ * The regression this whole change exists for: a same-day release of a watched repo
+ * must survive narrowing, while the page of release history around it must not be
+ * re-reported. Shape taken from vllm-project/vllm v0.27.1.
+ */
+const VLLM = "vllm-project/vllm";
+const VLLM_RELEASES = [
+	{ id: 9001, tag_name: "v0.27.1", name: "v0.27.1", html_url: `https://github.com/${VLLM}/releases/tag/v0.27.1`, body: "## Highlights\nFixes a regression in the V1 engine.", published_at: "2026-09-13T09:00:00Z", author: { login: "simon-mo" } },
+	{ id: 9000, tag_name: "v0.27.0", name: "v0.27.0", html_url: `https://github.com/${VLLM}/releases/tag/v0.27.0`, body: "older", published_at: "2026-08-20T09:00:00Z", author: { login: "simon-mo" } },
+	{ id: 8999, tag_name: "v0.26.0", name: "v0.26.0", html_url: `https://github.com/${VLLM}/releases/tag/v0.26.0`, body: "much older", published_at: "2026-07-01T09:00:00Z", author: { login: "simon-mo" } },
+];
+
+function vllmHandlers(opts: { tags?: Array<{ name: string; commit: { sha: string } }>; commitDates?: Record<string, string>; releasesEtag?: string } = {}) {
+	const tags = opts.tags ?? VLLM_RELEASES.map((r) => ({ name: r.tag_name, commit: { sha: `sha-${r.tag_name}` } }));
+	return vi.fn().mockImplementation(async (url: string) => {
+		if (url.includes("/releases")) return jsonResponse(VLLM_RELEASES, { etag: opts.releasesEtag ?? '"rel-1"', "x-ratelimit-remaining": "100" });
+		if (url.includes("/tags")) return jsonResponse(tags, { etag: '"tags-1"', "x-ratelimit-remaining": "100" });
+		if (url.includes("/commits/")) {
+			const sha = url.split("/commits/")[1] as string;
+			const date = opts.commitDates?.[sha];
+			if (!date) return jsonResponse({ message: "Not Found" }, {}, 404);
+			return jsonResponse({ commit: { committer: { date } } }, { "x-ratelimit-remaining": "100" });
+		}
+		if (url.includes("/issues")) return jsonResponse([], { "x-ratelimit-remaining": "100" });
+		throw new Error(`unexpected url ${url}`);
+	});
+}
+
+describe("GitHubCollector narrowing", () => {
+	it("collects a major watched-repo release (vLLM v0.27.1) while dropping the release history around it", async () => {
+		const collector = new GitHubCollector({ repos: [VLLM] });
+		const result = await collector.collect(makeCtx({ hasSecret: async () => true, since: new Date("2026-09-12T00:00:00Z") }, vllmHandlers() as unknown as typeof fetch));
+
+		const releases = result.items.filter((i) => i.metadata["kind"] === "release");
+		expect(releases.map((i) => i.metadata["tag"])).toEqual(["v0.27.1"]);
+		const v = releases[0]!;
+		expect(v.url).toBe(`https://github.com/${VLLM}/releases/tag/v0.27.1`);
+		expect(v.publishedAt).toBe("2026-09-13T09:00:00Z");
+		// The curator must be able to read it, not merely disposition it.
+		expect(v.summary.length).toBeGreaterThan(0);
+	});
+
+	it("does not re-emit a release already reported on an earlier run", async () => {
+		const collector = new GitHubCollector({ repos: [VLLM] });
+		const ctxOpts = { hasSecret: async () => true, since: new Date("2026-09-12T00:00:00Z") };
+		const first = await collector.collect(makeCtx(ctxOpts, vllmHandlers() as unknown as typeof fetch));
+		expect(first.items.some((i) => i.metadata["tag"] === "v0.27.1")).toBe(true);
+
+		// A different ETag forces the full page to be returned again, as GitHub does
+		// whenever anything on it changes.
+		const second = await collector.collect(
+			makeCtx({ ...ctxOpts, cursor: first.cursor }, vllmHandlers({ releasesEtag: '"rel-2"' }) as unknown as typeof fetch),
+		);
+		expect(second.items.filter((i) => i.metadata["kind"] === "release")).toHaveLength(0);
+	});
+
+	it("never emits generic repository events", async () => {
+		const eventTypes = ["WatchEvent", "ForkEvent", "IssueCommentEvent", "PushEvent", "CreateEvent"];
+		const fetchImpl = vi.fn().mockImplementation(async (url: string) => {
+			if (url.includes("/events")) {
+				return jsonResponse(
+					eventTypes.map((type, i) => ({ id: `e${i}`, type, created_at: "2026-09-13T00:00:00Z", actor: { login: "bob" } })),
+					{ "x-ratelimit-remaining": "100" },
+				);
+			}
+			if (url.includes("/releases")) return jsonResponse([], { "x-ratelimit-remaining": "100" });
+			if (url.includes("/tags")) return jsonResponse([], { "x-ratelimit-remaining": "100" });
+			if (url.includes("/issues")) return jsonResponse([], { "x-ratelimit-remaining": "100" });
+			throw new Error(`unexpected url ${url}`);
+		});
+		const collector = new GitHubCollector({ repos: [REPO] });
+		const result = await collector.collect(makeCtx({ hasSecret: async () => true }, fetchImpl as unknown as typeof fetch));
+
+		expect(result.items).toHaveLength(0);
+		for (const type of eventTypes) {
+			expect(result.items.some((i) => i.title.includes(type))).toBe(false);
+		}
+		expect(fetchImpl.mock.calls.some((call) => String(call[0]).includes("/events"))).toBe(false);
+	});
+
+	it("treats tag history as backfill on the first run and only reports a genuinely new tag afterwards", async () => {
+		const repo = "acme/tagged";
+		const history = [
+			{ name: "v2.0.0", commit: { sha: "sha-2.0.0" } },
+			{ name: "v1.9.0", commit: { sha: "sha-1.9.0" } },
+			{ name: "nightly", commit: { sha: "sha-nightly" } },
+		];
+		const commitDates = {
+			"sha-2.0.0": "2026-08-01T00:00:00Z",
+			"sha-1.9.0": "2026-07-01T00:00:00Z",
+			"sha-nightly": "2026-09-13T00:00:00Z",
+			"sha-2.1.0": "2026-09-13T08:00:00Z",
+		};
+		const handlers = (tags: typeof history) =>
+			vi.fn().mockImplementation(async (url: string) => {
+				if (url.includes("/releases")) return jsonResponse([], { "x-ratelimit-remaining": "100" });
+				if (url.includes("/tags")) return jsonResponse(tags, { "x-ratelimit-remaining": "100" });
+				if (url.includes("/commits/")) {
+					const sha = url.split("/commits/")[1] as string;
+					return jsonResponse({ commit: { committer: { date: commitDates[sha as keyof typeof commitDates] } } }, { "x-ratelimit-remaining": "100" });
+				}
+				if (url.includes("/issues")) return jsonResponse([], { "x-ratelimit-remaining": "100" });
+				throw new Error(`unexpected url ${url}`);
+			});
+
+		const collector = new GitHubCollector({ repos: [repo] });
+		const first = await collector.collect(makeCtx({ hasSecret: async () => true }, handlers(history) as unknown as typeof fetch));
+		// Seeding run: the whole tag history is remembered, none of it is news.
+		expect(first.items).toHaveLength(0);
+
+		const second = await collector.collect(makeCtx({ hasSecret: async () => true, cursor: first.cursor }, handlers(history) as unknown as typeof fetch));
+		expect(second.items).toHaveLength(0);
+
+		const withNew = [{ name: "v2.1.0", commit: { sha: "sha-2.1.0" } }, ...history];
+		const third = await collector.collect(makeCtx({ hasSecret: async () => true, cursor: second.cursor }, handlers(withNew) as unknown as typeof fetch));
+		const tagItems = third.items.filter((i) => i.metadata["kind"] === "tag");
+		expect(tagItems).toHaveLength(1);
+		expect(tagItems[0]!.externalId).toBe(`${repo}#tag-v2.1.0`);
+		// The real commit date, never the fetch time.
+		expect(tagItems[0]!.publishedAt).toBe("2026-09-13T08:00:00Z");
+		// "nightly" is not version-shaped and is never a publication event.
+		expect(third.items.some((i) => i.externalId.includes("nightly"))).toBe(false);
+	});
+
+	it("does not advance the issues watermark when the issues fetch was rate limited", async () => {
+		const fetchImpl = vi.fn().mockImplementation(async (url: string) => {
+			if (url.includes("/issues")) return jsonResponse({ message: "rate limited" }, { "retry-after": "0" }, 429);
+			if (url.includes("/releases")) return jsonResponse([], { "x-ratelimit-remaining": "100" });
+			if (url.includes("/tags")) return jsonResponse([], { "x-ratelimit-remaining": "100" });
+			throw new Error(`unexpected url ${url}`);
+		});
+		const collector = new GitHubCollector({ repos: [REPO] });
+		const since = new Date("2026-09-01T00:00:00Z");
+		const result = await collector.collect(makeCtx({ hasSecret: async () => true, since }, fetchImpl as unknown as typeof fetch));
+
+		const cursor = JSON.parse(result.cursor as string) as Record<string, { issuesSince?: string }>;
+		// The window was never read, so it must still be open next run.
+		expect(cursor[REPO]?.issuesSince).toBeUndefined();
+		expect(result.health).toBe("DEGRADED");
+		expect(result.warnings.some((w) => w.includes("rate limited fetching issues"))).toBe(true);
+	});
+
+	it("advances the issues watermark only after a window was actually read", async () => {
+		const collector = new GitHubCollector({ repos: [REPO] });
+		const result = await collector.collect(makeCtx({ hasSecret: async () => true }, baseHandlers() as unknown as typeof fetch));
+		const cursor = JSON.parse(result.cursor as string) as Record<string, { issuesSince?: string }>;
+		expect(cursor[REPO]?.issuesSince).toBe("2026-09-13T00:00:00.000Z");
 	});
 });

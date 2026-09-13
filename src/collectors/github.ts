@@ -12,6 +12,39 @@ const API_BASE = "https://api.github.com";
 const IMPORTANT_REACTION_THRESHOLD = 10;
 const IMPORTANT_LABELS = new Set(["security", "breaking-change", "critical"]);
 
+/**
+ * A tag only becomes a candidate signal if it looks like a version. Watched repos
+ * also carry `nightly`, `latest`, `base`, dated build tags and CI markers, none of
+ * which are a publication event. This is a shape test, not a judgement about the
+ * release's contents.
+ */
+const VERSION_TAG = /^v?\d+(\.\d+){1,3}(-[0-9A-Za-z.-]+)?$/;
+
+/**
+ * Cap on how many tag names are carried in the cursor. /tags returns the newest
+ * page (30 by default), so remembering a few pages' worth is enough to tell
+ * "new tag" from "tag we have already seen" without the cursor growing forever.
+ */
+const MAX_REMEMBERED_TAGS = 120;
+
+/**
+ * The /events firehose is deliberately NOT collected.
+ *
+ * It was the single largest source of agent-invisible noise: WatchEvent (someone
+ * starred the repo), ForkEvent, PushEvent, IssueCommentEvent and CreateEvent were
+ * normalized into items whose entire agent-visible content was the string
+ * "<repo>: <EventType>" — no url, no summary, nothing the curator could judge, so
+ * every one of them could only be dispositioned, never read.
+ *
+ * The two event types that do carry signal are already covered better elsewhere:
+ * ReleaseEvent duplicates /releases (which additionally carries the release notes
+ * and a real published_at), and PublicEvent announces a repo becoming public —
+ * which cannot happen to a repo that is already on the watchlist. Nothing in the
+ * remaining types survives the "could the curator read this?" test, so the whole
+ * endpoint is dropped rather than allowlisted, which also returns one request per
+ * repo per run to the budget.
+ */
+
 interface GhRelease {
 	id: number;
 	tag_name: string;
@@ -19,6 +52,8 @@ interface GhRelease {
 	html_url: string;
 	body: string | null;
 	published_at: string | null;
+	draft?: boolean;
+	prerelease?: boolean;
 	author?: { login?: string };
 }
 
@@ -27,12 +62,8 @@ interface GhTag {
 	commit: { sha: string };
 }
 
-interface GhEvent {
-	id: string;
-	type: string;
-	created_at: string;
-	actor?: { login?: string };
-	payload?: unknown;
+interface GhCommit {
+	commit?: { committer?: { date?: string }; author?: { date?: string } };
 }
 
 interface GhIssue {
@@ -50,12 +81,20 @@ interface GhIssue {
 	pull_request?: unknown;
 }
 
-/** Per-repo cursor: ETags for conditional requests plus a `since` watermark. */
+/**
+ * Per-repo cursor: ETags for conditional requests, a `since` watermark for issues,
+ * plus the two pieces of state that let this collector tell a genuinely new
+ * publication from a re-read of history — the newest release publication date it
+ * has already emitted, and the tag names it has already seen.
+ */
 interface RepoCursor {
 	releasesEtag?: string;
 	tagsEtag?: string;
-	eventsEtag?: string;
 	issuesSince?: string;
+	/** Newest release `published_at` already emitted for this repo. */
+	releasesLatestPublishedAt?: string;
+	/** Tag names observed on an earlier run; the first run seeds this and emits nothing. */
+	knownTags?: string[];
 }
 type GithubCursor = Record<string, RepoCursor>;
 
@@ -109,6 +148,7 @@ export class GitHubCollector implements Collector {
 		let health: CollectorResult["health"] = "OK";
 		let error: string | undefined;
 		let sawRateLimit = false;
+		let repoFailures = 0;
 
 		if (repos.length === 0) {
 			warnings.push("no watched repos configured");
@@ -117,30 +157,70 @@ export class GitHubCollector implements Collector {
 		for (const repo of repos) {
 			const repoCursor: RepoCursor = cursor[repo] ?? {};
 			try {
+				// --- Releases: the primary signal. A release carries notes, a url and a real
+				// publication date, so it is the one endpoint whose payload the curator can read.
 				const releases = await fetchConditional(ctx, `${API_BASE}/repos/${repo}/releases`, headers, repoCursor.releasesEtag, budget, bucket);
 				if (releases.status === 429 || releases.rateLimited) sawRateLimit = true;
+				// An ETag change returns the whole page, history included. Only publications newer
+				// than the high-water mark are new; the rest is the same backfill re-read, which is
+				// what previously made a same-day release indistinguishable from tag-history noise.
+				let releaseWatermark = repoCursor.releasesLatestPublishedAt ?? ctx.since.toISOString();
+				const releaseTagsOnPage = new Set<string>();
 				if (releases.body) {
 					for (const r of releases.body as GhRelease[]) {
+						releaseTagsOnPage.add(r.tag_name);
+						if (r.draft) continue;
+						// A draft or otherwise unpublished release has no publication event yet.
+						if (!r.published_at) continue;
+						if (Date.parse(r.published_at) <= Date.parse(releaseWatermark)) continue;
 						items.push(releaseToItem(repo, r, startedAt));
 					}
+					for (const r of releases.body as GhRelease[]) {
+						if (!r.published_at || r.draft) continue;
+						if (Date.parse(r.published_at) > Date.parse(releaseWatermark)) releaseWatermark = r.published_at;
+					}
 				}
+				nextCursor[repo] = { ...nextCursor[repo], releasesLatestPublishedAt: releaseWatermark };
 				if (releases.etag) nextCursor[repo] = { ...nextCursor[repo], releasesEtag: releases.etag };
 
+				// --- Tags: a fallback for repos that tag without cutting a GitHub release.
+				// /tags carries no date at all, so the old code stamped every tag with the fetch
+				// time; combined with `published_at = excluded.published_at` on upsert that made
+				// every ancient tag re-float to the top of recency views on every single run.
 				const tags = await fetchConditional(ctx, `${API_BASE}/repos/${repo}/tags`, headers, repoCursor.tagsEtag, budget, bucket);
+				if (tags.status === 429 || tags.rateLimited) sawRateLimit = true;
 				if (tags.body) {
-					for (const t of tags.body as GhTag[]) {
-						items.push(tagToItem(repo, t, startedAt));
+					const page = (tags.body as GhTag[]).filter((t) => typeof t?.name === "string");
+					const known = repoCursor.knownTags;
+					const seeding = known === undefined;
+					const suppressed = new Set([...(known ?? []), ...releaseTagsOnPage]);
+					const unresolved = new Set<string>();
+					if (!seeding) {
+						const fresh = page.filter((t) => !suppressed.has(t.name) && VERSION_TAG.test(t.name));
+						for (const t of fresh) {
+							// The tag's real date lives on its commit. One extra request per genuinely
+							// new tag is affordable precisely because "genuinely new" is now rare, and
+							// it is the only way to avoid inventing a publication date.
+							const publishedAt = await resolveTagDate(ctx, repo, t, headers, budget, bucket);
+							if (!publishedAt) {
+								// Leave it out of knownTags so the next run retries it, rather than
+								// emitting it with a fabricated date or losing it permanently.
+								unresolved.add(t.name);
+								warnings.push(`${repo}: could not resolve commit date for tag ${t.name} (deferred)`);
+								continue;
+							}
+							if (Date.parse(publishedAt) < Date.parse(ctx.since.toISOString())) {
+								// Old tag that simply had not been observed before (e.g. first run after
+								// a cursor reset): seen, remembered, but not reported as news.
+								continue;
+							}
+							items.push(tagToItem(repo, t, publishedAt, startedAt));
+						}
 					}
+					const remembered = [...page.map((t) => t.name).filter((n) => !unresolved.has(n)), ...(known ?? [])];
+					nextCursor[repo] = { ...nextCursor[repo], knownTags: dedupe(remembered).slice(0, MAX_REMEMBERED_TAGS) };
 				}
 				if (tags.etag) nextCursor[repo] = { ...nextCursor[repo], tagsEtag: tags.etag };
-
-				const events = await fetchConditional(ctx, `${API_BASE}/repos/${repo}/events`, headers, repoCursor.eventsEtag, budget, bucket);
-				if (events.body) {
-					for (const e of events.body as GhEvent[]) {
-						items.push(eventToItem(repo, e, startedAt));
-					}
-				}
-				if (events.etag) nextCursor[repo] = { ...nextCursor[repo], eventsEtag: events.etag };
 
 				const since = repoCursor.issuesSince ?? ctx.since.toISOString();
 				const issuesUrl = `${API_BASE}/repos/${repo}/issues?state=all&sort=updated&direction=desc&since=${encodeURIComponent(since)}&per_page=100`;
@@ -167,21 +247,33 @@ export class GitHubCollector implements Collector {
 							if (!isMechanicallyImportant(raw)) continue;
 							items.push(issueToItem(repo, raw, startedAt));
 						}
+						// The watermark advances only when the window was actually read. Advancing it
+						// after a swallowed 429 silently skipped that window's issues forever.
+						nextCursor[repo] = { ...nextCursor[repo], issuesSince: ctx.now().toISOString() };
 					} else {
 						warnings.push(`${repo}: unexpected issues payload shape (dropped)`);
 					}
 				}
-				nextCursor[repo] = { ...nextCursor[repo], issuesSince: ctx.now().toISOString() };
 			} catch (err) {
+				repoFailures += 1;
 				warnings.push(`${repo}: ${(err as Error).message}`);
 			}
 		}
 
 		if (sawRateLimit) health = "DEGRADED";
+		// A repo that threw contributed nothing. Reporting OK while every repo 401s was the
+		// worst available failure shape: a silent zero that looks like a quiet news day.
+		if (repoFailures > 0) {
+			health = repoFailures === repos.length ? "FAILED" : "DEGRADED";
+			error = `${repoFailures}/${repos.length} watched repos failed to collect`;
+		}
 		if (!token && repos.length > 0) {
 			// Unauthenticated GitHub access degrades rather than fails, per contract.
 			health = health === "OK" ? "DEGRADED" : health;
 			warnings.push("running unauthenticated: GITHUB_TOKEN not set, lower rate limits apply");
+		}
+		if (!error && health === "DEGRADED") {
+			error = sawRateLimit ? "GitHub rate limit reached during collection" : warnings[warnings.length - 1];
 		}
 
 		const finishedAt = ctx.now().toISOString();
@@ -201,6 +293,10 @@ export class GitHubCollector implements Collector {
 	}
 }
 
+function dedupe(names: readonly string[]): string[] {
+	return [...new Set(names)];
+}
+
 interface ConditionalResult {
 	body: unknown[] | undefined;
 	etag: string | undefined;
@@ -218,55 +314,114 @@ async function fetchConditional(
 	bucket: TokenBucket,
 ): Promise<ConditionalResult> {
 	const reqHeaders = { ...headers, ...(etag ? { "if-none-match": etag } : {}) };
-	try {
-		// 304 is not in the retry/ok path of fetchWithRetry (fetch resolves it as a
-		// normal, non-ok-but-non-retried response only for real errors); handle it here.
-		const res = await ctx.fetch(url, { headers: reqHeaders, signal: ctx.signal });
-		if (res.status === 304) {
-			return { body: undefined, etag, status: 304, rateLimited: false };
-		}
-		if (res.status === 429 || (res.status >= 500 && res.status <= 599)) {
-			// Fall back to the retrying path for transient failures.
-			const retried = await fetchWithRetry(url, { headers: reqHeaders }, {
-				fetchImpl: ctx.fetch,
-				signal: ctx.signal,
-				budget,
-				bucket,
-				timeoutMs: 10_000,
-			});
-			const body = (await retried.json()) as unknown;
-			return {
-				body: Array.isArray(body) ? body : [],
-				etag: retried.headers.get("etag") ?? etag,
-				status: retried.status,
-				rateLimited: Number(retried.headers.get("x-ratelimit-remaining") ?? "1") <= 1,
-			};
-		}
-		if (!res.ok) {
-			throw new HttpError(`request failed with status ${res.status}`, res.status);
-		}
-		// Absence of the header (e.g. some conditional-request paths) is not evidence of
-		// throttling; only a header that is actually present and near zero counts.
-		const remainingHeader = res.headers.get("x-ratelimit-remaining");
-		const body = (await res.json()) as unknown;
+	// The conditional GET is a real request against the same API, so it pays the same
+	// budget and rate-limit toll as any other. Charging it only on the error path (as
+	// this used to) inverted the budget: the cheap path was unmetered and the failing
+	// path was billed twice.
+	budget.consume();
+	await bucket.take(ctx.signal);
+	const res = await withTimeout(ctx, (signal) => ctx.fetch(url, { headers: reqHeaders, signal }), 10_000);
+	if (res.status === 304) {
+		return { body: undefined, etag, status: 304, rateLimited: false };
+	}
+	if (res.status === 429 || (res.status >= 500 && res.status <= 599)) {
+		// Fall back to the retrying path for transient failures.
+		const retried = await fetchWithRetry(url, { headers: reqHeaders }, {
+			fetchImpl: ctx.fetch,
+			signal: ctx.signal,
+			budget,
+			bucket,
+			timeoutMs: 10_000,
+		});
+		const body = (await retried.json()) as unknown;
 		return {
 			body: Array.isArray(body) ? body : [],
-			etag: res.headers.get("etag") ?? undefined,
-			status: res.status,
-			rateLimited: remainingHeader !== null && Number(remainingHeader) <= 1,
+			etag: retried.headers.get("etag") ?? etag,
+			status: retried.status,
+			rateLimited: Number(retried.headers.get("x-ratelimit-remaining") ?? "1") <= 1,
 		};
-	} catch (err) {
-		budget.consume();
-		throw err;
+	}
+	if (!res.ok) {
+		throw new HttpError(`request failed with status ${res.status}`, res.status);
+	}
+	// Absence of the header (e.g. some conditional-request paths) is not evidence of
+	// throttling; only a header that is actually present and near zero counts.
+	const remainingHeader = res.headers.get("x-ratelimit-remaining");
+	const body = (await res.json()) as unknown;
+	return {
+		body: Array.isArray(body) ? body : [],
+		etag: res.headers.get("etag") ?? undefined,
+		status: res.status,
+		rateLimited: remainingHeader !== null && Number(remainingHeader) <= 1,
+	};
+}
+
+/** Bound a single request in time, honouring the collector's own abort signal. */
+async function withTimeout(ctx: CollectorContext, run: (signal: AbortSignal) => Promise<Response>, timeoutMs: number): Promise<Response> {
+	ctx.signal?.throwIfAborted();
+	const controller = new AbortController();
+	const onOuterAbort = () => controller.abort(ctx.signal?.reason);
+	ctx.signal?.addEventListener("abort", onOuterAbort, { once: true });
+	const timer = setTimeout(() => controller.abort(new DOMException("Timeout", "TimeoutError")), timeoutMs);
+	try {
+		return await run(controller.signal);
+	} finally {
+		clearTimeout(timer);
+		ctx.signal?.removeEventListener("abort", onOuterAbort);
 	}
 }
 
-/** Mechanical importance rule only: state/label/reaction thresholds, never editorial judgement. */
+/**
+ * Resolve a tag's real publication date from the commit it points at. Returns
+ * undefined when the date cannot be established — the caller then defers the tag
+ * rather than stamping it with the fetch time.
+ */
+async function resolveTagDate(
+	ctx: CollectorContext,
+	repo: string,
+	tag: GhTag,
+	headers: Record<string, string>,
+	budget: RequestBudget,
+	bucket: TokenBucket,
+): Promise<string | undefined> {
+	const sha = tag.commit?.sha;
+	if (!sha) return undefined;
+	try {
+		const res = await fetchWithRetry(`${API_BASE}/repos/${repo}/commits/${sha}`, { headers }, {
+			fetchImpl: ctx.fetch,
+			signal: ctx.signal,
+			budget,
+			bucket,
+			timeoutMs: 10_000,
+		});
+		const body = (await res.json()) as GhCommit;
+		const date = body?.commit?.committer?.date ?? body?.commit?.author?.date;
+		return typeof date === "string" && !Number.isNaN(Date.parse(date)) ? date : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+/**
+ * Mechanical importance rule only: label and reaction thresholds, never
+ * editorial judgement.
+ *
+ * A pull request used to qualify on being closed alone, which reads as "a merged
+ * PR is a shipped change" and is true only of a minority of them. On a busy
+ * watched repo it admitted every CI tweak, every test-size adjustment and every
+ * typo fix -- measured live, that single clause was most of what survived after
+ * the event firehose was dropped. What actually shipped is already collected
+ * from /releases, with notes and a real publication date.
+ *
+ * So a PR now clears the same bar as an issue: somebody labelled it security,
+ * breaking-change or critical, or enough people reacted to it. Both are facts
+ * about the record rather than an opinion about the content, which keeps this
+ * the collector's decision to make.
+ */
 function isMechanicallyImportant(issue: GhIssue): boolean {
 	const labels = (issue.labels ?? []).map((l) => (typeof l === "string" ? l : l.name ?? ""));
 	if (labels.some((l) => IMPORTANT_LABELS.has(l.toLowerCase()))) return true;
 	if ((issue.reactions?.total_count ?? 0) >= IMPORTANT_REACTION_THRESHOLD) return true;
-	if (issue.pull_request && issue.state === "closed") return true;
 	return false;
 }
 
@@ -280,12 +435,12 @@ function releaseToItem(repo: string, r: GhRelease, fetchedAt: string): Collected
 		url: r.html_url,
 		author: r.author?.login,
 		publishedAt: r.published_at ?? fetchedAt,
-		metadata: { kind: "release", repo, tag: r.tag_name },
+		metadata: { kind: "release", repo, tag: r.tag_name, prerelease: Boolean(r.prerelease) },
 		raw: { externalId: `${repo}#release-${r.id}`, body: r, fetchedAt },
 	});
 }
 
-function tagToItem(repo: string, t: GhTag, fetchedAt: string): CollectedItem {
+function tagToItem(repo: string, t: GhTag, publishedAt: string, fetchedAt: string): CollectedItem {
 	return CollectedItem.parse({
 		sourceType: "github",
 		sourceName: repo,
@@ -293,23 +448,9 @@ function tagToItem(repo: string, t: GhTag, fetchedAt: string): CollectedItem {
 		title: `${repo} tag ${t.name}`,
 		summary: "",
 		url: `https://github.com/${repo}/releases/tag/${t.name}`,
-		publishedAt: fetchedAt,
+		publishedAt,
 		metadata: { kind: "tag", repo, sha: t.commit.sha },
 		raw: { externalId: `${repo}#tag-${t.name}`, body: t, fetchedAt },
-	});
-}
-
-function eventToItem(repo: string, e: GhEvent, fetchedAt: string): CollectedItem {
-	return CollectedItem.parse({
-		sourceType: "github",
-		sourceName: repo,
-		externalId: `${repo}#event-${e.id}`,
-		title: `${repo}: ${e.type}`,
-		summary: "",
-		author: e.actor?.login,
-		publishedAt: e.created_at,
-		metadata: { kind: "event", repo, eventType: e.type },
-		raw: { externalId: `${repo}#event-${e.id}`, body: e, fetchedAt },
 	});
 }
 

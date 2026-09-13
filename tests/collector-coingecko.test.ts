@@ -180,3 +180,54 @@ describe("coingeckoCollector", () => {
 		expect(r1.facts.map((f) => f.externalId).sort()).toEqual(r2.facts.map((f) => f.externalId).sort());
 	});
 });
+
+describe("coingeckoCollector identity is stable across repeated collection", () => {
+	function feed() {
+		return vi.fn(async (url: string) => {
+			if (url.includes("/simple/price")) return jsonResponse(priceBody);
+			if (url.includes("/global")) return jsonResponse(globalBody);
+			if (url.includes("/search/trending")) return jsonResponse(trendingBody);
+			return new Response("not found", { status: 404 });
+		});
+	}
+
+	it("gives the same external ids on two runs in the same UTC day", async () => {
+		// This collector runs five times a day. With the fetch timestamp in the
+		// external id, every one of those runs was a fresh set of rows that the
+		// unique key could never collapse -- and no single row was "today's price".
+		const morning = await runCollect(
+			makeCtx({ fetch: feed() as unknown as typeof fetch, now: () => new Date("2026-01-02T06:00:00.000Z") }),
+		);
+		const evening = await runCollect(
+			makeCtx({ fetch: feed() as unknown as typeof fetch, now: () => new Date("2026-01-02T21:30:00.000Z") }),
+		);
+
+		expect(evening.facts.map((f) => f.externalId).sort()).toEqual(
+			morning.facts.map((f) => f.externalId).sort(),
+		);
+		expect(evening.items[0]?.externalId).toBe(morning.items[0]?.externalId);
+	});
+
+	it("gives different external ids on the next UTC day", async () => {
+		const today = await runCollect(
+			makeCtx({ fetch: feed() as unknown as typeof fetch, now: () => new Date("2026-01-02T21:30:00.000Z") }),
+		);
+		const tomorrow = await runCollect(
+			makeCtx({ fetch: feed() as unknown as typeof fetch, now: () => new Date("2026-01-03T06:00:00.000Z") }),
+		);
+
+		expect(tomorrow.facts[0]?.externalId).not.toBe(today.facts[0]?.externalId);
+	});
+
+	it("carries no fetch timestamp in any identity", async () => {
+		const result = await runCollect(
+			makeCtx({ fetch: feed() as unknown as typeof fetch, now: () => new Date("2026-01-02T21:30:45.123Z") }),
+		);
+		for (const id of [...result.facts.map((f) => f.externalId), ...result.items.map((i) => i.externalId)]) {
+			expect(id).not.toContain("21:30:45");
+			expect(id).not.toContain("T");
+		}
+		// The precise reading time is still recorded, just not as identity.
+		expect(result.facts[0]?.asOf).toBe("2026-01-02T21:30:45.123Z");
+	});
+});

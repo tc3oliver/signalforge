@@ -27,9 +27,10 @@ It runs on one machine, for one person, on a schedule.
 
 ## Where it stands
 
-`pnpm test`: **53 files, 630 tests, all passing, none skipped.** The Postgres-backed
-suites run against the real database; `pnpm test` loads `.env` so they can, because
-a green run that silently skipped the whole data layer is worse than a red one.
+`pnpm verify`: typecheck, the full suite with **no suite permitted to skip**, and the
+web build. The Postgres-backed suites run against the real database; `pnpm test`
+loads `.env` so they can, and `pnpm verify` fails outright if they cannot — a green
+run that silently skipped the whole data layer is worse than a red one.
 
 - **Synthetic acceptance:** `p11-b` passes every gate on all three fixture days —
   `experiments/p11-b/<date>/<run-id>/evaluation.json`, and `docs/PHASE1_REPORT.md`
@@ -126,16 +127,30 @@ runtime. See `web/README.md` for the route list.
 ## Tests and acceptance
 
 ```bash
-pnpm test                      # vitest, unit + integration
-pnpm typecheck                 # tsc --noEmit
+pnpm test                      # fast: unit + integration, skips what needs Postgres
+pnpm test:integration          # same suite, but skipping is a failure
+pnpm verify                    # typecheck -> fixtures -> test:integration -> build
 ```
+
+**`pnpm verify` is the command that decides whether a change is good.** `pnpm test`
+is the fast one you run while working, and it is allowed to skip the database-backed
+suites so it stays usable on a machine with no Postgres up. That convenience was a
+trap: a run with no database reported `622 passed | 42 skipped`, exit 0, green — with
+the entire DB layer, the pipeline state machine, and the gold-isolation *security*
+test silently absent, and nothing in the output recording which of the two runs had
+happened. "The tests pass" meant less than it looked like.
+
+So there are two commands with two contracts. Under `pnpm verify` (and
+`pnpm test:integration`, which it calls) the environment variable
+`DI_REQUIRE_INTEGRATION=1` is set, and anything that would skip for want of
+infrastructure throws instead: no Postgres is a hard failure naming the container to
+start, and missing generated fixtures is a hard failure naming `pnpm phase1:generate`.
+Never report a verification result from `pnpm test` alone.
 
 Integration tests drive the real tools, validators, repository and orchestrator
 through a fake agent driver, so resume, cross-provider fallback, rejection handling,
 gold-truth isolation and the run lifecycle are all covered without spending a token
-on a model. DB-backed suites skip themselves when Postgres is not reachable, so a
-clean `pnpm test` with 42 skips means "no database", not "nothing to run" — start the
-container and re-run to exercise them.
+on a model.
 
 The synthetic acceptance harness (fixtures + gold truth) is unchanged from Phase 1
 and is not superseded by live data:

@@ -149,6 +149,33 @@ from the Pi provider.
 3. No manual recovery of the LaunchAgent state is needed; the next scheduled
    run (05:30 next day, or the next incremental slot) will simply try again.
 
+## Verifying a change before you trust it
+
+`pnpm test` is the fast loop and is allowed to skip the Postgres-backed suites, so
+it stays usable when the container is down. It is **not** a verification result: a
+run with no database reports `622 passed | 42 skipped`, exit 0, green, with the whole
+DB layer, the pipeline state machine and the gold-isolation security test absent.
+
+The command that decides is:
+
+```bash
+pnpm verify        # typecheck -> pnpm phase1:generate -> test:integration -> build
+```
+
+It sets `DI_REQUIRE_INTEGRATION=1`, under which anything that would skip for want of
+infrastructure fails instead:
+
+- **No Postgres** — the run fails with the suite name and the reason, e.g.
+  `[db-items] PostgreSQL is required for this run … no TCP listener on 127.0.0.1:5432`.
+  Start it with `docker compose up -d` and re-run. See "Database down" below when the
+  container itself will not come up.
+- **Missing generated fixtures** — the gold-isolation suite fails naming
+  `pnpm phase1:generate`. Generation is deterministic from a fixed seed, so running
+  it does not change `eval/gold/`.
+
+`pnpm test:integration` is the same suite alone, without the typecheck and build, for
+when you want the strict contract but not the whole pipeline.
+
 ## Database down
 
 **Symptom:** any stage error mentioning connection refused/timeout to

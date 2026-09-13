@@ -144,10 +144,14 @@ function classifyCode(code: string): FailureClass | undefined {
 		case "EHOSTUNREACH":
 		case "ENETUNREACH":
 			return "NETWORK";
+		case "UND_ERR_SOCKET":
+		case "ECONNABORTED":
+			return "NETWORK";
 		case "ETIMEDOUT":
 		case "ESOCKETTIMEDOUT":
 		case "UND_ERR_HEADERS_TIMEOUT":
 		case "UND_ERR_BODY_TIMEOUT":
+		case "UND_ERR_CONNECT_TIMEOUT":
 			return "TIMEOUT";
 		case "ABORT_ERR":
 			return "USER_ABORT";
@@ -178,6 +182,28 @@ function classifyName(name: string): FailureClass | undefined {
 	}
 }
 
+/** An abort/timeout distinction: only the message says which one happened. */
+function looksLikeTimeout(message: string): boolean {
+	return /timed? ?out|timeout/i.test(message);
+}
+
+/**
+ * undici (Node's fetch) reports ordinary transport failures as
+ * `TypeError: fetch failed` and hangs the real reason off `cause`. Taking that
+ * built-in name at face value would classify a socket reset as our own bug and
+ * kill the run without ever touching the fallback chain, so a built-in error
+ * that carries a cause — or undici's marker message — declines to answer and
+ * lets the link below it in the chain speak instead. A genuine programmer
+ * TypeError/ReferenceError has neither a cause nor that message, so it still
+ * fails fast.
+ */
+function isTransportWrapper(rec: Record<string, unknown> | undefined, message: string): boolean {
+	const cause = rec?.["cause"];
+	return (cause !== undefined && cause !== null) || /fetch failed/i.test(message);
+}
+
+const BUILTIN_BUG_NAMES = new Set(["TypeError", "ReferenceError", "SyntaxError", "RangeError"]);
+
 function classifyMessage(message: string): FailureClass | undefined {
 	if (!message) return undefined;
 	if (/context length|too many tokens|maximum context|context window/i.test(message)) {
@@ -193,9 +219,17 @@ function classifyMessage(message: string): FailureClass | undefined {
 		return "MODEL_UNAVAILABLE";
 	}
 	if (/unauthorized|invalid api key|authentication failed|forbidden/i.test(message)) return "AUTH";
+	// Only an explicit statement that somebody cancelled counts. Providers say
+	// "request aborted" for their own transport hiccups, and treating that as a
+	// user decision would fail the run instead of falling back.
+	if (/\b(?:user|caller) (?:has )?(?:aborted|cancell?ed)\b|\b(?:aborted|cancell?ed) by (?:the )?(?:user|caller)\b/i.test(message)) {
+		return "USER_ABORT";
+	}
 	if (/timed? ?out|timeout/i.test(message)) return "TIMEOUT";
-	if (/socket hang up|network|dns|connection refused|connection reset/i.test(message)) return "NETWORK";
-	if (/abort/i.test(message)) return "USER_ABORT";
+	// "fetch failed" is undici's own wording for any failed transport.
+	if (/socket hang up|network|dns|connection refused|connection reset|fetch failed|aborted/i.test(message)) {
+		return "NETWORK";
+	}
 	return undefined;
 }
 
@@ -217,12 +251,16 @@ function classifyStructural(err: unknown): FailureClass | undefined {
 	const code = stringProp(rec, "code");
 	if (code) {
 		const byCode = classifyCode(code);
+		// A deadline the runtime enforced for us aborts the same way a user does.
+		if (byCode === "USER_ABORT" && looksLikeTimeout(message)) return "TIMEOUT";
 		if (byCode) return byCode;
 	}
 
 	const name = err instanceof Error ? err.name : stringProp(rec, "name");
 	if (name) {
+		if (BUILTIN_BUG_NAMES.has(name) && isTransportWrapper(rec, message)) return undefined;
 		const byName = classifyName(name);
+		if (byName === "USER_ABORT" && looksLikeTimeout(message)) return "TIMEOUT";
 		if (byName) return byName;
 	}
 	return undefined;

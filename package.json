@@ -8,6 +8,8 @@
   },
   "scripts": {
     "test": "vitest --run",
+    "test:integration": "DI_REQUIRE_INTEGRATION=1 vitest --run",
+    "verify": "pnpm run typecheck && pnpm run phase1:generate && pnpm run test:integration && pnpm run build",
     "typecheck": "tsc --noEmit",
     "build": "pnpm run typecheck && pnpm --dir web run build",
     "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",

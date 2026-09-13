@@ -34,8 +34,9 @@ let cached: Promise<DbProbe> | undefined;
 
 /**
  * Gate for the database-backed suites. A missing DATABASE_URL or a container
- * that is simply not running must skip, never fail: `pnpm test` has to stay
- * green on a machine with no Postgres up.
+ * that is simply not running skips under `pnpm test`, which has to stay green on
+ * a machine with no Postgres up, and fails under the mandatory verification
+ * command — see `announceSkip` below.
  */
 export function probeDatabase(timeoutMs = 1500): Promise<DbProbe> {
 	cached ??= (async (): Promise<DbProbe> => {
@@ -59,10 +60,59 @@ export function probeDatabase(timeoutMs = 1500): Promise<DbProbe> {
 	return cached;
 }
 
-/** One-line reason on stdout so a skipped run is never mistaken for a pass. */
+/**
+ * Set by the mandatory verification command (`pnpm verify` / `pnpm test:integration`).
+ *
+ * `pnpm test` must stay runnable on a machine with no Postgres up, so the
+ * database suites skip themselves there. That convenience became a trap: a run
+ * with no database reported `622 passed | 42 skipped`, exit 0, green -- with the
+ * entire DB layer, the pipeline state machine and the gold-isolation *security*
+ * test silently absent. "The tests pass" then meant less than it appeared to,
+ * and nothing recorded which of the two runs had happened.
+ *
+ * So there are now two commands with two contracts. Skipping stays the default
+ * for the fast one; when this variable is set, anything that would skip for want
+ * of infrastructure is a hard failure instead.
+ */
+export const REQUIRE_INTEGRATION_ENV_VAR = "DI_REQUIRE_INTEGRATION";
+
+/** Whether this run is the one that is not allowed to skip. */
+export function integrationRequired(env: NodeJS.ProcessEnv = process.env): boolean {
+	const value = env[REQUIRE_INTEGRATION_ENV_VAR]?.trim();
+	if (value === undefined || value === "" || value === "0") return false;
+	return value.toLowerCase() !== "false";
+}
+
+/**
+ * One-line reason on stdout so a skipped run is never mistaken for a pass —
+ * and, under the mandatory command, a thrown error so it cannot be one.
+ */
 export function announceSkip(suite: string, probe: DbProbe): void {
 	if (probe.available) return;
+	if (integrationRequired()) {
+		throw new Error(
+			`[${suite}] PostgreSQL is required for this run because ${REQUIRE_INTEGRATION_ENV_VAR} is set, ` +
+				`and it is not available: ${probe.reason}. Start it with \`docker compose up -d\` and re-run.`,
+		);
+	}
 	console.log(`[${suite}] skipped — PostgreSQL not available (${probe.reason}).`);
+}
+
+/**
+ * The same contract for a suite gated on generated fixtures rather than on
+ * Postgres. `tests/integration/gold-isolation.test.ts` is the one that matters:
+ * it asserts gold truth is unreachable from inside the agent sandbox, and it
+ * used to vanish with no announcement at all when the fixtures were absent.
+ */
+export function announceMissingFixtures(suite: string, present: boolean, detail: string): void {
+	if (present) return;
+	if (integrationRequired()) {
+		throw new Error(
+			`[${suite}] generated fixtures are required for this run because ${REQUIRE_INTEGRATION_ENV_VAR} is set, ` +
+				`and they are absent (${detail}). Run \`pnpm phase1:generate\` and re-run.`,
+		);
+	}
+	console.log(`[${suite}] skipped — generated fixtures not present (${detail}).`);
 }
 
 /** Isolated lineage per suite so parallel test files cannot collide. */

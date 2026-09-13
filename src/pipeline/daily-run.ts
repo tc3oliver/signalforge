@@ -326,10 +326,26 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 				const failedReasons = summary.outcomes
 					.filter((o) => o.health === "FAILED")
 					.map((o) => `${o.collectorId} unavailable: ${o.error ?? "unknown error"}`);
-				await addDegradedReason(failedReasons.join("; ") || "one or more collectors failed");
+				if (summary.silentCollectors.length > 0) {
+					// Healthy and returned nothing, from sources that normally return
+					// something. Not a failure on its own -- an incremental collector
+					// can be legitimately quiet in a narrow window -- but it belongs on
+					// the run an operator reads rather than only in the collector's row.
+					failedReasons.push(`no items from ${summary.silentCollectors.join(", ")}`);
+				}
+				await addDegradedReason(failedReasons.join("; ") || summary.suspiciousReason || "one or more collectors failed");
 			}
-			if (summary.empty && summary.degraded) {
-				await recorder.transition("COLLECTION_FAILED", { failureReason: "every enabled collector failed" });
+			/*
+			 * A run that collected nothing at all cannot produce a brief, and the
+			 * previous condition only caught it when something had also FAILED --
+			 * so the failure modes that leave every collector reporting success
+			 * with an empty hand (an expired token answering 200 [], everything
+			 * 304, a watermark stuck ahead of now) walked straight through into an
+			 * empty manifest. `suspiciousReason` is set by the collection layer,
+			 * which knows which sources are allowed to be quiet.
+			 */
+			if (summary.suspiciousReason !== undefined) {
+				await recorder.transition("COLLECTION_FAILED", { failureReason: summary.suspiciousReason });
 				result.state = "COLLECTION_FAILED";
 				result.degraded = true;
 				result.degradedReason = degradedReasons.join(" | ") || undefined;

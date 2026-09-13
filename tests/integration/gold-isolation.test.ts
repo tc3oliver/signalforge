@@ -1,4 +1,5 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { announceMissingFixtures } from "../../src/db/test-support.ts";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -23,6 +24,9 @@ const FIXTURE = join(REPO_ROOT, "fixtures", "generated", DATE, "manifest.json");
 const GOLD = join(REPO_ROOT, "eval", "gold", `${DATE}.json`);
 
 const haveFixtures = existsSync(FIXTURE) && existsSync(GOLD);
+// This suite is the sandbox's security assertion, so its absence must be said
+// out loud under `pnpm test` and must fail outright under `pnpm verify`.
+announceMissingFixtures("gold-isolation", haveFixtures, `${FIXTURE} or ${GOLD} missing`);
 
 let root: string;
 

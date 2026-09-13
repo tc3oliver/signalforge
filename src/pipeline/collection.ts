@@ -208,10 +208,22 @@ export interface CollectorOutcome {
 export interface CollectionSummary {
 	startedAt: string;
 	finishedAt: string;
-	/** True when at least one enabled collector FAILED; the run stays usable. */
+	/**
+	 * True when at least one enabled collector FAILED, or when the run as a whole
+	 * produced nothing. The run stays usable; the reason is in `degradedReasons`.
+	 */
 	degraded: boolean;
 	/** True when no enabled collector produced anything at all. */
 	empty: boolean;
+	/**
+	 * Set when the run looks broken rather than quiet. Distinguishing the two is
+	 * the point: a day on which FRED printed nothing is a working day, and a day
+	 * on which *every* source printed nothing is an environment problem wearing a
+	 * quiet day's clothes.
+	 */
+	suspiciousReason?: string;
+	/** Collectors that reported health but returned nothing, and are not sources that legitimately do. */
+	silentCollectors: string[];
 	outcomes: CollectorOutcome[];
 	itemsInserted: number;
 	/** External ids of arXiv items this run collected; the Semantic Scholar worklist. */
@@ -283,6 +295,25 @@ function collectorScalar(
 	const value = source[name];
 	return typeof value === "string" ? value : undefined;
 }
+
+/**
+ * Sources for which "nothing today" is an ordinary, correct answer, so a zero
+ * count from them must never raise an alarm.
+ *
+ * - `fred` is incremental macro data: most configured series do not print on
+ *   most days, which is the whole reason `fred.ts` separates problems from notes.
+ * - `semantic-scholar` is enrichment-only; with no arXiv ids to enrich there is
+ *   nothing for it to do and nothing wrong.
+ * - `sec` only has filings on days companies file.
+ *
+ * Everything else is either high-volume or continuously published, so a healthy
+ * run of it that returns nothing is worth recording. That is recorded per
+ * collector rather than failing the run, because an incremental collector with a
+ * cursor can legitimately return zero in a narrow window too -- the signal that
+ * actually means something is the same collector doing it run after run, which
+ * is what the health counters in `src/db/collector-health.ts` are for.
+ */
+const MAY_BE_QUIET: ReadonlySet<string> = new Set(["fred", "semantic-scholar", "sec"]);
 
 /** Bounded pool: eleven collectors hitting eleven providers at once is a thundering herd. */
 const DEFAULT_CONCURRENCY = 5;
@@ -392,12 +423,38 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
 			const { collector } = entry;
 			const collectionRunId = randomUUID();
 			const enabled = enabledKeys.has(entry.sourceKey);
-			await options.store.registerCollector({
-				collectorId: collector.id,
-				sourceType: collector.sourceType,
-				enabled,
-				requiredSecrets: collector.requiredSecrets,
-			});
+			/*
+			 * Registration used to sit outside every try in this task, and `pool`
+			 * does not catch: one transient failure here took all ten collectors
+			 * down with it and left the in-flight ones half-persisted. It is also
+			 * the first await, so a throw produced no row at all -- the source
+			 * simply was not in the run, which is the one failure shape this
+			 * pipeline must never have.
+			 */
+			try {
+				await options.store.registerCollector({
+					collectorId: collector.id,
+					sourceType: collector.sourceType,
+					enabled,
+					requiredSecrets: collector.requiredSecrets,
+				});
+			} catch (err) {
+				const message = err instanceof Error ? err.message : String(err);
+				log("collector registration failed", { collector: collector.id, error: message });
+				return {
+					collectorId: collector.id,
+					sourceType: collector.sourceType,
+					collectionRunId,
+					health: "FAILED",
+					itemsFetched: 0,
+					itemsInserted: 0,
+					factsInserted: 0,
+					warnings: [],
+					error: message,
+					cursorAdvanced: false,
+					latencyMs: 0,
+				};
+			}
 
 			const base = {
 				collectorId: collector.id,
@@ -526,6 +583,8 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
 
 			let inserted = 0;
 			let factsInserted = 0;
+			/** Problems found while storing, which belong on this run's row. */
+			const persistWarnings: string[] = [];
 			try {
 				const refs = await options.store.persistRaw(result.items, collectionRunId);
 				inserted = refs.filter((r) => r.inserted).length;
@@ -536,12 +595,34 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
 					if (item.sourceType === "arxiv") arxivExternalIds.push(item.externalId);
 				}
 
-				// A fact whose source item was not collected would be a dangling
-				// reference in the manifest, so only facts we can anchor are kept.
+				/*
+				 * A fact that NAMES a source item must resolve to one: a citation
+				 * that goes nowhere would reach the manifest and the agent would be
+				 * shown provenance it cannot follow.
+				 *
+				 * A fact that names none is not dangling. `toStructuredFact` derives
+				 * its id from the fact's own external id, so the reading is its own
+				 * record -- which is the normal shape for an observation nobody
+				 * wrote an article about. Membership-testing those too is what
+				 * silently emptied the entire numeric layer: `sec` is the only
+				 * collector that sets `sourceExternalId`, so every CoinGecko and FRED
+				 * fact failed a test it was never meant to take, on every run, with
+				 * no warning and no row.
+				 */
 				const knownItemIds = new Set(normalized.map((i) => i.id));
-				const facts = result.facts
-					.map((f) => toStructuredFact(f, collector.sourceType))
-					.filter((f) => knownItemIds.has(f.sourceItemId));
+				const facts: StructuredFact[] = [];
+				for (const fact of result.facts) {
+					const converted = toStructuredFact(fact, collector.sourceType);
+					if (fact.sourceExternalId !== undefined && !knownItemIds.has(converted.sourceItemId)) {
+						// Named an item that did not arrive: worth saying out loud
+						// rather than dropping in silence, which is the bug above.
+						persistWarnings.push(
+							`fact ${fact.externalId} names source item ${fact.sourceExternalId}, which was not collected; fact dropped`,
+						);
+						continue;
+					}
+					facts.push(converted);
+				}
 				await options.store.persistFacts(facts);
 				factsInserted = facts.length;
 			} catch (err) {
@@ -571,7 +652,7 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
 				itemsFetched: result.itemsFetched,
 				itemsInserted: inserted,
 				factsInserted,
-				warnings: result.warnings,
+				warnings: [...result.warnings, ...persistWarnings],
 				...(result.error === undefined ? {} : { error: result.error }),
 				cursorAdvanced: result.cursor !== undefined,
 				latencyMs: result.latencyMs,
@@ -580,14 +661,42 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
 		options.concurrency ?? DEFAULT_CONCURRENCY,
 	);
 
-	const degraded = outcomes.some((o) => o.health === "FAILED");
 	const active = outcomes.filter((o) => o.health !== "DISABLED");
+	const empty = active.length === 0 || active.every((o) => o.itemsFetched === 0);
+
+	const silentCollectors = active
+		.filter(
+			(o) =>
+				(o.health === "OK" || o.health === "DEGRADED") &&
+				o.itemsFetched === 0 &&
+				!MAY_BE_QUIET.has(o.sourceType),
+		)
+		.map((o) => o.collectorId)
+		.sort();
+
+	/*
+	 * Emptiness used to count as a problem only when something had also FAILED,
+	 * which inverted the logic: the ways a pipeline goes quietly blind -- a token
+	 * that now returns 200 with an empty array, every request answered 304, a
+	 * watermark stuck in the future -- all produce collectors that succeed and
+	 * return nothing. Those are exactly the runs the old condition waved through.
+	 */
+	const suspiciousReason =
+		active.length === 0
+			? "no collector was enabled for this run"
+			: empty
+				? `every enabled collector returned zero items (${active.map((o) => o.collectorId).join(", ")})`
+				: undefined;
+
+	const degraded = outcomes.some((o) => o.health === "FAILED") || suspiciousReason !== undefined;
 
 	return {
 		startedAt,
 		finishedAt: now().toISOString(),
 		degraded,
-		empty: active.length === 0 || active.every((o) => o.itemsFetched === 0),
+		empty,
+		...(suspiciousReason === undefined ? {} : { suspiciousReason }),
+		silentCollectors,
 		outcomes,
 		itemsInserted: outcomes.reduce((sum, o) => sum + o.itemsInserted, 0),
 		arxivExternalIds,
@@ -649,11 +758,21 @@ export async function runCollectionForDay(
 		buildRegistry(),
 	);
 
+	// The two passes are halves of one run, so emptiness is only real when both
+	// halves are empty -- and the suspicion that follows from it has to be
+	// recomputed here rather than inherited from a half that was empty alone.
+	const empty = first.empty && rest.empty;
+	const suspiciousReason = empty
+		? (first.suspiciousReason ?? rest.suspiciousReason ?? "every enabled collector returned zero items")
+		: undefined;
+
 	return {
 		startedAt: first.startedAt,
 		finishedAt: rest.finishedAt,
-		degraded: first.degraded || rest.degraded,
-		empty: first.empty && rest.empty,
+		degraded: first.outcomes.concat(rest.outcomes).some((o) => o.health === "FAILED") || empty,
+		empty,
+		...(suspiciousReason === undefined ? {} : { suspiciousReason }),
+		silentCollectors: [...new Set([...first.silentCollectors, ...rest.silentCollectors])].sort(),
 		outcomes: [...first.outcomes, ...rest.outcomes, ...missing],
 		itemsInserted: first.itemsInserted + rest.itemsInserted,
 		arxivExternalIds: arxivIds,

@@ -64,6 +64,17 @@ export const coingeckoCollector: Collector = {
 
 		try {
 			const fetchedAt = ctx.now().toISOString();
+			/*
+			 * Identity is the reading's UTC day, never the moment it was fetched.
+			 * A fetch timestamp in the external id makes every run a new record:
+			 * this collector runs five times a day, so the price of one asset grew
+			 * five rows a day forever, the unique key it was supposed to collapse
+			 * against never matched, and "BTC price" had no single current value to
+			 * point at. The day is the natural grain -- re-collecting later the
+			 * same day updates today's reading, which is what a reader means by
+			 * today's price. `asOf` keeps the precise time, so freshness is not lost.
+			 */
+			const observationDay = fetchedAt.slice(0, 10);
 
 			// --- per-asset price/volume/market cap facts ---
 			let priceJson: Record<string, SimplePriceEntry> | undefined;
@@ -94,7 +105,7 @@ export const coingeckoCollector: Collector = {
 						value: entry.usd,
 						unit: "usd",
 						asOf: fetchedAt,
-						externalId: `coingecko-price-${asset.id}-${fetchedAt}`,
+						externalId: `coingecko-price-${asset.id}-${observationDay}`,
 						metadata: { asset: asset.symbol },
 					});
 					if (typeof entry.usd_market_cap === "number") {
@@ -104,7 +115,7 @@ export const coingeckoCollector: Collector = {
 							value: entry.usd_market_cap,
 							unit: "usd",
 							asOf: fetchedAt,
-							externalId: `coingecko-mcap-${asset.id}-${fetchedAt}`,
+							externalId: `coingecko-mcap-${asset.id}-${observationDay}`,
 							metadata: { asset: asset.symbol },
 						});
 					}
@@ -115,7 +126,7 @@ export const coingeckoCollector: Collector = {
 							value: entry.usd_24h_vol,
 							unit: "usd",
 							asOf: fetchedAt,
-							externalId: `coingecko-vol-${asset.id}-${fetchedAt}`,
+							externalId: `coingecko-vol-${asset.id}-${observationDay}`,
 							metadata: { asset: asset.symbol },
 						});
 					}
@@ -138,7 +149,7 @@ export const coingeckoCollector: Collector = {
 						value: totalMcapUsd,
 						unit: "usd",
 						asOf: fetchedAt,
-						externalId: `coingecko-global-mcap-${fetchedAt}`,
+						externalId: `coingecko-global-mcap-${observationDay}`,
 						metadata: {},
 					});
 				}
@@ -150,7 +161,7 @@ export const coingeckoCollector: Collector = {
 						value: btcDominance,
 						unit: "percent",
 						asOf: fetchedAt,
-						externalId: `coingecko-btc-dominance-${fetchedAt}`,
+						externalId: `coingecko-btc-dominance-${observationDay}`,
 						metadata: {},
 					});
 				}
@@ -169,7 +180,7 @@ export const coingeckoCollector: Collector = {
 					.filter((c): c is NonNullable<TrendingCoin["item"]> => !!c?.id && !!c.symbol);
 				if (coins.length > 0) {
 					itemsFetched++;
-					const externalId = `coingecko-trending-${fetchedAt}`;
+					const externalId = `coingecko-trending-${observationDay}`;
 					const names = coins.map((c) => c.symbol?.toUpperCase()).join(", ");
 					items.push({
 						sourceType: "coingecko",

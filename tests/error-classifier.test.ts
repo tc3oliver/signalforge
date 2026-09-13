@@ -198,3 +198,60 @@ describe("classifyError — errorMeta sanitization", () => {
 		expect(message.endsWith("…")).toBe(true);
 	});
 });
+
+describe("classifyError — undici transport failures wearing a TypeError", () => {
+	/** The exact shape `fetch()` throws: a bare TypeError with the truth in `cause`. */
+	function fetchFailed(code: string, causeMessage: string): Error {
+		const cause = withProps(new Error(causeMessage), { code });
+		return new TypeError("fetch failed", { cause });
+	}
+
+	it.each([
+		["ECONNRESET", "read ECONNRESET", "NETWORK"],
+		["ENOTFOUND", "getaddrinfo ENOTFOUND api.example.com", "NETWORK"],
+		["ECONNREFUSED", "connect ECONNREFUSED 127.0.0.1:443", "NETWORK"],
+		["UND_ERR_SOCKET", "other side closed", "NETWORK"],
+		["UND_ERR_CONNECT_TIMEOUT", "Connect Timeout Error", "TIMEOUT"],
+	])("classifies fetch failed / %s as %s rather than PROGRAMMER_ERROR", (code, causeMessage, expected) => {
+		expect(classifyError(fetchFailed(code, causeMessage)).failureClass).toBe(expected);
+	});
+
+	it("still classifies fetch failed when the cause carries no recognised code", () => {
+		const err = new TypeError("fetch failed", { cause: new Error("terminated") });
+		expect(classifyError(err).failureClass).toBe("NETWORK");
+	});
+
+	it("does not mask a genuine programmer TypeError with no cause", () => {
+		expect(classifyError(new TypeError("undefined is not a function")).failureClass).toBe("PROGRAMMER_ERROR");
+		expect(classifyError(new ReferenceError("storyId is not defined")).failureClass).toBe("PROGRAMMER_ERROR");
+	});
+
+	it("keeps a schema validation failure failing fast", () => {
+		const zodish = withProps(new Error("Invalid input: expected string, received number"), { name: "ZodError" });
+		expect(classifyError(new InvalidAgentOutputError("materials failed validation", { cause: zodish })).failureClass).toBe(
+			"INVALID_AGENT_OUTPUT",
+		);
+		expect(classifyError(new ProgrammerError("config schema rejected", { cause: zodish })).failureClass).toBe(
+			"PROGRAMMER_ERROR",
+		);
+	});
+});
+
+describe("classifyError — abort is not automatically the user's doing", () => {
+	it("treats a provider's 'request aborted' as NETWORK, not USER_ABORT", () => {
+		expect(classifyError(new Error("upstream request aborted")).failureClass).toBe("NETWORK");
+	});
+
+	it("still honours an explicit user cancellation", () => {
+		expect(classifyError(new Error("The operation was cancelled by the user")).failureClass).toBe("USER_ABORT");
+		const named = withProps(new Error("aborted"), { name: "AbortError" });
+		expect(classifyError(named).failureClass).toBe("USER_ABORT");
+	});
+
+	it("reads an AbortError raised by a deadline as TIMEOUT", () => {
+		const named = withProps(new Error("This operation was aborted due to timeout"), { name: "AbortError" });
+		expect(classifyError(named).failureClass).toBe("TIMEOUT");
+		const coded = withProps(new Error("The operation timed out and was aborted"), { code: "ABORT_ERR" });
+		expect(classifyError(coded).failureClass).toBe("TIMEOUT");
+	});
+});

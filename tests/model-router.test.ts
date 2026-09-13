@@ -390,3 +390,77 @@ describe("runStageWithFallback", () => {
 		expect(new Set(attempts.map((a) => a.attemptId)).size).toBe(3);
 	});
 });
+
+describe("runStageWithFallback — transport errors never bypass the chain", () => {
+	/** The exact shape `fetch()` throws on a dead socket. */
+	function fetchFailed(code: string): Error {
+		return new TypeError("fetch failed", { cause: Object.assign(new Error("read " + code), { code }) });
+	}
+
+	it("retries the primary, then walks the whole three-model chain", async () => {
+		const attempts: AgentAttempt[] = [];
+		const seen: string[] = [];
+
+		const result = await runStageWithFallback<string>({
+			stage: "CURATOR",
+			chain: MODEL_CHAIN,
+			routerState: new RouterState(),
+			onAttempt: async ({ spec }) => {
+				seen.push(modelKey(spec));
+				if (spec.provider !== DEEPSEEK.provider) throw fetchFailed("ECONNRESET");
+				return "materials";
+			},
+			recordAttempt: (a) => attempts.push(a),
+			now: fakeClock(),
+			maxAttemptsPerModel: 2,
+		});
+
+		expect(result).toBe("materials");
+		expect(seen).toEqual([
+			modelKey(GEMINI),
+			modelKey(GEMINI),
+			modelKey(GPT),
+			modelKey(GPT),
+			modelKey(DEEPSEEK),
+		]);
+		expect(attempts.slice(0, 4).every((a) => a.failureClass === "NETWORK")).toBe(true);
+		for (const a of attempts) expect(() => AgentAttemptSchema.parse(a)).not.toThrow();
+	});
+
+	it("does not degrade the provider or fail the stage on a socket reset", async () => {
+		const routerState = new RouterState();
+		await runStageWithFallback<string>({
+			stage: "EDITOR",
+			chain: MODEL_CHAIN,
+			routerState,
+			onAttempt: async ({ spec }) => {
+				if (spec.provider === GEMINI.provider) throw fetchFailed("ENOTFOUND");
+				return "draft";
+			},
+			recordAttempt: () => {},
+			now: fakeClock(),
+		});
+		expect(routerState.degradedProviders()).toEqual([]);
+	});
+
+	it("still fails the stage outright on a real programmer TypeError", async () => {
+		const boom = new TypeError("story.items.map is not a function");
+		const seen: string[] = [];
+
+		await expect(
+			runStageWithFallback<string>({
+				stage: "CURATOR",
+				chain: MODEL_CHAIN,
+				routerState: new RouterState(),
+				onAttempt: async ({ spec }) => {
+					seen.push(modelKey(spec));
+					throw boom;
+				},
+				recordAttempt: () => {},
+				now: fakeClock(),
+			}),
+		).rejects.toBe(boom);
+
+		expect(seen).toEqual([modelKey(GEMINI)]);
+	});
+});

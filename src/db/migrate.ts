@@ -2,8 +2,9 @@ import { readdirSync, readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createInterface } from "node:readline/promises";
 import { ProgrammerError } from "../runtime/error-classifier.ts";
-import { assertReachable, createSql, type Sql } from "./client.ts";
+import { assertReachable, createSql, dbConfigFromEnv, type DbConfig, type Sql } from "./client.ts";
 
 const MIGRATIONS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../../db/migrations");
 const FILE_RE = /^(\d{3,})_[a-z0-9-]+\.sql$/;
@@ -94,8 +95,169 @@ export async function resetSchema(sql: Sql): Promise<void> {
 	await sql.unsafe("drop schema public cascade; create schema public;");
 }
 
+/* -------------------------------------------------------------------------- */
+/* Destructive-reset authorisation.                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * `pnpm db:reset` is one keystroke away from `pnpm db:migrate`, and the thing it
+ * runs is an unrecoverable `drop schema public cascade`. Connectivity is not
+ * intent, so the argv flag alone must never be enough: the operator has to name
+ * the database they mean to destroy, either by typing it at a TTY or by passing
+ * it explicitly when there is no TTY to prompt at.
+ */
+export const DROP_FLAG = "--yes-drop-database";
+
+export type ResetDecision =
+	/** `--reset` was not requested; migrate normally. */
+	| { kind: "skip" }
+	| { kind: "refuse"; reason: string }
+	/** Interactive: the operator must type `expected` before anything is dropped. */
+	| { kind: "confirm"; expected: string; prompt: string }
+	| { kind: "proceed" };
+
+export interface ResetContext {
+	argv: readonly string[];
+	/** Whether stdin can carry a typed confirmation. */
+	isTTY: boolean;
+	/** Database actually resolved from the connection settings, not from argv. */
+	resolvedDbName: string | undefined;
+	/** Host actually resolved from the connection settings. */
+	host: string | undefined;
+}
+
+/**
+ * Same refusal philosophy as `scripts/lib-db-env.sh`: this machine runs several
+ * other Docker stacks in the same engine, and daily-intelligence's Postgres is
+ * bound to loopback by design, so a non-loopback host means the settings have
+ * drifted onto someone else's database.
+ */
+function isLoopback(host: string | undefined): boolean {
+	// Unset means the driver's own default, which is the local socket/localhost.
+	if (host === undefined || host === "") return true;
+	return host === "127.0.0.1" || host === "localhost" || host === "::1" || host === "[::1]";
+}
+
+/**
+ * Pure: every input is passed in, so the whole refusal matrix is testable
+ * without a database. `main()` only executes what this returns.
+ */
+export function decideReset(ctx: ResetContext): ResetDecision {
+	if (!ctx.argv.includes("--reset")) return { kind: "skip" };
+
+	if (!isLoopback(ctx.host)) {
+		return {
+			kind: "refuse",
+			reason:
+				`refusing to drop a schema on non-loopback host '${ctx.host}' — ` +
+				"this command only ever operates on the local daily-intelligence Postgres",
+		};
+	}
+
+	if (!ctx.resolvedDbName) {
+		return {
+			kind: "refuse",
+			reason:
+				"cannot resolve the target database name from DATABASE_URL / PGDATABASE; " +
+				"refusing to drop a schema on an unidentified connection",
+		};
+	}
+
+	const flag = ctx.argv.find((a) => a === DROP_FLAG || a.startsWith(`${DROP_FLAG}=`));
+	if (flag !== undefined) {
+		const named = flag.startsWith(`${DROP_FLAG}=`) ? flag.slice(DROP_FLAG.length + 1) : "";
+		if (named !== ctx.resolvedDbName) {
+			return {
+				kind: "refuse",
+				reason:
+					`${DROP_FLAG}=${named || "<empty>"} does not match the database this connection ` +
+					`resolves to ('${ctx.resolvedDbName}'); refusing`,
+			};
+		}
+		return { kind: "proceed" };
+	}
+
+	if (ctx.isTTY) {
+		return {
+			kind: "confirm",
+			expected: ctx.resolvedDbName,
+			prompt:
+				`This will run 'drop schema public cascade' on database '${ctx.resolvedDbName}'. ` +
+				`All data in it is lost and cannot be recovered.\n` +
+				`Type the database name to confirm: `,
+		};
+	}
+
+	// Not a TTY: no prompt is possible, so intent has to arrive in argv.
+	return {
+		kind: "refuse",
+		reason:
+			"refusing a destructive reset without explicit authorisation. " +
+			`Re-run with ${DROP_FLAG}=${ctx.resolvedDbName}, or run it interactively to be prompted.`,
+	};
+}
+
+/** Pure: what the operator typed, against what `decideReset` demanded. */
+export function confirmationAccepted(expected: string, typed: string): boolean {
+	return typed.trim() === expected;
+}
+
+/**
+ * The database/host the pool will actually connect to. Authorisation is checked
+ * against this, never against what the operator claims on the command line.
+ */
+export function resolveTarget(config: DbConfig = dbConfigFromEnv()): {
+	host: string | undefined;
+	database: string | undefined;
+} {
+	if (config.url) {
+		try {
+			const url = new URL(config.url);
+			return {
+				host: decodeURIComponent(url.hostname),
+				database: decodeURIComponent(url.pathname.replace(/^\//, "")) || undefined,
+			};
+		} catch {
+			// An unparseable URL is an unidentified target; decideReset refuses on it.
+			return { host: undefined, database: undefined };
+		}
+	}
+	return { host: config.host, database: config.database };
+}
+
+async function askForConfirmation(prompt: string): Promise<string> {
+	const rl = createInterface({ input: process.stdin, output: process.stdout });
+	try {
+		return await rl.question(prompt);
+	} finally {
+		rl.close();
+	}
+}
+
 async function main(): Promise<void> {
-	const reset = process.argv.includes("--reset");
+	const target = resolveTarget();
+	const decision = decideReset({
+		argv: process.argv.slice(2),
+		isTTY: process.stdin.isTTY === true,
+		resolvedDbName: target.database,
+		host: target.host,
+	});
+	if (decision.kind === "refuse") {
+		console.error(`db:reset refused: ${decision.reason}`);
+		process.exitCode = 1;
+		return;
+	}
+	let reset = decision.kind === "proceed";
+	if (decision.kind === "confirm") {
+		const typed = await askForConfirmation(decision.prompt);
+		if (!confirmationAccepted(decision.expected, typed)) {
+			console.error("db:reset aborted: the typed name did not match the target database");
+			process.exitCode = 1;
+			return;
+		}
+		reset = true;
+	}
+
 	const sql = createSql();
 	try {
 		if (reset) {

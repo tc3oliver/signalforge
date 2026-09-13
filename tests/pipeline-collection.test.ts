@@ -489,3 +489,233 @@ describe("a collector that never finishes", () => {
 		expect(runs[0]?.result.error).toMatch(/did not finish within/);
 	});
 });
+
+/* -------------------------------------------------------------------------- */
+/* Fact anchoring                                                              */
+/* -------------------------------------------------------------------------- */
+
+function factCollector(
+	id: string,
+	sourceType: CollectedItem["sourceType"],
+	facts: CollectorResult["facts"],
+	items: CollectedItem[] = [],
+): Collector {
+	return {
+		id,
+		sourceType,
+		requiredSecrets: [],
+		check: async () => ({ ok: true, detail: "fake" }),
+		collect: async () => ({ ...okResult(id, items), facts }),
+	};
+}
+
+describe("structured fact anchoring", () => {
+	it("stores a fact that names no source item", async () => {
+		// The shape every FRED and CoinGecko reading has: a number about the world
+		// that no article carried. These were silently discarded on every run.
+		const store = memoryStore();
+		const summary = await runCollection({
+			store: store.store,
+			since: SINCE,
+			now: () => NOW,
+			enabledSourceKeys: ["fred"],
+			entries: [
+				entry(
+					factCollector("fred", "fred", [
+						{
+							kind: "macro",
+							label: "FEDFUNDS",
+							value: 4.33,
+							unit: "level",
+							asOf: "2026-09-12",
+							externalId: "fred-FEDFUNDS-2026-09-12",
+							metadata: {},
+						},
+					]),
+					"fred",
+				),
+			],
+		});
+
+		expect(store.facts.size).toBe(1);
+		expect(summary.outcomes[0]?.factsInserted).toBe(1);
+		expect([...store.facts.values()][0]?.value).toBe(4.33);
+	});
+
+	it("keeps a fact whose named source item did arrive", async () => {
+		const store = memoryStore();
+		await runCollection({
+			store: store.store,
+			since: SINCE,
+			now: () => NOW,
+			enabledSourceKeys: ["sec"],
+			entries: [
+				entry(
+					factCollector(
+						"sec",
+						"sec",
+						[
+							{
+								kind: "filing",
+								label: "NVDA 8-K",
+								value: 1,
+								unit: "filing",
+								asOf: "2026-09-13",
+								externalId: "sec-nvda-8k",
+								sourceExternalId: "filing-1",
+								metadata: {},
+							},
+						],
+						[collectedItem("sec", "filing-1")],
+					),
+					"sec",
+				),
+			],
+		});
+
+		expect(store.facts.size).toBe(1);
+	});
+
+	it("drops a fact whose named source item never arrived, and says so", async () => {
+		const store = memoryStore();
+		const summary = await runCollection({
+			store: store.store,
+			since: SINCE,
+			now: () => NOW,
+			enabledSourceKeys: ["sec"],
+			entries: [
+				entry(
+					factCollector("sec", "sec", [
+						{
+							kind: "filing",
+							label: "NVDA 8-K",
+							value: 1,
+							unit: "filing",
+							asOf: "2026-09-13",
+							externalId: "sec-nvda-8k",
+							sourceExternalId: "filing-that-was-not-collected",
+							metadata: {},
+						},
+					]),
+					"sec",
+				),
+			],
+		});
+
+		// Still dropped -- a citation that goes nowhere must not reach the agent --
+		// but no longer in silence.
+		expect(store.facts.size).toBe(0);
+		expect(summary.outcomes[0]?.warnings.join(" ")).toContain("filing-that-was-not-collected");
+	});
+});
+
+/* -------------------------------------------------------------------------- */
+/* Success semantics                                                           */
+/* -------------------------------------------------------------------------- */
+
+describe("collection success semantics", () => {
+	it("treats a run where every collector succeeded with nothing as suspicious", async () => {
+		// The failure shape the old `empty && degraded` condition waved through:
+		// nothing errored, and nothing came back.
+		const store = memoryStore();
+		const summary = await runCollection({
+			store: store.store,
+			since: SINCE,
+			now: () => NOW,
+			enabledSourceKeys: ["a", "b"],
+			entries: [
+				entry(fakeCollector({ id: "a", sourceType: "github" }), "a"),
+				entry(fakeCollector({ id: "b", sourceType: "hackernews" }), "b"),
+			],
+		});
+
+		expect(summary.empty).toBe(true);
+		expect(summary.degraded).toBe(true);
+		expect(summary.suspiciousReason).toContain("zero items");
+		expect(summary.outcomes.every((o) => o.health === "OK")).toBe(true);
+	});
+
+	it("does not flag a source that is allowed to be quiet", async () => {
+		// FRED printing nothing is the normal state of most series on most days,
+		// and semantic-scholar has nothing to enrich without arXiv ids.
+		const store = memoryStore();
+		const summary = await runCollection({
+			store: store.store,
+			since: SINCE,
+			now: () => NOW,
+			enabledSourceKeys: ["fred", "s2", "hn"],
+			entries: [
+				entry(fakeCollector({ id: "fred", sourceType: "fred" }), "fred"),
+				entry(fakeCollector({ id: "s2", sourceType: "semantic-scholar" }), "s2"),
+				entry(
+					fakeCollector({ id: "hn", sourceType: "hackernews", items: [collectedItem("hackernews", "h1")] }),
+					"hn",
+				),
+			],
+		});
+
+		expect(summary.empty).toBe(false);
+		expect(summary.suspiciousReason).toBeUndefined();
+		expect(summary.silentCollectors).toEqual([]);
+		expect(summary.degraded).toBe(false);
+	});
+
+	it("names a healthy collector that returned nothing when its source normally does", async () => {
+		const store = memoryStore();
+		const summary = await runCollection({
+			store: store.store,
+			since: SINCE,
+			now: () => NOW,
+			enabledSourceKeys: ["gh", "hn"],
+			entries: [
+				entry(fakeCollector({ id: "gh", sourceType: "github" }), "gh"),
+				entry(
+					fakeCollector({ id: "hn", sourceType: "hackernews", items: [collectedItem("hackernews", "h1")] }),
+					"hn",
+				),
+			],
+		});
+
+		// Not a failure on its own: one quiet window is not evidence. It is named
+		// so the health counters and the operator can see it.
+		expect(summary.silentCollectors).toEqual(["gh"]);
+		expect(summary.empty).toBe(false);
+		expect(summary.suspiciousReason).toBeUndefined();
+	});
+
+	it("records an outcome for a collector whose registration fails, and does not abort the pool", async () => {
+		// registerCollector used to sit outside every try, and the pool does not
+		// catch: one DB blip took every collector down and left no row behind.
+		const store = memoryStore();
+		let calls = 0;
+		const failing: CollectionStore = {
+			...store.store,
+			registerCollector: async () => {
+				calls += 1;
+				if (calls === 1) throw new Error("connection terminated unexpectedly");
+			},
+		};
+
+		const summary = await runCollection({
+			store: failing,
+			since: SINCE,
+			now: () => NOW,
+			enabledSourceKeys: ["first", "second"],
+			entries: [
+				entry(fakeCollector({ id: "first", items: [collectedItem("rss", "a1")] }), "first"),
+				entry(
+					fakeCollector({ id: "second", sourceType: "hackernews", items: [collectedItem("hackernews", "h1")] }),
+					"second",
+				),
+			],
+		});
+
+		expect(summary.outcomes).toHaveLength(2);
+		const first = summary.outcomes.find((o) => o.collectorId === "first")!;
+		expect(first.health).toBe("FAILED");
+		expect(first.error).toContain("connection terminated");
+		// The other collector still ran and still landed its item.
+		expect(summary.outcomes.find((o) => o.collectorId === "second")?.health).toBe("OK");
+		expect(store.items.size).toBe(1);
+	});
+});

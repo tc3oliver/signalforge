@@ -207,3 +207,32 @@ describe("fredCollector health", () => {
 		expect(result.health).toBe("FAILED");
 	});
 });
+
+describe("fredCollector identity is stable across repeated collection", () => {
+	it("keys a fact by its observation date, not by when it was fetched", async () => {
+		// FRED was already correct here; the test exists so it stays that way, and
+		// because the whole numeric layer was silently empty for a different
+		// reason (the collection layer dropped every fact naming no source item).
+		const observations = [{ date: "2026-09-11", value: "4.33" }];
+		const fetchMock = vi.fn(async () => jsonResponse({ observations }));
+
+		const first = await runCollect(
+			makeCtx({
+				fetch: fetchMock as unknown as typeof fetch,
+				secrets: { FRED_API_KEY: "test-key" },
+				now: () => new Date("2026-09-13T06:00:00.000Z"),
+			}),
+		);
+		const second = await runCollect(
+			makeCtx({
+				fetch: fetchMock as unknown as typeof fetch,
+				secrets: { FRED_API_KEY: "test-key" },
+				now: () => new Date("2026-09-13T21:00:00.000Z"),
+			}),
+		);
+
+		expect(first.facts[0]?.externalId).toBe("fred-FEDFUNDS-2026-09-11");
+		expect(second.facts[0]?.externalId).toBe(first.facts[0]?.externalId);
+		expect(first.facts[0]?.asOf).toBe("2026-09-11");
+	});
+});
