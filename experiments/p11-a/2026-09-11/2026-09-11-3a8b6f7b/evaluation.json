@@ -1,0 +1,147 @@
+{
+  "date": "2026-09-11",
+  "runId": "unknown",
+  "evaluatedAt": "2026-09-13T09:17:37.418Z",
+  "metrics": [
+    {
+      "name": "scan_coverage",
+      "value": 1,
+      "unit": "ratio",
+      "threshold": 1,
+      "comparator": "gte",
+      "pass": true,
+      "detail": "82/82 manifest items have a decision; 0 undecided"
+    },
+    {
+      "name": "important_story_recall",
+      "value": 0.8181818181818182,
+      "unit": "ratio",
+      "threshold": 0.9,
+      "comparator": "gte",
+      "pass": false,
+      "detail": "9/11 important gold events reached the brief; missed: evt-20260911-arc-conflict-d2, evt-20260911-std-fusion-round"
+    },
+    {
+      "name": "selected_story_precision",
+      "value": 1,
+      "unit": "ratio",
+      "threshold": 0.85,
+      "comparator": "gte",
+      "pass": true,
+      "detail": "9/9 brief stories match an important gold event; unjustified: none"
+    },
+    {
+      "name": "cluster_precision",
+      "value": 1,
+      "unit": "ratio",
+      "threshold": null,
+      "comparator": "none",
+      "pass": null,
+      "detail": "TP=76, predicted pairs=76, gold pairs=76 (noise items excluded)"
+    },
+    {
+      "name": "cluster_recall",
+      "value": 1,
+      "unit": "ratio",
+      "threshold": null,
+      "comparator": "none",
+      "pass": null,
+      "detail": "TP=76, predicted pairs=76, gold pairs=76 (noise items excluded)"
+    },
+    {
+      "name": "cluster_f1",
+      "value": 1,
+      "unit": "ratio",
+      "threshold": 0.9,
+      "comparator": "gte",
+      "pass": true,
+      "detail": "TP=76, predicted pairs=76, gold pairs=76 (noise items excluded); precision=1.000, recall=1.000"
+    },
+    {
+      "name": "change_type_accuracy",
+      "value": 0.7647058823529411,
+      "unit": "ratio",
+      "threshold": 0.85,
+      "comparator": "gte",
+      "pass": false,
+      "detail": "13/17 matched stories carry the expected changeType; wrong: basalt-engine-revenue-share-licence-rumour: NO_MATERIAL_CHANGE != RUMOR; sable-orm-batched-upsert-data-loss: UPDATE != ESCALATION; us-jobless-claims-weekly: NO_MATERIAL_CHANGE != NEW; ashgrove-utilities-dividend-declaration: UPDATE != NEW"
+    },
+    {
+      "name": "noise_rejection_rate",
+      "value": 1,
+      "unit": "ratio",
+      "threshold": 0.95,
+      "comparator": "gte",
+      "pass": true,
+      "detail": "26/26 noise items kept out of the brief; leaked: none"
+    },
+    {
+      "name": "fabricated_source_ids",
+      "value": 0,
+      "unit": "count",
+      "threshold": 0,
+      "comparator": "lte",
+      "pass": true,
+      "detail": "0 brief sourceItemIds are absent from the manifest's 82 items"
+    },
+    {
+      "name": "invalid_fact_refs",
+      "value": 0,
+      "unit": "count",
+      "threshold": 0,
+      "comparator": "lte",
+      "pass": true,
+      "detail": "0 brief factRefs are absent from the manifest's 12 facts"
+    },
+    {
+      "name": "final_duplicate_stories",
+      "value": 0,
+      "unit": "count",
+      "threshold": 0,
+      "comparator": "lte",
+      "pass": true,
+      "detail": "0 story pairs overlap at jaccard >= 0.6; 0 repeated storyIds"
+    },
+    {
+      "name": "final_story_count",
+      "value": 9,
+      "unit": "count",
+      "threshold": 8,
+      "comparator": "range",
+      "pass": true,
+      "detail": "9 stories in the brief; allowed 8..15"
+    },
+    {
+      "name": "must_know_count",
+      "value": 4,
+      "unit": "count",
+      "threshold": 3,
+      "comparator": "range",
+      "pass": true,
+      "detail": "4 stories flagged mustKnow; allowed 3..5"
+    },
+    {
+      "name": "schema_validity",
+      "value": 1,
+      "unit": "flag",
+      "threshold": 1,
+      "comparator": "eq",
+      "pass": true,
+      "detail": "brief parsed against DailyBrief"
+    },
+    {
+      "name": "structured_output_after_retry",
+      "value": 1,
+      "unit": "flag",
+      "threshold": 1,
+      "comparator": "eq",
+      "pass": true,
+      "detail": "0 schema-failing attempt(s) before a valid structured output"
+    }
+  ],
+  "overallPass": false,
+  "failedGates": [
+    "important_story_recall",
+    "change_type_accuracy"
+  ]
+}

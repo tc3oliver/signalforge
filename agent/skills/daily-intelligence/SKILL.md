@@ -41,9 +41,10 @@ description: Curate a day of raw feed items into deduplicated, historically-awar
    判斷方法見 `references/deduplication.md`。**併之前先跑 Event Identity Test**:
    關係是 `SAME_EVENT` 才併;`RELATED_EVENT`(含因果、回應)各自成案;
    `BACKGROUND_CONTEXT` 不開新 story。
-5. 對每個要成案的 cluster:先 `find_history` 查它昨天以前的狀態,
-   再決定 `changeType`(`references/novelty.md`),必要時 `get_story` 讀舊 entry,
+5. 對每個要成案的 cluster,**一則做完再做下一則**:先 `find_history` 查它昨天以前的
+   狀態,再決定 `changeType`(`references/novelty.md`),必要時 `get_story` 讀舊 entry,
    然後 `upsert_story`。
+   **不要先把一整批 story 都建好、之後才回頭補 changeType** —— 那樣一定會漏查歷史。
 6. 把整批的判斷用**一次** `record_item_decisions` 送出,**才**去抓下一頁。
 7. 重複 2–6 直到 unseen 為零。
 8. 需要引用數字時 `get_structured_facts` 取 `factId`,寫進 story 的 `factRefs`。
@@ -60,6 +61,9 @@ description: Curate a day of raw feed items into deduplicated, historically-awar
 - **工具拒絕你的呼叫時,讀錯誤訊息、修掉那個具體問題。** 不要原封不動重送。
 - **每一批都要先 record 再前進。** 不要累積三四頁的判斷最後一次送 —
   中途失敗會讓你不知道哪些已記錄。
+- **沒有 `find_history` 就沒有 `changeType`。** 查無命中只能是 `NEW`;查到命中就不能是
+  `NEW`。第一次進 ledger 的 story 絕不是 `NO_MATERIAL_CHANGE` —— 例行、不重要要用
+  `novelty` / `importance` 分數表達,不是用 changeType。
 - **因果關係不等於同一事件。** A 造成 / 回應 / 解釋 B,不會讓 A 和 B 變成一則 story。
   「數據公布」與「對該數據的政策回應」永遠是兩則。詳見 `references/deduplication.md`。
 - **但也不要矯枉過正。** 官方公告 + release tag + 媒體稿 + 社群討論,
@@ -103,8 +107,11 @@ description: Curate a day of raw feed items into deduplicated, historically-awar
   引用 `factId`,讓 renderer 印出權威值。
 - 篇幅與結構:`stories` 8–15 則,其中 `mustKnow: true` 的 3–5 則。
   section 沒有實質內容就整段省略,不要湊。細節見 `references/editorial-policy.md`。
-- **不要把同一份情報價值算兩次。** 寫了一條 emerging signal,就不要再把它的弱證據
+- **不要把同一份情報價值算兩次。** 寫了一條 emerging signal,就不要再把它的**弱**證據
   一則一則也寫成 final story。signal 的 `storyIds` 與 brief 的 `stories` 是不同的集合。
+- **但被 signal 引用不會降低刊登資格。** Standalone Value Test 逐則判斷,只擋本來就
+  不夠格的;自己就夠格的照常刊登。漏掉讀者需要知道的事,比多寫一則邊際 story 嚴重得多。
+  只寫到 8–9 則時回頭檢查一次,正常的一天大約 10–13 則。
 - 寫作規範見 `references/writing-style.md`。正體中文,高資訊密度。
 
 ---

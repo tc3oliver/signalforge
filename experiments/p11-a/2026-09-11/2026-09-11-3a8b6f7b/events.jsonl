@@ -207,3 +207,13 @@
 {"ts":"2026-09-13T09:15:52.907Z","kind":"run.transition","from":"CURATING","to":"MATERIALS_READY"}
 {"ts":"2026-09-13T09:15:52.921Z","kind":"run.transition","from":"MATERIALS_READY","to":"WRITING"}
 {"ts":"2026-09-13T09:15:54.940Z","kind":"tool_call","stage":"EDITOR","tool":"get_materials","stories":17}
+{"ts":"2026-09-13T09:16:44.453Z","kind":"tool_call","stage":"EDITOR","tool":"get_source_items","count":8}
+{"ts":"2026-09-13T09:16:46.718Z","kind":"tool_call","stage":"EDITOR","tool":"get_source_items","count":5}
+{"ts":"2026-09-13T09:16:48.608Z","kind":"tool_call","stage":"EDITOR","tool":"get_source_items","count":3}
+{"ts":"2026-09-13T09:16:58.257Z","kind":"tool_call","stage":"EDITOR","tool":"get_source_items","count":14}
+{"ts":"2026-09-13T09:17:01.042Z","kind":"tool_call","stage":"EDITOR","tool":"get_source_items","count":13}
+{"ts":"2026-09-13T09:17:02.805Z","kind":"tool_call","stage":"EDITOR","tool":"get_source_items","count":4}
+{"ts":"2026-09-13T09:17:37.361Z","kind":"tool_call","stage":"EDITOR","tool":"submit_brief","stories":9,"mustKnow":4}
+{"ts":"2026-09-13T09:17:37.380Z","kind":"run.transition","from":"WRITING","to":"DRAFT_READY"}
+{"ts":"2026-09-13T09:17:37.388Z","kind":"run.transition","from":"DRAFT_READY","to":"VALIDATING"}
+{"ts":"2026-09-13T09:17:37.409Z","kind":"run.transition","from":"VALIDATING","to":"COMPLETED"}

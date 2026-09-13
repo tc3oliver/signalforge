@@ -43,6 +43,75 @@ describe("editorial policy: trend evidence is not automatically publishable", ()
 	});
 });
 
+/**
+ * The first calibration fixed precision but over-corrected: the editor applied the
+ * Standalone Value Test to stories that independently qualified, shrank the brief to
+ * its floor, and dropped two important events. Under-reporting is the worse failure,
+ * so the asymmetry is now stated in the policy and pinned here.
+ */
+describe("editorial policy: the suppression rule must not cause under-reporting", () => {
+	const doc = ref("editorial-policy.md");
+
+	it("scopes the test to emerging-signal constituents only", () => {
+		expect(doc).toMatch(/只\*\*適用於\*\*某條 emerging signal 的構成事件|只適用於「弱證據」/);
+	});
+
+	it("says a story that passes the test must be published, not may be", () => {
+		expect(doc).toMatch(/必須獨立刊登/);
+	});
+
+	it("states that being cited by a signal does not reduce eligibility", () => {
+		expect(doc).toMatch(/不會\*\*降低\*\*它自己的刊登資格|被 signal 引用不是扣分項/);
+	});
+
+	it("makes the failure asymmetry explicit and defaults to publishing", () => {
+		expect(doc).toMatch(/不確定時,刊登/);
+		expect(doc).toMatch(/漏掉/);
+	});
+
+	it("gives a target length rather than letting the brief hug its floor", () => {
+		expect(doc).toMatch(/10[–-]13/);
+		expect(doc).toMatch(/8 是下限不是目標/);
+	});
+
+	it("judges constituents one by one rather than discarding the group", () => {
+		expect(doc).toMatch(/逐則/);
+	});
+});
+
+/**
+ * Three of four changeType errors in the same run were first-appearance events
+ * recorded as continuations, by a curator that had created every story before
+ * checking any history. Both halves of that are now hard rules.
+ */
+describe("novelty: changeType depends on find_history having been called", () => {
+	const doc = ref("novelty.md");
+
+	it("requires a history lookup before assigning a changeType", () => {
+		expect(doc).toMatch(/沒查過歷史就不能給 changeType/);
+	});
+
+	it("states that a miss can only be NEW", () => {
+		expect(doc).toMatch(/沒有命中 → 只能是 `NEW`/);
+	});
+
+	it("forbids NO_MATERIAL_CHANGE on a first appearance", () => {
+		expect(doc).toMatch(/第一次出現的 story 絕對不是 `NO_MATERIAL_CHANGE`/);
+	});
+
+	it("separates low importance from absence of change", () => {
+		expect(doc).toMatch(/重要性低用分數表達,不要用 changeType 表達/);
+	});
+
+	it("warns against batching every upsert before checking any history", () => {
+		expect(doc).toMatch(/一則一則做完整循環/);
+	});
+
+	it("states that a hit cannot be NEW", () => {
+		expect(doc).toMatch(/有命中 → 不能是 `NEW`/);
+	});
+});
+
 describe("emerging signals: constituents are evidence, not final stories", () => {
 	const doc = ref("emerging-signals.md");
 

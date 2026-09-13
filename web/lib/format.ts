@@ -14,17 +14,18 @@ export interface ConfidenceDisplay {
 	label: string;
 	/** Spelled-out level for screen readers and admin tables. */
 	level: ConfidenceLevel;
-	tone: "high" | "medium" | "low";
+	/** Maps onto the shared Tag tones so confidence reads the same everywhere. */
+	tone: "ok" | "warn" | "bad";
 }
 
 const CONFIDENCE: Record<ConfidenceLevel, ConfidenceDisplay> = {
-	HIGH: { label: "高", level: "HIGH", tone: "high" },
-	MEDIUM: { label: "中", level: "MEDIUM", tone: "medium" },
-	LOW: { label: "低", level: "LOW", tone: "low" },
+	HIGH: { label: "高", level: "HIGH", tone: "ok" },
+	MEDIUM: { label: "中", level: "MEDIUM", tone: "warn" },
+	LOW: { label: "低", level: "LOW", tone: "bad" },
 };
 
 export function confidenceDisplay(level: string): ConfidenceDisplay {
-	return CONFIDENCE[level as ConfidenceLevel] ?? { label: level, level: "LOW", tone: "low" };
+	return CONFIDENCE[level as ConfidenceLevel] ?? { label: level, level: "LOW", tone: "bad" };
 }
 
 /** Ledger confidence is a 0..1 score; the brief uses three buckets. */

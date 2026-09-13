@@ -9,6 +9,7 @@ const SCRIPTS = [
 	"uninstall-launchagent.sh",
 	"backup-db.sh",
 	"restore-db.sh",
+	"lib-db-env.sh",
 ] as const;
 
 describe.each(SCRIPTS)("%s", (name) => {
@@ -29,9 +30,15 @@ describe.each(SCRIPTS)("%s", (name) => {
 		expect(() => execFileSync("bash", ["-n", path.pathname])).not.toThrow();
 	});
 
-	it("uses set -euo pipefail", () => {
+	it("uses set -euo pipefail, unless it is a sourced-only library", () => {
 		const content = readFileSync(path, "utf8");
-		expect(content).toContain("set -euo pipefail");
+		if (name === "lib-db-env.sh") {
+			// Sourced into a caller that already sets -euo pipefail; setting it
+			// again here is redundant, and this file is never executed directly.
+			expect(content).toContain("Sourced, never executed directly");
+		} else {
+			expect(content).toContain("set -euo pipefail");
+		}
 	});
 
 	it("never invokes sudo", () => {
@@ -67,6 +74,55 @@ describe("restore-db.sh safety", () => {
 
 	it("defaults to a scratch database name", () => {
 		expect(content).toMatch(/_restore_test/);
+	});
+
+	it("refuses a --target not derived from the configured database name", () => {
+		expect(content).toMatch(/refusing to restore into '\$\{TARGET_DB\}'/);
+		expect(content).toMatch(/PGDATABASE\}_"\*/);
+	});
+});
+
+describe("lib-db-env.sh connection resolution", () => {
+	const content = readFileSync(new URL("lib-db-env.sh", SCRIPT_DIR), "utf8");
+
+	it("treats DATABASE_URL as canonical, PG* vars as fallback", () => {
+		expect(content).toMatch(/DATABASE_URL:-/);
+		expect(content).toMatch(/PGUSER="\$\{BASH_REMATCH\[2\]\}"/);
+	});
+
+	it("refuses any host other than loopback", () => {
+		expect(content).toMatch(/127\.0\.0\.1 \| localhost/);
+		expect(content).toMatch(/refusing non-loopback PGHOST/);
+	});
+
+	it("actually resolves a real DATABASE_URL when sourced", () => {
+		// Exercises the real bash regex end-to-end (not just a string match on
+		// the source), including that a password never leaks into a resolved
+		// PGHOST/PGPORT/PGDATABASE/PGUSER printout.
+		const script = `
+			set -euo pipefail
+			source "${new URL("lib-db-env.sh", SCRIPT_DIR).pathname}"
+			ENV_FILE="$(mktemp)"
+			echo 'DATABASE_URL=postgres://daily_intelligence:s3cret@127.0.0.1:55432/daily_intelligence' > "$ENV_FILE"
+			resolve_db_env "$ENV_FILE"
+			echo "HOST=$PGHOST PORT=$PGPORT DB=$PGDATABASE USER=$PGUSER PASS_SET=\${PGPASSWORD:+yes}"
+		`;
+		const out = execFileSync("bash", ["-c", script], { encoding: "utf8" });
+		expect(out).toContain("HOST=127.0.0.1 PORT=55432 DB=daily_intelligence USER=daily_intelligence PASS_SET=yes");
+		expect(out).not.toContain("s3cret");
+	});
+
+	it("rejects a non-loopback DATABASE_URL host end-to-end", () => {
+		const script = `
+			set -uo pipefail
+			source "${new URL("lib-db-env.sh", SCRIPT_DIR).pathname}"
+			ENV_FILE="$(mktemp)"
+			echo 'DATABASE_URL=postgres://user:pw@some-other-host:5432/otherdb' > "$ENV_FILE"
+			resolve_db_env "$ENV_FILE"
+			echo "exit=$?"
+		`;
+		const out = execFileSync("bash", ["-c", script], { encoding: "utf8" });
+		expect(out).toContain("exit=1");
 	});
 });
 

@@ -15,6 +15,43 @@
 
 ---
 
+## 先決條件:沒查過歷史就不能給 changeType
+
+`changeType` 是**今天相對於 ledger** 的判斷,所以它在邏輯上依賴 `find_history` 的結果。
+沒有查過歷史就填的 changeType 是猜的,而猜錯會污染明天的判斷 —— 明天的 Curator
+會把你今天的錯誤當成事實。
+
+流程是固定的,不能顛倒:
+
+```
+find_history(storyId)  →  看結果  →  決定 changeType  →  upsert_story
+```
+
+### 兩條硬規則
+
+**1. `find_history` 沒有命中 → 只能是 `NEW`。**
+
+沒有歷史就不存在「變化」。一個 ledger 裡不存在的 story 不可能是 `UPDATE`、
+`ESCALATION`、`CONFIRMATION` 或 `NO_MATERIAL_CHANGE` —— 那些全部預設了一個更早的狀態。
+
+尤其:**第一次出現的 story 絕對不是 `NO_MATERIAL_CHANGE`。**
+「例行、不重要、每週都有」不等於「沒有變化」。一則每週都會發布的數據,
+今天第一次進 ledger 就是 `NEW`,只是它的 `novelty` 分數低而已。
+重要性低用分數表達,不要用 changeType 表達 —— 那是兩個不同的欄位。
+
+**2. `find_history` 有命中 → 不能是 `NEW`。**
+
+找到了就沿用那個 storyId,並從其餘七種裡選。把有歷史的 story 記成 `NEW`
+會把一條追蹤中的線斷成兩截,ledger 就失去它唯一的用處。
+
+### 批次作業時特別容易錯
+
+如果你先把一整批 story 都 `upsert_story` 建好、之後才回頭補 changeType,
+你幾乎一定會漏掉 `find_history`。**一則一則做完整循環**,
+不要把「建 story」和「查歷史」拆成兩個階段。
+
+---
+
 ## 八種 changeType
 
 ### `NEW`

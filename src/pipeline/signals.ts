@@ -205,7 +205,9 @@ export function reconcileSignals(
 			state: "fading",
 			confidence: confidenceFor("fading", signal.storyIds.length),
 			storyIds: [...signal.storyIds],
-			observedAt,
+			// Its own last sighting, not today: writing today's timestamp would
+			// claim evidence that did not arrive.
+			observedAt: signal.lastSeenAt,
 			matched: true,
 		});
 	}

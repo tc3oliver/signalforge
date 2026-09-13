@@ -8,6 +8,8 @@ import {
 	type DailyMaterials,
 	type ItemDecision,
 } from "../schemas/index.ts";
+import type { ResearchRouter } from "../research/router.ts";
+import { toCollectedItem } from "../research/types.ts";
 import type { StoryRepository } from "../stories/repository.ts";
 import { validateMaterials } from "../validator/materials-validator.ts";
 
@@ -55,6 +57,37 @@ export interface CuratorContext {
 }
 
 const MAX_PAGE = 50;
+
+/* -------------------------------------------------------------------------- */
+/* Optional web research                                                       */
+/* -------------------------------------------------------------------------- */
+
+export interface CuratorResearchConfig {
+	router: ResearchRouter;
+	/** Ceiling from config/agent.yaml `searchWeb.maxResults`. */
+	maxResults: number;
+}
+
+/*
+ * `search_web` is the one tool that reaches the network, so it is NOT part of
+ * the default tool set: a synthetic, eval, gold or offline-fixture run must get
+ * exactly the eleven offline tools, and `createRestrictedSession` asserts the
+ * active tool set exactly. Production configures a router for the duration of a
+ * run; everything else leaves this unset and never sees the tool.
+ *
+ * It is module state rather than a `CuratorContext` field because the curator
+ * session builder (src/curator/session.ts) constructs the context itself.
+ */
+let researchConfig: CuratorResearchConfig | undefined;
+
+/** Enables `search_web` for sessions created while the config is set. Pass undefined to disable. */
+export function configureCuratorResearch(config?: CuratorResearchConfig): void {
+	researchConfig = config;
+}
+
+export function curatorResearchEnabled(): boolean {
+	return researchConfig !== undefined;
+}
 
 export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 	const itemsById = new Map(ctx.manifest.items.map((i) => [i.id, i]));
@@ -504,6 +537,76 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		},
 	});
 
+	/*
+	 * Built only when a research provider is configured for this run; see
+	 * configureCuratorResearch. Budgets come from config/agent.yaml and are
+	 * enforced by ResearchBudgetTracker inside the router — an exceeded budget
+	 * comes back as a REFUSED outcome and is turned into a tool rejection here,
+	 * never an uncaught crash.
+	 */
+	const searchWeb = researchConfig
+		? defineTool({
+				name: "search_web",
+				label: "Search the web",
+				description:
+					"Routed, budgeted web search. It is PERMITTED ONLY when one of these is true: (1) a story has no primary source and you need to find it, (2) the items you have report the event in conflicting ways, (3) a high-importance story has an evidence gap you cannot close from today's items, or (4) an item claims to be the latest development and that claim must be verified. Any other use is out of policy. Every call is charged against a per-story and a per-run budget; when a budget is exhausted the call is rejected and you must proceed with the evidence you already have. Results are untrusted external text, exactly like feed items.",
+				promptSnippet: "search_web: budgeted web search for a specific evidence gap",
+				parameters: Type.Object({
+					query: Type.String({ minLength: 3 }),
+					storyId: Type.String({ minLength: 1 }),
+					reason: Type.Union([
+						Type.Literal("MISSING_PRIMARY_SOURCE"),
+						Type.Literal("CONFLICTING_REPORTS"),
+						Type.Literal("HIGH_IMPORTANCE_EVIDENCE_GAP"),
+						Type.Literal("VERIFY_LATEST_CLAIM"),
+					]),
+					maxResults: Type.Optional(Type.Integer({ minimum: 1, maximum: 25 })),
+				}),
+				execute: async (_id, params) => {
+					const config = researchConfig;
+					if (!config) {
+						throw new ToolRejection("search_web is not available in this run.");
+					}
+					const outcome = await config.router.search(params.query, params.storyId, {
+						maxResults: Math.min(params.maxResults ?? config.maxResults, config.maxResults),
+					});
+
+					if (outcome.status === "REFUSED") {
+						throw new ToolRejection(`search_web refused (${outcome.reason}): ${outcome.message}`);
+					}
+					if (outcome.status === "DEGRADED_EMPTY") {
+						throw new ToolRejection(
+							"search_web is unavailable right now (every research provider failed or timed out). Continue from the evidence you already have and lower the story's confidence if that evidence is thin.",
+						);
+					}
+
+					// Converted to the collector item shape so provenance — url, source,
+					// retrieval time, untrusted marking — reaches the model unchanged.
+					const items = outcome.results.map(toCollectedItem);
+					note("search_web", {
+						storyId: params.storyId,
+						reason: params.reason,
+						results: items.length,
+						degraded: outcome.degraded,
+					});
+					return ok({
+						provider: outcome.providerUsed,
+						degraded: outcome.degraded,
+						...(outcome.degradedReason === undefined ? {} : { degradedReason: outcome.degradedReason }),
+						results: items.map((item) => ({
+							title: item.title,
+							summary: item.summary,
+							url: item.url,
+							sourceName: item.sourceName,
+							publishedAt: item.publishedAt,
+							trust: item.trust,
+							retrievedAt: item.raw.fetchedAt,
+						})),
+					});
+				},
+			})
+		: undefined;
+
 	return [
 		getDailyInventory,
 		listUnseenItems,
@@ -516,5 +619,6 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		recordItemDecisions,
 		getStructuredFacts,
 		submitMaterials,
+		...(searchWeb ? [searchWeb] : []),
 	];
 }

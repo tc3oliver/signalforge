@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import type { NextConfig } from "next";
 
 /*
@@ -6,8 +8,13 @@ import type { NextConfig } from "next";
  * inside web/ — would let the reader and the pipeline drift apart on what a
  * story or a fact is, which is exactly the failure this project cannot afford.
  */
+// The app reads source files from ../src, so file tracing is rooted at the repo,
+// not at web/ — otherwise Next guesses from whichever lockfile it finds first.
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+
 const config: NextConfig = {
 	experimental: { externalDir: true },
+	outputFileTracingRoot: repoRoot,
 	// The reader publishes nothing and embeds nothing third-party.
 	poweredByHeader: false,
 	async headers() {

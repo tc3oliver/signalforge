@@ -12,5 +12,14 @@
     "search_items",
     "submit_materials",
     "upsert_story"
+  ],
+  "editorActiveTools": [
+    "find_history",
+    "get_materials",
+    "get_source_items",
+    "get_story_detail",
+    "get_structured_facts",
+    "read_skill_reference",
+    "submit_brief"
   ]
 }

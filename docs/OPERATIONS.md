@@ -75,9 +75,18 @@ LaunchAgent cannot reliably reach an external volume on this machine.
 ```
 
 - Reads connection settings from a repo env file (`.env` by default, override
-  with `DAILY_INTELLIGENCE_ENV_FILE`). Expects `PGHOST`, `PGPORT`,
-  `PGDATABASE`, `PGUSER`, and optionally `PGPASSWORD` (a `.pgpass` file works
-  too — the script does not require one over the other).
+  with `DAILY_INTELLIGENCE_ENV_FILE`), via the shared `scripts/lib-db-env.sh`.
+  `DATABASE_URL` (as set in `.env.example`) is the canonical setting and is
+  read first; `PGHOST`/`PGPORT`/`PGDATABASE`/`PGUSER`/`PGPASSWORD` are the
+  fallback when it is absent — one source of truth, not two that can drift.
+  A `.pgpass` file works too in place of `PGPASSWORD`; neither is required
+  over the other.
+- **Loopback guard:** the resolved host must be `127.0.0.1` or `localhost` —
+  `compose.yaml` binds Postgres to loopback only, and this machine also runs
+  several other people's Docker stacks (miniflux, bark, gemini-balance,
+  shopmaster, tesla-tv-hub) in the same engine. A stray or mistyped env value
+  pointing anywhere else is refused outright rather than silently dumping or
+  restoring into the wrong service's database.
 - Writes `backups/<database>-<UTC timestamp>.sql.gz`.
 - Applies retention (7 daily, 4 weekly, 3 monthly) using the pure,
   unit-tested `selectRetention` function in `src/ops/retention.ts`. It always
@@ -85,12 +94,18 @@ LaunchAgent cannot reliably reach an external volume on this machine.
   to delete anything outside `backups/`.
 
 ```sh
-./scripts/restore-db.sh --file backups/dailyintel-20260913T053000Z.sql.gz
+./scripts/restore-db.sh --file backups/daily_intelligence-20260913T053000Z.sql.gz
 ```
 
 - Defaults to restoring into a scratch database (`<PGDATABASE>_restore_test`)
   so a restore test can never clobber production by accident.
 - Restoring into the real `PGDATABASE` name requires `--force`.
+- `--target` accepts only `PGDATABASE` itself (with `--force`), the default
+  scratch name, or a name prefixed with `<PGDATABASE>_` — any other value is
+  refused. This is the guard against a mistyped `--target` landing on an
+  unrelated database on this machine (see the loopback guard above; the two
+  together mean this script can only ever touch this project's own
+  `daily-intelligence-postgres` database).
 - To prove a backup is actually restorable, run the default (scratch) restore
   periodically and spot-check the result — see `docs/RUNBOOK.md`.
 
