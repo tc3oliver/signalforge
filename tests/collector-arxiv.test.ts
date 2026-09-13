@@ -159,3 +159,99 @@ describe("configured categories", () => {
 		expect(urls[0]).not.toContain("cs.LG");
 	});
 });
+
+describe("ArxivCollector request timeout", () => {
+	it("uses the timeout configured in sources.yaml, not a hardcoded constant", async () => {
+		// arXiv answering slowly is normal, so the ceiling has to be the one an
+		// operator can actually change. A collector that ignores its own
+		// sourceConfig turns config editing into a no-op -- the failure shape this
+		// guards against.
+		const feed = atomFeed(
+			[
+				{
+					id: "https://arxiv.org/abs/2509.09999v1",
+					title: "Slow But Fine",
+					summary: "Took a while.",
+					published: "2026-09-12T00:00:00Z",
+					updated: "2026-09-12T00:00:00Z",
+				},
+			],
+			1,
+		);
+
+		// A signal is only aborted by a timer the collector installs, so the
+		// deadline is observed through how long the abort takes to arrive.
+		let observedAbortAfterMs: number | undefined;
+		const fetchImpl = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+			const signal = init?.signal;
+			if (signal) {
+				const startedAt = Date.now();
+				await new Promise<void>((resolve) => {
+					const done = () => resolve();
+					signal.addEventListener("abort", done, { once: true });
+					// Resolve well before any plausible deadline so the test stays fast;
+					// if the timer had already fired we would see it below.
+					setTimeout(() => {
+						signal.removeEventListener("abort", done);
+						observedAbortAfterMs = signal.aborted ? Date.now() - startedAt : undefined;
+						resolve();
+					}, 20);
+				});
+			}
+			return xmlResponse(feed);
+		}) as unknown as typeof fetch;
+
+		const collector = new ArxivCollector({ categories: ["cs.CL"], sleep: noSleep });
+		const result = await collector.collect(
+			makeCtx(
+				{
+					sourceConfig: {
+						enabled: true,
+						rateLimitPerMinute: 20,
+						timeoutMs: 45_000,
+						pageSize: 50,
+						requiredSecrets: [],
+					},
+				},
+				fetchImpl,
+			),
+		);
+
+		// With a 45s ceiling a 20ms response is nowhere near the deadline.
+		expect(observedAbortAfterMs).toBeUndefined();
+		expect(result.health).toBe("OK");
+		expect(result.items).toHaveLength(1);
+	});
+
+	it("fails rather than silently truncating when the configured timeout is exceeded", async () => {
+		const fetchImpl = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+			await new Promise<void>((resolve, reject) => {
+				init?.signal?.addEventListener(
+					"abort",
+					() => reject(new Error("Timeout")),
+					{ once: true },
+				);
+			});
+			throw new Error("unreachable");
+		}) as unknown as typeof fetch;
+
+		const collector = new ArxivCollector({ categories: ["cs.CL"], sleep: noSleep });
+		const result = await collector.collect(
+			makeCtx(
+				{
+					sourceConfig: {
+						enabled: true,
+						rateLimitPerMinute: 20,
+						timeoutMs: 30,
+						pageSize: 50,
+						requiredSecrets: [],
+					},
+				},
+				fetchImpl,
+			),
+		);
+
+		expect(result.health).toBe("FAILED");
+		expect(result.items).toHaveLength(0);
+	});
+});

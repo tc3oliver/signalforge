@@ -159,7 +159,11 @@ export class ArxivCollector implements Collector {
 					signal: ctx.signal,
 					budget,
 					bucket,
-					timeoutMs: 15_000,
+					// arXiv's export API answers slowly when it is busy -- a 16s
+					// response is normal, not a fault -- so the ceiling is the one
+					// operators set in config/sources.yaml rather than a constant
+					// buried here that no amount of config editing could change.
+					timeoutMs: ctx.sourceConfig.timeoutMs,
 				});
 				const xml = await res.text();
 				const total = totalResultsOf(xml);

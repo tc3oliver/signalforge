@@ -1,0 +1,550 @@
+[
+  {
+    "itemId": "itm-20260911-0001",
+    "disposition": "CANDIDATE",
+    "storyId": "build-plugin-compromise-ci-credentials",
+    "reason": "官方安全性庫確認九款外掛遭植入後門竊取 CI 密鑰，指認為 primary",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0002",
+    "disposition": "CANDIDATE",
+    "storyId": "halcyon-fusion-series-d-offtake-agreement",
+    "reason": "Halcyon Fusion 官方宣布 14 億美元融資與 2031 年購電協議，指認為 primary",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0003",
+    "disposition": "DUPLICATE",
+    "storyId": "open-tooling-protocol-1-0-spec",
+    "reason": "HN 討論 OTP 1.0 工具調用協議發布，指向相同規格，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0004",
+    "disposition": "CANDIDATE",
+    "storyId": "talos-corvid-robotics-acquisition-talks",
+    "reason": "Stratechery 引述消息稱收購談判已破局，與彭博報導矛盾，作為衝突 primary 之一",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0005",
+    "disposition": "CANDIDATE",
+    "storyId": "us-initial-jobless-claims-2026-09-11",
+    "reason": "FRED 官方發布當週初領失業金人數 22.1 萬人，指認為 primary",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0006",
+    "disposition": "IRRELEVANT",
+    "reason": "個人部落格討論終端機字體，無產業與技術決策影響",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0007",
+    "disposition": "IRRELEVANT",
+    "reason": "電影週末票房表現，屬娛樂消費領域，無決策價值",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0008",
+    "disposition": "IRRELEVANT",
+    "reason": "Avalanche 24 小時波動 -1.73%，屬常態波動且無催化劑",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0009",
+    "disposition": "IRRELEVANT",
+    "reason": "社區市集活動公告，屬地方生活資訊",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0010",
+    "disposition": "IRRELEVANT",
+    "reason": "Solana 24 小時微升 1.43%，屬常態波動且無催化劑",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0011",
+    "disposition": "DUPLICATE",
+    "storyId": "meridian-exchange-withdrawal-freeze-gap",
+    "reason": "Reddit 用戶回報 Meridian 交易所提款凍結，指向相同提款暫停事件",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0012",
+    "disposition": "IRRELEVANT",
+    "reason": "體育賽事戰報，無產業技術情報價值",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0013",
+    "disposition": "DUPLICATE",
+    "storyId": "sign-sgd-1bit-optimizer-state",
+    "reason": "Reddit 討論 1-bit 優化器 Sign-SGD 論文，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0014",
+    "disposition": "IRRELEVANT",
+    "reason": "旅遊指南與餐廳建議，屬消費休閒內容",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0015",
+    "disposition": "DUPLICATE",
+    "storyId": "sign-sgd-1bit-optimizer-state",
+    "reason": "HN 討論 1-bit 優化器 Sign-SGD 論文，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0016",
+    "disposition": "DUPLICATE",
+    "storyId": "halcyon-fusion-series-d-offtake-agreement",
+    "reason": "HN 討論 Halcyon Fusion 融資與購電協議，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0017",
+    "disposition": "DUPLICATE",
+    "storyId": "sable-orm-6-2-silent-data-loss",
+    "reason": "HN 討論 Sable ORM 連線池回歸 bug，指向相同 issue",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0018",
+    "disposition": "IRRELEVANT",
+    "reason": "航空公司開闢季節性休閒航線公告，無情報價值",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0019",
+    "disposition": "CANDIDATE",
+    "storyId": "northern-grid-large-load-tariff-curtailment",
+    "reason": "Northern Grid 針對 200MW 以上負載提交新電價與降載義務，唯一來源指認為 primary",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0020",
+    "disposition": "DUPLICATE",
+    "storyId": "build-plugin-compromise-ci-credentials",
+    "reason": "BleepingComputer 報導九款外掛遭竊取 CI 密鑰事件，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0021",
+    "disposition": "DUPLICATE",
+    "storyId": "talos-corvid-robotics-acquisition-talks",
+    "reason": "Reddit 討論 Talos 收購 Corvid 報導相互衝突，指向相同事件",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0022",
+    "disposition": "DUPLICATE",
+    "storyId": "open-tooling-protocol-1-0-spec",
+    "reason": "Reddit 討論 OTP 1.0 協議與資源預算欄位，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0023",
+    "disposition": "DUPLICATE",
+    "storyId": "eu-commission-general-purpose-ai-guidelines",
+    "reason": "Politico 報導歐盟執委會通用 AI 指引與算力門檻，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0024",
+    "disposition": "IRRELEVANT",
+    "reason": "HN 辦公椅討論帖，屬低信號閒聊",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0025",
+    "disposition": "CANDIDATE",
+    "storyId": "talos-corvid-robotics-acquisition-talks",
+    "reason": "彭博社報導 Talos 即將收購 Corvid，與 Stratechery 矛盾，作為衝突 primary 之一",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0026",
+    "disposition": "IRRELEVANT",
+    "reason": "Dogecoin 24 小時微漲 3.01%，屬迷因幣常態波動且無催化劑",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0027",
+    "disposition": "CANDIDATE",
+    "storyId": "ashgrove-utilities-dividend-declaration",
+    "reason": "SEC EDGAR 申報 Ashgrove Utilities 季度股利宣告，指認為 primary",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0028",
+    "disposition": "CANDIDATE",
+    "storyId": "kinematics-conditioned-robotics-zero-shot",
+    "reason": "arXiv 預印本發表運動學條件控制之機械手臂零樣本遷移，指認為 primary",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0029",
+    "disposition": "IRRELEVANT",
+    "reason": "比特幣微跌 2.31%，成交量正常且無獨立催化劑",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0030",
+    "disposition": "CANDIDATE",
+    "storyId": "sign-sgd-1bit-optimizer-state",
+    "reason": "arXiv 預印本發表 1-bit 優化器狀態 Sign-SGD，指認為 primary",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0031",
+    "disposition": "DUPLICATE",
+    "storyId": "lumen-fabrication-impairment-capex-cut",
+    "reason": "路透社報導 Lumen 8-K 減損與大砍資本支出，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0032",
+    "disposition": "DUPLICATE",
+    "storyId": "us-initial-jobless-claims-2026-09-11",
+    "reason": "MarketWatch 轉述初領失業金人數 22.1 萬人，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0033",
+    "disposition": "IRRELEVANT",
+    "reason": "園藝種植指南，無情報價值",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0034",
+    "disposition": "DUPLICATE",
+    "storyId": "sign-sgd-1bit-optimizer-state",
+    "reason": "Semantic Scholar 索引 1-bit 優化器 Sign-SGD 論文，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0035",
+    "disposition": "DUPLICATE",
+    "storyId": "sable-orm-6-2-silent-data-loss",
+    "reason": "InfoQ 報導 Sable ORM 6.2.0 連線池回歸缺陷與資料遺失，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0036",
+    "disposition": "DUPLICATE",
+    "storyId": "kinematics-conditioned-robotics-zero-shot",
+    "reason": "Semantic Scholar 索引運動學條件控制機械手臂論文，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0037",
+    "disposition": "DUPLICATE",
+    "storyId": "kinematics-conditioned-robotics-zero-shot",
+    "reason": "HN 討論跨機械手臂零樣本遷移論文，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0038",
+    "disposition": "IRRELEVANT",
+    "reason": "以太幣微漲 0.62%，屬加密貨幣常態波動且無催化劑",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0039",
+    "disposition": "DUPLICATE",
+    "storyId": "halyard-v2-release-scheduler-frozen-abi",
+    "reason": "HN 討論 Halyard 2.0 調度器重寫與延遲改善，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0040",
+    "disposition": "IRRELEVANT",
+    "reason": "Chainlink 微跌 1.64%，屬加密貨幣常態波動且無催化劑",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0041",
+    "disposition": "CANDIDATE",
+    "storyId": "sable-orm-6-2-silent-data-loss",
+    "reason": "GitHub issue 由維護者確認回歸並定位程式碼，指認為 primary",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0042",
+    "disposition": "IRRELEVANT",
+    "reason": "衣櫃收納生活指南，無情報價值",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0043",
+    "disposition": "DUPLICATE",
+    "storyId": "ashgrove-utilities-dividend-declaration",
+    "reason": "PR Newswire 轉發 Ashgrove Utilities 季度股利宣告，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0044",
+    "disposition": "CANDIDATE",
+    "storyId": "open-tooling-protocol-1-0-spec",
+    "reason": "GitHub 規格庫發布 Open Tooling Protocol 1.0，指認為 primary 之一",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0045",
+    "disposition": "DUPLICATE",
+    "storyId": "meridian-2m-token-context-model-rumor",
+    "reason": "HN 討論 Meridian 長上下文模型傳聞，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0046",
+    "disposition": "CANDIDATE",
+    "storyId": "meridian-2m-token-context-model-rumor",
+    "reason": "VentureBeat 整理 Meridian 長上下文模型傳聞，無新增事實指認為 primary",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0047",
+    "disposition": "DUPLICATE",
+    "storyId": "meridian-2m-token-context-model-rumor",
+    "reason": "Reddit 討論 Meridian 3 未發布，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0048",
+    "disposition": "IRRELEVANT",
+    "reason": "個人自製義大利麵照片貼文，生活娛樂內容",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0049",
+    "disposition": "CANDIDATE",
+    "storyId": "halyard-power-rack-budget-scheduling",
+    "reason": "GitHub 官方釋出 halyard-power 機櫃電力調度外掛，指認為 primary",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0050",
+    "disposition": "DUPLICATE",
+    "storyId": "basalt-engine-revenue-share-license-rumor",
+    "reason": "Reddit 再次討論 Basalt 營收分成授權傳聞，無新增事實",
+    "decidedAt": "2026-09-13T09:45:54.673Z"
+  },
+  {
+    "itemId": "itm-20260911-0051",
+    "disposition": "IRRELEVANT",
+    "reason": "食譜介紹，無產業技術決策情報價值",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0052",
+    "disposition": "DUPLICATE",
+    "storyId": "halyard-v2-release-scheduler-frozen-abi",
+    "reason": "Reddit 討論 Halyard 2.0 移除 YAML v1 遷移痛點，無新增事實",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0053",
+    "disposition": "DUPLICATE",
+    "storyId": "halyard-v2-release-scheduler-frozen-abi",
+    "reason": "The New Stack 報導 Halyard 2.0 外掛 ABI 凍結與新調度器，無新增事實",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0054",
+    "disposition": "DUPLICATE",
+    "storyId": "lumen-fabrication-impairment-capex-cut",
+    "reason": "HN 討論 Lumen 8-K 先進製程需求示警，無新增事實",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0055",
+    "disposition": "DUPLICATE",
+    "storyId": "build-plugin-compromise-ci-credentials",
+    "reason": "HN 討論外掛植入後門竊取 CI 密鑰 19 小時，無新增事實",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0056",
+    "disposition": "DUPLICATE",
+    "storyId": "halcyon-fusion-series-d-offtake-agreement",
+    "reason": "金融時報報導 Halcyon Fusion 14 億美元融資與購電協議，無新增事實",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0057",
+    "disposition": "CANDIDATE",
+    "storyId": "build-plugin-compromise-ci-credentials",
+    "reason": "Registry Security 官方發布外掛惡意腳本安全公告，指認為 primary 之一",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0058",
+    "disposition": "IRRELEVANT",
+    "reason": "馬拉松賽事資格賽報名時程公告，屬體育活動資訊",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0059",
+    "disposition": "DUPLICATE",
+    "storyId": "lumen-fabrication-impairment-capex-cut",
+    "reason": "Stratechery 分析 Lumen 資本支出下調對晶片產業影響，無新增事實",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0060",
+    "disposition": "IRRELEVANT",
+    "reason": "秋季無線耳機購買推薦指南，附屬商業導購內容",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0061",
+    "disposition": "IRRELEVANT",
+    "reason": "廚房生活用品導購清單，無技術情報價值",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0062",
+    "disposition": "CANDIDATE",
+    "storyId": "halyard-v2-release-scheduler-frozen-abi",
+    "reason": "GitHub 官方釋出 halyard v2.0.0 正式版與 release notes，指認為 primary 之一",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0063",
+    "disposition": "DUPLICATE",
+    "storyId": "talos-corvid-robotics-acquisition-talks",
+    "reason": "HN 討論 Talos 收購 Corvid Robotics 兩家媒體相反報導，無新增事實",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0064",
+    "disposition": "IRRELEVANT",
+    "reason": "博物館展覽藝評，屬文化藝術領域",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0065",
+    "disposition": "DUPLICATE",
+    "storyId": "meridian-exchange-withdrawal-freeze-gap",
+    "reason": "CoinDesk 報導 Meridian 交易所因 3.4 億美元對帳差額暫停提款，無新增事實",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0066",
+    "disposition": "DUPLICATE",
+    "storyId": "meridian-exchange-withdrawal-freeze-gap",
+    "reason": "HN 討論 Meridian 交易所暫停提款但維持充值，無新增事實",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0067",
+    "disposition": "DUPLICATE",
+    "storyId": "eu-commission-general-purpose-ai-guidelines",
+    "reason": "HN 討論歐盟通用 AI 指引與微調實質修改認定，無新增事實",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0068",
+    "disposition": "DUPLICATE",
+    "storyId": "sable-orm-6-2-silent-data-loss",
+    "reason": "Reddit 用戶回報 Sable ORM 6.2.0 連線池缺陷導致三天帳本遺失，無新增事實",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0069",
+    "disposition": "IRRELEVANT",
+    "reason": "音樂專輯樂評，無產業決策價值",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0070",
+    "disposition": "CANDIDATE",
+    "storyId": "halyard-v2-release-scheduler-frozen-abi",
+    "reason": "Halyard 官方新聞稿宣布 2.0 正式可用，指認為 primary 之一",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0071",
+    "disposition": "IRRELEVANT",
+    "reason": "射擊遊戲平衡性更新社群反應，屬娛樂遊戲內容",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0072",
+    "disposition": "CANDIDATE",
+    "storyId": "basalt-engine-revenue-share-license-rumor",
+    "reason": "HN 再次討論 Basalt 營收分成傳聞，無新增事實指認為 primary",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0073",
+    "disposition": "CANDIDATE",
+    "storyId": "eu-commission-general-purpose-ai-guidelines",
+    "reason": "歐盟執委會發布通用 AI 指引與算力門檻官方文件，指認為 primary",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0074",
+    "disposition": "DUPLICATE",
+    "storyId": "halcyon-fusion-series-d-offtake-agreement",
+    "reason": "Stratechery 分析核融合購電協議對商業化時程約束，無新增事實",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0075",
+    "disposition": "IRRELEVANT",
+    "reason": "單一城市外環道路施工展延公告，屬地方交通瑣事",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0076",
+    "disposition": "CANDIDATE",
+    "storyId": "lumen-fabrication-impairment-capex-cut",
+    "reason": "SEC EDGAR 申報 Lumen 18 億美元減損與資本支出下修 8-K，指認為 primary",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0077",
+    "disposition": "DUPLICATE",
+    "storyId": "eu-commission-general-purpose-ai-guidelines",
+    "reason": "Stratechery 分析歐盟 GPAI 實質修改門檻，無新增事實",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0078",
+    "disposition": "DUPLICATE",
+    "storyId": "kinematics-conditioned-robotics-zero-shot",
+    "reason": "Reddit 討論跨手臂運動學零樣本遷移技巧，無新增事實",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0079",
+    "disposition": "IRRELEVANT",
+    "reason": "室內盆栽養護建議，屬生活居家主題",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0080",
+    "disposition": "CANDIDATE",
+    "storyId": "open-tooling-protocol-1-0-spec",
+    "reason": "Open Tooling 官方新聞稿宣布 OTP 1.0 發布，指認為 primary 之一",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0081",
+    "disposition": "IRRELEVANT",
+    "reason": "掃地機器人限時特價促銷資訊，屬消費導購內容",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  },
+  {
+    "itemId": "itm-20260911-0082",
+    "disposition": "CANDIDATE",
+    "storyId": "meridian-exchange-withdrawal-freeze-gap",
+    "reason": "Meridian 交易所官方公告因對帳差額暫停用戶提款，指認為 primary",
+    "decidedAt": "2026-09-13T09:46:08.805Z"
+  }
+]

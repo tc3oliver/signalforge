@@ -1,0 +1,93 @@
+{"ts":"2026-09-13T09:49:54.322Z","kind":"run.transition","from":"CREATED","to":"CURATING"}
+{"ts":"2026-09-13T09:49:56.719Z","kind":"tool_call","stage":"CURATOR","tool":"get_daily_inventory","date":"2026-09-10","totalItems":79,"itemsBySource":{"arxiv":2,"reddit":11,"rss":28,"web":7,"youtube":2,"hackernews":13,"github":6,"fred":1,"coingecko":6,"sec":2,"semantic-scholar":1},"processedItems":0,"unseenItems":79,"storyCount":0}
+{"ts":"2026-09-13T09:49:59.278Z","kind":"tool_call","stage":"CURATOR","tool":"list_today_stories","count":0}
+{"ts":"2026-09-13T09:50:00.757Z","kind":"tool_call","stage":"CURATOR","tool":"list_unseen_items","returned":50,"remaining":29}
+{"ts":"2026-09-13T09:50:13.851Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"qubit","hits":4}
+{"ts":"2026-09-13T09:50:15.338Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"logical qubit surface code","hits":0}
+{"ts":"2026-09-13T09:50:16.784Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"fenwick","hits":0}
+{"ts":"2026-09-13T09:50:18.243Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"accelerator threshold","hits":9}
+{"ts":"2026-09-13T09:50:19.860Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"export threshold accelerators","hits":0}
+{"ts":"2026-09-13T09:50:21.514Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"bis","hits":0}
+{"ts":"2026-09-13T09:50:24.189Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Quarrystone CVE-2026-41882","hits":4}
+{"ts":"2026-09-13T09:50:26.126Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"CVE-2026-41882","hits":0}
+{"ts":"2026-09-13T09:50:27.891Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Quarrystone","hits":0}
+{"ts":"2026-09-13T09:50:29.371Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Northbridge us-east-2","hits":5}
+{"ts":"2026-09-13T09:50:35.591Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"northbridge","hits":0}
+{"ts":"2026-09-13T09:50:38.074Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"jobless claims","hits":4}
+{"ts":"2026-09-13T09:50:39.441Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"jobless claims","hits":0}
+{"ts":"2026-09-13T09:50:40.926Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Meridian","hits":3}
+{"ts":"2026-09-13T09:50:42.901Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Meridian","hits":0}
+{"ts":"2026-09-13T09:50:44.407Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Basalt","hits":2}
+{"ts":"2026-09-13T09:50:46.476Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Basalt","hits":0}
+{"ts":"2026-09-13T09:50:48.076Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Vantiq","hits":4}
+{"ts":"2026-09-13T09:50:49.509Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Vantiq","hits":0}
+{"ts":"2026-09-13T09:50:51.090Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Nimbus-7","hits":4}
+{"ts":"2026-09-13T09:50:52.546Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Nimbus","hits":0}
+{"ts":"2026-09-13T09:50:54.063Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Rust 1.94","hits":4}
+{"ts":"2026-09-13T09:50:55.720Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Rust 1.94","hits":0}
+{"ts":"2026-09-13T09:50:57.110Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Ashgrove Utilities","hits":2}
+{"ts":"2026-09-13T09:50:58.489Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Ashgrove","hits":0}
+{"ts":"2026-09-13T09:51:00.192Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Linux 6.19","hits":4}
+{"ts":"2026-09-13T09:51:02.173Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"linux 6.19 scheduler","hits":0}
+{"ts":"2026-09-13T09:51:03.599Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Sable ORM","hits":3}
+{"ts":"2026-09-13T09:51:05.114Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"sable","hits":0}
+{"ts":"2026-09-13T09:51:06.847Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"stablecoin reserve","hits":4}
+{"ts":"2026-09-13T09:51:09.029Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"stablecoin reserve attestation","hits":0}
+{"ts":"2026-09-13T09:51:10.453Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"financial stability board","hits":0}
+{"ts":"2026-09-13T09:51:11.967Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"power capping","hits":1}
+{"ts":"2026-09-13T09:51:13.631Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"power-capping","hits":0}
+{"ts":"2026-09-13T09:51:15.222Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":1}
+{"ts":"2026-09-13T09:51:16.890Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Ridgeway University","hits":0}
+{"ts":"2026-09-13T09:51:18.665Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Ridgeway","hits":0}
+{"ts":"2026-09-13T09:51:20.445Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"idle time accelerator","hits":5}
+{"ts":"2026-09-13T09:51:22.244Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"accelerator","hits":0}
+{"ts":"2026-09-13T09:51:25.100Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"a","hits":0}
+{"ts":"2026-09-13T09:51:26.844Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"2026","hits":0}
+{"ts":"2026-09-13T09:51:28.303Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"the","hits":0}
+{"ts":"2026-09-13T09:51:29.901Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"*","hits":0}
+{"ts":"2026-09-13T09:51:32.298Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":2}
+{"ts":"2026-09-13T09:51:34.038Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":1}
+{"ts":"2026-09-13T09:51:35.834Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":1}
+{"ts":"2026-09-13T09:51:37.831Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Basalt","hits":2}
+{"ts":"2026-09-13T09:51:40.335Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":1}
+{"ts":"2026-09-13T09:51:42.031Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":2}
+{"ts":"2026-09-13T09:51:43.516Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":1}
+{"ts":"2026-09-13T09:51:44.998Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":1}
+{"ts":"2026-09-13T09:51:46.498Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"fenwick-quantum-qubit-threshold","hits":0}
+{"ts":"2026-09-13T09:51:49.133Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"fenwick-quantum-qubit-threshold","changeType":"NEW"}
+{"ts":"2026-09-13T09:51:50.663Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"bis-export-controls-mid-tier-accelerators","hits":0}
+{"ts":"2026-09-13T09:51:53.230Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"bis-export-controls-mid-tier-accelerators","changeType":"NEW"}
+{"ts":"2026-09-13T09:51:54.900Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"quarrystone-cve-2026-41882","hits":0}
+{"ts":"2026-09-13T09:51:57.609Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"quarrystone-cve-2026-41882","changeType":"NEW"}
+{"ts":"2026-09-13T09:51:59.279Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"northbridge-us-east-2-outage","hits":0}
+{"ts":"2026-09-13T09:52:01.816Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"northbridge-us-east-2-outage","changeType":"NEW"}
+{"ts":"2026-09-13T09:52:03.362Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"us-jobless-claims","hits":0}
+{"ts":"2026-09-13T09:52:05.841Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"us-jobless-claims","changeType":"NEW"}
+{"ts":"2026-09-13T09:52:07.626Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"meridian-long-context-model","hits":0}
+{"ts":"2026-09-13T09:52:12.580Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"meridian-long-context-model","changeType":"RUMOR"}
+{"ts":"2026-09-13T09:52:14.119Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"vantiq-enterprise-renewals-guidance-cut","hits":0}
+{"ts":"2026-09-13T09:52:16.606Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"vantiq-enterprise-renewals-guidance-cut","changeType":"NEW"}
+{"ts":"2026-09-13T09:52:18.549Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"aperture-nimbus-7-release","hits":0}
+{"ts":"2026-09-13T09:52:21.084Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"aperture-nimbus-7-release","changeType":"NEW"}
+{"ts":"2026-09-13T09:52:23.139Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"rust-1-94-release","hits":0}
+{"ts":"2026-09-13T09:52:26.017Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"rust-1-94-release","changeType":"NEW"}
+{"ts":"2026-09-13T09:52:28.222Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"linux-6-19-deadline-scheduler","hits":0}
+{"ts":"2026-09-13T09:52:31.242Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"linux-6-19-deadline-scheduler","changeType":"NEW"}
+{"ts":"2026-09-13T09:53:05.493Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"sable-orm-batch-loss","hits":0}
+{"ts":"2026-09-13T09:53:09.258Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"sable-orm-batch-loss","changeType":"NEW"}
+{"ts":"2026-09-13T09:53:10.826Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"fsb-stablecoin-reserve-rules","hits":0}
+{"ts":"2026-09-13T09:53:13.561Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"fsb-stablecoin-reserve-rules","changeType":"NEW"}
+{"ts":"2026-09-13T09:53:15.346Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"accelerator-power-capping-idle-time","hits":0}
+{"ts":"2026-09-13T09:53:18.008Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"accelerator-power-capping-idle-time","changeType":"NEW"}
+{"ts":"2026-09-13T09:53:34.515Z","kind":"tool_call","stage":"CURATOR","tool":"record_item_decisions","recorded":50,"processedItems":50,"totalItems":79,"unseenItems":29}
+{"ts":"2026-09-13T09:54:39.206Z","kind":"tool_call","stage":"CURATOR","tool":"get_daily_inventory","date":"2026-09-10","totalItems":79,"itemsBySource":{"arxiv":2,"reddit":11,"rss":28,"web":7,"youtube":2,"hackernews":13,"github":6,"fred":1,"coingecko":6,"sec":2,"semantic-scholar":1},"processedItems":50,"unseenItems":29,"storyCount":13}
+{"ts":"2026-09-13T09:54:42.630Z","kind":"tool_call","stage":"CURATOR","tool":"list_today_stories","count":13}
+{"ts":"2026-09-13T09:54:42.643Z","kind":"tool_call","stage":"CURATOR","tool":"list_unseen_items","returned":29,"remaining":0}
+{"ts":"2026-09-13T09:54:57.769Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"quarrystone-cve-2026-41882","hits":0}
+{"ts":"2026-09-13T09:54:57.776Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"sable-orm-batch-loss","hits":0}
+{"ts":"2026-09-13T09:54:57.781Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"meridian-long-context-model","hits":0}
+{"ts":"2026-09-13T09:54:57.787Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"linux-6-19-deadline-scheduler","hits":0}
+{"ts":"2026-09-13T09:54:57.792Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"vantiq-enterprise-renewals-guidance-cut","hits":0}
+{"ts":"2026-09-13T09:54:57.796Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"aperture-nimbus-7-release","hits":0}
+{"ts":"2026-09-13T09:54:57.800Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"rust-1-94-release","hits":0}
+{"ts":"2026-09-13T09:54:57.804Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"anvil-data-centres-campus-deferrals","hits":0}

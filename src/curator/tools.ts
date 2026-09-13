@@ -54,6 +54,18 @@ export interface CuratorContext {
 	/** Set by submit_materials on success; the session driver reads it afterwards. */
 	submitted?: DailyMaterials;
 	onToolCall?: (name: string, summary: Record<string, unknown>) => void;
+	/**
+	 * Called before every tool runs. Test-only fault injection uses it to end an
+	 * attempt between two tool calls -- the one boundary where the durable state
+	 * (decisions, stories) is known to be consistent, and the boundary a real
+	 * provider error actually lands on, since every tool call is preceded by a
+	 * model request. Throwing here is how the injected failure escapes: a tool
+	 * that throws would otherwise be reported back to the model as a correctable
+	 * tool error, and the model would simply carry on.
+	 *
+	 * Undefined in every non-fault-injection run, which is all production runs.
+	 */
+	onToolBoundary?: () => Promise<void>;
 }
 
 const MAX_PAGE = 50;
@@ -622,6 +634,22 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			})
 		: undefined;
 
+	/**
+	 * Every tool goes through the boundary hook first. Wrapping here rather than
+	 * inside each `execute` keeps the hook impossible to forget when a twelfth
+	 * tool is added later.
+	 */
+	const withBoundary = (tool: ToolDefinition): ToolDefinition =>
+		ctx.onToolBoundary === undefined
+			? tool
+			: ({
+					...tool,
+					execute: async (...args: Parameters<typeof tool.execute>) => {
+						await ctx.onToolBoundary?.();
+						return tool.execute(...args);
+					},
+				} as ToolDefinition);
+
 	return [
 		getDailyInventory,
 		listUnseenItems,
@@ -635,5 +663,5 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		getStructuredFacts,
 		submitMaterials,
 		...(searchWeb ? [searchWeb] : []),
-	];
+	].map(withBoundary);
 }

@@ -1,0 +1,527 @@
+[
+  {
+    "itemId": "itm-20260910-0001",
+    "disposition": "CANDIDATE",
+    "storyId": "surface-code-distance-9-million-cycles",
+    "reason": "arXiv preprint on distance-9 surface code logical qubit below threshold for 1M cycles",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0002",
+    "disposition": "IRRELEVANT",
+    "reason": "Open-ended AskReddit lifestyle discussion thread with no technical or industry relevance",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0003",
+    "disposition": "DUPLICATE",
+    "storyId": "bis-export-rule-performance-density",
+    "reason": "Reuters reporting on BIS interim final rule on accelerator performance-density thresholds",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0004",
+    "disposition": "CANDIDATE",
+    "storyId": "quarrystone-cve-2026-41882",
+    "reason": "Official Quarrystone security advisory for CVE-2026-41882 unauthenticated WAL exposure flaw",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0005",
+    "disposition": "IRRELEVANT",
+    "reason": "Video game balance patch community complaint thread with no broader impact",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0006",
+    "disposition": "DUPLICATE",
+    "storyId": "surface-code-distance-9-million-cycles",
+    "reason": "Nature News reporting on distance-9 logical qubit million-cycle threshold experiment",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0007",
+    "disposition": "IRRELEVANT",
+    "reason": "Consumer coffee machine comparison video",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0008",
+    "disposition": "DUPLICATE",
+    "storyId": "northbridge-us-east-2-control-plane-outage",
+    "reason": "Hacker News discussion of Northbridge us-east-2 control plane disruption",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0009",
+    "disposition": "CANDIDATE",
+    "storyId": "northbridge-us-east-2-control-plane-outage",
+    "reason": "Official Northbridge status repository issue detailing us-east-2 control plane degradation",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0010",
+    "disposition": "CANDIDATE",
+    "storyId": "bis-export-rule-performance-density",
+    "reason": "Official BIS interim final rule publication expanding export controls on mid-tier accelerators",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0011",
+    "disposition": "DUPLICATE",
+    "storyId": "us-initial-jobless-claims",
+    "reason": "MarketWatch reporting on weekly initial jobless claims print of 214,000",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0012",
+    "disposition": "CANDIDATE",
+    "storyId": "us-initial-jobless-claims",
+    "reason": "Official FRED economic data release of initial jobless claims (214,000)",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0013",
+    "disposition": "IRRELEVANT",
+    "reason": "Consumer wireless earbuds buying guide with affiliate links",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0014",
+    "disposition": "DUPLICATE",
+    "storyId": "bis-export-rule-performance-density",
+    "reason": "Hacker News discussion on the new BIS accelerator performance-density export thresholds",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0015",
+    "disposition": "DUPLICATE",
+    "storyId": "meridian-two-million-token-model-rumor",
+    "reason": "r/LocalLLaMA community thread discussing rumoured unreleased Meridian 2M-token context model",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0016",
+    "disposition": "IRRELEVANT",
+    "reason": "Routine seasonal vehicle maintenance checklist",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0017",
+    "disposition": "IRRELEVANT",
+    "reason": "Single-source unsubstantiated rumour about Basalt Engine licence changes",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0018",
+    "disposition": "IRRELEVANT",
+    "reason": "General lifestyle wellness explainer on daily step counts",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0019",
+    "disposition": "DUPLICATE",
+    "storyId": "vantiq-systems-guidance-cut-renewal-slippage",
+    "reason": "Stratechery analysis of Vantiq Systems enterprise renewal slippage and guidance cut",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0020",
+    "disposition": "IRRELEVANT",
+    "reason": "Unsubstantiated Reddit rumour repeating single unnamed partner claim on Basalt licensing",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0021",
+    "disposition": "CANDIDATE",
+    "storyId": "northbridge-us-east-2-control-plane-outage",
+    "reason": "Official Northbridge Cloud preliminary post-mortem summary for us-east-2 disruption",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0022",
+    "disposition": "DUPLICATE",
+    "storyId": "aperture-nimbus-7-weight-release",
+    "reason": "Hacker News thread on Aperture Nimbus-7 weight release and serving licence restriction",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0023",
+    "disposition": "DUPLICATE",
+    "storyId": "quarrystone-cve-2026-41882",
+    "reason": "BleepingComputer reporting on Quarrystone CVE-2026-41882 WAL exposure vulnerability",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0024",
+    "disposition": "IRRELEVANT",
+    "reason": "Routine crypto price movement for Solana (-1.27%) without catalytic event",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0025",
+    "disposition": "IRRELEVANT",
+    "reason": "Consumer television series entertainment review",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0026",
+    "disposition": "IRRELEVANT",
+    "reason": "Routine crypto price movement for Dogecoin (-2.58%) without catalytic event",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0027",
+    "disposition": "DUPLICATE",
+    "storyId": "rust-1-94-parallel-compiler-default",
+    "reason": "r/rust community benchmark thread on Rust 1.94 parallel frontend compilation times",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0028",
+    "disposition": "IRRELEVANT",
+    "reason": "Routine crypto price movement for Bitcoin (-1.86%) without catalytic event",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0029",
+    "disposition": "IRRELEVANT",
+    "reason": "Consumer desk aesthetic setup tour video",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0030",
+    "disposition": "CANDIDATE",
+    "storyId": "ashgrove-utilities-dividend-declaration",
+    "reason": "Ashgrove Utilities Form 8-K declaring routine quarterly dividend of $0.42 per share",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0031",
+    "disposition": "IRRELEVANT",
+    "reason": "Routine crypto price movement for Chainlink (-1.15%) without catalytic event",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0032",
+    "disposition": "DUPLICATE",
+    "storyId": "linux-6-19-deadline-aware-scheduler",
+    "reason": "LWN technical reporting on Linux 6.19 deadline-aware fair scheduler rework merge",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0033",
+    "disposition": "DUPLICATE",
+    "storyId": "sable-orm-batch-upsert-data-loss",
+    "reason": "r/node community thread reporting silent row loss bug in Sable ORM 6.2.0 batch upserts",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0034",
+    "disposition": "DUPLICATE",
+    "storyId": "bis-export-rule-performance-density",
+    "reason": "Stratechery analysis on impact of revised BIS accelerator performance-density threshold",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0035",
+    "disposition": "DUPLICATE",
+    "storyId": "fsb-stablecoin-daily-reserve-attestation",
+    "reason": "CoinDesk reporting on FSB final rule requiring daily stablecoin reserve attestations",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0036",
+    "disposition": "DUPLICATE",
+    "storyId": "northbridge-us-east-2-control-plane-outage",
+    "reason": "r/devops user report thread during Northbridge us-east-2 control plane freeze",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0037",
+    "disposition": "DUPLICATE",
+    "storyId": "fsb-stablecoin-daily-reserve-attestation",
+    "reason": "r/CryptoCurrency discussion on impact of FSB daily stablecoin attestation rule",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0038",
+    "disposition": "DUPLICATE",
+    "storyId": "linux-6-19-deadline-aware-scheduler",
+    "reason": "Hacker News discussion on Linux 6.19 deadline-aware scheduler rework eliminating vruntime",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0039",
+    "disposition": "IRRELEVANT",
+    "reason": "Local community weekend market events notice",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0040",
+    "disposition": "IRRELEVANT",
+    "reason": "General wellness stretching routine guide",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0041",
+    "disposition": "IRRELEVANT",
+    "reason": "Consumer entertainment film box office report",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0042",
+    "disposition": "CANDIDATE",
+    "storyId": "accelerator-cluster-power-capping-idle-time",
+    "reason": "arXiv preprint demonstrating 11% accelerator idle time caused by rack power capping",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0043",
+    "disposition": "CANDIDATE",
+    "storyId": "fsb-stablecoin-daily-reserve-attestation",
+    "reason": "Official Financial Stability Board final rule on stablecoin daily reserve disclosure",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0044",
+    "disposition": "IRRELEVANT",
+    "reason": "DIY home woodworking project photos and write-up",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0045",
+    "disposition": "DUPLICATE",
+    "storyId": "surface-code-distance-9-million-cycles",
+    "reason": "Semantic Scholar bibliographic entry for Fenwick Quantum logical qubit duration study",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0046",
+    "disposition": "DUPLICATE",
+    "storyId": "surface-code-distance-9-million-cycles",
+    "reason": "Hacker News discussion on distance-9 surface code million-cycle duration milestone",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0047",
+    "disposition": "DUPLICATE",
+    "storyId": "ashgrove-utilities-dividend-declaration",
+    "reason": "PR Newswire coverage of Ashgrove Utilities quarterly dividend declaration",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0048",
+    "disposition": "IRRELEVANT",
+    "reason": "Consumer pet care advice article",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0049",
+    "disposition": "IRRELEVANT",
+    "reason": "Consumer compact crossover vehicle road test review",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0050",
+    "disposition": "IRRELEVANT",
+    "reason": "Routine crypto price movement for Avalanche (-0.01%) without catalytic event",
+    "decidedAt": "2026-09-13T09:40:36.422Z"
+  },
+  {
+    "itemId": "itm-20260910-0051",
+    "disposition": "DUPLICATE",
+    "storyId": "quarrystone-cve-2026-41882",
+    "reason": "Quarrystone GitHub fix rejecting replication slot creation without channel binding",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0052",
+    "disposition": "DUPLICATE",
+    "storyId": "sable-orm-batch-upsert-data-loss",
+    "reason": "Hacker News discussion on silent row loss in Sable ORM 6.2 batch upserts",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0053",
+    "disposition": "DUPLICATE",
+    "storyId": "meridian-two-million-token-model-rumor",
+    "reason": "Hacker News thread discussing credibility of Meridian long-context rumour",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0054",
+    "disposition": "DUPLICATE",
+    "storyId": "linux-6-19-deadline-aware-scheduler",
+    "reason": "r/linux community thread testing Linux 6.19 deadline-aware scheduler audio jitter reduction",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0055",
+    "disposition": "CANDIDATE",
+    "storyId": "anvil-datacenter-substation-delays",
+    "reason": "Datacenter Dynamics reporting on Anvil Data Centres deferring two builds due to substation queues",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0056",
+    "disposition": "DUPLICATE",
+    "storyId": "vantiq-systems-guidance-cut-renewal-slippage",
+    "reason": "Hacker News discussion on Vantiq guidance cut and enterprise renewal slippage",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0057",
+    "disposition": "DUPLICATE",
+    "storyId": "meridian-two-million-token-model-rumor",
+    "reason": "Stratechery analysis of competitive implications of Meridian rumoured 2M context window",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0058",
+    "disposition": "DUPLICATE",
+    "storyId": "fsb-stablecoin-daily-reserve-attestation",
+    "reason": "Hacker News discussion on FSB 80% overnight reserve requirement for stablecoins",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0059",
+    "disposition": "DUPLICATE",
+    "storyId": "northbridge-us-east-2-control-plane-outage",
+    "reason": "The Register coverage of Northbridge us-east-2 six-hour scaling outage",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0060",
+    "disposition": "DUPLICATE",
+    "storyId": "quarrystone-cve-2026-41882",
+    "reason": "Hacker News discussion on Quarrystone CVE-2026-41882 unauthenticated WAL vulnerability",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0061",
+    "disposition": "DUPLICATE",
+    "storyId": "aperture-nimbus-7-weight-release",
+    "reason": "r/LocalLLaMA thread examining deployment and clause 4 serving restriction of Nimbus-7",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0062",
+    "disposition": "IRRELEVANT",
+    "reason": "Routine crypto price movement for Ethereum (-2.37%) without catalytic event",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0063",
+    "disposition": "CANDIDATE",
+    "storyId": "linux-6-19-deadline-aware-scheduler",
+    "reason": "Linux git commit merging deadline-aware fair scheduler rework for 6.19 merge window",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0064",
+    "disposition": "CANDIDATE",
+    "storyId": "vantiq-systems-guidance-cut-renewal-slippage",
+    "reason": "Official SEC EDGAR Form 8-K from Vantiq Systems cutting revenue guidance by 9%",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0065",
+    "disposition": "DUPLICATE",
+    "storyId": "vantiq-systems-guidance-cut-renewal-slippage",
+    "reason": "CNBC reporting on Vantiq Systems guidance cut due to enterprise renewal slippage",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0066",
+    "disposition": "IRRELEVANT",
+    "reason": "Seasonal home gardening planting calendar",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0067",
+    "disposition": "CANDIDATE",
+    "storyId": "meridian-two-million-token-model-rumor",
+    "reason": "The Information exclusive reporting on Meridian testing 2M-token model with enterprise clients",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0068",
+    "disposition": "DUPLICATE",
+    "storyId": "rust-1-94-parallel-compiler-default",
+    "reason": "Hacker News discussion on Rust 1.94 parallel frontend compilation default",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0069",
+    "disposition": "CANDIDATE",
+    "storyId": "aperture-nimbus-7-weight-release",
+    "reason": "Official Aperture Research newsroom post releasing Nimbus-7 weights and licence terms",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0070",
+    "disposition": "IRRELEVANT",
+    "reason": "Consumer music culture commentary essay",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0071",
+    "disposition": "CANDIDATE",
+    "storyId": "rust-1-94-parallel-compiler-default",
+    "reason": "Rust-lang/rust pull request stabilising parallel frontend by default for 1.94",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0072",
+    "disposition": "CANDIDATE",
+    "storyId": "rust-1-94-parallel-compiler-default",
+    "reason": "Official Rust Project release announcement for Rust 1.94.0",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0073",
+    "disposition": "IRRELEVANT",
+    "reason": "Museum art exhibition review",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0074",
+    "disposition": "IRRELEVANT",
+    "reason": "Consumer retail supermarket loyalty programme comparison",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0075",
+    "disposition": "CANDIDATE",
+    "storyId": "aperture-nimbus-7-weight-release",
+    "reason": "Official Aperture GitHub repository release for Nimbus-7 72B MoE model weights",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0076",
+    "disposition": "IRRELEVANT",
+    "reason": "Hacker News recurring low-signal desk chair recommendation thread",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0077",
+    "disposition": "DUPLICATE",
+    "storyId": "sable-orm-batch-upsert-data-loss",
+    "reason": "InfoQ reporting on data loss bug in Sable ORM 6.2 batch upserts",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0078",
+    "disposition": "IRRELEVANT",
+    "reason": "Consumer marathon qualifying schedule announcement",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  },
+  {
+    "itemId": "itm-20260910-0079",
+    "disposition": "CANDIDATE",
+    "storyId": "sable-orm-batch-upsert-data-loss",
+    "reason": "GitHub issue with 40-line repro showing silent row loss in Sable ORM 6.2.0 batch upsert",
+    "decidedAt": "2026-09-13T09:40:48.885Z"
+  }
+]

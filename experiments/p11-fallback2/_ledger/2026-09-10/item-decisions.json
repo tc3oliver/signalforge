@@ -1,0 +1,329 @@
+[
+  {
+    "itemId": "itm-20260910-0001",
+    "disposition": "CANDIDATE",
+    "storyId": "fenwick-quantum-qubit-threshold",
+    "reason": "Milestone demonstration of sustained distance-9 surface code logical qubit below error threshold across 1M cycles.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0002",
+    "disposition": "IRRELEVANT",
+    "reason": "AskReddit general discussion thread with no technical or business value.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0003",
+    "disposition": "DUPLICATE",
+    "storyId": "bis-export-controls-mid-tier-accelerators",
+    "reason": "Reuters reporting on BIS interim final rule widening export controls on mid-tier accelerators.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0004",
+    "disposition": "CANDIDATE",
+    "storyId": "quarrystone-cve-2026-41882",
+    "reason": "Quarrystone official security release addressing critical WAL exposure CVE-2026-41882.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0005",
+    "disposition": "IRRELEVANT",
+    "reason": "Gaming community complaint regarding live-service game shotgun balance patch.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0006",
+    "disposition": "DUPLICATE",
+    "storyId": "fenwick-quantum-qubit-threshold",
+    "reason": "Nature News coverage of Fenwick Quantum million-cycle logical qubit result.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0007",
+    "disposition": "IRRELEVANT",
+    "reason": "Consumer coffee machine product comparison video.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0008",
+    "disposition": "DUPLICATE",
+    "storyId": "northbridge-us-east-2-outage",
+    "reason": "HN discussion on Northbridge us-east-2 control plane disruption.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0009",
+    "disposition": "DUPLICATE",
+    "storyId": "northbridge-us-east-2-outage",
+    "reason": "GitHub status repository update on Northbridge us-east-2 control plane disruption.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0010",
+    "disposition": "CANDIDATE",
+    "storyId": "bis-export-controls-mid-tier-accelerators",
+    "reason": "Official BIS announcement of interim final rule revising accelerator performance-density thresholds.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0011",
+    "disposition": "DUPLICATE",
+    "storyId": "us-jobless-claims",
+    "reason": "MarketWatch secondary report on weekly US initial jobless claims.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0012",
+    "disposition": "CANDIDATE",
+    "storyId": "us-jobless-claims",
+    "reason": "FRED primary economic series release for weekly US initial jobless claims at 214,000.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0013",
+    "disposition": "IRRELEVANT",
+    "reason": "Consumer electronics buying guide with affiliate links.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0014",
+    "disposition": "DUPLICATE",
+    "storyId": "bis-export-controls-mid-tier-accelerators",
+    "reason": "HN discussion of the new BIS performance-density export threshold rule.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0015",
+    "disposition": "CANDIDATE",
+    "storyId": "meridian-long-context-model",
+    "reason": "Early leak describing unreleased Meridian 2M-token context model for enterprise document review.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0016",
+    "disposition": "IRRELEVANT",
+    "reason": "Routine seasonal automotive maintenance checklist.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0017",
+    "disposition": "IRRELEVANT",
+    "reason": "Unsubstantiated single-source rumor claiming Basalt license change with no independent corroboration.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0018",
+    "disposition": "IRRELEVANT",
+    "reason": "General lifestyle and wellness explainer on 10k daily steps target.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0019",
+    "disposition": "CANDIDATE",
+    "storyId": "vantiq-enterprise-renewals-guidance-cut",
+    "reason": "Stratechery analysis detailing Vantiq 9% revenue guidance cut and renewal slippage disclosure.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0020",
+    "disposition": "IRRELEVANT",
+    "reason": "Unsubstantiated Reddit thread echoing single-source Basalt license rumor.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0021",
+    "disposition": "CANDIDATE",
+    "storyId": "northbridge-us-east-2-outage",
+    "reason": "Northbridge Cloud official incident summary on us-east-2 certificate rotation outage.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0022",
+    "disposition": "CANDIDATE",
+    "storyId": "aperture-nimbus-7-release",
+    "reason": "Aperture release of Nimbus-7 72B MoE weights under restrictive non-serving license.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0023",
+    "disposition": "DUPLICATE",
+    "storyId": "quarrystone-cve-2026-41882",
+    "reason": "BleepingComputer coverage of Quarrystone CVE-2026-41882 WAL exposure vulnerability.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0024",
+    "disposition": "IRRELEVANT",
+    "reason": "Routine intraday Solana spot price change (-1.27%) on normal volume without catalyst.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0025",
+    "disposition": "IRRELEVANT",
+    "reason": "Television series review with no industry or technology angle.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0026",
+    "disposition": "IRRELEVANT",
+    "reason": "Routine intraday Dogecoin spot price change (-2.58%) on normal volume without catalyst.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0027",
+    "disposition": "CANDIDATE",
+    "storyId": "rust-1-94-release",
+    "reason": "Rust 1.94 release thread highlighting parallel front end default and 22% cold check speedup.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0028",
+    "disposition": "IRRELEVANT",
+    "reason": "Routine intraday Bitcoin spot price change (-1.86%) on normal volume without catalyst.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0029",
+    "disposition": "IRRELEVANT",
+    "reason": "Aesthetic lifestyle desk setup video.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0030",
+    "disposition": "IRRELEVANT",
+    "reason": "Routine unchanged quarterly dividend declaration 8-K by Ashgrove Utilities.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0031",
+    "disposition": "IRRELEVANT",
+    "reason": "Routine intraday Chainlink spot price change (-1.15%) on normal volume without catalyst.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0032",
+    "disposition": "CANDIDATE",
+    "storyId": "linux-6-19-deadline-scheduler",
+    "reason": "LWN technical report on Linux 6.19 merging deadline-aware fair scheduler rework.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0033",
+    "disposition": "CANDIDATE",
+    "storyId": "sable-orm-batch-loss",
+    "reason": "Community bug report showing silent row loss in Sable ORM 6.2.0 batched upserts.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0034",
+    "disposition": "DUPLICATE",
+    "storyId": "bis-export-controls-mid-tier-accelerators",
+    "reason": "Stratechery analysis on market impact of BIS revised accelerator density thresholds.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0035",
+    "disposition": "DUPLICATE",
+    "storyId": "fsb-stablecoin-reserve-rules",
+    "reason": "CoinDesk reporting on FSB final rule requiring daily stablecoin reserve attestation.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0036",
+    "disposition": "DUPLICATE",
+    "storyId": "northbridge-us-east-2-outage",
+    "reason": "DevOps community discussion on ongoing Northbridge us-east-2 scaling freeze.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0037",
+    "disposition": "DUPLICATE",
+    "storyId": "fsb-stablecoin-reserve-rules",
+    "reason": "CryptoCurrency discussion on impact of FSB daily reserve attestation rule.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0038",
+    "disposition": "DUPLICATE",
+    "storyId": "linux-6-19-deadline-scheduler",
+    "reason": "HN discussion on Linux 6.19 deadline-aware scheduler replacing vruntime tuning.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0039",
+    "disposition": "IRRELEVANT",
+    "reason": "Local town square weekend market community announcement.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0040",
+    "disposition": "IRRELEVANT",
+    "reason": "General wellness stretching routine for sedentary workers.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0041",
+    "disposition": "IRRELEVANT",
+    "reason": "Entertainment box office reporting for franchise film sequel.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0042",
+    "disposition": "CANDIDATE",
+    "storyId": "accelerator-power-capping-idle-time",
+    "reason": "arXiv preprint uncovering 11% accelerator idle time driven by rack power capping.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0043",
+    "disposition": "CANDIDATE",
+    "storyId": "fsb-stablecoin-reserve-rules",
+    "reason": "FSB primary official publication of final rule on payment stablecoin reserve disclosure.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0044",
+    "disposition": "IRRELEVANT",
+    "reason": "DIY hobbyist woodworking project scaffold board bookshelf.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0045",
+    "disposition": "DUPLICATE",
+    "storyId": "fenwick-quantum-qubit-threshold",
+    "reason": "Semantic Scholar record of Fenwick Quantum million-cycle surface code logical qubit paper.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0046",
+    "disposition": "DUPLICATE",
+    "storyId": "fenwick-quantum-qubit-threshold",
+    "reason": "HN discussion analyzing the significance of Fenwick Quantum's 1M-cycle duration result.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0047",
+    "disposition": "IRRELEVANT",
+    "reason": "Newswire repeating Ashgrove Utilities routine quarterly dividend declaration.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0048",
+    "disposition": "IRRELEVANT",
+    "reason": "Consumer pet behavior advice article about cat boredom.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0049",
+    "disposition": "IRRELEVANT",
+    "reason": "Consumer automotive vehicle review for compact crossover.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  },
+  {
+    "itemId": "itm-20260910-0050",
+    "disposition": "IRRELEVANT",
+    "reason": "Routine intraday Avalanche spot price change (-0.01%) on normal volume without catalyst.",
+    "decidedAt": "2026-09-13T09:53:34.503Z"
+  }
+]

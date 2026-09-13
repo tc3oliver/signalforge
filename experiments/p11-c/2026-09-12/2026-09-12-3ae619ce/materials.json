@@ -1,0 +1,366 @@
+{
+  "date": "2026-09-12",
+  "producedAt": "2026-09-13T09:52:38.499Z",
+  "stories": [
+    {
+      "storyId": "keelson-bridge-validator-signature-replay-exploit",
+      "tier": "A",
+      "canonicalTitle": "Keelson Bridge 遭重放舊版驗證器簽名漏洞攻擊損失約 1.9 億美元",
+      "whySelected": "重大安全事故，跨鏈橋驗證器未移除舊格式訊息導致 1.9 億美元被掏空，具極高產業警示與後續清算影響。",
+      "changeType": "NEW",
+      "importance": 0.9,
+      "novelty": 0.92,
+      "confidence": 0.98,
+      "sourceItemIds": [
+        "itm-20260912-0005",
+        "itm-20260912-0030",
+        "itm-20260912-0036",
+        "itm-20260912-0050"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0005",
+        "itm-20260912-0030"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "meridian-long-context-enterprise-model",
+      "tier": "A",
+      "canonicalTitle": "Meridian 官方正式發表 Meridian 3 Opus：具備 200 萬 token 上下文並大幅降價",
+      "whySelected": "旗艦模型正式上線並證實 200 萬上下文與 4 倍降價，對企業級長文本處理與推論市場格局產生直接衝擊。",
+      "changeType": "CONFIRMATION",
+      "importance": 0.88,
+      "novelty": 0.9,
+      "confidence": 0.98,
+      "sourceItemIds": [
+        "itm-20260912-0006",
+        "itm-20260912-0012",
+        "itm-20260912-0038",
+        "itm-20260912-0042",
+        "itm-20260912-0077"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0077",
+        "itm-20260912-0038"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "us-core-cpi-august-2026",
+      "tier": "A",
+      "canonicalTitle": "美國 8 月核心 CPI 年增放緩至 2.4%，住房通膨連續四個月降溫",
+      "whySelected": "關鍵總經數據低於預期，住房通膨持續放緩直接驅動利率政策轉向預期與全球資產重新定價。",
+      "changeType": "NEW",
+      "importance": 0.9,
+      "novelty": 0.86,
+      "confidence": 0.98,
+      "sourceItemIds": [
+        "itm-20260912-0024",
+        "itm-20260912-0037",
+        "itm-20260912-0041",
+        "itm-20260912-0059"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0024",
+        "itm-20260912-0041"
+      ],
+      "factRefs": [
+        "fct-20260912-005",
+        "fct-20260912-006",
+        "fct-20260912-007"
+      ]
+    },
+    {
+      "storyId": "kubernetes-1-36-in-place-pod-resize-stable",
+      "tier": "A",
+      "canonicalTitle": "Kubernetes 1.36 正式發布：Pod 就地調整大小邁入穩定版並徹底移除樹內雲端提供者",
+      "whySelected": "雲原生核心基礎設施重大里程碑，in-place resize 穩定版徹底改變資源動態調整模式，移除 in-tree 驅動則帶來迫切升級維護工作。",
+      "changeType": "NEW",
+      "importance": 0.86,
+      "novelty": 0.88,
+      "confidence": 0.98,
+      "sourceItemIds": [
+        "itm-20260912-0007",
+        "itm-20260912-0013",
+        "itm-20260912-0057",
+        "itm-20260912-0068"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0057",
+        "itm-20260912-0068"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "kestrel-eval-suite-contamination-audit",
+      "tier": "A",
+      "canonicalTitle": "Kestrel Institute 發布基準測試污染審計：六大標準評測集污染率最高達 31%",
+      "whySelected": "揭露當前最主流 AI 評測基準存在嚴重的預訓練資料污染，動搖產業多數公開評測數據的有效性與可信度。",
+      "changeType": "NEW",
+      "importance": 0.86,
+      "novelty": 0.9,
+      "confidence": 0.96,
+      "sourceItemIds": [
+        "itm-20260912-0048",
+        "itm-20260912-0049",
+        "itm-20260912-0076",
+        "itm-20260912-0078"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0049",
+        "itm-20260912-0078"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "fed-governors-extended-rate-hold-remarks",
+      "tier": "B",
+      "canonicalTitle": "聯準會兩位理事發表談話：明確引述通膨降溫預期政策利率將按兵不動至明年初",
+      "whySelected": "官方對晨間通膨數據的即時政策回應，確立利率路徑指引，與 CPI 數據相互印證但屬獨立決策信號。",
+      "changeType": "NEW",
+      "importance": 0.87,
+      "novelty": 0.84,
+      "confidence": 0.96,
+      "sourceItemIds": [
+        "itm-20260912-0010",
+        "itm-20260912-0016",
+        "itm-20260912-0029",
+        "itm-20260912-0064"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0064",
+        "itm-20260912-0016"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "tessellate-t400-inference-accelerator",
+      "tier": "B",
+      "canonicalTitle": "Tessellate 發表 T400 推論加速晶片：記憶體頻寬達 6 TB/s 且容量 288GB",
+      "whySelected": "推論加速晶片規格大幅躍進，6 TB/s 頻寬直接緩解 LLM 解碼階段瓶頸，衝擊推論硬體市場。",
+      "changeType": "NEW",
+      "importance": 0.86,
+      "novelty": 0.9,
+      "confidence": 0.98,
+      "sourceItemIds": [
+        "itm-20260912-0017",
+        "itm-20260912-0020",
+        "itm-20260912-0032",
+        "itm-20260912-0075"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0017",
+        "itm-20260912-0020"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "sable-orm-batched-upsert-data-loss",
+      "tier": "B",
+      "canonicalTitle": "Sable ORM 釋出 6.2.4 修復連線釋出順序漏洞並提供資料遺失檢測工具",
+      "whySelected": "連日追蹤的重大資料遺失 issue 獲得官方修復版本與事後檢測工具，開發團隊需立即評估升級修補。",
+      "changeType": "RESOLUTION",
+      "importance": 0.86,
+      "novelty": 0.8,
+      "confidence": 0.98,
+      "sourceItemIds": [
+        "itm-20260912-0018",
+        "itm-20260912-0039",
+        "itm-20260912-0071"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0018",
+        "itm-20260912-0039"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "one-bit-optimizer-sign-sgd-adamw",
+      "tier": "B",
+      "canonicalTitle": "1-bit 最佳化器獨立重現確認 13B 效果，但超過 30B 出現發散需保留 bf16 誤差反饋",
+      "whySelected": "昨日熱門突破論文獲社群獨立重現驗證，指出了 30B 規模發散與記憶體開銷保留的重要邊界條件。",
+      "changeType": "UPDATE",
+      "importance": 0.82,
+      "novelty": 0.75,
+      "confidence": 0.92,
+      "sourceItemIds": [
+        "itm-20260912-0025",
+        "itm-20260912-0051",
+        "itm-20260912-0061",
+        "itm-20260912-0079"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0051",
+        "itm-20260912-0061"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "northbridge-power-envelope-metered-compute",
+      "tier": "B",
+      "canonicalTitle": "Northbridge Cloud 推出依功率封頂計費之新型運算實例家族",
+      "whySelected": "雲端算力計費範式創新，首次採用功耗上限作為主要計價標準，對算力架構與成本模型具深遠影響。",
+      "changeType": "NEW",
+      "importance": 0.84,
+      "novelty": 0.88,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260912-0034"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0034"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "larkspur-bio-metabolic-therapy-boxed-warning-approval",
+      "tier": "B",
+      "canonicalTitle": "監管機構核准 Larkspur Bio 罕見代謝疾病口服藥但附帶肝損傷黑框警告",
+      "whySelected": "重大新藥獲准上市，伴隨黑框警告與強制登記追蹤，直接影響生技板塊估值與商業前景。",
+      "changeType": "NEW",
+      "importance": 0.85,
+      "novelty": 0.9,
+      "confidence": 0.98,
+      "sourceItemIds": [
+        "itm-20260912-0047",
+        "itm-20260912-0053",
+        "itm-20260912-0066",
+        "itm-20260912-0070"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0070",
+        "itm-20260912-0066"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "talos-corvid-robotics-acquisition-rumor",
+      "tier": "C",
+      "canonicalTitle": "Corvid Robotics 發布聲明否認 Talos 收購傳聞，彭博刊登撤回更正",
+      "whySelected": "澄清昨日 41 億美元重大併購傳聞，彭博刊發撤稿更正，終結市場不實揣測。",
+      "changeType": "REVERSAL",
+      "importance": 0.8,
+      "novelty": 0.85,
+      "confidence": 0.98,
+      "sourceItemIds": [
+        "itm-20260912-0014",
+        "itm-20260912-0028",
+        "itm-20260912-0035",
+        "itm-20260912-0043"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0028",
+        "itm-20260912-0035"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "tessellate-runtime-joules-per-token-telemetry",
+      "tier": "C",
+      "canonicalTitle": "tessellate-runtime 支援板載遙測報告每 Token 實際消耗焦耳數",
+      "whySelected": "推論端能耗遙測工具化，支援 emerging signal 論證，單獨作為開源軟體更新亦具參考價值。",
+      "changeType": "NEW",
+      "importance": 0.8,
+      "novelty": 0.85,
+      "confidence": 0.96,
+      "sourceItemIds": [
+        "itm-20260912-0067"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0067"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "halyard-2-0-runtime-abi-freeze",
+      "tier": "C",
+      "canonicalTitle": "Halyard 2.0 發布後續報導與社群討論升級衝擊",
+      "whySelected": "昨日發布的二級媒體報導與社群遷移反響，無實質新資訊，評為 C 級備案。",
+      "changeType": "NO_MATERIAL_CHANGE",
+      "importance": 0.4,
+      "novelty": 0.05,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260912-0011",
+        "itm-20260912-0023",
+        "itm-20260912-0069"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0011"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "basalt-engine-revenue-share-rumor",
+      "tier": "C",
+      "canonicalTitle": "社群流傳未具名截圖聲稱 Basalt v7 分潤條款但真實性存疑",
+      "whySelected": "連日社群傳聞之低可信度未證實截圖，屬 NO_MATERIAL_CHANGE，列入備查。",
+      "changeType": "NO_MATERIAL_CHANGE",
+      "importance": 0.4,
+      "novelty": 0.05,
+      "confidence": 0.2,
+      "sourceItemIds": [
+        "itm-20260912-0002",
+        "itm-20260912-0003"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0003"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "us-jobless-claims-weekly",
+      "tier": "C",
+      "canonicalTitle": "美國初次請領失業金人數為 20.8 萬人，持續維持穩定區間",
+      "whySelected": "每週例行總經數據更新，波動維持在近期區間內，重要性一般。",
+      "changeType": "UPDATE",
+      "importance": 0.35,
+      "novelty": 0.35,
+      "confidence": 0.98,
+      "sourceItemIds": [
+        "itm-20260912-0056",
+        "itm-20260912-0073"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0073"
+      ],
+      "factRefs": [
+        "fct-20260912-012",
+        "fct-20260912-013"
+      ]
+    },
+    {
+      "storyId": "ashgrove-utilities-quarterly-dividend",
+      "tier": "C",
+      "canonicalTitle": "Ashgrove Utilities 申報每股發放 0.44 美元季度股息",
+      "whySelected": "例行公用事業 8-K 股息申報，微幅調整但影響局限於單一證券股東。",
+      "changeType": "UPDATE",
+      "importance": 0.2,
+      "novelty": 0.2,
+      "confidence": 0.98,
+      "sourceItemIds": [
+        "itm-20260912-0004",
+        "itm-20260912-0040"
+      ],
+      "primarySourceIds": [
+        "itm-20260912-0004"
+      ],
+      "factRefs": [
+        "fct-20260912-001",
+        "fct-20260912-002"
+      ]
+    }
+  ],
+  "emergingSignals": [
+    {
+      "label": "運算計費與排程邊界轉向硬體功耗約束",
+      "rationale": "跨雲端基礎設施與推論硬體領域出現結構性共振：Northbridge Cloud 推出首個以承諾功率封頂（瓦特）計費的實例家族，而 Tessellate 在 runtime 中直接開放板載遙測報告每 token 焦耳數，結合昨日 Halyard 將機架電力預算提升為排程一級資源。算力最佳化與計費指標正由單純時間/核數轉向以能耗為核心的物理約束。反證：若僅為行銷概念，主流雲端商與排程框架將維持傳統 vCPU/時定價與調度模型。",
+      "storyIds": [
+        "northbridge-power-envelope-metered-compute",
+        "tessellate-runtime-joules-per-token-telemetry",
+        "tessellate-t400-inference-accelerator"
+      ]
+    }
+  ],
+  "curatorNotes": "今日共收斂為 17 則 story，其中 Tier A 5 則（涵蓋重大漏洞竊盜、旗艦模型發布、總經關鍵通膨轉折、K8s 重大版本發布及基準測試嚴重污染）、Tier B 6 則、Tier C 6 則。CRYPTO 領域除 Keelson Bridge 1.9 億美元重大合約漏洞外，主流幣價均屬例行波動並標記為 IRRELEVANT。新浮現跨領域訊號「運算計費與排程邊界轉向硬體功耗約束」，由 Northbridge 與 Tessellate 相關 story 支撐。"
+}

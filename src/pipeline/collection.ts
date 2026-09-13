@@ -235,6 +235,8 @@ export interface CollectionOptions {
 	appConfig?: AppConfig;
 	fetchImpl?: typeof globalThis.fetch;
 	concurrency?: number;
+	/** Ceiling on one collector's whole run; defaults to three minutes. */
+	collectorDeadlineMs?: number;
 	signal?: AbortSignal;
 	log?: (msg: string, fields?: Record<string, unknown>) => void;
 }
@@ -281,6 +283,46 @@ function collectorScalar(
 
 /** Bounded pool: eleven collectors hitting eleven providers at once is a thundering herd. */
 const DEFAULT_CONCURRENCY = 5;
+
+/**
+ * Hard ceiling on one collector's whole run, independent of any per-request
+ * timeout. A collector that pages a slow provider can stay busy long after the
+ * per-request timeout would have fired, and a collector that never settles at
+ * all takes its outcome with it: the run finishes, the row is never written,
+ * and the source simply is not there -- no error, no warning, nothing to see.
+ * This turns that into a FAILED row that says what happened.
+ */
+const DEFAULT_COLLECTOR_DEADLINE_MS = 180_000;
+
+class CollectorDeadlineError extends Error {
+	constructor(collectorId: string, ms: number) {
+		super(`collector "${collectorId}" did not finish within ${Math.round(ms / 1000)}s`);
+		this.name = "CollectorDeadlineError";
+	}
+}
+
+/**
+ * Races a collector against its deadline. The loser is abandoned rather than
+ * cancelled -- a collector has no obligation to honour an abort -- but it can no
+ * longer stop the run from recording what happened.
+ */
+async function withDeadline<T>(
+	collectorId: string,
+	ms: number,
+	work: () => Promise<T>,
+): Promise<T> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	try {
+		return await Promise.race([
+			work(),
+			new Promise<never>((_, reject) => {
+				timer = setTimeout(() => reject(new CollectorDeadlineError(collectorId, ms)), ms);
+			}),
+		]);
+	} finally {
+		if (timer) clearTimeout(timer);
+	}
+}
 
 async function pool<T>(
 	tasks: readonly (() => Promise<T>)[],
@@ -421,7 +463,11 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
 			const attemptStartedAt = now();
 			let result: CollectorResult;
 			try {
-				result = await collector.collect(ctx);
+				result = await withDeadline(
+					collector.id,
+					options.collectorDeadlineMs ?? DEFAULT_COLLECTOR_DEADLINE_MS,
+					() => collector.collect(ctx),
+				);
 			} catch (err) {
 				const finishedAt = now();
 				const message = err instanceof Error ? err.message : String(err);
@@ -549,6 +595,38 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
  * Production entry point: arXiv runs first so its external ids can seed the
  * Semantic Scholar worklist, then the rest of the registry runs as one pool.
  */
+/**
+ * An enabled source with no collector behind it is the one gap a collection run
+ * cannot otherwise see: it produces no row, no warning and no item, so the run
+ * looks complete while a whole source is silently missing. This names it as a
+ * DISABLED outcome instead, with the reason a reader needs.
+ */
+export function unimplementedOutcomes(
+	enabledSourceKeys: readonly string[],
+	entries: readonly RegistryEntry[],
+): CollectorOutcome[] {
+	const registered = new Set(entries.map((e) => e.sourceKey));
+	return [...new Set(enabledSourceKeys)]
+		.filter((key) => !registered.has(key))
+		.sort()
+		.map((sourceKey) => {
+			const reason = `enabled in config/sources.yaml but no collector is registered for source "${sourceKey}"`;
+			return {
+				collectorId: sourceKey,
+				sourceType: sourceKey,
+				health: "DISABLED" as const,
+				itemsFetched: 0,
+				itemsInserted: 0,
+				factsInserted: 0,
+				warnings: [reason],
+				disabledReason: reason,
+				cursorAdvanced: false,
+				collectionRunId: "",
+				latencyMs: 0,
+			};
+		});
+}
+
 export async function runCollectionForDay(
 	options: Omit<CollectionOptions, "entries"> & { entries?: readonly RegistryEntry[] },
 ): Promise<CollectionSummary> {
@@ -563,12 +641,17 @@ export async function runCollectionForDay(
 		entries: buildRegistry({ arxivIds }).filter((e) => e.sourceKey !== "arxiv"),
 	});
 
+	const missing = unimplementedOutcomes(
+		options.enabledSourceKeys ?? resolveEnabledSources(options.appConfig ?? loadConfig()),
+		buildRegistry(),
+	);
+
 	return {
 		startedAt: first.startedAt,
 		finishedAt: rest.finishedAt,
 		degraded: first.degraded || rest.degraded,
 		empty: first.empty && rest.empty,
-		outcomes: [...first.outcomes, ...rest.outcomes],
+		outcomes: [...first.outcomes, ...rest.outcomes, ...missing],
 		itemsInserted: first.itemsInserted + rest.itemsInserted,
 		arxivExternalIds: arxivIds,
 	};

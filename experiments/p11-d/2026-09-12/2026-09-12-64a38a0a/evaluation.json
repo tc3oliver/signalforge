@@ -1,0 +1,144 @@
+{
+  "date": "2026-09-12",
+  "runId": "unknown",
+  "evaluatedAt": "2026-09-13T09:54:19.577Z",
+  "metrics": [
+    {
+      "name": "scan_coverage",
+      "value": 1,
+      "unit": "ratio",
+      "threshold": 1,
+      "comparator": "gte",
+      "pass": true,
+      "detail": "81/81 manifest items have a decision; 0 undecided"
+    },
+    {
+      "name": "important_story_recall",
+      "value": 0.9090909090909091,
+      "unit": "ratio",
+      "threshold": 0.9,
+      "comparator": "gte",
+      "pass": true,
+      "detail": "10/11 important gold events reached the brief; missed: evt-20260912-std-biotech-approval"
+    },
+    {
+      "name": "selected_story_precision",
+      "value": 1,
+      "unit": "ratio",
+      "threshold": 0.85,
+      "comparator": "gte",
+      "pass": true,
+      "detail": "10/10 brief stories match an important gold event; unjustified: none"
+    },
+    {
+      "name": "cluster_precision",
+      "value": 1,
+      "unit": "ratio",
+      "threshold": null,
+      "comparator": "none",
+      "pass": null,
+      "detail": "TP=67, predicted pairs=67, gold pairs=73 (noise items excluded)"
+    },
+    {
+      "name": "cluster_recall",
+      "value": 0.9178082191780822,
+      "unit": "ratio",
+      "threshold": null,
+      "comparator": "none",
+      "pass": null,
+      "detail": "TP=67, predicted pairs=67, gold pairs=73 (noise items excluded)"
+    },
+    {
+      "name": "cluster_f1",
+      "value": 0.9571428571428571,
+      "unit": "ratio",
+      "threshold": 0.9,
+      "comparator": "gte",
+      "pass": true,
+      "detail": "TP=67, predicted pairs=67, gold pairs=73 (noise items excluded); precision=1.000, recall=0.918"
+    },
+    {
+      "name": "change_type_accuracy",
+      "value": 0.8823529411764706,
+      "unit": "ratio",
+      "threshold": 0.85,
+      "comparator": "gte",
+      "pass": true,
+      "detail": "15/17 matched stories carry the expected changeType; wrong: basalt-engine-revenue-share-license-rumor: NO_MATERIAL_CHANGE != RUMOR; ashgrove-utilities-dividend-declaration: NO_MATERIAL_CHANGE != NEW"
+    },
+    {
+      "name": "noise_rejection_rate",
+      "value": 1,
+      "unit": "ratio",
+      "threshold": 0.95,
+      "comparator": "gte",
+      "pass": true,
+      "detail": "26/26 noise items kept out of the brief; leaked: none"
+    },
+    {
+      "name": "fabricated_source_ids",
+      "value": 0,
+      "unit": "count",
+      "threshold": 0,
+      "comparator": "lte",
+      "pass": true,
+      "detail": "0 brief sourceItemIds are absent from the manifest's 81 items"
+    },
+    {
+      "name": "invalid_fact_refs",
+      "value": 0,
+      "unit": "count",
+      "threshold": 0,
+      "comparator": "lte",
+      "pass": true,
+      "detail": "0 brief factRefs are absent from the manifest's 13 facts"
+    },
+    {
+      "name": "final_duplicate_stories",
+      "value": 0,
+      "unit": "count",
+      "threshold": 0,
+      "comparator": "lte",
+      "pass": true,
+      "detail": "0 story pairs overlap at jaccard >= 0.6; 0 repeated storyIds"
+    },
+    {
+      "name": "final_story_count",
+      "value": 10,
+      "unit": "count",
+      "threshold": 8,
+      "comparator": "range",
+      "pass": true,
+      "detail": "10 stories in the brief; allowed 8..15"
+    },
+    {
+      "name": "must_know_count",
+      "value": 4,
+      "unit": "count",
+      "threshold": 3,
+      "comparator": "range",
+      "pass": true,
+      "detail": "4 stories flagged mustKnow; allowed 3..5"
+    },
+    {
+      "name": "schema_validity",
+      "value": 1,
+      "unit": "flag",
+      "threshold": 1,
+      "comparator": "eq",
+      "pass": true,
+      "detail": "brief parsed against DailyBrief"
+    },
+    {
+      "name": "structured_output_after_retry",
+      "value": 1,
+      "unit": "flag",
+      "threshold": 1,
+      "comparator": "eq",
+      "pass": true,
+      "detail": "0 schema-failing attempt(s) before a valid structured output"
+    }
+  ],
+  "overallPass": true,
+  "failedGates": []
+}

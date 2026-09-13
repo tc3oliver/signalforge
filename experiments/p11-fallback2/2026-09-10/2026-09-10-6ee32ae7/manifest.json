@@ -1,0 +1,1297 @@
+{
+  "date": "2026-09-10",
+  "generatedAt": "2026-09-10T23:59:00.000Z",
+  "items": [
+    {
+      "id": "itm-20260910-0001",
+      "sourceType": "arxiv",
+      "sourceName": "arXiv cs.LG",
+      "title": "Sustained below-threshold operation of a distance-9 surface code logical qubit",
+      "summary": "Preprint posted to arXiv. A distance-9 surface code logical qubit held a logical error rate of 1.1e-7 per cycle across one million cycles, the first published run to stay below threshold for that duration.",
+      "content": "Preprint posted to arXiv. A distance-9 surface code logical qubit held a logical error rate of 1.1e-7 per cycle across one million cycles, the first published run to stay below threshold for that duration.\n\nThe experiment uses a single logical qubit; two-qubit logical gate results are not included.\n\nDuration, not instantaneous error rate, was the open question, and this is the first result that addresses it directly. Further reporting is expected as Fenwick Quantum and the affected downstream projects respond.",
+      "url": "https://arxiv.org/abs/2609.12303",
+      "publishedAt": "2026-09-10T06:03:00.000Z",
+      "metadata": {
+        "arxivId": "2609.02966",
+        "primaryCategory": "cs.CL",
+        "authorCount": 9,
+        "version": 1
+      }
+    },
+    {
+      "id": "itm-20260910-0002",
+      "sourceType": "reddit",
+      "sourceName": "r/AskReddit",
+      "title": "What is a small purchase that noticeably improved your life?",
+      "summary": "Open-ended discussion thread.",
+      "url": "https://raskreddit.example.com/what-is-a-small-purchase-that-noticeably-improve",
+      "publishedAt": "2026-09-10T06:19:00.000Z",
+      "metadata": {
+        "subreddit": "AskReddit",
+        "upvotes": 3064,
+        "commentCount": 410
+      }
+    },
+    {
+      "id": "itm-20260910-0003",
+      "sourceType": "rss",
+      "sourceName": "Reuters",
+      "title": "Export rules widen to cover mid-tier accelerators",
+      "summary": "Reporting from Reuters. An interim final rule extends licence requirements to accelerators above a revised performance-density threshold, capturing several mid-tier parts that were previously exempt.",
+      "content": "Reporting from Reuters. An interim final rule extends licence requirements to accelerators above a revised performance-density threshold, capturing several mid-tier parts that were previously exempt.\n\nThe rule takes effect in thirty days with no general licence for existing orders.\n\nVendors that engineered products to sit just under the old threshold now need licences for inventory that is already built. Further reporting is expected as Bureau of Industry and Security and the affected downstream projects respond.",
+      "url": "https://reuters.example.com/export-rules-widen-to-cover-mid-tier-accelerator",
+      "publishedAt": "2026-09-10T06:24:00.000Z",
+      "metadata": {
+        "author": "S. Nakamura",
+        "wordCount": 2246,
+        "section": "technology"
+      }
+    },
+    {
+      "id": "itm-20260910-0004",
+      "sourceType": "web",
+      "sourceName": "Quarrystone Newsroom",
+      "title": "Security release: 17.4, 16.8 address CVE-2026-41882",
+      "summary": "Quarrystone published this as a primary source document. CVE-2026-41882 allows an unauthenticated client to open a logical replication slot on Quarrystone 16 and 17 when scram channel binding is disabled, exposing the full write-ahead log.",
+      "content": "Quarrystone published this as a primary source document. CVE-2026-41882 allows an unauthenticated client to open a logical replication slot on Quarrystone 16 and 17 when scram channel binding is disabled, exposing the full write-ahead log.\n\nPatched releases are available and a configuration-only mitigation exists.\n\nReading the write-ahead log is equivalent to reading every table, and the vulnerable configuration is the default in two popular container images. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://quarrystonenewsroom.example.com/security-release-17-4-16-8-address-cve-2026-4188",
+      "publishedAt": "2026-09-10T06:43:00.000Z",
+      "metadata": {
+        "author": "Quarrystone Communications",
+        "wordCount": 506
+      }
+    },
+    {
+      "id": "itm-20260910-0005",
+      "sourceType": "reddit",
+      "sourceName": "r/gaming",
+      "title": "Patch notes are up and they nerfed the shotgun again",
+      "summary": "Community reaction to a live-service game balance patch.",
+      "url": "https://rgaming.example.com/patch-notes-are-up-and-they-nerfed-the-shotgun-a",
+      "publishedAt": "2026-09-10T06:46:00.000Z",
+      "metadata": {
+        "subreddit": "gaming",
+        "upvotes": 1570,
+        "commentCount": 1438
+      }
+    },
+    {
+      "id": "itm-20260910-0006",
+      "sourceType": "rss",
+      "sourceName": "Nature News",
+      "title": "Logical qubit stays below threshold for a million cycles",
+      "summary": "Reporting from Nature News. A distance-9 surface code logical qubit held a logical error rate of 1.1e-7 per cycle across one million cycles, the first published run to stay below threshold for that duration.",
+      "content": "Reporting from Nature News. A distance-9 surface code logical qubit held a logical error rate of 1.1e-7 per cycle across one million cycles, the first published run to stay below threshold for that duration.\n\nThe experiment uses a single logical qubit; two-qubit logical gate results are not included.\n\nDuration, not instantaneous error rate, was the open question, and this is the first result that addresses it directly. Further reporting is expected as Fenwick Quantum and the affected downstream projects respond.",
+      "url": "https://naturenews.example.com/logical-qubit-stays-below-threshold-for-a-millio",
+      "publishedAt": "2026-09-10T06:52:00.000Z",
+      "metadata": {
+        "author": "R. Delacroix",
+        "wordCount": 536,
+        "section": "business"
+      }
+    },
+    {
+      "id": "itm-20260910-0007",
+      "sourceType": "youtube",
+      "sourceName": "YouTube",
+      "title": "I tried every coffee machine under three hundred",
+      "summary": "Consumer product comparison video.",
+      "url": "https://youtube.example.com/i-tried-every-coffee-machine-under-three-hundred",
+      "publishedAt": "2026-09-10T07:13:00.000Z",
+      "metadata": {
+        "channel": "YouTube",
+        "viewCount": 654985,
+        "durationSec": 359
+      }
+    },
+    {
+      "id": "itm-20260910-0008",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Northbridge us-east-2 is down and nothing can scale",
+      "summary": "Front page discussion thread. A failed certificate rotation in the us-east-2 control plane blocked all new instance launches, autoscaling and load balancer changes for six hours and eleven minutes, while running workloads were unaffected.",
+      "url": "https://news.ycombinator.com/item?id=44704036",
+      "publishedAt": "2026-09-10T08:33:00.000Z",
+      "metadata": {
+        "score": 891,
+        "commentCount": 130,
+        "hnId": 42070716,
+        "domain": "northbridgecloud.example.com"
+      }
+    },
+    {
+      "id": "itm-20260910-0009",
+      "sourceType": "github",
+      "sourceName": "github.com/northbridge/status",
+      "title": "status: us-east-2 control plane degraded - launches and scaling unavailable",
+      "summary": "Repository activity on northbridge/status. A failed certificate rotation in the us-east-2 control plane blocked all new instance launches, autoscaling and load balancer changes for six hours and eleven minutes, while running workloads were unaffected.",
+      "content": "Repository activity on northbridge/status. A failed certificate rotation in the us-east-2 control plane blocked all new instance launches, autoscaling and load balancer changes for six hours and eleven minutes, while running workloads were unaffected.\n\nNorthbridge has committed to a public post-mortem within five business days.\n\nAny customer whose failover plan depends on launching capacity discovered that the control plane is the single point of failure, not the data plane. Further reporting is expected as Northbridge Cloud and the affected downstream projects respond.",
+      "url": "https://github.com/northbridge/status/issues/1522",
+      "publishedAt": "2026-09-10T08:34:00.000Z",
+      "metadata": {
+        "repo": "northbridge/status",
+        "number": 2322,
+        "stars": 7073,
+        "openIssues": 941,
+        "labels": [
+          "release"
+        ],
+        "state": "closed"
+      }
+    },
+    {
+      "id": "itm-20260910-0010",
+      "sourceType": "web",
+      "sourceName": "Bureau of Industry and Security Newsroom",
+      "title": "Interim final rule: revised performance-density thresholds",
+      "summary": "Bureau of Industry and Security published this as a primary source document. An interim final rule extends licence requirements to accelerators above a revised performance-density threshold, capturing several mid-tier parts that were previously exempt.",
+      "content": "Bureau of Industry and Security published this as a primary source document. An interim final rule extends licence requirements to accelerators above a revised performance-density threshold, capturing several mid-tier parts that were previously exempt.\n\nThe rule takes effect in thirty days with no general licence for existing orders.\n\nVendors that engineered products to sit just under the old threshold now need licences for inventory that is already built. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://bureauofindustryandsecuritynewsroom.example.com/interim-final-rule-revised-performance-density-t",
+      "publishedAt": "2026-09-10T08:39:00.000Z",
+      "metadata": {
+        "author": "Bureau of Industry and Security Communications",
+        "wordCount": 488
+      }
+    },
+    {
+      "id": "itm-20260910-0011",
+      "sourceType": "rss",
+      "sourceName": "MarketWatch",
+      "title": "Jobless claims little changed at 214,000",
+      "summary": "Reporting from MarketWatch. Initial jobless claims printed at 214,000, inside the range of the past six weeks and consistent with an unchanged labour market.",
+      "content": "Reporting from MarketWatch. Initial jobless claims printed at 214,000, inside the range of the past six weeks and consistent with an unchanged labour market.\n\nContext reported alongside the item is limited to what Department of Labor has said publicly so far.\n\nA print inside the recent range carries no new information for policy. Further reporting is expected as Department of Labor and the affected downstream projects respond.",
+      "url": "https://marketwatch.example.com/jobless-claims-little-changed-at-214-000",
+      "publishedAt": "2026-09-10T08:43:00.000Z",
+      "metadata": {
+        "author": "R. Delacroix",
+        "wordCount": 1559,
+        "section": "technology"
+      }
+    },
+    {
+      "id": "itm-20260910-0012",
+      "sourceType": "fred",
+      "sourceName": "FRED",
+      "title": "ICSA: Initial Claims, week ending 2026-09-10",
+      "summary": "Series release from the FRED economic data service. Initial jobless claims printed at 214,000, inside the range of the past six weeks and consistent with an unchanged labour market.",
+      "content": "Series release from the FRED economic data service. Initial jobless claims printed at 214,000, inside the range of the past six weeks and consistent with an unchanged labour market.\n\nContext reported alongside the item is limited to what Department of Labor has said publicly so far.\n\nA print inside the recent range carries no new information for policy. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://fred.stlouisfed.org/release?rid=291",
+      "publishedAt": "2026-09-10T08:45:00.000Z",
+      "metadata": {
+        "seriesId": "CPILFESL",
+        "releaseName": "Department of Labor scheduled release",
+        "frequency": "Monthly"
+      }
+    },
+    {
+      "id": "itm-20260910-0013",
+      "sourceType": "rss",
+      "sourceName": "Gadget Weekly",
+      "title": "The 14 best wireless earbuds you can buy this autumn",
+      "summary": "A refreshed buying guide with affiliate links and no new testing since spring.",
+      "url": "https://gadgetweekly.example.com/the-14-best-wireless-earbuds-you-can-buy-this-au",
+      "publishedAt": "2026-09-10T08:46:00.000Z",
+      "metadata": {
+        "author": "K. Mensah",
+        "wordCount": 890
+      }
+    },
+    {
+      "id": "itm-20260910-0014",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "The new export threshold catches the parts built to dodge the old one",
+      "summary": "Front page discussion thread. An interim final rule extends licence requirements to accelerators above a revised performance-density threshold, capturing several mid-tier parts that were previously exempt.",
+      "url": "https://news.ycombinator.com/item?id=41508623",
+      "publishedAt": "2026-09-10T08:50:00.000Z",
+      "metadata": {
+        "score": 674,
+        "commentCount": 297,
+        "hnId": 42994006,
+        "domain": "bureauofindustryandsecurity.example.com"
+      }
+    },
+    {
+      "id": "itm-20260910-0015",
+      "sourceType": "reddit",
+      "sourceName": "r/LocalLLaMA",
+      "title": "Someone in my org got early access to something that is not Meridian 2.5",
+      "summary": "Community thread in r/LocalLLaMA. Three people with knowledge of the roadmap describe an unreleased Meridian model with a two-million-token context window and a retrieval-free long-document mode, targeted at enterprise document review.",
+      "url": "https://reddit.com/r/LocalLLaMA/comments/9xj9/someone-in-my-org-got-early-access-to-something-",
+      "publishedAt": "2026-09-10T09:04:00.000Z",
+      "metadata": {
+        "subreddit": "LocalLLaMA",
+        "upvotes": 1558,
+        "commentCount": 16,
+        "flair": "Discussion"
+      }
+    },
+    {
+      "id": "itm-20260910-0016",
+      "sourceType": "rss",
+      "sourceName": "Auto Trends",
+      "title": "Five things to check before a long autumn drive",
+      "summary": "Routine seasonal vehicle maintenance checklist.",
+      "url": "https://autotrends.example.com/five-things-to-check-before-a-long-autumn-drive",
+      "publishedAt": "2026-09-10T09:27:00.000Z",
+      "metadata": {
+        "author": "K. Mensah",
+        "wordCount": 904
+      }
+    },
+    {
+      "id": "itm-20260910-0017",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Basalt licence change rumour (single unnamed source)",
+      "summary": "Front page discussion thread. A thread claims without evidence that Basalt Engine will move to a revenue-share licence at the next major version, citing an unnamed partner call.",
+      "url": "https://news.ycombinator.com/item?id=42955410",
+      "publishedAt": "2026-09-10T09:29:00.000Z",
+      "metadata": {
+        "score": 565,
+        "commentCount": 375,
+        "hnId": 44910464,
+        "domain": "basalt.example.com"
+      }
+    },
+    {
+      "id": "itm-20260910-0018",
+      "sourceType": "rss",
+      "sourceName": "Wellness Digest",
+      "title": "Does the ten thousand step target actually mean anything?",
+      "summary": "General wellness explainer referencing older observational studies.",
+      "url": "https://wellnessdigest.example.com/does-the-ten-thousand-step-target-actually-mean-",
+      "publishedAt": "2026-09-10T09:30:00.000Z",
+      "metadata": {
+        "author": "K. Mensah",
+        "wordCount": 308
+      }
+    },
+    {
+      "id": "itm-20260910-0019",
+      "sourceType": "rss",
+      "sourceName": "Stratechery",
+      "title": "Renewal slippage versus churn: reading the Vantiq disclosure",
+      "summary": "Analysis from Stratechery. Slippage rather than churn means the revenue may return, but it also means the company cannot predict its own renewal timing.",
+      "content": "Analysis from Stratechery. Vantiq Systems cut full-year revenue guidance by 9% and said the shortfall is concentrated in multi-year enterprise renewals slipping out of the quarter rather than in churn.\n\nNet revenue retention was disclosed at 104%, down from 112% a year earlier.\n\nSlippage rather than churn means the revenue may return, but it also means the company cannot predict its own renewal timing. Further reporting is expected as Vantiq Systems and the affected downstream projects respond.",
+      "url": "https://stratechery.example.com/renewal-slippage-versus-churn-reading-the-vantiq",
+      "publishedAt": "2026-09-10T09:37:00.000Z",
+      "metadata": {
+        "author": "A. Ferreira",
+        "wordCount": 1430,
+        "section": "technology"
+      }
+    },
+    {
+      "id": "itm-20260910-0020",
+      "sourceType": "reddit",
+      "sourceName": "r/gamedev",
+      "title": "Heard from a partner that Basalt is going revenue-share in v7",
+      "summary": "Community thread in r/gamedev. A thread claims without evidence that Basalt Engine will move to a revenue-share licence at the next major version, citing an unnamed partner call.",
+      "url": "https://reddit.com/r/gamedev/comments/bxj9/heard-from-a-partner-that-basalt-is-going-revenu",
+      "publishedAt": "2026-09-10T09:39:00.000Z",
+      "metadata": {
+        "subreddit": "gamedev",
+        "upvotes": 2361,
+        "commentCount": 45,
+        "flair": "Discussion"
+      }
+    },
+    {
+      "id": "itm-20260910-0021",
+      "sourceType": "web",
+      "sourceName": "Northbridge Cloud Newsroom",
+      "title": "Service disruption in us-east-2: preliminary summary",
+      "summary": "Northbridge Cloud published this as a primary source document. A failed certificate rotation in the us-east-2 control plane blocked all new instance launches, autoscaling and load balancer changes for six hours and eleven minutes, while running workloads were unaffected.",
+      "content": "Northbridge Cloud published this as a primary source document. A failed certificate rotation in the us-east-2 control plane blocked all new instance launches, autoscaling and load balancer changes for six hours and eleven minutes, while running workloads were unaffected.\n\nNorthbridge has committed to a public post-mortem within five business days.\n\nAny customer whose failover plan depends on launching capacity discovered that the control plane is the single point of failure, not the data plane. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://northbridgecloudnewsroom.example.com/service-disruption-in-us-east-2-preliminary-summ",
+      "publishedAt": "2026-09-10T09:58:00.000Z",
+      "metadata": {
+        "author": "Northbridge Cloud Communications",
+        "wordCount": 1186
+      }
+    },
+    {
+      "id": "itm-20260910-0022",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Nimbus-7 weights are out, and the licence forbids serving them",
+      "summary": "Front page discussion thread. Aperture published Nimbus-7 weights for a 72B mixture-of-experts model under a licence that permits research and internal commercial use but forbids serving the model to third parties.",
+      "url": "https://news.ycombinator.com/item?id=43345974",
+      "publishedAt": "2026-09-10T10:01:00.000Z",
+      "metadata": {
+        "score": 1285,
+        "commentCount": 55,
+        "hnId": 42655051,
+        "domain": "apertureresearch.example.com"
+      }
+    },
+    {
+      "id": "itm-20260910-0023",
+      "sourceType": "rss",
+      "sourceName": "BleepingComputer",
+      "title": "Critical Quarrystone flaw exposes write-ahead logs",
+      "summary": "Reporting from BleepingComputer. CVE-2026-41882 allows an unauthenticated client to open a logical replication slot on Quarrystone 16 and 17 when scram channel binding is disabled, exposing the full write-ahead log.",
+      "content": "Reporting from BleepingComputer. CVE-2026-41882 allows an unauthenticated client to open a logical replication slot on Quarrystone 16 and 17 when scram channel binding is disabled, exposing the full write-ahead log.\n\nPatched releases are available and a configuration-only mitigation exists.\n\nReading the write-ahead log is equivalent to reading every table, and the vulnerable configuration is the default in two popular container images. Further reporting is expected as Quarrystone and the affected downstream projects respond.",
+      "url": "https://bleepingcomputer.example.com/critical-quarrystone-flaw-exposes-write-ahead-lo",
+      "publishedAt": "2026-09-10T10:05:00.000Z",
+      "metadata": {
+        "author": "R. Delacroix",
+        "wordCount": 1164,
+        "section": "technology"
+      }
+    },
+    {
+      "id": "itm-20260910-0024",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Solana slips 1.27% in quiet trading",
+      "summary": "Solana changed -1.27% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/solana",
+      "publishedAt": "2026-09-10T10:12:00.000Z",
+      "metadata": {
+        "symbol": "SOL",
+        "priceUsd": 184.03,
+        "change24hPct": -1.27,
+        "marketCapUsd": 1301132234099,
+        "volume24hUsd": 4921504062
+      }
+    },
+    {
+      "id": "itm-20260910-0025",
+      "sourceType": "rss",
+      "sourceName": "Screen Report",
+      "title": "The streaming series everyone will be arguing about this weekend",
+      "summary": "Television review with no industry or business angle.",
+      "url": "https://screenreport.example.com/the-streaming-series-everyone-will-be-arguing-ab",
+      "publishedAt": "2026-09-10T10:30:00.000Z",
+      "metadata": {
+        "author": "K. Mensah",
+        "wordCount": 959
+      }
+    },
+    {
+      "id": "itm-20260910-0026",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Dogecoin slips 2.58% in quiet trading",
+      "summary": "Dogecoin changed -2.58% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/dogecoin",
+      "publishedAt": "2026-09-10T10:38:00.000Z",
+      "metadata": {
+        "symbol": "DOGE",
+        "priceUsd": 0.1822,
+        "change24hPct": -2.58,
+        "marketCapUsd": 1012941572097,
+        "volume24hUsd": 28568515862
+      }
+    },
+    {
+      "id": "itm-20260910-0027",
+      "sourceType": "reddit",
+      "sourceName": "r/rust",
+      "title": "Measured Rust 1.94 on our workspace: cold check went from 94s to 71s",
+      "summary": "Community thread in r/rust. Rust 1.94 turns on the parallel compiler front end by default, reporting a 22% median reduction in cold check time across the crater run, and stabilises three long-pending const APIs.",
+      "url": "https://reddit.com/r/rust/comments/l1a3/measured-rust-1-94-on-our-workspace-cold-check-w",
+      "publishedAt": "2026-09-10T10:41:00.000Z",
+      "metadata": {
+        "subreddit": "rust",
+        "upvotes": 3010,
+        "commentCount": 372,
+        "flair": "Discussion"
+      }
+    },
+    {
+      "id": "itm-20260910-0028",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Bitcoin slips 1.86% in quiet trading",
+      "summary": "Bitcoin changed -1.86% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/bitcoin",
+      "publishedAt": "2026-09-10T10:44:00.000Z",
+      "metadata": {
+        "symbol": "BTC",
+        "priceUsd": 69914.94,
+        "change24hPct": -1.86,
+        "marketCapUsd": 720155983093,
+        "volume24hUsd": 18949542582
+      }
+    },
+    {
+      "id": "itm-20260910-0029",
+      "sourceType": "youtube",
+      "sourceName": "YouTube",
+      "title": "Cosy autumn desk setup tour",
+      "summary": "Desk aesthetics video.",
+      "url": "https://youtube.example.com/cosy-autumn-desk-setup-tour",
+      "publishedAt": "2026-09-10T10:44:00.000Z",
+      "metadata": {
+        "channel": "YouTube",
+        "viewCount": 37139,
+        "durationSec": 990
+      }
+    },
+    {
+      "id": "itm-20260910-0030",
+      "sourceType": "sec",
+      "sourceName": "SEC EDGAR",
+      "title": "Ashgrove Utilities Corp. Form 8-K, Item 8.01 dividend declaration",
+      "summary": "Filing text from EDGAR. Ashgrove Utilities filed an 8-K declaring a quarterly dividend of 0.42 dollars per share, payable next quarter to holders of record at month end.",
+      "content": "Filing text from EDGAR. Ashgrove Utilities filed an 8-K declaring a quarterly dividend of 0.42 dollars per share, payable next quarter to holders of record at month end.\n\nContext reported alongside the item is limited to what Ashgrove Utilities has said publicly so far.\n\nA dividend declaration in line with the prior quarter is administrative, not informative. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://sec.gov/Archives/edgar/data/1352931/ashgrove-utilities-corp-form-8-k-item-8-01-divid.htm",
+      "publishedAt": "2026-09-10T10:53:00.000Z",
+      "metadata": {
+        "cik": "1851062",
+        "formType": "10-Q",
+        "ticker": "ASHG"
+      }
+    },
+    {
+      "id": "itm-20260910-0031",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Chainlink slips 1.15% in quiet trading",
+      "summary": "Chainlink changed -1.15% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/chainlink",
+      "publishedAt": "2026-09-10T10:59:00.000Z",
+      "metadata": {
+        "symbol": "LINK",
+        "priceUsd": 18.86,
+        "change24hPct": -1.15,
+        "marketCapUsd": 568677543429,
+        "volume24hUsd": 7578665913
+      }
+    },
+    {
+      "id": "itm-20260910-0032",
+      "sourceType": "rss",
+      "sourceName": "LWN",
+      "title": "Deadline-aware scheduling lands in Linux 6.19",
+      "summary": "Reporting from LWN. The 6.19 merge window took the deadline-aware fair scheduler rework, which replaces the vruntime heuristic for latency-sensitive tasks with an explicit per-task deadline.",
+      "content": "Reporting from LWN. The 6.19 merge window took the deadline-aware fair scheduler rework, which replaces the vruntime heuristic for latency-sensitive tasks with an explicit per-task deadline.\n\nBenchmarks on throughput-bound server workloads show a 1 to 2% regression in some configurations.\n\nInteractive and audio workloads get bounded latency without the tuning ritual that scheduler-sensitive deployments have relied on. Further reporting is expected as Linux Kernel and the affected downstream projects respond.",
+      "url": "https://lwn.example.com/deadline-aware-scheduling-lands-in-linux-6-19",
+      "publishedAt": "2026-09-10T11:36:00.000Z",
+      "metadata": {
+        "author": "R. Delacroix",
+        "wordCount": 960,
+        "section": "technology"
+      }
+    },
+    {
+      "id": "itm-20260910-0033",
+      "sourceType": "reddit",
+      "sourceName": "r/node",
+      "title": "Has anyone else lost rows after upgrading Sable ORM?",
+      "summary": "Community thread in r/node. An issue filed against sable-orm 6.2.0 reports that batched upserts silently discard rows when the batch exceeds the connection pool size, with a 40-line reproduction against PostgreSQL 17.",
+      "url": "https://reddit.com/r/node/comments/g3ty/has-anyone-else-lost-rows-after-upgrading-sable-",
+      "publishedAt": "2026-09-10T12:04:00.000Z",
+      "metadata": {
+        "subreddit": "node",
+        "upvotes": 4184,
+        "commentCount": 337,
+        "flair": "News"
+      }
+    },
+    {
+      "id": "itm-20260910-0034",
+      "sourceType": "rss",
+      "sourceName": "Stratechery",
+      "title": "How the revised density threshold reshapes the mid-tier market",
+      "summary": "Analysis from Stratechery. Vendors that engineered products to sit just under the old threshold now need licences for inventory that is already built.",
+      "content": "Analysis from Stratechery. An interim final rule extends licence requirements to accelerators above a revised performance-density threshold, capturing several mid-tier parts that were previously exempt.\n\nThe rule takes effect in thirty days with no general licence for existing orders.\n\nVendors that engineered products to sit just under the old threshold now need licences for inventory that is already built. Further reporting is expected as Bureau of Industry and Security and the affected downstream projects respond.",
+      "url": "https://stratechery.example.com/how-the-revised-density-threshold-reshapes-the-m",
+      "publishedAt": "2026-09-10T12:05:00.000Z",
+      "metadata": {
+        "author": "R. Delacroix",
+        "wordCount": 2310,
+        "section": "markets"
+      }
+    },
+    {
+      "id": "itm-20260910-0035",
+      "sourceType": "rss",
+      "sourceName": "CoinDesk",
+      "title": "Stablecoin issuers face daily reserve attestation",
+      "summary": "Reporting from CoinDesk. The final rule requires payment stablecoin issuers above 10 billion dollars in circulation to publish daily third-party attested reserve composition and to hold at least 80% in overnight instruments.",
+      "content": "Reporting from CoinDesk. The final rule requires payment stablecoin issuers above 10 billion dollars in circulation to publish daily third-party attested reserve composition and to hold at least 80% in overnight instruments.\n\nCompliance is required within one hundred and eighty days of publication.\n\nTwo of the three largest issuers currently publish monthly and hold longer-duration paper, so this forces a portfolio change, not just a reporting change. Further reporting is expected as Financial Stability Board and the affected downstream projects respond.",
+      "url": "https://coindesk.example.com/stablecoin-issuers-face-daily-reserve-attestatio",
+      "publishedAt": "2026-09-10T12:17:00.000Z",
+      "metadata": {
+        "author": "T. Abadi",
+        "wordCount": 1605,
+        "section": "technology"
+      }
+    },
+    {
+      "id": "itm-20260910-0036",
+      "sourceType": "reddit",
+      "sourceName": "r/devops",
+      "title": "Six hours in and our autoscaling is still frozen in us-east-2",
+      "summary": "Community thread in r/devops. A failed certificate rotation in the us-east-2 control plane blocked all new instance launches, autoscaling and load balancer changes for six hours and eleven minutes, while running workloads were unaffected.",
+      "url": "https://reddit.com/r/devops/comments/j3wn/six-hours-in-and-our-autoscaling-is-still-frozen",
+      "publishedAt": "2026-09-10T12:32:00.000Z",
+      "metadata": {
+        "subreddit": "devops",
+        "upvotes": 60,
+        "commentCount": 666,
+        "flair": "Resource"
+      }
+    },
+    {
+      "id": "itm-20260910-0037",
+      "sourceType": "reddit",
+      "sourceName": "r/CryptoCurrency",
+      "title": "Daily attestation is going to hurt the second-largest issuer",
+      "summary": "Community thread in r/CryptoCurrency. The final rule requires payment stablecoin issuers above 10 billion dollars in circulation to publish daily third-party attested reserve composition and to hold at least 80% in overnight instruments.",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/jsfm/daily-attestation-is-going-to-hurt-the-second-la",
+      "publishedAt": "2026-09-10T12:36:00.000Z",
+      "metadata": {
+        "subreddit": "CryptoCurrency",
+        "upvotes": 1183,
+        "commentCount": 674,
+        "flair": "Discussion"
+      }
+    },
+    {
+      "id": "itm-20260910-0038",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "The 6.19 scheduler rework finally kills vruntime tuning",
+      "summary": "Front page discussion thread. The 6.19 merge window took the deadline-aware fair scheduler rework, which replaces the vruntime heuristic for latency-sensitive tasks with an explicit per-task deadline.",
+      "url": "https://news.ycombinator.com/item?id=41122920",
+      "publishedAt": "2026-09-10T12:44:00.000Z",
+      "metadata": {
+        "score": 758,
+        "commentCount": 110,
+        "hnId": 42577766,
+        "domain": "linuxkernel.example.com"
+      }
+    },
+    {
+      "id": "itm-20260910-0039",
+      "sourceType": "web",
+      "sourceName": "Local Bulletin",
+      "title": "Weekend market returns to the town square",
+      "summary": "Community events notice.",
+      "url": "https://localbulletin.example.com/weekend-market-returns-to-the-town-square",
+      "publishedAt": "2026-09-10T13:05:00.000Z",
+      "metadata": {
+        "author": "K. Mensah",
+        "wordCount": 1038
+      }
+    },
+    {
+      "id": "itm-20260910-0040",
+      "sourceType": "rss",
+      "sourceName": "Wellness Digest",
+      "title": "Six stretches for people who sit all day",
+      "summary": "Illustrated stretching routine.",
+      "url": "https://wellnessdigest.example.com/six-stretches-for-people-who-sit-all-day",
+      "publishedAt": "2026-09-10T13:17:00.000Z",
+      "metadata": {
+        "author": "L. Rossi",
+        "wordCount": 1100
+      }
+    },
+    {
+      "id": "itm-20260910-0041",
+      "sourceType": "rss",
+      "sourceName": "Screen Report",
+      "title": "Box office: sequel opens softer than tracking suggested",
+      "summary": "Weekend box office figures for a film franchise.",
+      "url": "https://screenreport.example.com/box-office-sequel-opens-softer-than-tracking-sug",
+      "publishedAt": "2026-09-10T13:35:00.000Z",
+      "metadata": {
+        "author": "D. Moreau",
+        "wordCount": 1344
+      }
+    },
+    {
+      "id": "itm-20260910-0042",
+      "sourceType": "arxiv",
+      "sourceName": "arXiv cs.LG",
+      "title": "Power-capping-induced idle time in production accelerator clusters",
+      "summary": "Preprint posted to arXiv. A measurement study across four clusters finds accelerators idling 11% of wall-clock time because of rack-level power capping rather than scheduling.",
+      "content": "Preprint posted to arXiv. A measurement study across four clusters finds accelerators idling 11% of wall-clock time because of rack-level power capping rather than scheduling.\n\nContext reported alongside the item is limited to what Ridgeway University has said publicly so far.\n\nUtilisation losses are being mis-attributed to schedulers when the cause is upstream of the rack. Further reporting is expected as Ridgeway University and the affected downstream projects respond.",
+      "url": "https://arxiv.org/abs/2609.08851",
+      "publishedAt": "2026-09-10T13:36:00.000Z",
+      "metadata": {
+        "arxivId": "2609.19324",
+        "primaryCategory": "cs.CL",
+        "authorCount": 13,
+        "version": 2
+      }
+    },
+    {
+      "id": "itm-20260910-0043",
+      "sourceType": "web",
+      "sourceName": "Financial Stability Board Newsroom",
+      "title": "Final rule on payment stablecoin reserve disclosure",
+      "summary": "Financial Stability Board published this as a primary source document. The final rule requires payment stablecoin issuers above 10 billion dollars in circulation to publish daily third-party attested reserve composition and to hold at least 80% in overnight instruments.",
+      "content": "Financial Stability Board published this as a primary source document. The final rule requires payment stablecoin issuers above 10 billion dollars in circulation to publish daily third-party attested reserve composition and to hold at least 80% in overnight instruments.\n\nCompliance is required within one hundred and eighty days of publication.\n\nTwo of the three largest issuers currently publish monthly and hold longer-duration paper, so this forces a portfolio change, not just a reporting change. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://financialstabilityboardnewsroom.example.com/final-rule-on-payment-stablecoin-reserve-disclos",
+      "publishedAt": "2026-09-10T13:55:00.000Z",
+      "metadata": {
+        "author": "Financial Stability Board Communications",
+        "wordCount": 772
+      }
+    },
+    {
+      "id": "itm-20260910-0044",
+      "sourceType": "reddit",
+      "sourceName": "r/DIY",
+      "title": "Built a bookshelf from reclaimed scaffold boards",
+      "summary": "Woodworking project write-up with photos.",
+      "url": "https://rdiy.example.com/built-a-bookshelf-from-reclaimed-scaffold-boards",
+      "publishedAt": "2026-09-10T14:11:00.000Z",
+      "metadata": {
+        "subreddit": "DIY",
+        "upvotes": 12064,
+        "commentCount": 1235
+      }
+    },
+    {
+      "id": "itm-20260910-0045",
+      "sourceType": "semantic-scholar",
+      "sourceName": "Semantic Scholar",
+      "title": "Fenwick Quantum group: million-cycle error-corrected memory experiment",
+      "summary": "Indexed bibliographic record. A distance-9 surface code logical qubit held a logical error rate of 1.1e-7 per cycle across one million cycles, the first published run to stay below threshold for that duration.",
+      "url": "https://semanticscholar.org/paper/215bf67b",
+      "publishedAt": "2026-09-10T14:11:00.000Z",
+      "metadata": {
+        "citationCount": 18,
+        "influentialCitationCount": 4,
+        "fieldsOfStudy": [
+          "Computer Science"
+        ]
+      }
+    },
+    {
+      "id": "itm-20260910-0046",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "The surface code duration result is the one that mattered",
+      "summary": "Front page discussion thread. A distance-9 surface code logical qubit held a logical error rate of 1.1e-7 per cycle across one million cycles, the first published run to stay below threshold for that duration.",
+      "url": "https://news.ycombinator.com/item?id=44909311",
+      "publishedAt": "2026-09-10T14:19:00.000Z",
+      "metadata": {
+        "score": 655,
+        "commentCount": 220,
+        "hnId": 43794427,
+        "domain": "fenwickquantum.example.com"
+      }
+    },
+    {
+      "id": "itm-20260910-0047",
+      "sourceType": "rss",
+      "sourceName": "PR Newswire",
+      "title": "Ashgrove Utilities declares quarterly dividend of 0.42 dollars",
+      "summary": "Reporting from PR Newswire. Ashgrove Utilities filed an 8-K declaring a quarterly dividend of 0.42 dollars per share, payable next quarter to holders of record at month end.",
+      "content": "Reporting from PR Newswire. Ashgrove Utilities filed an 8-K declaring a quarterly dividend of 0.42 dollars per share, payable next quarter to holders of record at month end.\n\nContext reported alongside the item is limited to what Ashgrove Utilities has said publicly so far.\n\nA dividend declaration in line with the prior quarter is administrative, not informative. Further reporting is expected as Ashgrove Utilities and the affected downstream projects respond.",
+      "url": "https://prnewswire.example.com/ashgrove-utilities-declares-quarterly-dividend-o",
+      "publishedAt": "2026-09-10T14:30:00.000Z",
+      "metadata": {
+        "author": "S. Nakamura",
+        "wordCount": 848,
+        "section": "policy"
+      }
+    },
+    {
+      "id": "itm-20260910-0048",
+      "sourceType": "rss",
+      "sourceName": "Pet Corner",
+      "title": "Signs your cat is bored and what to do about it",
+      "summary": "Pet behaviour advice.",
+      "url": "https://petcorner.example.com/signs-your-cat-is-bored-and-what-to-do-about-it",
+      "publishedAt": "2026-09-10T15:00:00.000Z",
+      "metadata": {
+        "author": "L. Rossi",
+        "wordCount": 992
+      }
+    },
+    {
+      "id": "itm-20260910-0049",
+      "sourceType": "rss",
+      "sourceName": "Auto Trends",
+      "title": "First drive: the updated compact crossover is fine, mostly",
+      "summary": "Consumer vehicle review covering ride and interior.",
+      "url": "https://autotrends.example.com/first-drive-the-updated-compact-crossover-is-fin",
+      "publishedAt": "2026-09-10T15:16:00.000Z",
+      "metadata": {
+        "author": "L. Rossi",
+        "wordCount": 636
+      }
+    },
+    {
+      "id": "itm-20260910-0050",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Avalanche slips 0.01% in quiet trading",
+      "summary": "Avalanche changed -0.01% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/avalanche",
+      "publishedAt": "2026-09-10T15:40:00.000Z",
+      "metadata": {
+        "symbol": "AVAX",
+        "priceUsd": 32.75,
+        "change24hPct": -0.01,
+        "marketCapUsd": 1271252988309,
+        "volume24hUsd": 18591226976
+      }
+    },
+    {
+      "id": "itm-20260910-0051",
+      "sourceType": "github",
+      "sourceName": "github.com/quarrystone/quarrystone",
+      "title": "quarrystone: reject replication slot creation without channel binding",
+      "summary": "Repository activity on quarrystone/quarrystone. CVE-2026-41882 allows an unauthenticated client to open a logical replication slot on Quarrystone 16 and 17 when scram channel binding is disabled, exposing the full write-ahead log.",
+      "content": "Repository activity on quarrystone/quarrystone. CVE-2026-41882 allows an unauthenticated client to open a logical replication slot on Quarrystone 16 and 17 when scram channel binding is disabled, exposing the full write-ahead log.\n\nPatched releases are available and a configuration-only mitigation exists.\n\nReading the write-ahead log is equivalent to reading every table, and the vulnerable configuration is the default in two popular container images. Further reporting is expected as Quarrystone and the affected downstream projects respond.",
+      "url": "https://github.com/quarrystone/quarrystone/issues/2760",
+      "publishedAt": "2026-09-10T15:47:00.000Z",
+      "metadata": {
+        "repo": "quarrystone/quarrystone",
+        "number": 5056,
+        "stars": 20985,
+        "openIssues": 633,
+        "labels": [
+          "bug"
+        ],
+        "state": "closed"
+      }
+    },
+    {
+      "id": "itm-20260910-0052",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Silent row loss in Sable ORM 6.2 batched upserts",
+      "summary": "Front page discussion thread. An issue filed against sable-orm 6.2.0 reports that batched upserts silently discard rows when the batch exceeds the connection pool size, with a 40-line reproduction against PostgreSQL 17.",
+      "url": "https://news.ycombinator.com/item?id=43525588",
+      "publishedAt": "2026-09-10T16:07:00.000Z",
+      "metadata": {
+        "score": 1287,
+        "commentCount": 218,
+        "hnId": 43544506,
+        "domain": "sable.example.com"
+      }
+    },
+    {
+      "id": "itm-20260910-0053",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Ask HN: is the Meridian long-context rumour credible, or a pricing trial balloon?",
+      "summary": "Front page discussion thread. Three people with knowledge of the roadmap describe an unreleased Meridian model with a two-million-token context window and a retrieval-free long-document mode, targeted at enterprise document review.",
+      "url": "https://news.ycombinator.com/item?id=42133334",
+      "publishedAt": "2026-09-10T16:20:00.000Z",
+      "metadata": {
+        "score": 209,
+        "commentCount": 180,
+        "hnId": 43150741,
+        "domain": "meridianlabs.example.com"
+      }
+    },
+    {
+      "id": "itm-20260910-0054",
+      "sourceType": "reddit",
+      "sourceName": "r/linux",
+      "title": "Ran the 6.19 scheduler on our audio box and jitter dropped by half",
+      "summary": "Community thread in r/linux. The 6.19 merge window took the deadline-aware fair scheduler rework, which replaces the vruntime heuristic for latency-sensitive tasks with an explicit per-task deadline.",
+      "url": "https://reddit.com/r/linux/comments/7b6c/ran-the-6-19-scheduler-on-our-audio-box-and-jitt",
+      "publishedAt": "2026-09-10T16:21:00.000Z",
+      "metadata": {
+        "subreddit": "linux",
+        "upvotes": 3336,
+        "commentCount": 532,
+        "flair": "Discussion"
+      }
+    },
+    {
+      "id": "itm-20260910-0055",
+      "sourceType": "rss",
+      "sourceName": "Datacenter Dynamics",
+      "title": "Anvil defers two campuses, blames substation interconnection queue",
+      "summary": "Reporting from Datacenter Dynamics. Anvil Data Centres told investors it is deferring two campus builds because the local utility cannot energise the substations before 2029.",
+      "content": "Reporting from Datacenter Dynamics. Anvil Data Centres told investors it is deferring two campus builds because the local utility cannot energise the substations before 2029.\n\nContext reported alongside the item is limited to what Anvil Data Centres has said publicly so far.\n\nInterconnection queue length, not capital, is now the binding constraint on the build. Further reporting is expected as Anvil Data Centres and the affected downstream projects respond.",
+      "url": "https://datacenterdynamics.example.com/anvil-defers-two-campuses-blames-substation-inte",
+      "publishedAt": "2026-09-10T16:24:00.000Z",
+      "metadata": {
+        "author": "R. Delacroix",
+        "wordCount": 1119,
+        "section": "markets"
+      }
+    },
+    {
+      "id": "itm-20260910-0056",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Vantiq's renewal slippage looks like a sales process problem",
+      "summary": "Front page discussion thread. Vantiq Systems cut full-year revenue guidance by 9% and said the shortfall is concentrated in multi-year enterprise renewals slipping out of the quarter rather than in churn.",
+      "url": "https://news.ycombinator.com/item?id=42888877",
+      "publishedAt": "2026-09-10T16:34:00.000Z",
+      "metadata": {
+        "score": 970,
+        "commentCount": 605,
+        "hnId": 42622956,
+        "domain": "vantiqsystems.example.com"
+      }
+    },
+    {
+      "id": "itm-20260910-0057",
+      "sourceType": "rss",
+      "sourceName": "Stratechery",
+      "title": "Reading the tea leaves on context-window escalation",
+      "summary": "Analysis from Stratechery. If accurate, it would reset the practical ceiling for single-pass document analysis and put pressure on retrieval-augmented vendors whose value rests on context scarcity.",
+      "content": "Analysis from Stratechery. Three people with knowledge of the roadmap describe an unreleased Meridian model with a two-million-token context window and a retrieval-free long-document mode, targeted at enterprise document review.\n\nMeridian Labs has declined to comment, and no model card, pricing page or API changelog entry exists yet.\n\nIf accurate, it would reset the practical ceiling for single-pass document analysis and put pressure on retrieval-augmented vendors whose value rests on context scarcity. Further reporting is expected as Meridian Labs and the affected downstream projects respond.",
+      "url": "https://stratechery.example.com/reading-the-tea-leaves-on-context-window-escalat",
+      "publishedAt": "2026-09-10T16:49:00.000Z",
+      "metadata": {
+        "author": "S. Nakamura",
+        "wordCount": 1550,
+        "section": "technology"
+      }
+    },
+    {
+      "id": "itm-20260910-0058",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "The 80% overnight requirement is the binding part of the stablecoin rule",
+      "summary": "Front page discussion thread. The final rule requires payment stablecoin issuers above 10 billion dollars in circulation to publish daily third-party attested reserve composition and to hold at least 80% in overnight instruments.",
+      "url": "https://news.ycombinator.com/item?id=44940537",
+      "publishedAt": "2026-09-10T17:05:00.000Z",
+      "metadata": {
+        "score": 352,
+        "commentCount": 26,
+        "hnId": 42177391,
+        "domain": "financialstabilityboard.example.com"
+      }
+    },
+    {
+      "id": "itm-20260910-0059",
+      "sourceType": "rss",
+      "sourceName": "The Register",
+      "title": "Northbridge outage freezes scaling for six hours",
+      "summary": "Reporting from The Register. A failed certificate rotation in the us-east-2 control plane blocked all new instance launches, autoscaling and load balancer changes for six hours and eleven minutes, while running workloads were unaffected.",
+      "content": "Reporting from The Register. A failed certificate rotation in the us-east-2 control plane blocked all new instance launches, autoscaling and load balancer changes for six hours and eleven minutes, while running workloads were unaffected.\n\nNorthbridge has committed to a public post-mortem within five business days.\n\nAny customer whose failover plan depends on launching capacity discovered that the control plane is the single point of failure, not the data plane. Further reporting is expected as Northbridge Cloud and the affected downstream projects respond.",
+      "url": "https://theregister.example.com/northbridge-outage-freezes-scaling-for-six-hours",
+      "publishedAt": "2026-09-10T17:08:00.000Z",
+      "metadata": {
+        "author": "A. Ferreira",
+        "wordCount": 2300,
+        "section": "business"
+      }
+    },
+    {
+      "id": "itm-20260910-0060",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Unauthenticated WAL access in Quarrystone 16 and 17",
+      "summary": "Front page discussion thread. CVE-2026-41882 allows an unauthenticated client to open a logical replication slot on Quarrystone 16 and 17 when scram channel binding is disabled, exposing the full write-ahead log.",
+      "url": "https://news.ycombinator.com/item?id=44448772",
+      "publishedAt": "2026-09-10T17:17:00.000Z",
+      "metadata": {
+        "score": 947,
+        "commentCount": 97,
+        "hnId": 42122537,
+        "domain": "quarrystone.example.com"
+      }
+    },
+    {
+      "id": "itm-20260910-0061",
+      "sourceType": "reddit",
+      "sourceName": "r/LocalLLaMA",
+      "title": "Nimbus-7 runs on two consumer cards but read clause 4 before you deploy it",
+      "summary": "Community thread in r/LocalLLaMA. Aperture published Nimbus-7 weights for a 72B mixture-of-experts model under a licence that permits research and internal commercial use but forbids serving the model to third parties.",
+      "url": "https://reddit.com/r/LocalLLaMA/comments/eaun/nimbus-7-runs-on-two-consumer-cards-but-read-cla",
+      "publishedAt": "2026-09-10T17:17:00.000Z",
+      "metadata": {
+        "subreddit": "LocalLLaMA",
+        "upvotes": 1639,
+        "commentCount": 569,
+        "flair": "Question"
+      }
+    },
+    {
+      "id": "itm-20260910-0062",
+      "sourceType": "coingecko",
+      "sourceName": "CoinGecko",
+      "title": "Ethereum slips 2.37% in quiet trading",
+      "summary": "Ethereum changed -2.37% over twenty-four hours on volume in line with its thirty-day average. No catalyst reported.",
+      "url": "https://coingecko.com/coins/ethereum",
+      "publishedAt": "2026-09-10T17:35:00.000Z",
+      "metadata": {
+        "symbol": "ETH",
+        "priceUsd": 3719.7,
+        "change24hPct": -2.37,
+        "marketCapUsd": 505895826678,
+        "volume24hUsd": 168117683
+      }
+    },
+    {
+      "id": "itm-20260910-0063",
+      "sourceType": "github",
+      "sourceName": "github.com/torvalds/linux",
+      "title": "linux: merge deadline-aware fair scheduler for 6.19",
+      "summary": "Repository activity on torvalds/linux. The 6.19 merge window took the deadline-aware fair scheduler rework, which replaces the vruntime heuristic for latency-sensitive tasks with an explicit per-task deadline.",
+      "content": "Repository activity on torvalds/linux. The 6.19 merge window took the deadline-aware fair scheduler rework, which replaces the vruntime heuristic for latency-sensitive tasks with an explicit per-task deadline.\n\nBenchmarks on throughput-bound server workloads show a 1 to 2% regression in some configurations.\n\nInteractive and audio workloads get bounded latency without the tuning ritual that scheduler-sensitive deployments have relied on. Further reporting is expected as Linux Kernel and the affected downstream projects respond.",
+      "url": "https://github.com/torvalds/linux/issues/9580",
+      "publishedAt": "2026-09-10T17:46:00.000Z",
+      "metadata": {
+        "repo": "torvalds/linux",
+        "number": 9616,
+        "stars": 66325,
+        "openIssues": 1269,
+        "labels": [
+          "release"
+        ],
+        "state": "open"
+      }
+    },
+    {
+      "id": "itm-20260910-0064",
+      "sourceType": "sec",
+      "sourceName": "SEC EDGAR",
+      "title": "Vantiq Systems Inc. Form 8-K, Item 2.02 results and revised outlook",
+      "summary": "Filing text from EDGAR. Vantiq Systems cut full-year revenue guidance by 9% and said the shortfall is concentrated in multi-year enterprise renewals slipping out of the quarter rather than in churn.",
+      "content": "Filing text from EDGAR. Vantiq Systems cut full-year revenue guidance by 9% and said the shortfall is concentrated in multi-year enterprise renewals slipping out of the quarter rather than in churn.\n\nNet revenue retention was disclosed at 104%, down from 112% a year earlier.\n\nSlippage rather than churn means the revenue may return, but it also means the company cannot predict its own renewal timing. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://sec.gov/Archives/edgar/data/1509184/vantiq-systems-inc-form-8-k-item-2-02-results-an.htm",
+      "publishedAt": "2026-09-10T17:59:00.000Z",
+      "metadata": {
+        "cik": "1621717",
+        "formType": "10-Q",
+        "ticker": "VANT"
+      }
+    },
+    {
+      "id": "itm-20260910-0065",
+      "sourceType": "rss",
+      "sourceName": "CNBC",
+      "title": "Vantiq cuts outlook as enterprise renewals slip",
+      "summary": "Reporting from CNBC. Vantiq Systems cut full-year revenue guidance by 9% and said the shortfall is concentrated in multi-year enterprise renewals slipping out of the quarter rather than in churn.",
+      "content": "Reporting from CNBC. Vantiq Systems cut full-year revenue guidance by 9% and said the shortfall is concentrated in multi-year enterprise renewals slipping out of the quarter rather than in churn.\n\nNet revenue retention was disclosed at 104%, down from 112% a year earlier.\n\nSlippage rather than churn means the revenue may return, but it also means the company cannot predict its own renewal timing. Further reporting is expected as Vantiq Systems and the affected downstream projects respond.",
+      "url": "https://cnbc.example.com/vantiq-cuts-outlook-as-enterprise-renewals-slip",
+      "publishedAt": "2026-09-10T18:06:00.000Z",
+      "metadata": {
+        "author": "M. Lindqvist",
+        "wordCount": 2085,
+        "section": "markets"
+      }
+    },
+    {
+      "id": "itm-20260910-0066",
+      "sourceType": "rss",
+      "sourceName": "Gardening Monthly",
+      "title": "What to plant now for an early spring",
+      "summary": "Seasonal planting calendar.",
+      "url": "https://gardeningmonthly.example.com/what-to-plant-now-for-an-early-spring",
+      "publishedAt": "2026-09-10T18:12:00.000Z",
+      "metadata": {
+        "author": "H. Yilmaz",
+        "wordCount": 813
+      }
+    },
+    {
+      "id": "itm-20260910-0067",
+      "sourceType": "rss",
+      "sourceName": "The Information",
+      "title": "Meridian is said to be testing a two-million-token model with enterprise customers",
+      "summary": "Reporting from The Information. Three people with knowledge of the roadmap describe an unreleased Meridian model with a two-million-token context window and a retrieval-free long-document mode, targeted at enterprise document review.",
+      "content": "Reporting from The Information. Three people with knowledge of the roadmap describe an unreleased Meridian model with a two-million-token context window and a retrieval-free long-document mode, targeted at enterprise document review.\n\nMeridian Labs has declined to comment, and no model card, pricing page or API changelog entry exists yet.\n\nIf accurate, it would reset the practical ceiling for single-pass document analysis and put pressure on retrieval-augmented vendors whose value rests on context scarcity. Further reporting is expected as Meridian Labs and the affected downstream projects respond.",
+      "url": "https://theinformation.example.com/meridian-is-said-to-be-testing-a-two-million-tok",
+      "publishedAt": "2026-09-10T18:48:00.000Z",
+      "metadata": {
+        "author": "M. Lindqvist",
+        "wordCount": 542,
+        "section": "markets"
+      }
+    },
+    {
+      "id": "itm-20260910-0068",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Rust 1.94 makes the parallel front end the default",
+      "summary": "Front page discussion thread. Rust 1.94 turns on the parallel compiler front end by default, reporting a 22% median reduction in cold check time across the crater run, and stabilises three long-pending const APIs.",
+      "url": "https://news.ycombinator.com/item?id=44681812",
+      "publishedAt": "2026-09-10T18:57:00.000Z",
+      "metadata": {
+        "score": 215,
+        "commentCount": 460,
+        "hnId": 41056642,
+        "domain": "rustproject.example.com"
+      }
+    },
+    {
+      "id": "itm-20260910-0069",
+      "sourceType": "web",
+      "sourceName": "Aperture Research Newsroom",
+      "title": "Nimbus-7: weights, evaluations and licence",
+      "summary": "Aperture Research published this as a primary source document. Aperture published Nimbus-7 weights for a 72B mixture-of-experts model under a licence that permits research and internal commercial use but forbids serving the model to third parties.",
+      "content": "Aperture Research published this as a primary source document. Aperture published Nimbus-7 weights for a 72B mixture-of-experts model under a licence that permits research and internal commercial use but forbids serving the model to third parties.\n\nThe licence is not OSI-approved and the term open is used in the announcement anyway.\n\nThe weights are strong enough to matter and the licence is restrictive enough that hosting providers cannot use them, which is the whole point of the clause. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://apertureresearchnewsroom.example.com/nimbus-7-weights-evaluations-and-licence",
+      "publishedAt": "2026-09-10T18:58:00.000Z",
+      "metadata": {
+        "author": "Aperture Research Communications",
+        "wordCount": 1128
+      }
+    },
+    {
+      "id": "itm-20260910-0070",
+      "sourceType": "rss",
+      "sourceName": "Culture Column",
+      "title": "The return of the very long album",
+      "summary": "Music criticism piece.",
+      "url": "https://culturecolumn.example.com/the-return-of-the-very-long-album",
+      "publishedAt": "2026-09-10T19:16:00.000Z",
+      "metadata": {
+        "author": "P. Andersson",
+        "wordCount": 625
+      }
+    },
+    {
+      "id": "itm-20260910-0071",
+      "sourceType": "github",
+      "sourceName": "github.com/rust-lang/rust",
+      "title": "rust: stabilize parallel front end by default for 1.94",
+      "summary": "Repository activity on rust-lang/rust. Rust 1.94 turns on the parallel compiler front end by default, reporting a 22% median reduction in cold check time across the crater run, and stabilises three long-pending const APIs.",
+      "content": "Repository activity on rust-lang/rust. Rust 1.94 turns on the parallel compiler front end by default, reporting a 22% median reduction in cold check time across the crater run, and stabilises three long-pending const APIs.\n\nCrates relying on front-end ordering side effects may see new diagnostics ordering in CI logs.\n\nFront-end parallelism is the first compile-time improvement in years that helps incremental workflows rather than only clean builds. Further reporting is expected as Rust Project and the affected downstream projects respond.",
+      "url": "https://github.com/rust-lang/rust/issues/8353",
+      "publishedAt": "2026-09-10T20:33:00.000Z",
+      "metadata": {
+        "repo": "rust-lang/rust",
+        "number": 7353,
+        "stars": 15628,
+        "openIssues": 107,
+        "labels": [
+          "bug"
+        ],
+        "state": "closed"
+      }
+    },
+    {
+      "id": "itm-20260910-0072",
+      "sourceType": "web",
+      "sourceName": "Rust Project Newsroom",
+      "title": "Announcing Rust 1.94.0",
+      "summary": "Rust Project published this as a primary source document. Rust 1.94 turns on the parallel compiler front end by default, reporting a 22% median reduction in cold check time across the crater run, and stabilises three long-pending const APIs.",
+      "content": "Rust Project published this as a primary source document. Rust 1.94 turns on the parallel compiler front end by default, reporting a 22% median reduction in cold check time across the crater run, and stabilises three long-pending const APIs.\n\nCrates relying on front-end ordering side effects may see new diagnostics ordering in CI logs.\n\nFront-end parallelism is the first compile-time improvement in years that helps incremental workflows rather than only clean builds. The document above is the authoritative record for this item; downstream coverage should be read against it.",
+      "url": "https://rustprojectnewsroom.example.com/announcing-rust-1-94-0",
+      "publishedAt": "2026-09-10T21:06:00.000Z",
+      "metadata": {
+        "author": "Rust Project Communications",
+        "wordCount": 1425
+      }
+    },
+    {
+      "id": "itm-20260910-0073",
+      "sourceType": "rss",
+      "sourceName": "Culture Column",
+      "title": "A museum show that rewards a second visit",
+      "summary": "Exhibition review.",
+      "url": "https://culturecolumn.example.com/a-museum-show-that-rewards-a-second-visit",
+      "publishedAt": "2026-09-10T21:13:00.000Z",
+      "metadata": {
+        "author": "L. Rossi",
+        "wordCount": 1095
+      }
+    },
+    {
+      "id": "itm-20260910-0074",
+      "sourceType": "rss",
+      "sourceName": "Retail Watch",
+      "title": "Supermarket loyalty schemes compared",
+      "summary": "Consumer price comparison of grocery loyalty programmes.",
+      "url": "https://retailwatch.example.com/supermarket-loyalty-schemes-compared",
+      "publishedAt": "2026-09-10T21:13:00.000Z",
+      "metadata": {
+        "author": "K. Mensah",
+        "wordCount": 969
+      }
+    },
+    {
+      "id": "itm-20260910-0075",
+      "sourceType": "github",
+      "sourceName": "github.com/aperture/nimbus-7",
+      "title": "nimbus-7: initial weight release, 72B MoE, 8 active experts",
+      "summary": "Repository activity on aperture/nimbus-7. Aperture published Nimbus-7 weights for a 72B mixture-of-experts model under a licence that permits research and internal commercial use but forbids serving the model to third parties.",
+      "content": "Repository activity on aperture/nimbus-7. Aperture published Nimbus-7 weights for a 72B mixture-of-experts model under a licence that permits research and internal commercial use but forbids serving the model to third parties.\n\nThe licence is not OSI-approved and the term open is used in the announcement anyway.\n\nThe weights are strong enough to matter and the licence is restrictive enough that hosting providers cannot use them, which is the whole point of the clause. Further reporting is expected as Aperture Research and the affected downstream projects respond.",
+      "url": "https://github.com/aperture/nimbus-7/issues/3332",
+      "publishedAt": "2026-09-10T21:16:00.000Z",
+      "metadata": {
+        "repo": "aperture/nimbus-7",
+        "number": 2363,
+        "stars": 79008,
+        "openIssues": 595,
+        "labels": [
+          "enhancement"
+        ],
+        "state": "closed"
+      }
+    },
+    {
+      "id": "itm-20260910-0076",
+      "sourceType": "hackernews",
+      "sourceName": "Hacker News",
+      "title": "Ask HN: what chair are you using?",
+      "summary": "Recurring low-signal furniture thread.",
+      "url": "https://hackernews.example.com/ask-hn-what-chair-are-you-using",
+      "publishedAt": "2026-09-10T21:26:00.000Z",
+      "metadata": {
+        "score": 38,
+        "commentCount": 29,
+        "hnId": 43070489
+      }
+    },
+    {
+      "id": "itm-20260910-0077",
+      "sourceType": "rss",
+      "sourceName": "InfoQ",
+      "title": "Report of data loss in Sable ORM batch writes",
+      "summary": "Reporting from InfoQ. An issue filed against sable-orm 6.2.0 reports that batched upserts silently discard rows when the batch exceeds the connection pool size, with a 40-line reproduction against PostgreSQL 17.",
+      "content": "Reporting from InfoQ. An issue filed against sable-orm 6.2.0 reports that batched upserts silently discard rows when the batch exceeds the connection pool size, with a 40-line reproduction against PostgreSQL 17.\n\nThe issue has not yet been triaged or labelled by a maintainer.\n\nSilent data loss in a widely used ORM is the failure class teams discover weeks later in reconciliation, not at deploy time. Further reporting is expected as Sable and the affected downstream projects respond.",
+      "url": "https://infoq.example.com/report-of-data-loss-in-sable-orm-batch-writes",
+      "publishedAt": "2026-09-10T21:31:00.000Z",
+      "metadata": {
+        "author": "A. Ferreira",
+        "wordCount": 1255,
+        "section": "business"
+      }
+    },
+    {
+      "id": "itm-20260910-0078",
+      "sourceType": "rss",
+      "sourceName": "Sports Desk",
+      "title": "Marathon organisers announce a new qualifying window",
+      "summary": "Amateur athletics scheduling notice.",
+      "url": "https://sportsdesk.example.com/marathon-organisers-announce-a-new-qualifying-wi",
+      "publishedAt": "2026-09-10T21:37:00.000Z",
+      "metadata": {
+        "author": "P. Andersson",
+        "wordCount": 1379
+      }
+    },
+    {
+      "id": "itm-20260910-0079",
+      "sourceType": "github",
+      "sourceName": "github.com/sable-data/sable-orm",
+      "title": "sable-orm 6.2.0: batched upsert silently drops rows past pool size",
+      "summary": "Repository activity on sable-data/sable-orm. An issue filed against sable-orm 6.2.0 reports that batched upserts silently discard rows when the batch exceeds the connection pool size, with a 40-line reproduction against PostgreSQL 17.",
+      "content": "Repository activity on sable-data/sable-orm. An issue filed against sable-orm 6.2.0 reports that batched upserts silently discard rows when the batch exceeds the connection pool size, with a 40-line reproduction against PostgreSQL 17.\n\nThe issue has not yet been triaged or labelled by a maintainer.\n\nSilent data loss in a widely used ORM is the failure class teams discover weeks later in reconciliation, not at deploy time. Further reporting is expected as Sable and the affected downstream projects respond.",
+      "url": "https://github.com/sable-data/sable-orm/issues/6679",
+      "publishedAt": "2026-09-10T21:40:00.000Z",
+      "metadata": {
+        "repo": "sable-data/sable-orm",
+        "number": 3990,
+        "stars": 73903,
+        "openIssues": 321,
+        "labels": [
+          "needs-triage"
+        ],
+        "state": "open"
+      }
+    }
+  ],
+  "facts": [
+    {
+      "factId": "fct-20260910-001",
+      "kind": "macro",
+      "label": "Initial jobless claims",
+      "value": 214000,
+      "unit": "persons",
+      "asOf": "2026-09-10T08:45:00.000Z",
+      "sourceItemId": "itm-20260910-0012",
+      "previousValue": 219000,
+      "changePct": -2.28
+    },
+    {
+      "factId": "fct-20260910-002",
+      "kind": "macro",
+      "label": "Initial jobless claims, four-week moving average",
+      "value": 216500,
+      "unit": "persons",
+      "asOf": "2026-09-10T08:45:00.000Z",
+      "sourceItemId": "itm-20260910-0012"
+    },
+    {
+      "factId": "fct-20260910-003",
+      "kind": "crypto",
+      "label": "Solana spot price",
+      "value": 184.03,
+      "unit": "usd",
+      "asOf": "2026-09-10T10:12:00.000Z",
+      "sourceItemId": "itm-20260910-0024",
+      "previousValue": 186.4,
+      "changePct": -1.27
+    },
+    {
+      "factId": "fct-20260910-004",
+      "kind": "crypto",
+      "label": "Dogecoin spot price",
+      "value": 0.1822,
+      "unit": "usd",
+      "asOf": "2026-09-10T10:38:00.000Z",
+      "sourceItemId": "itm-20260910-0026",
+      "previousValue": 0.187,
+      "changePct": -2.58
+    },
+    {
+      "factId": "fct-20260910-005",
+      "kind": "crypto",
+      "label": "Bitcoin spot price",
+      "value": 69914.94,
+      "unit": "usd",
+      "asOf": "2026-09-10T10:44:00.000Z",
+      "sourceItemId": "itm-20260910-0028",
+      "previousValue": 71240,
+      "changePct": -1.86
+    },
+    {
+      "factId": "fct-20260910-006",
+      "kind": "filing",
+      "label": "Ashgrove Utilities quarterly dividend per share",
+      "value": 0.42,
+      "unit": "usd",
+      "asOf": "2026-09-10T10:53:00.000Z",
+      "sourceItemId": "itm-20260910-0030",
+      "previousValue": 0.42
+    },
+    {
+      "factId": "fct-20260910-007",
+      "kind": "filing",
+      "label": "Ashgrove Utilities shares outstanding",
+      "value": 412300000,
+      "unit": "shares",
+      "asOf": "2026-09-10T10:53:00.000Z",
+      "sourceItemId": "itm-20260910-0030"
+    },
+    {
+      "factId": "fct-20260910-008",
+      "kind": "crypto",
+      "label": "Chainlink spot price",
+      "value": 18.86,
+      "unit": "usd",
+      "asOf": "2026-09-10T10:59:00.000Z",
+      "sourceItemId": "itm-20260910-0031",
+      "previousValue": 19.08,
+      "changePct": -1.15
+    },
+    {
+      "factId": "fct-20260910-009",
+      "kind": "crypto",
+      "label": "Avalanche spot price",
+      "value": 32.75,
+      "unit": "usd",
+      "asOf": "2026-09-10T15:40:00.000Z",
+      "sourceItemId": "itm-20260910-0050",
+      "previousValue": 32.75,
+      "changePct": -0.01
+    },
+    {
+      "factId": "fct-20260910-010",
+      "kind": "crypto",
+      "label": "Ethereum spot price",
+      "value": 3719.7,
+      "unit": "usd",
+      "asOf": "2026-09-10T17:35:00.000Z",
+      "sourceItemId": "itm-20260910-0062",
+      "previousValue": 3810,
+      "changePct": -2.37
+    }
+  ]
+}

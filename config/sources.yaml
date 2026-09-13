@@ -12,8 +12,13 @@ collectors:
     requiredSecrets: [MINIFLUX_API_KEY]
 
   web:
-    # Implemented as the "tavily" collector: web search / discovery.
-    enabled: true
+    # NOT a collector. Web research is a curator tool (`search_web`, routed
+    # Tavily -> Exa in src/research/), reached during curation with a story in
+    # hand, never a bulk feed pulled ahead of time. The entry stays so the
+    # timeout and rate limit have one home, but it must stay disabled: an
+    # enabled source with no collector behind it is reported as such by
+    # `unimplementedOutcomes` in src/pipeline/collection.ts.
+    enabled: false
     rateLimitPerMinute: 30
     timeoutMs: 15000
     pageSize: 10
@@ -36,7 +41,10 @@ collectors:
   arxiv:
     enabled: true
     rateLimitPerMinute: 20
-    timeoutMs: 15000
+    # arXiv's export API routinely takes 15-20s to answer when busy, and answers
+    # a burst with 429 + Retry-After. 15s turned normal slowness into a FAILED
+    # collector; 45s leaves room for the slow-but-successful case.
+    timeoutMs: 45000
     pageSize: 50
     requiredSecrets: []
 

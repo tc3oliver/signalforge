@@ -72,7 +72,13 @@ export class HackerNewsCollector implements Collector {
 			const idLists = await Promise.all(
 				LISTS.map((list) => fetchList(ctx, list, budget, bucket)),
 			);
-			const candidateIds = Array.from(new Set(idLists.flat()));
+			// Each HN list is up to 500 ids and every item costs its own request, so
+			// taking all three whole is ~1500 requests behind a 5/sec bucket -- five
+			// minutes for a source that is meant to be cheap enough to poll hourly.
+			// The lists are already ranked, so the head of each is the part worth
+			// having, and how much of it is an operator setting.
+			const perList = Math.max(1, ctx.sourceConfig.pageSize);
+			const candidateIds = Array.from(new Set(idLists.flatMap((ids) => ids.slice(0, perList))));
 			// Incremental: skip ids already seen via the cursor.
 			const newIds = candidateIds.filter((id) => !seenIds.has(id));
 

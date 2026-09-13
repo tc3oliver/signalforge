@@ -1,0 +1,96 @@
+{"ts":"2026-09-13T09:49:12.650Z","kind":"run.transition","from":"CREATED","to":"CURATING"}
+{"ts":"2026-09-13T09:49:14.976Z","kind":"tool_call","stage":"CURATOR","tool":"get_daily_inventory","date":"2026-09-12","totalItems":81,"itemsBySource":{"web":13,"hackernews":13,"reddit":12,"sec":2,"rss":20,"coingecko":6,"youtube":4,"github":8,"fred":2,"arxiv":1},"processedItems":0,"unseenItems":81,"storyCount":0}
+{"ts":"2026-09-13T09:49:17.269Z","kind":"tool_call","stage":"CURATOR","tool":"list_unseen_items","returned":50,"remaining":31}
+{"ts":"2026-09-13T09:49:19.245Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Basalt licence","hits":2}
+{"ts":"2026-09-13T09:49:19.250Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Keelson","hits":0}
+{"ts":"2026-09-13T09:49:19.255Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Meridian","hits":3}
+{"ts":"2026-09-13T09:49:19.259Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Kubernetes","hits":0}
+{"ts":"2026-09-13T09:49:21.316Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Corvid","hits":1}
+{"ts":"2026-09-13T09:49:21.321Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Sable","hits":2}
+{"ts":"2026-09-13T09:49:21.325Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Halyard","hits":2}
+{"ts":"2026-09-13T09:49:21.330Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Larkspur","hits":0}
+{"ts":"2026-09-13T09:49:23.734Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"CPI","hits":0}
+{"ts":"2026-09-13T09:49:23.739Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"benchmark contamination","hits":1}
+{"ts":"2026-09-13T09:49:23.743Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Tessellate","hits":0}
+{"ts":"2026-09-13T09:49:25.509Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Northbridge","hits":1}
+{"ts":"2026-09-13T09:49:25.514Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"optimizer","hits":0}
+{"ts":"2026-09-13T09:49:25.518Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Ashgrove","hits":2}
+{"ts":"2026-09-13T09:49:25.522Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"rate","hits":0}
+{"ts":"2026-09-13T09:49:28.825Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Meridian","hits":5}
+{"ts":"2026-09-13T09:49:28.832Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Keelson","hits":2}
+{"ts":"2026-09-13T09:49:28.837Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Tessellate","hits":5}
+{"ts":"2026-09-13T09:49:28.845Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Kubernetes","hits":4}
+{"ts":"2026-09-13T09:49:30.848Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"shelter","hits":8}
+{"ts":"2026-09-13T09:49:30.857Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Corvid","hits":4}
+{"ts":"2026-09-13T09:49:30.862Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Sable","hits":3}
+{"ts":"2026-09-13T09:49:30.867Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Larkspur","hits":4}
+{"ts":"2026-09-13T09:49:33.096Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"contam-audit","hits":1}
+{"ts":"2026-09-13T09:49:33.101Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Northbridge","hits":1}
+{"ts":"2026-09-13T09:49:33.106Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Yannic","hits":1}
+{"ts":"2026-09-13T09:49:33.109Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"Halyard","hits":2}
+{"ts":"2026-09-13T09:49:35.244Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"1-bit optimizer","hits":3}
+{"ts":"2026-09-13T09:49:35.252Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"evaluation suites","hits":4}
+{"ts":"2026-09-13T09:49:35.258Z","kind":"tool_call","stage":"CURATOR","tool":"search_items","query":"power envelope","hits":2}
+{"ts":"2026-09-13T09:49:37.013Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"1-bit optimizer","hits":5}
+{"ts":"2026-09-13T09:49:37.019Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Northbridge Cloud introduced","hits":1}
+{"ts":"2026-09-13T09:49:37.024Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"audit of six standard evaluation suites","hits":0}
+{"ts":"2026-09-13T09:49:38.442Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"jobless claims","hits":1}
+{"ts":"2026-09-13T09:49:40.483Z","kind":"tool_call","stage":"CURATOR","tool":"list_unseen_items","returned":31,"remaining":0}
+{"ts":"2026-09-13T09:49:42.474Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":2}
+{"ts":"2026-09-13T09:49:44.607Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":1}
+{"ts":"2026-09-13T09:49:46.236Z","kind":"tool_call","stage":"CURATOR","tool":"get_item_detail","count":2}
+{"ts":"2026-09-13T09:49:47.818Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"fed","hits":0}
+{"ts":"2026-09-13T09:49:47.823Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"governors","hits":0}
+{"ts":"2026-09-13T09:49:49.289Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"basalt-engine-revenue-share-rumor","hits":2}
+{"ts":"2026-09-13T09:49:50.859Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"meridian-long-context-enterprise-model","hits":2}
+{"ts":"2026-09-13T09:49:52.439Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"talos-corvid-robotics-acquisition-rumor","hits":1}
+{"ts":"2026-09-13T09:49:53.991Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"sable-orm-batched-upsert-data-loss","hits":2}
+{"ts":"2026-09-13T09:49:55.402Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"one-bit-optimizer-sign-sgd-adamw","hits":1}
+{"ts":"2026-09-13T09:49:56.913Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"halyard-2-0-runtime-abi-freeze","hits":1}
+{"ts":"2026-09-13T09:49:59.047Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"ashgrove-utilities-quarterly-dividend","hits":2}
+{"ts":"2026-09-13T09:50:00.736Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"us-jobless-claims-weekly","hits":2}
+{"ts":"2026-09-13T09:50:02.814Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Keelson Bridge","hits":0}
+{"ts":"2026-09-13T09:50:02.819Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Larkspur","hits":0}
+{"ts":"2026-09-13T09:50:02.824Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Kubernetes","hits":0}
+{"ts":"2026-09-13T09:50:02.829Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Core CPI","hits":0}
+{"ts":"2026-09-13T09:50:04.929Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"kestrel","hits":0}
+{"ts":"2026-09-13T09:50:06.555Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"Tessellate","hits":0}
+{"ts":"2026-09-13T09:50:08.216Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"power","hits":2}
+{"ts":"2026-09-13T09:50:10.211Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"watt","hits":0}
+{"ts":"2026-09-13T09:50:12.386Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","text":"northbridge-cloud-power-metered-compute","hits":3}
+{"ts":"2026-09-13T09:50:15.509Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"basalt-engine-revenue-share-rumor","changeType":"NO_MATERIAL_CHANGE"}
+{"ts":"2026-09-13T09:50:19.181Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"ashgrove-utilities-quarterly-dividend","changeType":"UPDATE"}
+{"ts":"2026-09-13T09:50:22.560Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"keelson-bridge-validator-signature-replay-exploit","changeType":"NEW"}
+{"ts":"2026-09-13T09:50:25.554Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"meridian-long-context-enterprise-model","changeType":"CONFIRMATION"}
+{"ts":"2026-09-13T09:50:28.446Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"kubernetes-1-36-in-place-pod-resize-stable","changeType":"NEW"}
+{"ts":"2026-09-13T09:50:31.989Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"us-core-cpi-august-2026","changeType":"NEW"}
+{"ts":"2026-09-13T09:50:35.250Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"fed-governors-extended-rate-hold-remarks","changeType":"NEW"}
+{"ts":"2026-09-13T09:50:43.337Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"talos-corvid-robotics-acquisition-rumor","changeType":"REVERSAL"}
+{"ts":"2026-09-13T09:50:46.681Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"tessellate-t400-inference-accelerator","changeType":"NEW"}
+{"ts":"2026-09-13T09:50:49.803Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"sable-orm-batched-upsert-data-loss","changeType":"RESOLUTION"}
+{"ts":"2026-09-13T09:50:52.493Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"halyard-2-0-runtime-abi-freeze","changeType":"NO_MATERIAL_CHANGE"}
+{"ts":"2026-09-13T09:50:55.191Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"northbridge-power-envelope-metered-compute","changeType":"NEW"}
+{"ts":"2026-09-13T09:50:58.401Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"larkspur-bio-metabolic-therapy-boxed-warning-approval","changeType":"NEW"}
+{"ts":"2026-09-13T09:51:18.591Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"kestrel-eval-suite-contamination-audit","changeType":"NEW"}
+{"ts":"2026-09-13T09:51:34.393Z","kind":"tool_call","stage":"CURATOR","tool":"record_item_decisions","recorded":50,"processedItems":50,"totalItems":81,"unseenItems":31}
+{"ts":"2026-09-13T09:51:37.491Z","kind":"tool_call","stage":"CURATOR","tool":"list_unseen_items","returned":31,"remaining":0}
+{"ts":"2026-09-13T09:51:42.078Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"one-bit-optimizer-sign-sgd-adamw","changeType":"UPDATE"}
+{"ts":"2026-09-13T09:51:46.107Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"us-jobless-claims-weekly","changeType":"UPDATE"}
+{"ts":"2026-09-13T09:51:48.988Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"tessellate-runtime-joules-per-token-telemetry","changeType":"NEW"}
+{"ts":"2026-09-13T09:51:52.576Z","kind":"tool_call","stage":"CURATOR","tool":"upsert_story","storyId":"kestrel-eval-suite-contamination-audit","changeType":"NEW"}
+{"ts":"2026-09-13T09:52:03.577Z","kind":"tool_call","stage":"CURATOR","tool":"record_item_decisions","recorded":31,"processedItems":81,"totalItems":81,"unseenItems":0}
+{"ts":"2026-09-13T09:52:06.346Z","kind":"tool_call","stage":"CURATOR","tool":"list_today_stories","count":17}
+{"ts":"2026-09-13T09:52:10.751Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"halyard-power-rack-budget-scheduling-plugin","hits":1}
+{"ts":"2026-09-13T09:52:10.757Z","kind":"tool_call","stage":"CURATOR","tool":"find_history","storyId":"accelerator-cluster-power-capping-idle-time","hits":1}
+{"ts":"2026-09-13T09:52:14.238Z","kind":"tool_call","stage":"CURATOR","tool":"get_daily_inventory","date":"2026-09-12","totalItems":81,"itemsBySource":{"web":13,"hackernews":13,"reddit":12,"sec":2,"rss":20,"coingecko":6,"youtube":4,"github":8,"fred":2,"arxiv":1},"processedItems":81,"unseenItems":0,"storyCount":17}
+{"ts":"2026-09-13T09:52:38.499Z","kind":"tool_call","stage":"CURATOR","tool":"submit_materials","stories":17}
+{"ts":"2026-09-13T09:52:38.538Z","kind":"run.transition","from":"CURATING","to":"MATERIALS_READY"}
+{"ts":"2026-09-13T09:52:38.554Z","kind":"run.transition","from":"MATERIALS_READY","to":"WRITING"}
+{"ts":"2026-09-13T09:52:40.784Z","kind":"tool_call","stage":"EDITOR","tool":"get_materials","stories":17}
+{"ts":"2026-09-13T09:53:04.081Z","kind":"tool_call","stage":"EDITOR","tool":"get_source_items","count":18}
+{"ts":"2026-09-13T09:53:06.191Z","kind":"tool_call","stage":"EDITOR","tool":"get_source_items","count":6}
+{"ts":"2026-09-13T09:53:08.011Z","kind":"tool_call","stage":"EDITOR","tool":"get_source_items","count":2}
+{"ts":"2026-09-13T09:54:00.429Z","kind":"tool_call","stage":"EDITOR","tool":"submit_brief","stories":12,"mustKnow":4}
+{"ts":"2026-09-13T09:54:00.452Z","kind":"run.transition","from":"WRITING","to":"DRAFT_READY"}
+{"ts":"2026-09-13T09:54:00.462Z","kind":"run.transition","from":"DRAFT_READY","to":"VALIDATING"}
+{"ts":"2026-09-13T09:54:00.492Z","kind":"run.transition","from":"VALIDATING","to":"COMPLETED"}

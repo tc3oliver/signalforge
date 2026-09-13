@@ -1,0 +1,26 @@
+[
+  {
+    "attemptId": "ea70de25-2839-402a-8e7c-55b181f9320b",
+    "stage": "CURATOR",
+    "provider": "github-copilot",
+    "model": "gemini-3.8-flash",
+    "startedAt": "2026-09-13T09:49:54.327Z",
+    "finishedAt": "2026-09-13T09:54:35.032Z",
+    "durationMs": 280705,
+    "status": "FAILED",
+    "failureClass": "QUOTA",
+    "fallbackReason": "github-copilot/gemini-3.8-flash failed with QUOTA; falling back",
+    "errorMeta": {
+      "name": "Error",
+      "status": 429,
+      "message": "[fault-injection] synthetic QUOTA failure injected for testing; you exceeded your current quota"
+    },
+    "faultInjected": {
+      "stage": "CURATOR",
+      "model": "github-copilot/gemini-3.8-flash",
+      "failureClass": "QUOTA",
+      "afterProcessedItems": 20,
+      "firedAtProcessedItems": 50
+    }
+  }
+]

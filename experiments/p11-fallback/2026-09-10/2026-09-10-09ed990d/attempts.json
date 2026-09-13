@@ -1,0 +1,36 @@
+[
+  {
+    "attemptId": "a94301b3-fd0b-411e-83b3-120360e5bf38",
+    "stage": "CURATOR",
+    "provider": "github-copilot",
+    "model": "gemini-3.8-flash",
+    "startedAt": "2026-09-13T09:38:29.235Z",
+    "finishedAt": "2026-09-13T09:41:24.459Z",
+    "durationMs": 175224,
+    "status": "FAILED",
+    "failureClass": "QUOTA",
+    "fallbackReason": "github-copilot/gemini-3.8-flash failed with QUOTA; falling back",
+    "errorMeta": {
+      "name": "Error",
+      "status": 429,
+      "message": "[fault-injection] synthetic QUOTA failure injected for testing; you exceeded your current quota"
+    },
+    "faultInjected": {
+      "stage": "CURATOR",
+      "model": "github-copilot/gemini-3.8-flash",
+      "failureClass": "QUOTA",
+      "afterProcessedItems": 20,
+      "firedAtProcessedItems": 79
+    }
+  },
+  {
+    "attemptId": "6d905edd-c033-4f46-bfff-93cfeeecd7e6",
+    "stage": "CURATOR",
+    "provider": "openai-codex",
+    "model": "gpt-5.6-sol",
+    "startedAt": "2026-09-13T09:41:24.465Z",
+    "finishedAt": "2026-09-13T09:42:43.708Z",
+    "durationMs": 79243,
+    "status": "SUCCESS"
+  }
+]

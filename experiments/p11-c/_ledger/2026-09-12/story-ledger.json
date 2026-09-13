@@ -1,0 +1,418 @@
+[
+  {
+    "storyId": "basalt-engine-revenue-share-rumor",
+    "date": "2026-09-12",
+    "canonicalTitle": "社群流傳未具名截圖聲稱 Basalt v7 分潤條款但真實性存疑",
+    "sourceItemIds": [
+      "itm-20260912-0002",
+      "itm-20260912-0003"
+    ],
+    "primarySourceIds": [
+      "itm-20260912-0003"
+    ],
+    "firstSeenAt": "2026-09-13T09:39:49.091Z",
+    "lastSeenAt": "2026-09-13T09:50:15.503Z",
+    "status": "OPEN",
+    "changeType": "NO_MATERIAL_CHANGE",
+    "relevance": 0.65,
+    "novelty": 0.05,
+    "importance": 0.4,
+    "confidence": 0.2,
+    "reason": "社群持續討論 Basalt v7 授權改採分潤模式傳聞，今日出現未註明版本與日期的未驗證截圖，HN 與 Reddit 均指出可能為偽造。無官方證實，沿用既有 storyId basalt-engine-revenue-share-rumor，changeType 為 NO_MATERIAL_CHANGE。",
+    "factRefs": []
+  },
+  {
+    "storyId": "ashgrove-utilities-quarterly-dividend",
+    "date": "2026-09-12",
+    "canonicalTitle": "Ashgrove Utilities 申報每股發放 0.44 美元季度股息",
+    "sourceItemIds": [
+      "itm-20260912-0004",
+      "itm-20260912-0040"
+    ],
+    "primarySourceIds": [
+      "itm-20260912-0004"
+    ],
+    "firstSeenAt": "2026-09-13T09:40:03.088Z",
+    "lastSeenAt": "2026-09-13T09:50:19.175Z",
+    "status": "OPEN",
+    "changeType": "UPDATE",
+    "relevance": 0.3,
+    "novelty": 0.2,
+    "importance": 0.2,
+    "confidence": 0.98,
+    "reason": "Ashgrove Utilities 提交 Form 8-K 申報季度股利 0.44 美元，延續昨日申報進展。沿用既有 storyId ashgrove-utilities-quarterly-dividend，changeType 為 UPDATE。primary 為 SEC 8-K。",
+    "factRefs": [
+      "fct-20260912-001",
+      "fct-20260912-002"
+    ]
+  },
+  {
+    "storyId": "keelson-bridge-validator-signature-replay-exploit",
+    "date": "2026-09-12",
+    "canonicalTitle": "Keelson Bridge 遭重放舊版驗證器簽名漏洞攻擊損失約 1.9 億美元",
+    "sourceItemIds": [
+      "itm-20260912-0005",
+      "itm-20260912-0030",
+      "itm-20260912-0036",
+      "itm-20260912-0050"
+    ],
+    "primarySourceIds": [
+      "itm-20260912-0005",
+      "itm-20260912-0030"
+    ],
+    "firstSeenAt": "2026-09-13T09:50:22.552Z",
+    "lastSeenAt": "2026-09-13T09:50:22.552Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.92,
+    "novelty": 0.92,
+    "importance": 0.9,
+    "confidence": 0.98,
+    "reason": "Keelson Bridge 官方發布事故報告，攻擊者重放已被棄用之舊訊息格式驗證者簽名，在目標鏈未經抵押鎖定即鑄造封裝資產，40 分鐘內遭抽乾約 1.9 億美元。初次進 ledger，記為 NEW。primary 取官方事後報告與 GitHub 合約修復 PR。",
+    "factRefs": []
+  },
+  {
+    "storyId": "meridian-long-context-enterprise-model",
+    "date": "2026-09-12",
+    "canonicalTitle": "Meridian 官方正式發表 Meridian 3 Opus：具備 200 萬 token 上下文並大幅降價",
+    "sourceItemIds": [
+      "itm-20260912-0006",
+      "itm-20260912-0012",
+      "itm-20260912-0038",
+      "itm-20260912-0042",
+      "itm-20260912-0077"
+    ],
+    "primarySourceIds": [
+      "itm-20260912-0077",
+      "itm-20260912-0038"
+    ],
+    "firstSeenAt": "2026-09-13T09:39:45.163Z",
+    "lastSeenAt": "2026-09-13T09:50:25.548Z",
+    "status": "RESOLVED",
+    "changeType": "CONFIRMATION",
+    "relevance": 0.92,
+    "novelty": 0.9,
+    "importance": 0.88,
+    "confidence": 0.98,
+    "reason": "Meridian Labs 官方正式發布 Meridian 3 Opus 並釋出 model card 與 SDK，證實了前兩日關於 200 萬 token 上下文視窗的市場傳聞，且 output token 價格較 2.5 版降低 4 倍。由傳聞推進為官方證實，沿用既有 storyId meridian-long-context-enterprise-model，changeType 為 CONFIRMATION。primary 取官方新聞稿與 GitHub SDK release。",
+    "factRefs": []
+  },
+  {
+    "storyId": "kubernetes-1-36-in-place-pod-resize-stable",
+    "date": "2026-09-12",
+    "canonicalTitle": "Kubernetes 1.36 正式發布：Pod 就地調整大小邁入穩定版並徹底移除樹內雲端提供者",
+    "sourceItemIds": [
+      "itm-20260912-0007",
+      "itm-20260912-0013",
+      "itm-20260912-0057",
+      "itm-20260912-0068"
+    ],
+    "primarySourceIds": [
+      "itm-20260912-0057",
+      "itm-20260912-0068"
+    ],
+    "firstSeenAt": "2026-09-13T09:50:28.441Z",
+    "lastSeenAt": "2026-09-13T09:50:28.441Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.9,
+    "novelty": 0.88,
+    "importance": 0.86,
+    "confidence": 0.98,
+    "reason": "Kubernetes 官方釋出 1.36 版本，正式將 in-place pod vertical resize 晉升為 GA/stable，徹底移除 legacy in-tree cloud provider shims，並棄用舊版 endpoints API。初次進 ledger，記為 NEW。primary 取官方新聞稿公告與 GitHub release。",
+    "factRefs": []
+  },
+  {
+    "storyId": "us-core-cpi-august-2026",
+    "date": "2026-09-12",
+    "canonicalTitle": "美國 8 月核心 CPI 年增放緩至 2.4%，住房通膨連續四個月降溫",
+    "sourceItemIds": [
+      "itm-20260912-0024",
+      "itm-20260912-0037",
+      "itm-20260912-0041",
+      "itm-20260912-0059"
+    ],
+    "primarySourceIds": [
+      "itm-20260912-0024",
+      "itm-20260912-0041"
+    ],
+    "firstSeenAt": "2026-09-13T09:50:31.982Z",
+    "lastSeenAt": "2026-09-13T09:50:31.982Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.92,
+    "novelty": 0.86,
+    "importance": 0.9,
+    "confidence": 0.98,
+    "reason": "美國勞工統計局公布 8 月 CPI，核心 CPI 月增 0.14%、年增 2.4% 低於市場預期的 2.6%，主要因住房成分（shelter）連續四個月降溫（年增 3.1%）。初次進 ledger，記為 NEW。primary 取 FRED 官方系列發布與路透報導。",
+    "factRefs": [
+      "fct-20260912-005",
+      "fct-20260912-006",
+      "fct-20260912-007"
+    ]
+  },
+  {
+    "storyId": "fed-governors-extended-rate-hold-remarks",
+    "date": "2026-09-12",
+    "canonicalTitle": "聯準會兩位理事發表談話：明確引述通膨降溫預期政策利率將按兵不動至明年初",
+    "sourceItemIds": [
+      "itm-20260912-0010",
+      "itm-20260912-0016",
+      "itm-20260912-0029",
+      "itm-20260912-0064"
+    ],
+    "primarySourceIds": [
+      "itm-20260912-0064",
+      "itm-20260912-0016"
+    ],
+    "firstSeenAt": "2026-09-13T09:50:35.244Z",
+    "lastSeenAt": "2026-09-13T09:50:35.244Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.9,
+    "novelty": 0.84,
+    "importance": 0.87,
+    "confidence": 0.96,
+    "reason": "兩位聯準會理事在準備好的公開演說中表示，基準利率可能維持在當前水準至少至明年第一季，並明確引述早晨公布的 CPI 住房通膨放緩數據作為主要考量。獨立於 CPI 數據本身的政策回應事件，初次進 ledger，記為 NEW。primary 取 Reserve Board 新聞稿與路透社報導。",
+    "factRefs": []
+  },
+  {
+    "storyId": "talos-corvid-robotics-acquisition-rumor",
+    "date": "2026-09-12",
+    "canonicalTitle": "Corvid Robotics 發布聲明否認 Talos 收購傳聞，彭博刊登撤回更正",
+    "sourceItemIds": [
+      "itm-20260912-0014",
+      "itm-20260912-0028",
+      "itm-20260912-0035",
+      "itm-20260912-0043"
+    ],
+    "primarySourceIds": [
+      "itm-20260912-0028",
+      "itm-20260912-0035"
+    ],
+    "firstSeenAt": "2026-09-13T09:44:39.495Z",
+    "lastSeenAt": "2026-09-13T09:50:43.329Z",
+    "status": "RESOLVED",
+    "changeType": "REVERSAL",
+    "relevance": 0.85,
+    "novelty": 0.85,
+    "importance": 0.8,
+    "confidence": 0.98,
+    "reason": "Corvid Robotics 發布官方聲明闢謠，澄清並不存在任何收購協議，且與任何潛在對象的洽談早於 8 月即已終止；日前報導 41 億美元即將成交的媒體（彭博）亦已刊登更正啟事撤回報導。先前報導被官方否認並撤回，沿用既有 storyId talos-corvid-robotics-acquisition-rumor，changeType 為 REVERSAL。primary 取 Corvid 官方新聞稿與 Bloomberg 更正報導。",
+    "factRefs": []
+  },
+  {
+    "storyId": "tessellate-t400-inference-accelerator",
+    "date": "2026-09-12",
+    "canonicalTitle": "Tessellate 發表 T400 推論加速晶片：記憶體頻寬達 6 TB/s 且容量 288GB",
+    "sourceItemIds": [
+      "itm-20260912-0017",
+      "itm-20260912-0020",
+      "itm-20260912-0032",
+      "itm-20260912-0075"
+    ],
+    "primarySourceIds": [
+      "itm-20260912-0017",
+      "itm-20260912-0020"
+    ],
+    "firstSeenAt": "2026-09-13T09:50:46.676Z",
+    "lastSeenAt": "2026-09-13T09:50:46.676Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.9,
+    "novelty": 0.9,
+    "importance": 0.86,
+    "confidence": 0.98,
+    "reason": "Tessellate 官方宣布推出 T400 推論專用加速器，單封裝具備 6 TB/s 記憶體頻寬與 288GB 容量，預計本季向雲端合作夥伴出貨，runtime 並已支援 T400 後端與 kv cache 佈局。初次進 ledger，記為 NEW。primary 取官方新聞稿與 GitHub PR。",
+    "factRefs": []
+  },
+  {
+    "storyId": "sable-orm-batched-upsert-data-loss",
+    "date": "2026-09-12",
+    "canonicalTitle": "Sable ORM 釋出 6.2.4 修復連線釋出順序漏洞並提供資料遺失檢測工具",
+    "sourceItemIds": [
+      "itm-20260912-0018",
+      "itm-20260912-0039",
+      "itm-20260912-0071"
+    ],
+    "primarySourceIds": [
+      "itm-20260912-0018",
+      "itm-20260912-0039"
+    ],
+    "firstSeenAt": "2026-09-13T09:40:09.848Z",
+    "lastSeenAt": "2026-09-13T09:50:49.796Z",
+    "status": "RESOLVED",
+    "changeType": "RESOLUTION",
+    "relevance": 0.9,
+    "novelty": 0.8,
+    "importance": 0.86,
+    "confidence": 0.98,
+    "reason": "Sable ORM 正式發布 6.2.4 版本，修復連線釋出順序錯誤之回歸，加入 CI 批次大於連線池測試，並提供檢測腳本協助用戶檢查資料庫是否有遺失資料列。由確認狀態推進為官方修復發布，沿用既有 storyId sable-orm-batched-upsert-data-loss，changeType 為 RESOLUTION，status 設為 RESOLVED。primary 取 GitHub release 與 InfoQ 報導。",
+    "factRefs": []
+  },
+  {
+    "storyId": "halyard-2-0-runtime-abi-freeze",
+    "date": "2026-09-12",
+    "canonicalTitle": "Halyard 2.0 發布後續報導與社群討論升級衝擊",
+    "sourceItemIds": [
+      "itm-20260912-0011",
+      "itm-20260912-0023",
+      "itm-20260912-0069"
+    ],
+    "primarySourceIds": [
+      "itm-20260912-0011"
+    ],
+    "firstSeenAt": "2026-09-13T09:45:29.255Z",
+    "lastSeenAt": "2026-09-13T09:50:52.486Z",
+    "status": "OPEN",
+    "changeType": "NO_MATERIAL_CHANGE",
+    "relevance": 0.7,
+    "novelty": 0.05,
+    "importance": 0.4,
+    "confidence": 0.95,
+    "reason": "今日 SD Times 報導、r/devops 討論及 The Changelog 影片僅針對昨日 Halyard 2.0 發布內容進行摘要與遷移討論，無新的基準測試、採用數據或官方更新。沿用既有 storyId halyard-2-0-runtime-abi-freeze，changeType 為 NO_MATERIAL_CHANGE。primary 取 SD Times 報導。",
+    "factRefs": []
+  },
+  {
+    "storyId": "northbridge-power-envelope-metered-compute",
+    "date": "2026-09-12",
+    "canonicalTitle": "Northbridge Cloud 推出依功率封頂計費之新型運算實例家族",
+    "sourceItemIds": [
+      "itm-20260912-0034"
+    ],
+    "primarySourceIds": [
+      "itm-20260912-0034"
+    ],
+    "firstSeenAt": "2026-09-13T09:50:55.183Z",
+    "lastSeenAt": "2026-09-13T09:50:55.183Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.86,
+    "novelty": 0.88,
+    "importance": 0.84,
+    "confidence": 0.95,
+    "reason": "The Register 報導 Northbridge Cloud 推出新型實例家族，其定價模式首度採用承諾功率封頂（committed power envelope / 每瓦特）而非單純按實例小時計算，改變客戶運算成本最佳化模型。初次進 ledger，記為 NEW。primary 取 The Register 報導。",
+    "factRefs": []
+  },
+  {
+    "storyId": "larkspur-bio-metabolic-therapy-boxed-warning-approval",
+    "date": "2026-09-12",
+    "canonicalTitle": "監管機構核准 Larkspur Bio 罕見代謝疾病口服藥但附帶肝損傷黑框警告",
+    "sourceItemIds": [
+      "itm-20260912-0047",
+      "itm-20260912-0053",
+      "itm-20260912-0066",
+      "itm-20260912-0070"
+    ],
+    "primarySourceIds": [
+      "itm-20260912-0070",
+      "itm-20260912-0066"
+    ],
+    "firstSeenAt": "2026-09-13T09:50:58.396Z",
+    "lastSeenAt": "2026-09-13T09:50:58.396Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.85,
+    "novelty": 0.9,
+    "importance": 0.85,
+    "confidence": 0.98,
+    "reason": "監管機構正式核准 Larkspur Bio 之罕見代謝疾病口服療法，但附帶嚴格之肝損傷（hepatic injury）黑框警告並要求建立上市後登記追蹤。初次進 ledger，記為 NEW。primary 取 Larkspur Bio 官方新聞稿及 SEC 8-K 申報。",
+    "factRefs": []
+  },
+  {
+    "storyId": "kestrel-eval-suite-contamination-audit",
+    "date": "2026-09-12",
+    "canonicalTitle": "Kestrel Institute 發布基準測試污染審計：六大標準評測集污染率最高達 31%",
+    "sourceItemIds": [
+      "itm-20260912-0048",
+      "itm-20260912-0049",
+      "itm-20260912-0076",
+      "itm-20260912-0078"
+    ],
+    "primarySourceIds": [
+      "itm-20260912-0049",
+      "itm-20260912-0078"
+    ],
+    "firstSeenAt": "2026-09-13T09:51:18.583Z",
+    "lastSeenAt": "2026-09-13T09:51:52.568Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.88,
+    "novelty": 0.9,
+    "importance": 0.86,
+    "confidence": 0.96,
+    "reason": "Kestrel Institute 於 arXiv 發表預印本論文並於 GitHub 開源 contam-audit 工具，針對六大標準評測集進行 n-gram 與釋義審計，揭露 4% 至 31% 測試題目早已存在於常見預訓練語料庫，其中被引用最廣的兩大資料集污染最為嚴重。初次進 ledger，記為 NEW。primary 取 arXiv 預印本論文與 GitHub 工具 repo。",
+    "factRefs": []
+  },
+  {
+    "storyId": "one-bit-optimizer-sign-sgd-adamw",
+    "date": "2026-09-12",
+    "canonicalTitle": "1-bit 最佳化器獨立重現確認 13B 效果，但超過 30B 出現發散需保留 bf16 誤差反饋",
+    "sourceItemIds": [
+      "itm-20260912-0025",
+      "itm-20260912-0051",
+      "itm-20260912-0061",
+      "itm-20260912-0079"
+    ],
+    "primarySourceIds": [
+      "itm-20260912-0051",
+      "itm-20260912-0061"
+    ],
+    "firstSeenAt": "2026-09-13T09:45:05.106Z",
+    "lastSeenAt": "2026-09-13T09:51:42.070Z",
+    "status": "OPEN",
+    "changeType": "UPDATE",
+    "relevance": 0.88,
+    "novelty": 0.75,
+    "importance": 0.82,
+    "confidence": 0.92,
+    "reason": "兩個獨立研究小組在 13B 規模成功重現 1-bit 最佳化器（loss 誤差 0.4% 以內），但發現超過 30B 參數時出現發散，必須保留 bf16 誤差反饋才能維持穩定，使宣稱的記憶體節省幅度折半。沿用既有 storyId one-bit-optimizer-sign-sgd-adamw，changeType 為 UPDATE。primary 取 GitHub repo 重現報告與 r/MachineLearning 討論。",
+    "factRefs": []
+  },
+  {
+    "storyId": "us-jobless-claims-weekly",
+    "date": "2026-09-12",
+    "canonicalTitle": "美國初次請領失業金人數為 20.8 萬人，持續維持穩定區間",
+    "sourceItemIds": [
+      "itm-20260912-0056",
+      "itm-20260912-0073"
+    ],
+    "primarySourceIds": [
+      "itm-20260912-0073"
+    ],
+    "firstSeenAt": "2026-09-13T09:39:40.606Z",
+    "lastSeenAt": "2026-09-13T09:51:46.097Z",
+    "status": "OPEN",
+    "changeType": "UPDATE",
+    "relevance": 0.45,
+    "novelty": 0.35,
+    "importance": 0.35,
+    "confidence": 0.98,
+    "reason": "美國勞工部與 FRED 公布截至 2026-09-12 當週初領失業金人數為 20.8 萬人，相較前週 22.1 萬人微幅下降，持續落在過去六週穩定區間內，勞動市場維持穩定。沿用既有 storyId us-jobless-claims-weekly，changeType 為 UPDATE。primary 取 FRED 官方發布。",
+    "factRefs": [
+      "fct-20260912-012",
+      "fct-20260912-013"
+    ]
+  },
+  {
+    "storyId": "tessellate-runtime-joules-per-token-telemetry",
+    "date": "2026-09-12",
+    "canonicalTitle": "tessellate-runtime 支援板載遙測報告每 Token 實際消耗焦耳數",
+    "sourceItemIds": [
+      "itm-20260912-0067"
+    ],
+    "primarySourceIds": [
+      "itm-20260912-0067"
+    ],
+    "firstSeenAt": "2026-09-13T09:51:48.980Z",
+    "lastSeenAt": "2026-09-13T09:51:48.980Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.85,
+    "novelty": 0.85,
+    "importance": 0.8,
+    "confidence": 0.96,
+    "reason": "tessellate-runtime 釋出更新，允許系統直接取樣板載電力遙測數據報告每個生成 token 消耗之焦耳數（joules per token），使能耗成為可測量之服務等級指標。初次進 ledger，記為 NEW。primary 取 GitHub issue/commit。",
+    "factRefs": []
+  }
+]

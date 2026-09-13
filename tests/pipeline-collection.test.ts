@@ -17,6 +17,7 @@ import {
 	itemIdFor,
 	runCollection,
 	toNormalizedItem,
+	unimplementedOutcomes,
 } from "../src/pipeline/collection.ts";
 
 const SINCE = new Date("2026-09-12T00:00:00.000Z");
@@ -369,5 +370,90 @@ describe("collector configuration reaches the collector", () => {
 		expect(sourceConfig?.requiredSecrets).toEqual([]);
 		expect(sourceConfig?.timeoutMs).toBeGreaterThan(0);
 		expect(sourceConfig).not.toBe(loadConfig().sources.collectors.sec);
+	});
+});
+
+describe("enabled sources with no collector behind them", () => {
+	it("names an enabled source that has no registered collector", () => {
+		// The failure this exists to prevent: a source is enabled in config, no
+		// collector is registered for it, so it produces no row, no warning and no
+		// item -- and the run reports success while a whole source is missing.
+		const entries: RegistryEntry[] = [
+			{ sourceKey: "hackernews", collector: {} as Collector },
+		];
+
+		const outcomes = unimplementedOutcomes(["hackernews", "web"], entries);
+
+		expect(outcomes).toHaveLength(1);
+		expect(outcomes[0]?.collectorId).toBe("web");
+		expect(outcomes[0]?.health).toBe("DISABLED");
+		expect(outcomes[0]?.disabledReason).toContain("no collector is registered");
+		// It must never be mistaken for a source that produced nothing today.
+		expect(outcomes[0]?.itemsFetched).toBe(0);
+	});
+
+	it("says nothing when every enabled source has a collector", () => {
+		const entries: RegistryEntry[] = [
+			{ sourceKey: "arxiv", collector: {} as Collector },
+			{ sourceKey: "hackernews", collector: {} as Collector },
+		];
+		expect(unimplementedOutcomes(["arxiv", "hackernews"], entries)).toEqual([]);
+	});
+
+	it("every source enabled in the real config has a collector in the real registry", () => {
+		// The assertion that actually protects production: shipped config and
+		// shipped registry must agree, whatever either of them says today.
+		const config = loadConfig();
+		const enabled = Object.entries(config.sources.collectors)
+			.filter(([, value]) => (value as CollectorSourceConfig).enabled)
+			.map(([key]) => key);
+
+		expect(unimplementedOutcomes(enabled, buildRegistry())).toEqual([]);
+	});
+});
+
+describe("a collector that never finishes", () => {
+	it("is recorded as FAILED instead of disappearing from the run", async () => {
+		// The real incident this guards: one collector's promise never settled, the
+		// run reported success, and that source simply had no row at all -- no
+		// error, no warning, nothing that could be noticed in admin.
+		const { store, runs } = memoryStore();
+		const hangs: Collector = {
+			id: "hangs",
+			sourceType: "hackernews",
+			requiredSecrets: [],
+			check: async () => ({ ok: true, detail: "" }),
+			collect: () => new Promise<CollectorResult>(() => {}),
+		};
+		const finishes: Collector = {
+			id: "finishes",
+			sourceType: "arxiv",
+			requiredSecrets: [],
+			check: async () => ({ ok: true, detail: "" }),
+			collect: async () => okResult("finishes", [collectedItem("arxiv", "a1")]),
+		};
+
+		const summary = await runCollection({
+			store,
+			since: SINCE,
+			now: () => NOW,
+			collectorDeadlineMs: 25,
+			entries: [
+				{ sourceKey: "hackernews", collector: hangs },
+				{ sourceKey: "arxiv", collector: finishes },
+			],
+			enabledSourceKeys: ["hackernews", "arxiv"],
+			secrets: { secret: async () => "", hasSecret: async () => true },
+		});
+
+		const hung = summary.outcomes.find((o) => o.collectorId === "hangs");
+		expect(hung?.health).toBe("FAILED");
+		expect(hung?.error).toMatch(/did not finish within/);
+		expect(runs.some((r) => r.result.collectorId === "hangs")).toBe(true);
+
+		// And it does not take the rest of the run down with it.
+		expect(summary.outcomes.find((o) => o.collectorId === "finishes")?.health).toBe("OK");
+		expect(summary.degraded).toBe(true);
+		expect(summary.empty).toBe(false);
 	});
 });

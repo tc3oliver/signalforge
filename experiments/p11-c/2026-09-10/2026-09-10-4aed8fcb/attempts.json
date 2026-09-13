@@ -1,0 +1,22 @@
+[
+  {
+    "attemptId": "b27a0542-277d-48ef-940f-4341c3b9e8b1",
+    "stage": "CURATOR",
+    "provider": "github-copilot",
+    "model": "gemini-3.8-flash",
+    "startedAt": "2026-09-13T09:38:13.680Z",
+    "finishedAt": "2026-09-13T09:41:30.083Z",
+    "durationMs": 196403,
+    "status": "SUCCESS"
+  },
+  {
+    "attemptId": "374837fc-051c-4bbc-9292-7c36e46bd4bb",
+    "stage": "EDITOR",
+    "provider": "github-copilot",
+    "model": "gemini-3.8-flash",
+    "startedAt": "2026-09-13T09:41:30.124Z",
+    "finishedAt": "2026-09-13T09:43:19.485Z",
+    "durationMs": 109361,
+    "status": "SUCCESS"
+  }
+]

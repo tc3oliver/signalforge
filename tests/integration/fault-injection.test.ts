@@ -119,6 +119,64 @@ describe("fault injection drives a real fallback", () => {
 		expect(result.brief).toBeDefined();
 	});
 
+	it("ends the attempt mid-scan, without waiting for the model to yield the turn", async () => {
+		// A real model does the whole day in one uninterrupted turn: scan, cluster,
+		// decide, submit. If the only place a fault can land is after that turn
+		// returns, then by the time it fires there is nothing left to resume and
+		// the "fallback continues the remaining items" path is never exercised --
+		// which is also wrong about production, where a provider error lands
+		// between two tool calls, not between two turns.
+		process.env[FAULT_INJECTION_ENV_VAR] = JSON.stringify({
+			stage: "curator",
+			model: "primary",
+			afterProcessedItems: 6,
+			failureClass: "QUOTA",
+		});
+
+		const manifest = makeManifest({ date: DATE, groups: 15, perGroup: 2 }); // 30 items
+		const paths = makeTestPaths(root);
+		writeManifest(paths, manifest);
+
+		const submitsByModel: string[] = [];
+		const groups = new Map<string, string[]>();
+		const driverFactory = createResolvedDriverFactory((opts) => {
+			const isEditor = opts.customTools.some((t) => t.name === "submit_brief");
+			if (isEditor) return competentEditorScript();
+			// A page size below the item count makes the decisions arrive in
+			// batches, so "processed" crosses the threshold part way through a turn.
+			return [
+				competentCuratorScript({
+					groups,
+					pageSize: 5,
+					onSubmit: () => submitsByModel.push(opts.spec.model),
+				}),
+			];
+		});
+
+		const result = await runPhase1Day({ date: DATE, paths, chain: CHAIN, driverFactory });
+
+		const store = RunStateStore.open({ root: paths.runsDir, date: DATE, runId: result.runId });
+		const curatorAttempts = store.readAttempts().filter((a) => a.stage === "CURATOR");
+		expect(curatorAttempts).toHaveLength(2);
+
+		const failed = curatorAttempts[0]!;
+		expect(failed.status).toBe("FAILED");
+		expect(failed.failureClass).toBe("QUOTA");
+		// The whole point: it fired while work remained, not after the day was done.
+		expect(failed.faultInjected!.firedAtProcessedItems).toBeGreaterThanOrEqual(6);
+		expect(failed.faultInjected!.firedAtProcessedItems).toBeLessThan(manifest.items.length);
+
+		// The primary never got to submit; only the fallback model did.
+		expect(submitsByModel).toEqual(["gpt-5.6-sol"]);
+		expect(curatorAttempts[1]!.status).toBe("SUCCESS");
+		expect(store.load().status).toBe("COMPLETED");
+
+		// And no item was lost or decided twice across the two sessions.
+		const allSourceItemIds = result.materials.stories.flatMap((s) => s.sourceItemIds);
+		expect(allSourceItemIds).toHaveLength(manifest.items.length);
+		expect(new Set(allSourceItemIds).size).toBe(manifest.items.length);
+	});
+
 	it("does nothing when the env var is unset (off by default)", async () => {
 		delete process.env[FAULT_INJECTION_ENV_VAR];
 

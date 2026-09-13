@@ -218,6 +218,8 @@ export interface CuratorScriptOptions {
 	onStory?: (storyId: string, itemIds: string[]) => void;
 	/** Observe each page returned by list_unseen_items. */
 	onPage?: (itemIds: string[]) => void;
+	/** Called just before submit_materials, so a test can see which model got that far. */
+	onSubmit?: () => void;
 	/**
 	 * Shared group -> item ids accumulator. Pass the same Map to two scripts so the
 	 * second one submits materials covering stories the first one created: the
@@ -302,6 +304,7 @@ export function competentCuratorScript(opts: CuratorScriptOptions = {}): Script 
 
 		if (opts.skipSubmit || opts.stopAfterItems !== undefined) return;
 
+		opts.onSubmit?.();
 		await call("submit_materials", {
 			stories: [...groups.entries()].map(([group, itemIds], i) => ({
 				storyId: storyIdFor(group),

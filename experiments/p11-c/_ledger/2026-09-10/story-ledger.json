@@ -1,0 +1,381 @@
+[
+  {
+    "storyId": "fenwick-surface-code-logical-qubit",
+    "date": "2026-09-10",
+    "canonicalTitle": "Fenwick Quantum 發表距離 9 表面碼邏輯量子位元，維持百萬週期閾值以下運行",
+    "sourceItemIds": [
+      "itm-20260910-0001",
+      "itm-20260910-0006",
+      "itm-20260910-0045",
+      "itm-20260910-0046"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0001"
+    ],
+    "firstSeenAt": "2026-09-13T09:39:27.508Z",
+    "lastSeenAt": "2026-09-13T09:39:27.508Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.72,
+    "novelty": 0.85,
+    "importance": 0.75,
+    "confidence": 0.88,
+    "reason": "Fenwick Quantum 研究團隊在 arXiv 發布距離 9 表面碼邏輯量子位元實驗結果，維持 1.1e-7 錯誤率運行超過 100 萬週期，為首個在此持續時間下低於閾值的成果。primary 取 arXiv 預印本，其餘為 Nature News、Semantic Scholar 與 HN 討論。",
+    "factRefs": []
+  },
+  {
+    "storyId": "bis-export-rule-performance-density",
+    "date": "2026-09-10",
+    "canonicalTitle": "美國 BIS 發布暫行終期規則，下修算力密度門檻將中階加速卡納入出口管制",
+    "sourceItemIds": [
+      "itm-20260910-0003",
+      "itm-20260910-0010",
+      "itm-20260910-0014",
+      "itm-20260910-0034"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0010"
+    ],
+    "firstSeenAt": "2026-09-13T09:39:30.757Z",
+    "lastSeenAt": "2026-09-13T09:39:30.757Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.89,
+    "novelty": 0.86,
+    "importance": 0.88,
+    "confidence": 0.95,
+    "reason": "美國工業與安全局（BIS）發布暫行終期規則，修訂效能密度門檻，納管原先豁免的多款中階加速晶片，30 天內生效且無既有訂單通用許可。primary 取 BIS 官方公告，其餘為 Reuters、HN 討論與 Stratechery 分析。",
+    "factRefs": []
+  },
+  {
+    "storyId": "quarrystone-cve-2026-41882",
+    "date": "2026-09-10",
+    "canonicalTitle": "Quarrystone 釋出 17.4 與 16.8 修補 CVE-2026-41882 未授權 WAL 外洩漏洞",
+    "sourceItemIds": [
+      "itm-20260910-0004",
+      "itm-20260910-0023",
+      "itm-20260910-0051",
+      "itm-20260910-0060"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0004"
+    ],
+    "firstSeenAt": "2026-09-13T09:39:33.925Z",
+    "lastSeenAt": "2026-09-13T09:39:33.925Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.88,
+    "novelty": 0.88,
+    "importance": 0.86,
+    "confidence": 0.95,
+    "reason": "Quarrystone 釋出安全更新修補 CVE-2026-41882，該漏洞允許未驗證客戶端在 scram channel binding 停用時開啟邏輯複製槽並讀取完整 WAL。primary 取官方新聞稿，其餘為 BleepingComputer、HN 與 GitHub commit。",
+    "factRefs": []
+  },
+  {
+    "storyId": "northbridge-us-east-2-outage",
+    "date": "2026-09-10",
+    "canonicalTitle": "Northbridge us-east-2 控制平面憑證輪替失敗導致擴展與啟動中斷逾六小時",
+    "sourceItemIds": [
+      "itm-20260910-0008",
+      "itm-20260910-0009",
+      "itm-20260910-0021",
+      "itm-20260910-0036",
+      "itm-20260910-0059"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0021"
+    ],
+    "firstSeenAt": "2026-09-13T09:39:37.321Z",
+    "lastSeenAt": "2026-09-13T09:39:37.321Z",
+    "status": "RESOLVED",
+    "changeType": "NEW",
+    "relevance": 0.89,
+    "novelty": 0.84,
+    "importance": 0.87,
+    "confidence": 0.95,
+    "reason": "Northbridge Cloud us-east-2 控制平面因憑證輪替失敗，導致新實例啟動、自動擴展及負載平衡器異動中斷 6 小時 11 分鐘，既有運行工作負載不受影響。primary 取官方新聞稿公告，其餘為 GitHub status、HN、The Register 與 Reddit r/devops 討論。",
+    "factRefs": []
+  },
+  {
+    "storyId": "us-jobless-claims-weekly",
+    "date": "2026-09-10",
+    "canonicalTitle": "美國初次請領失業金人數為 21.4 萬人，維持近期區間不變",
+    "sourceItemIds": [
+      "itm-20260910-0011",
+      "itm-20260910-0012"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0012"
+    ],
+    "firstSeenAt": "2026-09-13T09:39:40.606Z",
+    "lastSeenAt": "2026-09-13T09:39:40.606Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.45,
+    "novelty": 0.35,
+    "importance": 0.35,
+    "confidence": 0.98,
+    "reason": "FRED 與勞工部公布截至 2026-09-10 當週初領失業救濟金人數為 214,000 人，符合過去六週波動區間，顯示就業市場無實質變動。初次建檔 changeType 為 NEW，但例行數據的重要性與新穎性皆低。primary 為 FRED 官方數據發布。",
+    "factRefs": [
+      "fct-20260910-001",
+      "fct-20260910-002"
+    ]
+  },
+  {
+    "storyId": "meridian-long-context-enterprise-model",
+    "date": "2026-09-10",
+    "canonicalTitle": "傳 Meridian 測試具備 200 萬 token 上下文與無檢索長文件模式之未公開模型",
+    "sourceItemIds": [
+      "itm-20260910-0015",
+      "itm-20260910-0053",
+      "itm-20260910-0057",
+      "itm-20260910-0067"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0067"
+    ],
+    "firstSeenAt": "2026-09-13T09:39:45.163Z",
+    "lastSeenAt": "2026-09-13T09:39:45.163Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.78,
+    "novelty": 0.65,
+    "importance": 0.75,
+    "confidence": 0.45,
+    "reason": "The Information 引述三名知情人士報導 Meridian 正向企業客戶測試具備 200 萬 token 上下文視窗之未發表模型，並具備無需 RAG 的長文件審查模式。Meridian 官方拒絕置評，無 model card 或 API 釋出，屬匿名消息來源傳聞。primary 取 The Information 報導，其餘為 LocalLLaMA、HN 與 Stratechery 分析。",
+    "factRefs": []
+  },
+  {
+    "storyId": "basalt-engine-revenue-share-rumor",
+    "date": "2026-09-10",
+    "canonicalTitle": "社群傳聞 Basalt Engine 預計於 v7 改採分潤授權模式",
+    "sourceItemIds": [
+      "itm-20260910-0017",
+      "itm-20260910-0020"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0020"
+    ],
+    "firstSeenAt": "2026-09-13T09:39:49.091Z",
+    "lastSeenAt": "2026-09-13T09:39:49.091Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.75,
+    "novelty": 0.55,
+    "importance": 0.65,
+    "confidence": 0.25,
+    "reason": "Reddit r/gamedev 與 Hacker News 出現未具名合作夥伴電話傳聞，宣稱開源遊戲引擎 Basalt 將在第 7 版轉向收入抽成授權模式。目前無任何官方證實或文件佐證，為純社群匿名爆料。primary 取首篇具體引述 partner call 的 Reddit 討論串。",
+    "factRefs": []
+  },
+  {
+    "storyId": "vantiq-systems-guidance-cut-enterprise-renewals",
+    "date": "2026-09-10",
+    "canonicalTitle": "Vantiq Systems 8-K 申報下修全年營收指引 9%，主因為企業續約遞延而非流失",
+    "sourceItemIds": [
+      "itm-20260910-0019",
+      "itm-20260910-0056",
+      "itm-20260910-0064",
+      "itm-20260910-0065"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0064"
+    ],
+    "firstSeenAt": "2026-09-13T09:39:52.427Z",
+    "lastSeenAt": "2026-09-13T09:39:52.427Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.75,
+    "novelty": 0.78,
+    "importance": 0.75,
+    "confidence": 0.96,
+    "reason": "Vantiq Systems 發布 8-K 申報，將全年營收指引下調 9%，並揭露淨營收留存率（NRR）從一年前的 112% 下滑至 104%，短缺主因為多年期企業續約延遲而非客戶流失。primary 取 SEC EDGAR 8-K 申報，其餘為 CNBC 報導、HN 討論與 Stratechery 深度分析。",
+    "factRefs": []
+  },
+  {
+    "storyId": "aperture-nimbus-7-weight-release",
+    "date": "2026-09-10",
+    "canonicalTitle": "Aperture 發布 Nimbus-7 72B MoE 開源權重，授權條款禁止第三方託管服務",
+    "sourceItemIds": [
+      "itm-20260910-0022",
+      "itm-20260910-0061",
+      "itm-20260910-0069",
+      "itm-20260910-0075"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0069"
+    ],
+    "firstSeenAt": "2026-09-13T09:39:55.813Z",
+    "lastSeenAt": "2026-09-13T09:39:55.813Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.88,
+    "novelty": 0.86,
+    "importance": 0.83,
+    "confidence": 0.95,
+    "reason": "Aperture Research 開源發布 72B 參數、8 活躍專家之 Nimbus-7 混合專家模型權重，授權條款允許研究與內部商業用途，但禁止對第三方提供託管服務（hosting/serving）。primary 取 Aperture 官方新聞稿，其餘為 GitHub release、HN 與 LocalLLaMA 討論。",
+    "factRefs": []
+  },
+  {
+    "storyId": "rust-1-94-parallel-frontend",
+    "date": "2026-09-10",
+    "canonicalTitle": "Rust 1.94 釋出，預設啟用平行前端編譯並穩定 const API",
+    "sourceItemIds": [
+      "itm-20260910-0027",
+      "itm-20260910-0068",
+      "itm-20260910-0071",
+      "itm-20260910-0072"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0072"
+    ],
+    "firstSeenAt": "2026-09-13T09:39:59.388Z",
+    "lastSeenAt": "2026-09-13T09:39:59.388Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.86,
+    "novelty": 0.82,
+    "importance": 0.79,
+    "confidence": 0.96,
+    "reason": "Rust 專案發布 Rust 1.94.0，預設啟用平行編譯器前端，crater run 顯示冷檢查（cold check）時間中位數縮減 22%，並穩定三項長期待決的 const API。primary 取 Rust 官方發布公告，其餘為 GitHub pull request、HN 討論與 Reddit r/rust 基準測試回報。",
+    "factRefs": []
+  },
+  {
+    "storyId": "ashgrove-utilities-quarterly-dividend",
+    "date": "2026-09-10",
+    "canonicalTitle": "Ashgrove Utilities 申報每股發放 0.42 美元季度股利",
+    "sourceItemIds": [
+      "itm-20260910-0030",
+      "itm-20260910-0047"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0030"
+    ],
+    "firstSeenAt": "2026-09-13T09:40:03.088Z",
+    "lastSeenAt": "2026-09-13T09:40:03.088Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.3,
+    "novelty": 0.25,
+    "importance": 0.25,
+    "confidence": 0.98,
+    "reason": "Ashgrove Utilities 發布 8-K 申報每股季度股息 0.42 美元，與上一季持平，發放對象為月底基準日之股東，屬例行行政申報。primary 取 SEC EDGAR 8-K，PR Newswire 為媒體通稿。初次建檔記為 NEW，重要性與新穎性皆低。",
+    "factRefs": [
+      "fct-20260910-006",
+      "fct-20260910-007"
+    ]
+  },
+  {
+    "storyId": "linux-6-19-deadline-aware-scheduler",
+    "date": "2026-09-10",
+    "canonicalTitle": "Linux 6.19 合併 deadline-aware 公平排程器，取代 vruntime 啟發式演算法",
+    "sourceItemIds": [
+      "itm-20260910-0032",
+      "itm-20260910-0038",
+      "itm-20260910-0054",
+      "itm-20260910-0063"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0063"
+    ],
+    "firstSeenAt": "2026-09-13T09:40:06.257Z",
+    "lastSeenAt": "2026-09-13T09:40:06.257Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.84,
+    "novelty": 0.83,
+    "importance": 0.81,
+    "confidence": 0.95,
+    "reason": "Linux 核心在 6.19 合併視窗接受 deadline-aware 公平排程器重構，對延遲敏感任務以明確 deadline 取代既有 vruntime 啟發式機制。primary 取 torvalds/linux 官方 GitHub 合併 commit，其餘為 LWN 報導、HN 與 Reddit r/linux 音訊延遲測試討論。",
+    "factRefs": []
+  },
+  {
+    "storyId": "sable-orm-batched-upsert-data-loss",
+    "date": "2026-09-10",
+    "canonicalTitle": "Sable ORM 6.2.0 批次更新在超出連線池大小時無警示遺失資料列",
+    "sourceItemIds": [
+      "itm-20260910-0033",
+      "itm-20260910-0052",
+      "itm-20260910-0077",
+      "itm-20260910-0079"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0079"
+    ],
+    "firstSeenAt": "2026-09-13T09:40:09.848Z",
+    "lastSeenAt": "2026-09-13T09:40:09.848Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.87,
+    "novelty": 0.85,
+    "importance": 0.84,
+    "confidence": 0.85,
+    "reason": "Sable ORM 6.2.0 回報重大資料遺失 issue，當批次 upsert 筆數超過資料庫連線池上限時會靜默丟棄資料列，附 40 行 PostgreSQL 17 重現程式碼。維護者尚未分類標籤。primary 取 GitHub issue 原文，其餘為 InfoQ 報導、Reddit r/node 與 HN 討論。",
+    "factRefs": []
+  },
+  {
+    "storyId": "fsb-payment-stablecoin-reserve-disclosure-rule",
+    "date": "2026-09-10",
+    "canonicalTitle": "FSB 發布支付型穩定幣最終規則，要求流通百億以上發行商每日揭露儲備且持有八成隔夜資產",
+    "sourceItemIds": [
+      "itm-20260910-0035",
+      "itm-20260910-0037",
+      "itm-20260910-0043",
+      "itm-20260910-0058"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0043"
+    ],
+    "firstSeenAt": "2026-09-13T09:40:13.298Z",
+    "lastSeenAt": "2026-09-13T09:40:13.298Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.85,
+    "novelty": 0.87,
+    "importance": 0.86,
+    "confidence": 0.96,
+    "reason": "金融穩定委員會（FSB）發布支付型穩定幣儲備揭露最終規則，規定流通規模逾 100 億美元之發行商須每日公布第三方驗證之儲備組成，並持有至少 80% 隔夜資產，合規緩衝期 180 天。primary 取 FSB 官方發布，其餘為 CoinDesk、HN 與 Reddit r/CryptoCurrency 討論。",
+    "factRefs": []
+  },
+  {
+    "storyId": "accelerator-cluster-power-capping-idle-time",
+    "date": "2026-09-10",
+    "canonicalTitle": "研究指出加速器叢集因機架級功率上限限制導致 11% 閒置時間",
+    "sourceItemIds": [
+      "itm-20260910-0042"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0042"
+    ],
+    "firstSeenAt": "2026-09-13T09:40:16.544Z",
+    "lastSeenAt": "2026-09-13T09:40:16.544Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.79,
+    "novelty": 0.81,
+    "importance": 0.76,
+    "confidence": 0.88,
+    "reason": "Ridgeway University 研究團隊在 arXiv 發布測量研究，分析四個生產加速器叢集，發現加速器有 11% 運行時間因機架級功率封頂（power capping）而處於閒置狀態，揭示利用率低落主因為電力基礎設施限制而非排程器演算法。primary 為 arXiv 論文。",
+    "factRefs": []
+  },
+  {
+    "storyId": "anvil-datacenter-campuses-deferred-power-queue",
+    "date": "2026-09-10",
+    "canonicalTitle": "Anvil 因變電所併網排隊延宕至 2029 年，宣布推遲兩座資料中心園區興建",
+    "sourceItemIds": [
+      "itm-20260910-0055"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0055"
+    ],
+    "firstSeenAt": "2026-09-13T09:40:19.628Z",
+    "lastSeenAt": "2026-09-13T09:40:19.628Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.82,
+    "novelty": 0.82,
+    "importance": 0.78,
+    "confidence": 0.89,
+    "reason": "資料中心營運商 Anvil 向投資人表示，因地方電力公用事業無法在 2029 年前完成變電所送電，將延後兩座資料中心園區建置。併網排隊時間取代資本成為算力擴建的硬約束。primary 為 Datacenter Dynamics 專題報導。",
+    "factRefs": []
+  }
+]

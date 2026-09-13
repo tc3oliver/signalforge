@@ -1,0 +1,472 @@
+{
+  "generatedAt": "2026-09-13T09:54:43.179Z",
+  "experiments": [
+    "p11-b",
+    "p11-c",
+    "p11-d"
+  ],
+  "models": [
+    "gemini-3.8-flash"
+  ],
+  "dates": [
+    {
+      "date": "2026-09-10",
+      "runs": [
+        {
+          "experiment": "p11-b",
+          "runId": "2026-09-10-1c627843"
+        },
+        {
+          "experiment": "p11-c",
+          "runId": "2026-09-10-4aed8fcb"
+        },
+        {
+          "experiment": "p11-d",
+          "runId": "2026-09-10-e1fc40ea"
+        }
+      ],
+      "metrics": [
+        {
+          "name": "core_story_selection_stability",
+          "mean": 0.9393939393939394,
+          "unit": "jaccard",
+          "pairs": [
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-c",
+              "value": 0.9090909090909091,
+              "detail": "p11-b published 11 identities, p11-c published 10; jaccard=0.909"
+            },
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-d",
+              "value": 1,
+              "detail": "p11-b published 11 identities, p11-d published 11; jaccard=1.000"
+            },
+            {
+              "experimentA": "p11-c",
+              "experimentB": "p11-d",
+              "value": 0.9090909090909091,
+              "detail": "p11-c published 10 identities, p11-d published 11; jaccard=0.909"
+            }
+          ]
+        },
+        {
+          "name": "must_know_stability",
+          "mean": 1,
+          "unit": "jaccard",
+          "pairs": [
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-c",
+              "value": 1,
+              "detail": "p11-b flagged 4 mustKnow identities, p11-c flagged 4; jaccard=1.000"
+            },
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-d",
+              "value": 1,
+              "detail": "p11-b flagged 4 mustKnow identities, p11-d flagged 4; jaccard=1.000"
+            },
+            {
+              "experimentA": "p11-c",
+              "experimentB": "p11-d",
+              "value": 1,
+              "detail": "p11-c flagged 4 mustKnow identities, p11-d flagged 4; jaccard=1.000"
+            }
+          ]
+        },
+        {
+          "name": "cluster_stability",
+          "mean": 0.9954022988505747,
+          "unit": "f1",
+          "pairs": [
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-c",
+              "value": 0.993103448275862,
+              "detail": "TP=72, p11-b pairs=72, p11-c pairs=73; f1=0.993"
+            },
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-d",
+              "value": 0.993103448275862,
+              "detail": "TP=72, p11-b pairs=72, p11-d pairs=73; f1=0.993"
+            },
+            {
+              "experimentA": "p11-c",
+              "experimentB": "p11-d",
+              "value": 1,
+              "detail": "TP=73, p11-c pairs=73, p11-d pairs=73; f1=1.000"
+            }
+          ]
+        },
+        {
+          "name": "change_type_stability",
+          "mean": 1,
+          "unit": "ratio",
+          "pairs": [
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-c",
+              "value": 1,
+              "detail": "10/10 shared gold events assigned the same changeType by p11-b and p11-c"
+            },
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-d",
+              "value": 1,
+              "detail": "11/11 shared gold events assigned the same changeType by p11-b and p11-d"
+            },
+            {
+              "experimentA": "p11-c",
+              "experimentB": "p11-d",
+              "value": 1,
+              "detail": "10/10 shared gold events assigned the same changeType by p11-c and p11-d"
+            }
+          ]
+        },
+        {
+          "name": "emerging_signal_stability",
+          "mean": 0.3333333333333333,
+          "unit": "jaccard",
+          "pairs": [
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-c",
+              "value": 0,
+              "detail": "p11-b cited 0 identities in emergingSignals, p11-c cited 1; jaccard=0.000"
+            },
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-d",
+              "value": 0,
+              "detail": "p11-b cited 0 identities in emergingSignals, p11-d cited 1; jaccard=0.000"
+            },
+            {
+              "experimentA": "p11-c",
+              "experimentB": "p11-d",
+              "value": 1,
+              "detail": "p11-c cited 1 identities in emergingSignals, p11-d cited 1; jaccard=1.000"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-09-11",
+      "runs": [
+        {
+          "experiment": "p11-b",
+          "runId": "2026-09-11-9bb84af8"
+        },
+        {
+          "experiment": "p11-c",
+          "runId": "2026-09-11-25ee3646"
+        },
+        {
+          "experiment": "p11-d",
+          "runId": "2026-09-11-4c9f9fb3"
+        }
+      ],
+      "metrics": [
+        {
+          "name": "core_story_selection_stability",
+          "mean": 0.9393939393939394,
+          "unit": "jaccard",
+          "pairs": [
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-c",
+              "value": 0.9090909090909091,
+              "detail": "p11-b published 10 identities, p11-c published 11; jaccard=0.909"
+            },
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-d",
+              "value": 0.9090909090909091,
+              "detail": "p11-b published 10 identities, p11-d published 11; jaccard=0.909"
+            },
+            {
+              "experimentA": "p11-c",
+              "experimentB": "p11-d",
+              "value": 1,
+              "detail": "p11-c published 11 identities, p11-d published 11; jaccard=1.000"
+            }
+          ]
+        },
+        {
+          "name": "must_know_stability",
+          "mean": 1,
+          "unit": "jaccard",
+          "pairs": [
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-c",
+              "value": 1,
+              "detail": "p11-b flagged 4 mustKnow identities, p11-c flagged 4; jaccard=1.000"
+            },
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-d",
+              "value": 1,
+              "detail": "p11-b flagged 4 mustKnow identities, p11-d flagged 4; jaccard=1.000"
+            },
+            {
+              "experimentA": "p11-c",
+              "experimentB": "p11-d",
+              "value": 1,
+              "detail": "p11-c flagged 4 mustKnow identities, p11-d flagged 4; jaccard=1.000"
+            }
+          ]
+        },
+        {
+          "name": "cluster_stability",
+          "mean": 0.9955849889624724,
+          "unit": "f1",
+          "pairs": [
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-c",
+              "value": 0.9933774834437086,
+              "detail": "TP=75, p11-b pairs=75, p11-c pairs=76; f1=0.993"
+            },
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-d",
+              "value": 0.9933774834437086,
+              "detail": "TP=75, p11-b pairs=75, p11-d pairs=76; f1=0.993"
+            },
+            {
+              "experimentA": "p11-c",
+              "experimentB": "p11-d",
+              "value": 1,
+              "detail": "TP=76, p11-c pairs=76, p11-d pairs=76; f1=1.000"
+            }
+          ]
+        },
+        {
+          "name": "change_type_stability",
+          "mean": 0.8666666666666667,
+          "unit": "ratio",
+          "pairs": [
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-c",
+              "value": 0.8,
+              "detail": "8/10 shared gold events assigned the same changeType by p11-b and p11-c"
+            },
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-d",
+              "value": 0.8,
+              "detail": "8/10 shared gold events assigned the same changeType by p11-b and p11-d"
+            },
+            {
+              "experimentA": "p11-c",
+              "experimentB": "p11-d",
+              "value": 1,
+              "detail": "11/11 shared gold events assigned the same changeType by p11-c and p11-d"
+            }
+          ]
+        },
+        {
+          "name": "emerging_signal_stability",
+          "mean": 0.3333333333333333,
+          "unit": "jaccard",
+          "pairs": [
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-c",
+              "value": 0,
+              "detail": "p11-b cited 0 identities in emergingSignals, p11-c cited 1; jaccard=0.000"
+            },
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-d",
+              "value": 0,
+              "detail": "p11-b cited 0 identities in emergingSignals, p11-d cited 1; jaccard=0.000"
+            },
+            {
+              "experimentA": "p11-c",
+              "experimentB": "p11-d",
+              "value": 1,
+              "detail": "p11-c cited 1 identities in emergingSignals, p11-d cited 1; jaccard=1.000"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-09-12",
+      "runs": [
+        {
+          "experiment": "p11-b",
+          "runId": "2026-09-12-ca643215"
+        },
+        {
+          "experiment": "p11-c",
+          "runId": "2026-09-12-3ae619ce"
+        },
+        {
+          "experiment": "p11-d",
+          "runId": "2026-09-12-64a38a0a"
+        }
+      ],
+      "metrics": [
+        {
+          "name": "core_story_selection_stability",
+          "mean": 0.8863636363636364,
+          "unit": "jaccard",
+          "pairs": [
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-c",
+              "value": 0.9166666666666666,
+              "detail": "p11-b published 11 identities, p11-c published 12; jaccard=0.917"
+            },
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-d",
+              "value": 0.9090909090909091,
+              "detail": "p11-b published 11 identities, p11-d published 10; jaccard=0.909"
+            },
+            {
+              "experimentA": "p11-c",
+              "experimentB": "p11-d",
+              "value": 0.8333333333333334,
+              "detail": "p11-c published 12 identities, p11-d published 10; jaccard=0.833"
+            }
+          ]
+        },
+        {
+          "name": "must_know_stability",
+          "mean": 0.7333333333333334,
+          "unit": "jaccard",
+          "pairs": [
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-c",
+              "value": 0.6,
+              "detail": "p11-b flagged 4 mustKnow identities, p11-c flagged 4; jaccard=0.600"
+            },
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-d",
+              "value": 1,
+              "detail": "p11-b flagged 4 mustKnow identities, p11-d flagged 4; jaccard=1.000"
+            },
+            {
+              "experimentA": "p11-c",
+              "experimentB": "p11-d",
+              "value": 0.6,
+              "detail": "p11-c flagged 4 mustKnow identities, p11-d flagged 4; jaccard=0.600"
+            }
+          ]
+        },
+        {
+          "name": "cluster_stability",
+          "mean": 0.9518148104312147,
+          "unit": "f1",
+          "pairs": [
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-c",
+              "value": 0.971830985915493,
+              "detail": "TP=69, p11-b pairs=69, p11-c pairs=73; f1=0.972"
+            },
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-d",
+              "value": 0.9264705882352942,
+              "detail": "TP=63, p11-b pairs=69, p11-d pairs=67; f1=0.926"
+            },
+            {
+              "experimentA": "p11-c",
+              "experimentB": "p11-d",
+              "value": 0.9571428571428572,
+              "detail": "TP=67, p11-c pairs=73, p11-d pairs=67; f1=0.957"
+            }
+          ]
+        },
+        {
+          "name": "change_type_stability",
+          "mean": 0.9363636363636364,
+          "unit": "ratio",
+          "pairs": [
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-c",
+              "value": 0.9090909090909091,
+              "detail": "10/11 shared gold events assigned the same changeType by p11-b and p11-c"
+            },
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-d",
+              "value": 0.9,
+              "detail": "9/10 shared gold events assigned the same changeType by p11-b and p11-d"
+            },
+            {
+              "experimentA": "p11-c",
+              "experimentB": "p11-d",
+              "value": 1,
+              "detail": "10/10 shared gold events assigned the same changeType by p11-c and p11-d"
+            }
+          ]
+        },
+        {
+          "name": "emerging_signal_stability",
+          "mean": 0.6666666666666666,
+          "unit": "jaccard",
+          "pairs": [
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-c",
+              "value": 0.5,
+              "detail": "p11-b cited 1 identities in emergingSignals, p11-c cited 2; jaccard=0.500"
+            },
+            {
+              "experimentA": "p11-b",
+              "experimentB": "p11-d",
+              "value": 1,
+              "detail": "p11-b cited 1 identities in emergingSignals, p11-d cited 1; jaccard=1.000"
+            },
+            {
+              "experimentA": "p11-c",
+              "experimentB": "p11-d",
+              "value": 0.5,
+              "detail": "p11-c cited 2 identities in emergingSignals, p11-d cited 1; jaccard=0.500"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "overall": [
+    {
+      "name": "core_story_selection_stability",
+      "mean": 0.9217171717171717,
+      "unit": "jaccard"
+    },
+    {
+      "name": "must_know_stability",
+      "mean": 0.9111111111111111,
+      "unit": "jaccard"
+    },
+    {
+      "name": "cluster_stability",
+      "mean": 0.9809340327480873,
+      "unit": "f1"
+    },
+    {
+      "name": "change_type_stability",
+      "mean": 0.9343434343434344,
+      "unit": "ratio"
+    },
+    {
+      "name": "emerging_signal_stability",
+      "mean": 0.4444444444444444,
+      "unit": "jaccard"
+    }
+  ]
+}

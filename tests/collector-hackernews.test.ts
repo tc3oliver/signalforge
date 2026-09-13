@@ -115,3 +115,37 @@ describe("HackerNewsCollector", () => {
 		expect(result.error).toBeDefined();
 	});
 });
+
+describe("HackerNewsCollector work ceiling", () => {
+	it("takes only the head of each ranked list, so one poll stays bounded", async () => {
+		// Each HN list is up to 500 ids and every item is its own request. Taking
+		// all three whole is ~1500 requests behind a 5/sec bucket -- five minutes
+		// for a source meant to be cheap enough to poll hourly, which is how it
+		// came to be silently missing from finished runs.
+		const listIds = (offset: number) => Array.from({ length: 500 }, (_, i) => offset + i);
+		const itemRequests: number[] = [];
+		const fetchImpl = vi.fn(async (url: string) => {
+			if (url.includes("topstories.json")) return jsonResponse(listIds(1_000));
+			if (url.includes("beststories.json")) return jsonResponse(listIds(2_000));
+			if (url.includes("newstories.json")) return jsonResponse(listIds(3_000));
+			const id = Number(url.match(/item\/(\d+)\.json/)?.[1]);
+			itemRequests.push(id);
+			return jsonResponse({ id, type: "story", title: `Story ${id}`, by: "someone", time: 1_757_000_000, score: 1 });
+		}) as unknown as typeof fetch;
+
+		const result = await new HackerNewsCollector().collect(
+			makeCtx(
+				{ sourceConfig: { enabled: true, rateLimitPerMinute: 60, timeoutMs: 10_000, pageSize: 5, requiredSecrets: [] } },
+				fetchImpl,
+			),
+		);
+
+		// Three lists, five each, no overlap between these ranges.
+		expect(itemRequests).toHaveLength(15);
+		expect(result.items).toHaveLength(15);
+		// And it is the head of each list that was taken, not an arbitrary slice.
+		expect(itemRequests).toContain(1_000);
+		expect(itemRequests).not.toContain(1_005);
+		expect(result.health).toBe("OK");
+	});
+})

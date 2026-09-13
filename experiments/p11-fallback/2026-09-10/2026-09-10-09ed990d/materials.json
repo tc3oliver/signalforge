@@ -1,0 +1,316 @@
+{
+  "date": "2026-09-10",
+  "producedAt": "2026-09-13T09:42:43.699Z",
+  "stories": [
+    {
+      "storyId": "bis-export-rule-performance-density",
+      "tier": "A",
+      "canonicalTitle": "BIS issues interim final rule expanding export controls to mid-tier AI accelerators via performance-density threshold",
+      "whySelected": "The rule changes which accelerators require licences and creates a near-term compliance deadline for vendors, buyers and existing orders.",
+      "changeType": "NEW",
+      "importance": 0.92,
+      "novelty": 0.9,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0003",
+        "itm-20260910-0010",
+        "itm-20260910-0014",
+        "itm-20260910-0034"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0010"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "quarrystone-cve-2026-41882",
+      "tier": "A",
+      "canonicalTitle": "Quarrystone releases security patches 17.4 and 16.8 fixing unauthenticated WAL exposure flaw CVE-2026-41882",
+      "whySelected": "The flaw can expose complete write-ahead logs without authentication under a common configuration, making immediate patch and configuration review actionable.",
+      "changeType": "NEW",
+      "importance": 0.9,
+      "novelty": 0.92,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0004",
+        "itm-20260910-0023",
+        "itm-20260910-0051",
+        "itm-20260910-0060"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0004"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "northbridge-us-east-2-control-plane-outage",
+      "tier": "A",
+      "canonicalTitle": "Northbridge us-east-2 control plane disruption blocks instance launches and scaling for six hours",
+      "whySelected": "The post-incident evidence identifies certificate rotation as the cause of a major regional control-plane failure and clarifies the affected operations.",
+      "changeType": "NEW",
+      "importance": 0.91,
+      "novelty": 0.9,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0008",
+        "itm-20260910-0009",
+        "itm-20260910-0021",
+        "itm-20260910-0036",
+        "itm-20260910-0059"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0021",
+        "itm-20260910-0009"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "sable-orm-batch-upsert-data-loss",
+      "tier": "A",
+      "canonicalTitle": "Sable ORM 6.2.0 bug causes silent row loss during batched upserts",
+      "whySelected": "A reproducible silent-data-loss defect in a current ORM release warrants immediate version and workload checks by affected teams.",
+      "changeType": "NEW",
+      "importance": 0.86,
+      "novelty": 0.9,
+      "confidence": 0.9,
+      "sourceItemIds": [
+        "itm-20260910-0033",
+        "itm-20260910-0052",
+        "itm-20260910-0077",
+        "itm-20260910-0079"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0079"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "fsb-stablecoin-daily-reserve-attestation",
+      "tier": "A",
+      "canonicalTitle": "Financial Stability Board mandates daily reserve attestation and 80% overnight holdings for major stablecoin issuers",
+      "whySelected": "The final rule materially changes reserve composition, disclosure cadence and compliance obligations for systemically large payment stablecoins.",
+      "changeType": "NEW",
+      "importance": 0.89,
+      "novelty": 0.9,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0035",
+        "itm-20260910-0037",
+        "itm-20260910-0043",
+        "itm-20260910-0058"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0043"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "surface-code-distance-9-million-cycles",
+      "tier": "B",
+      "canonicalTitle": "Distance-9 surface code logical qubit demonstrates sustained below-threshold operation across one million cycles",
+      "whySelected": "The experiment updates the demonstrated durability boundary for quantum error correction, though it remains a preprint-stage research result.",
+      "changeType": "NEW",
+      "importance": 0.88,
+      "novelty": 0.95,
+      "confidence": 0.92,
+      "sourceItemIds": [
+        "itm-20260910-0001",
+        "itm-20260910-0006",
+        "itm-20260910-0045",
+        "itm-20260910-0046"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0001"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "meridian-two-million-token-model-rumor",
+      "tier": "B",
+      "canonicalTitle": "Reports emerge of unannounced Meridian model with two-million-token context window",
+      "whySelected": "If confirmed, the reported context capability would shift long-document model expectations; it remains explicitly unconfirmed and should be framed as a rumor.",
+      "changeType": "RUMOR",
+      "importance": 0.82,
+      "novelty": 0.75,
+      "confidence": 0.45,
+      "sourceItemIds": [
+        "itm-20260910-0015",
+        "itm-20260910-0053",
+        "itm-20260910-0057",
+        "itm-20260910-0067"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0067"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "vantiq-systems-guidance-cut-renewal-slippage",
+      "tier": "B",
+      "canonicalTitle": "Vantiq Systems cuts full-year revenue guidance by 9% citing enterprise renewal slippage",
+      "whySelected": "The filing points to delayed multi-year renewals and weaker retention, a potentially useful signal on enterprise software spending rather than isolated churn.",
+      "changeType": "NEW",
+      "importance": 0.78,
+      "novelty": 0.8,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0019",
+        "itm-20260910-0056",
+        "itm-20260910-0064",
+        "itm-20260910-0065"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0064"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "aperture-nimbus-7-weight-release",
+      "tier": "B",
+      "canonicalTitle": "Aperture Research releases Nimbus-7 72B MoE weights with commercial serving restrictions",
+      "whySelected": "The weight release expands deployable model capability while its licence creates a material distinction between internal use and third-party serving.",
+      "changeType": "NEW",
+      "importance": 0.85,
+      "novelty": 0.9,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0022",
+        "itm-20260910-0061",
+        "itm-20260910-0069",
+        "itm-20260910-0075"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0069",
+        "itm-20260910-0075"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "rust-1-94-parallel-compiler-default",
+      "tier": "B",
+      "canonicalTitle": "Rust 1.94 released with parallel front end enabled by default",
+      "whySelected": "A default compiler-path change can affect build performance and stability across the Rust ecosystem and is backed by official release material.",
+      "changeType": "NEW",
+      "importance": 0.8,
+      "novelty": 0.85,
+      "confidence": 0.98,
+      "sourceItemIds": [
+        "itm-20260910-0027",
+        "itm-20260910-0068",
+        "itm-20260910-0071",
+        "itm-20260910-0072"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0072",
+        "itm-20260910-0071"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "linux-6-19-deadline-aware-scheduler",
+      "tier": "B",
+      "canonicalTitle": "Linux 6.19 merges deadline-aware fair scheduler rework",
+      "whySelected": "The scheduler rework changes a foundational kernel mechanism for latency-sensitive workloads and has reached the mainline merge window.",
+      "changeType": "NEW",
+      "importance": 0.83,
+      "novelty": 0.88,
+      "confidence": 0.95,
+      "sourceItemIds": [
+        "itm-20260910-0032",
+        "itm-20260910-0038",
+        "itm-20260910-0054",
+        "itm-20260910-0063"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0063"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "accelerator-cluster-power-capping-idle-time",
+      "tier": "B",
+      "canonicalTitle": "Study finds rack-level power capping causes 11% accelerator idle time in production clusters",
+      "whySelected": "Production-cluster measurements suggest power delivery, not only scheduling, is already constraining effective accelerator utilisation.",
+      "changeType": "NEW",
+      "importance": 0.75,
+      "novelty": 0.85,
+      "confidence": 0.88,
+      "sourceItemIds": [
+        "itm-20260910-0042"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0042"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "anvil-datacenter-substation-delays",
+      "tier": "B",
+      "canonicalTitle": "Anvil Data Centres defers two campus builds citing substation energisation delays to 2029",
+      "whySelected": "The disclosed project deferrals provide concrete evidence that grid interconnection queues are delaying new compute capacity.",
+      "changeType": "NEW",
+      "importance": 0.77,
+      "novelty": 0.82,
+      "confidence": 0.88,
+      "sourceItemIds": [
+        "itm-20260910-0055"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0055"
+      ],
+      "factRefs": []
+    },
+    {
+      "storyId": "us-initial-jobless-claims",
+      "tier": "C",
+      "canonicalTitle": "US initial jobless claims hold steady at 214,000",
+      "whySelected": "The official weekly release is useful for continuity in the macro ledger but does not materially alter the labor-market picture.",
+      "changeType": "NEW",
+      "importance": 0.45,
+      "novelty": 0.4,
+      "confidence": 0.98,
+      "sourceItemIds": [
+        "itm-20260910-0011",
+        "itm-20260910-0012"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0012"
+      ],
+      "factRefs": [
+        "fct-20260910-001",
+        "fct-20260910-002"
+      ]
+    },
+    {
+      "storyId": "ashgrove-utilities-dividend-declaration",
+      "tier": "C",
+      "canonicalTitle": "Ashgrove Utilities declares quarterly dividend of 0.42 dollars per share",
+      "whySelected": "The filing is authoritative but records an unchanged routine dividend, so it is retained mainly for historical comparison.",
+      "changeType": "NEW",
+      "importance": 0.3,
+      "novelty": 0.35,
+      "confidence": 0.98,
+      "sourceItemIds": [
+        "itm-20260910-0030",
+        "itm-20260910-0047"
+      ],
+      "primarySourceIds": [
+        "itm-20260910-0030"
+      ],
+      "factRefs": [
+        "fct-20260910-006"
+      ]
+    }
+  ],
+  "emergingSignals": [
+    {
+      "label": "AI and compute growth is colliding with power delivery constraints",
+      "rationale": "Independent evidence appears at both operating and construction layers: production accelerators lose useful time to rack power caps, while new data-centre campuses are deferred by substation energisation queues. Together they suggest power availability is becoming a direct capacity and utilisation constraint rather than a distant planning issue.",
+      "storyIds": [
+        "accelerator-cluster-power-capping-idle-time",
+        "anvil-datacenter-substation-delays"
+      ]
+    }
+  ],
+  "curatorNotes": "Submitted 13 actionable A/B stories plus two C-tier continuity records. The date-stamped duplicate jobless-claims story was intentionally excluded in favor of the stable slug. The Meridian item remains low-confidence rumor; routine crypto price snapshots and other feed noise were excluded during item review."
+}

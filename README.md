@@ -1,238 +1,212 @@
-# Daily Intelligence — Phase 1 Intelligence Prototype
+# Daily Intelligence
 
-## What Phase 1 is
+A personal daily-intelligence pipeline. Collectors gather the day's raw items into
+Postgres; a restricted Pi "Curator" agent scans **every** item, deduplicates and
+clusters them into stories, compares them against a cross-day story ledger, and
+judges novelty and importance; a separate, fresh Pi "Editor" session writes the
+morning brief from the curated materials; deterministic validators gate publication;
+a Next.js reader renders what was published.
 
-Phase 1 is not a product. It is an experiment with one question:
+It runs on one machine, for one person, on a schedule.
 
-> Given a large, noisy, redundant day of feed items that continues stories from
-> previous days, can a Pi agent scan **all** of it, deduplicate it, cluster it into
-> real-world events, compare against history, judge what is actually new and
-> important, and hand a second agent enough to write a brief worth reading every
-> morning?
+## What it is not
 
-Everything here exists to answer that and nothing else. There is no database, no web
-UI, no scheduler, no real collector and no internet access. The input is synthetic
-and deterministic; the evaluation is deterministic; the only non-deterministic part
-is the model, which is the thing under test.
+- **Not a product, and not multi-tenant.** One reader, one machine, one database.
+- **Not publicly reachable.** Postgres binds `127.0.0.1` only, the web app binds
+  `127.0.0.1:3300`, and no public ingress of any kind is permitted — see `AGENTS.md`.
+- **Not an autonomous agent with a shell.** The agent sessions have no bash, no
+  filesystem (beyond one narrowly-rooted skill-reference reader), no arbitrary HTTP,
+  and no credentials. See `docs/SECURITY.md`.
+- **Not finished.** The synthetic acceptance harness passes (below), but the live
+  end-to-end run on real sources, the stability sweep and the LaunchAgent install
+  have **not** happened. `docs/PRODUCTION_PLAN.md` tracks what is left.
+- **Not currently collecting from credentialed sources.** No collector credential is
+  present in `.env` or the environment, so those sources report `DISABLED` or run in
+  a degraded mode. See `docs/DATA_SOURCES.md` for the per-source status.
 
-What Phase 1 deliberately does **not** build: PostgreSQL, pgvector, Next.js, a
-LaunchAgent, MCP, live web research, and any of the production collectors.
+## Where it stands
 
-## Architecture
+`pnpm test` on this checkout: **47 test files passed, 5 skipped; 569 tests passed, 42
+skipped.** The skipped suites are the ones guarded by `describe.skipIf(!probe.available)` —
+they need a reachable Postgres (`db-items`, `db-migrations`, `db-story-repository`,
+`pipeline-daily-run`, `web-queries`) or generated fixtures (`gold-isolation`).
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). The short version:
+Synthetic acceptance: the `p11-b` experiment lineage has `overallPass: true` and an
+empty `failedGates` array for all three fixture days (2026-09-10, -11, -12), across
+15 recorded metrics — see `experiments/p11-b/<date>/<run-id>/evaluation.json`.
+`docs/PRODUCTION_PLAN.md` still carries this as WIP (0.6), and
+`docs/PHASE1_REPORT.md` documents the earlier lineage that failed two gates and why
+the policy was corrected; read both before treating the pass as settled.
 
-```
-synthetic manifest → Pi Curator (restricted) → materials.json
-                   → Pi Editor (separate fresh session) → brief.json → brief.md
-                   → validator → evaluator
-```
+## Prerequisites
 
-The Curator and Editor never share a session. Nothing durable lives inside a session.
-Agent output is only accepted through a validating custom tool.
+| | |
+|---|---|
+| Node | ≥ 24 (`package.json` `engines`); v24.21.0 here, mise-managed |
+| pnpm | 10.34.5, mise-managed |
+| Docker | OrbStack, context `orbstack` |
+| Pi CLI | 0.85.1, already installed and authenticated (`pi auth check`) |
 
-## Setup
+This project reuses the existing Pi OAuth logins read-only via
+`~/.pi/agent/auth.json` and changes nothing about the global Pi configuration. See
+`docs/ENVIRONMENT.md` for every verified version and the model chain.
+
+## First-time setup
 
 ```bash
 pnpm install
+
+cp .env.example .env
+# then edit .env: replace the placeholder password with a locally generated one,
+# in BOTH POSTGRES_PASSWORD and DATABASE_URL.
+
+docker compose -p daily-intelligence up -d     # Postgres 17 + pgvector, 127.0.0.1 only
+pnpm db:migrate
 ```
 
-Requires the Pi CLI already installed and authenticated (`pi auth check`). This
-project reuses those OAuth logins read-only and changes nothing about the global Pi
-configuration. See [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) for the verified
-versions and model IDs.
+`.env` is gitignored. Never commit a real credential; see `docs/SECURITY.md` for
+where credentials are allowed to live.
 
-## How to generate fixtures
+To add collector credentials, set the logical secret names from
+`config/sources.yaml` as environment variables, or add a Keychain mapping in
+`src/config/secrets.ts`. `pnpm collect` will report each source's health and name
+the missing secrets.
+
+## Running it
 
 ```bash
-pnpm phase1:generate            # all three dates, fixed seed
-pnpm phase1:generate --seed 42  # a different deterministic world
+pnpm collect                   # collection pass only: providers -> Postgres
+pnpm daily                     # the full day: collect -> curate -> write -> validate -> publish
+pnpm db:reset                  # drop and re-migrate (destructive)
 ```
 
-Writes `fixtures/generated/<date>/manifest.json` (agent-visible) and
-`eval/gold/<date>.json` (never visible to the agent). Same seed, byte-identical
-output.
+Both read `.env` via `tsx --env-file-if-exists=.env`.
 
-## How to run the Curator
+The web reader:
 
 ```bash
-pnpm phase1:curate --date 2026-09-12
+pnpm web:dev                   # next dev on 127.0.0.1:3300
+pnpm web:build
+pnpm web:start                 # next start on 127.0.0.1:3300
+pnpm web:seed                  # development seed data
 ```
 
-Runs the curator stage alone and stops at `materials.json`. Useful when iterating on
-curation policy without paying for an editor run.
+A web request never invokes a language model. `tests/web-no-llm.test.ts` walks every
+file under `web/` and fails if anything there imports the Pi SDK or the restricted
+runtime. See `web/README.md` for the route list.
 
-## How to run the Editor
+## Tests and acceptance
 
 ```bash
-pnpm phase1:edit --date 2026-09-12               # latest run for that date
-pnpm phase1:edit --date 2026-09-12 --run-id <id> # a specific run
+pnpm test                      # vitest, unit + integration
+pnpm typecheck                 # tsc --noEmit
 ```
 
-Builds a fresh editor session from an existing run's `materials.json`. Re-runnable:
-each invocation starts from the materials, never from a previous editor conversation.
+Integration tests drive the real tools, validators, repository and orchestrator
+through a fake agent driver, so resume, cross-provider fallback, rejection handling,
+gold-truth isolation and the run lifecycle are all covered without spending a token
+on a model. DB-backed suites skip themselves when Postgres is not reachable, so a
+clean `pnpm test` with 42 skips means "no database", not "nothing to run" — start the
+container and re-run to exercise them.
 
-## How to run the full phase
+The synthetic acceptance harness (fixtures + gold truth) is unchanged from Phase 1
+and is not superseded by live data:
 
 ```bash
-pnpm phase1:run --date 2026-09-10
-pnpm phase1:run --date 2026-09-11
-pnpm phase1:run --date 2026-09-12
+pnpm phase1:generate                        # all three dates, fixed seed
+pnpm phase1:generate --seed 42              # a different deterministic world
+pnpm phase1:curate  --date 2026-09-12       # curator stage alone
+pnpm phase1:edit    --date 2026-09-12       # fresh editor from stored materials
+pnpm phase1:run     --date 2026-09-10       # curator -> editor -> validator -> eval
+pnpm eval:run       --date 2026-09-12       # evaluate an existing run
+pnpm stability:run                          # stability sweep tooling
+pnpm benchmark:models                       # resolve-only; free
 ```
 
-Curator → Editor → Validator → Evaluation, writing everything under
-`runs/<date>/<run-id>/`. Exits non-zero when an acceptance gate fails.
+**Run the fixture dates in order.** Day N's novelty judgements depend on the ledger
+day N−1 wrote; running 09-12 first makes every story look NEW.
 
-**Run the dates in order.** Day N's novelty judgements depend on the story ledger
-that day N−1 wrote; running 09-12 first means every story looks NEW.
+Evaluation matches produced stories to gold events **by source-item overlap, never by
+title** — Jaccard over item sets with a primary-item rescue path. Title matching
+would reward the exact failure mode this project exists to detect. Gate thresholds
+are not negotiable: a failing gate gets a fixed policy or implementation, never a
+lowered bar (`AGENTS.md`).
 
-## How evaluation works
+`MANUAL_REVIEW.md` carries a deliberately empty human score — "would I read this every
+morning, 1–5", target ≥ 4. Nothing in this repository ever writes it.
 
-```bash
-pnpm eval:run --date 2026-09-12
-```
+## Fault injection (test-only — never in a production run)
 
-The evaluator loads the run's artifacts and `eval/gold/<date>.json`, then matches
-produced stories to gold events **by source-item overlap, never by title** — Jaccard
-over item sets, with a rescue path when a story contains the event's primary item.
-Title matching would reward the failure mode this whole project is trying to detect.
+`src/runtime/fault-injection.ts` synthesizes a real, classifier-real provider failure
+at a chosen point in a chosen stage, so the fallback path can be exercised without
+waiting for an actual outage. **It must never be enabled for a live run.** An
+injected fallback is not evidence of production fallback behaviour.
 
-Gates (all must pass):
-
-| Metric | Gate |
-|---|---|
-| Scan Coverage | 100% |
-| Important Story Recall | ≥ 90% |
-| Cluster F1 (pairwise) | ≥ 90% |
-| Change Type Accuracy | ≥ 85% |
-| Selected Story Precision | ≥ 85% |
-| Noise Rejection | ≥ 95% |
-| Fabricated source IDs | 0 |
-| Invalid fact refs | 0 |
-| Final duplicate stories | 0 |
-| Final story count | 8–15 |
-| Must Know count | 3–5 |
-| Structured output valid after retry | 100% |
-
-It also writes `MANUAL_REVIEW.md` with a deliberately empty human score block —
-"would I read this every morning, 1–5", target ≥ 4. That field is filled in by a
-person. Nothing in this repository ever writes it.
-
-## How model fallback works
-
-Fixed chain, implemented in this project rather than by any Pi extension (Pi has no
-cross-provider fallback):
-
-1. `github-copilot/gemini-3.8-flash`
-2. `openai-codex/gpt-5.6-sol`
-3. `opencode-go/deepseek-v4.1-flash`
-
-Errors are classified by `status`/`code`/`name`/`cause` before message text, then:
-transient (network, timeout, rate limit, 5xx) retries once then falls back; quota,
-billing and model-unavailable fall back immediately; auth marks the provider degraded
-for the rest of the run; invalid output gets one corrective retry; a tool loop gets
-one resume; context overflow opens a fresh session on the **same** model; a programmer
-error fails immediately.
-
-A fallback never migrates a dying conversation. The next model reads the durable
-state and continues from the first item that has no decision yet.
+Single env var, JSON spec:
 
 ```bash
-pnpm benchmark:models                                              # resolve-only, free
-pnpm benchmark:models --models gemini,gpt,deepseek --dates 2026-09-12 --repeat 1
-```
-
-The no-argument form only proves each model resolves. A real sweep is opt-in because
-each cell is a full curator+editor run over ~85 items and costs real subscription
-quota.
-
-## Fault injection (test-only — never use in a production run)
-
-`src/runtime/fault-injection.ts` lets a test synthesize a real, classifier-real
-provider failure at a chosen point in a chosen stage, to exercise the fallback path
-above without waiting for an actual quota exhaustion or outage. **It must never be
-enabled for a live run.** An injected fallback is not evidence of production
-fallback behaviour — it is a manufactured one, and the run artifacts record it as
-such (see below) so a report can never conflate the two.
-
-It is controlled by a single environment variable, `DAILY_INTELLIGENCE_FAULT_INJECTION`,
-carrying a JSON spec:
-
-```bash
-DAILY_INTELLIGENCE_FAULT_INJECTION='{"stage":"curator","model":"primary","afterProcessedItems":20,"failureClass":"RATE_LIMIT"}'
+DAILY_INTELLIGENCE_FAULT_INJECTION='{"stage":"curator","model":"primary","afterProcessedItems":20,"failureClass":"QUOTA"}'
 ```
 
 | Field | Meaning |
 |---|---|
 | `stage` | `curator` or `editor` |
-| `model` | `primary` / `secondary` / `tertiary` (chain position), or a full `provider/model` key |
-| `afterProcessedItems` | Curator: fires once at least this many items have been recorded. Editor: the editor stage has no "items processed" concept of its own, so this is interpreted as "after this many tool calls" — the nearest honest equivalent of stage progress. |
-| `failureClass` | Any value from the 14 `FailureClass`es in `src/schemas/run.ts` |
+| `model` | `primary` / `secondary` / `tertiary`, or a full `provider/model` key |
+| `afterProcessedItems` | Curator: fires once this many items have a recorded decision. Editor: interpreted as tool calls, the nearest honest equivalent of stage progress |
+| `failureClass` | Any `FailureClass` from `src/schemas/run.ts` |
 
-Behaviour:
+Off by default; never keyed off `NODE_ENV` or a config file; an invalid spec throws at
+startup rather than silently disabling itself; fires at most once per run; the
+synthesized error goes through the real `classifyError`; every attempt it produces
+carries a `faultInjected` record in `attempts.json`.
 
-- **Off by default.** Absent or empty env var — zero behavioural change, zero
-  overhead on the normal path.
-- **Explicit opt-in only.** Never triggered by `NODE_ENV`, test mode, or any config
-  file — env var only, and the parser rejects invalid JSON or an unknown field at
-  startup with a clear error rather than silently running as if disabled.
-- **Fires at most once per run**, so the fallback model can actually complete the
-  work.
-- The synthesized error is a real error object (`status`, `code`, or `name`, as
-  appropriate) run through the actual `classifyError` in `error-classifier.ts` —
-  there is no special-case bypass in the classifier for it.
-- Every attempt record it produces carries a `faultInjected` field
-  (`{ stage, model, failureClass, afterProcessedItems, firedAtProcessedItems }`) in
-  `attempts.json`, distinguishing it permanently from a spontaneous failure.
+Note: a transient class like `RATE_LIMIT` retries once on the *same* model first, and
+since the fault fires only once that retry succeeds and no fallback occurs. Use
+`QUOTA`, `BILLING`, `MODEL_UNAVAILABLE` or `AUTH` to force a fallback in one shot.
 
-Note: with a transient class like `RATE_LIMIT` or `NETWORK`, `decideAction` retries
-once on the *same* model before falling back (see "How model fallback works" above);
-since the fault fires only once, that retry will succeed and no fallback will occur.
-Use a class that falls back immediately on first failure — `QUOTA`, `BILLING`,
-`MODEL_UNAVAILABLE`, or `AUTH` — to force a fallback in one shot.
+## Where things live
 
-## Where run artifacts live
+| Path | What is actually there |
+|---|---|
+| `runs/<date>/<run-id>/` | Per-run artifacts for the default lineage: `manifest.json`, `run-state.json`, `attempts.json`, `events.jsonl`, `item-decisions.json`, `story-ledger.json`, `materials.json`, `brief.json`/`brief.md`, `validation.json`, `evaluation.json`/`evaluation.md`/`MANUAL_REVIEW.md`, `restricted-runtime.json`, `summary.md`. Currently holds 2026-09-10/-11/-12 |
+| `runs/_ledger/<date>/` | The cross-day ledger for that lineage |
+| `experiments/<lineage>/` | The same tree, namespaced by `DI_LINEAGE`, so experimental runs never collide with production rows. Currently `p11-a`, `p11-b`, `p11-c`, `p11-d`, `p11-fallback` |
+| `fixtures/generated/<date>/` | Agent-visible synthetic manifests |
+| `eval/gold/<date>.json` | Gold truth. Read by the evaluator and by nothing else |
+| `agent/skills/daily-intelligence/` | `SKILL.md` plus nine reference documents |
+| `logs/` | LaunchAgent stdout/stderr, once the agents are installed. Currently empty |
+| `backups/` | `pg_dump` output from `scripts/backup-db.sh`, gzipped and timestamped. Currently holds one dump |
+| `db/migrations/` | `001_init.sql`, `002_run-status-and-degraded.sql` |
+| `config/` | `interests.yaml`, `watchlists.yaml`, `sources.yaml`, `discovery.yaml`, `agent.yaml` |
+| `launchd/` | The two plist templates |
 
-```
-runs/<date>/<run-id>/
-    manifest.json          exactly what the agent saw
-    run-state.json         lifecycle status and failure reason
-    attempts.json          every model attempt with failure class
-    events.jsonl           append-only trace of tool calls and transitions
-    item-decisions.json    the scan-coverage evidence
-    story-ledger.json      the clustering
-    materials.json         curator → editor handoff
-    brief.json / brief.md  the output
-    validation.json        post-submit check
-    evaluation.json / evaluation.md / MANUAL_REVIEW.md
-    restricted-runtime.json  tool names actually active per stage
-    summary.md
+## Inspecting a failed run
 
-runs/_ledger/<date>/       the cross-day story ledger (shared by all runs)
-```
-
-## How to inspect a failed run
-
-1. `runs/<date>/<run-id>/run-state.json` — `status` says which stage failed and
-   `failureReason` says why.
+1. `run-state.json` — `status` says which stage failed, `failureReason` says why.
 2. `attempts.json` — one record per model attempt with `failureClass`,
    `fallbackReason` and sanitized `errorMeta`. This distinguishes "the provider was
    out of quota" from "the model produced an invalid payload".
-3. `events.jsonl` — every tool call in order. A curator that stalled shows as
-   repeated calls with no growth in `processedItems`.
+3. `events.jsonl` — every tool call in order. A stalled curator shows as repeated
+   calls with no growth in `processedItems`.
 4. `item-decisions.json` vs `manifest.json` — a `CURATION_FAILED` run is almost
-   always an incomplete scan; diff the id sets to see what it never reached.
+   always an incomplete scan; diff the id sets.
 5. `validation.json` — for `VALIDATION_FAILED`, the exact referential errors.
-6. `evaluation.json` — `failedGates` plus each metric's `detail`, which carries the
-   raw counts rather than just a ratio.
+6. `evaluation.json` — `failedGates` plus each metric's `detail`, which carries raw
+   counts rather than just a ratio.
 
-## Tests
+`/admin/runs` in the web reader shows the same thing over the database.
 
-```bash
-pnpm test        # unit + integration
-pnpm typecheck
-```
+## Documentation
 
-Integration tests drive the real tools, validators and repository through a fake
-agent runner, so the whole orchestration — resume, fallback, rejection handling, run
-lifecycle — is covered without spending a token on a model.
+| Document | One line |
+|---|---|
+| [`AGENTS.md`](AGENTS.md) | The binding project rules; read this first |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Why the system is shaped this way, and where each guarantee is enforced |
+| [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) | Verified versions, model IDs, config surface and environment variables |
+| [`docs/SECURITY.md`](docs/SECURITY.md) | Threat model and the code and tests that enforce it |
+| [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) | Per-collector endpoints, credentials, incrementality and current status |
+| [`docs/OPERATIONS.md`](docs/OPERATIONS.md) | Day-to-day operation of the running system |
+| [`docs/RUNBOOK.md`](docs/RUNBOOK.md) | Incident procedures |
+| [`docs/PRODUCTION_PLAN.md`](docs/PRODUCTION_PLAN.md) | Staged build plan and per-task status |
+| [`docs/PHASE1_REPORT.md`](docs/PHASE1_REPORT.md) | The prototype's measured results and known limitations |
+| [`web/README.md`](web/README.md) | The reader: routes, the no-LLM rule, and how untrusted content is rendered |

@@ -1,0 +1,292 @@
+[
+  {
+    "storyId": "fenwick-quantum-qubit-threshold",
+    "date": "2026-09-10",
+    "canonicalTitle": "Fenwick Quantum Group Demonstrates Distance-9 Surface Code Logical Qubit Below Threshold for One Million Cycles",
+    "sourceItemIds": [
+      "itm-20260910-0001",
+      "itm-20260910-0006",
+      "itm-20260910-0045",
+      "itm-20260910-0046"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0001"
+    ],
+    "firstSeenAt": "2026-09-13T09:51:49.127Z",
+    "lastSeenAt": "2026-09-13T09:51:49.127Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.85,
+    "novelty": 0.9,
+    "importance": 0.85,
+    "confidence": 0.95,
+    "reason": "First published experimental demonstration of a distance-9 surface code logical qubit sustaining a logical error rate of 1.1e-7 below fault-tolerance threshold across 1M cycles. Primary preprint on arXiv with citations and independent coverage.",
+    "factRefs": []
+  },
+  {
+    "storyId": "bis-export-controls-mid-tier-accelerators",
+    "date": "2026-09-10",
+    "canonicalTitle": "BIS Issues Interim Final Rule Lowering Performance-Density Threshold for Export Controls on Mid-Tier AI Accelerators",
+    "sourceItemIds": [
+      "itm-20260910-0003",
+      "itm-20260910-0010",
+      "itm-20260910-0014",
+      "itm-20260910-0034"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0010"
+    ],
+    "firstSeenAt": "2026-09-13T09:51:53.222Z",
+    "lastSeenAt": "2026-09-13T09:51:53.222Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.9,
+    "novelty": 0.85,
+    "importance": 0.9,
+    "confidence": 0.95,
+    "reason": "US Bureau of Industry and Security issued an interim final rule revising performance-density thresholds, capturing previously exempt mid-tier accelerators designed to fit under prior export limits.",
+    "factRefs": []
+  },
+  {
+    "storyId": "quarrystone-cve-2026-41882",
+    "date": "2026-09-10",
+    "canonicalTitle": "Quarrystone Patches Critical Flaw CVE-2026-41882 Exposing Write-Ahead Logs to Unauthenticated Clients",
+    "sourceItemIds": [
+      "itm-20260910-0004",
+      "itm-20260910-0023"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0004"
+    ],
+    "firstSeenAt": "2026-09-13T09:51:57.602Z",
+    "lastSeenAt": "2026-09-13T09:51:57.602Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.85,
+    "novelty": 0.85,
+    "importance": 0.85,
+    "confidence": 0.95,
+    "reason": "Quarrystone released security updates 17.4 and 16.8 to fix CVE-2026-41882, which allowed unauthenticated clients to open logical replication slots when scram channel binding was disabled, exposing full write-ahead logs.",
+    "factRefs": []
+  },
+  {
+    "storyId": "northbridge-us-east-2-outage",
+    "date": "2026-09-10",
+    "canonicalTitle": "Northbridge Cloud us-east-2 Control Plane Disruption Freezes Scaling for Over Six Hours",
+    "sourceItemIds": [
+      "itm-20260910-0008",
+      "itm-20260910-0009",
+      "itm-20260910-0021",
+      "itm-20260910-0036"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0021"
+    ],
+    "firstSeenAt": "2026-09-13T09:52:01.809Z",
+    "lastSeenAt": "2026-09-13T09:52:01.809Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.85,
+    "novelty": 0.8,
+    "importance": 0.8,
+    "confidence": 0.95,
+    "reason": "A failed certificate rotation in Northbridge Cloud us-east-2 control plane blocked instance launches, autoscaling, and load balancer changes for 6 hours 11 minutes while existing workloads remained unaffected.",
+    "factRefs": []
+  },
+  {
+    "storyId": "us-jobless-claims",
+    "date": "2026-09-10",
+    "canonicalTitle": "US Initial Jobless Claims Hold Steady at 214,000",
+    "sourceItemIds": [
+      "itm-20260910-0011",
+      "itm-20260910-0012"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0012"
+    ],
+    "firstSeenAt": "2026-09-13T09:52:05.830Z",
+    "lastSeenAt": "2026-09-13T09:52:05.830Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.4,
+    "novelty": 0.25,
+    "importance": 0.35,
+    "confidence": 0.95,
+    "reason": "Department of Labor weekly jobless claims printed at 214,000, within recent range and signaling steady labour market conditions without macroeconomic inflection.",
+    "factRefs": [
+      "fct-20260910-001",
+      "fct-20260910-002"
+    ]
+  },
+  {
+    "storyId": "meridian-long-context-model",
+    "date": "2026-09-10",
+    "canonicalTitle": "Meridian Reportedly Previews 2M-Token Context Window Model for Enterprise Document Review",
+    "sourceItemIds": [
+      "itm-20260910-0015"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0015"
+    ],
+    "firstSeenAt": "2026-09-13T09:52:12.573Z",
+    "lastSeenAt": "2026-09-13T09:52:12.573Z",
+    "status": "OPEN",
+    "changeType": "RUMOR",
+    "relevance": 0.8,
+    "novelty": 0.7,
+    "importance": 0.75,
+    "confidence": 0.55,
+    "reason": "Early developer reports from r/LocalLLaMA indicate Meridian is testing an unreleased 2M-token context model with retrieval-free long-document review capabilities with enterprise partners, pending official confirmation.",
+    "factRefs": []
+  },
+  {
+    "storyId": "vantiq-enterprise-renewals-guidance-cut",
+    "date": "2026-09-10",
+    "canonicalTitle": "Vantiq Systems Cuts Full-Year Revenue Guidance by 9% Citing Slippage in Enterprise Renewals",
+    "sourceItemIds": [
+      "itm-20260910-0019"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0019"
+    ],
+    "firstSeenAt": "2026-09-13T09:52:16.600Z",
+    "lastSeenAt": "2026-09-13T09:52:16.600Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.75,
+    "novelty": 0.75,
+    "importance": 0.7,
+    "confidence": 0.8,
+    "reason": "Vantiq disclosed a 9% cut to full-year revenue guidance and lower net revenue retention (104%), with management attributing the shortfall to multi-year enterprise renewal slippage rather than customer churn.",
+    "factRefs": []
+  },
+  {
+    "storyId": "aperture-nimbus-7-release",
+    "date": "2026-09-10",
+    "canonicalTitle": "Aperture Releases Nimbus-7 72B MoE Model Under Restrictive Non-Serving Licence",
+    "sourceItemIds": [
+      "itm-20260910-0022"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0022"
+    ],
+    "firstSeenAt": "2026-09-13T09:52:21.076Z",
+    "lastSeenAt": "2026-09-13T09:52:21.076Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.85,
+    "novelty": 0.85,
+    "importance": 0.8,
+    "confidence": 0.85,
+    "reason": "Aperture released weights for Nimbus-7, a 72B mixture-of-experts model, under a licence permitting research and internal commercial use but explicitly barring third-party hosting or serving.",
+    "factRefs": []
+  },
+  {
+    "storyId": "rust-1-94-release",
+    "date": "2026-09-10",
+    "canonicalTitle": "Rust 1.94 Enables Parallel Compiler Front End by Default and Stabilises Const APIs",
+    "sourceItemIds": [
+      "itm-20260910-0027"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0027"
+    ],
+    "firstSeenAt": "2026-09-13T09:52:26.010Z",
+    "lastSeenAt": "2026-09-13T09:52:26.010Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.8,
+    "novelty": 0.8,
+    "importance": 0.75,
+    "confidence": 0.85,
+    "reason": "Rust 1.94 turns on the parallel compiler front end by default, delivering a 22% median reduction in cold check times across crates, alongside stabilising three long-pending const APIs.",
+    "factRefs": []
+  },
+  {
+    "storyId": "linux-6-19-deadline-scheduler",
+    "date": "2026-09-10",
+    "canonicalTitle": "Linux 6.19 Merge Window Adopts Deadline-Aware Fair Scheduler Rework",
+    "sourceItemIds": [
+      "itm-20260910-0032",
+      "itm-20260910-0038"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0032"
+    ],
+    "firstSeenAt": "2026-09-13T09:52:31.234Z",
+    "lastSeenAt": "2026-09-13T09:52:31.234Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.8,
+    "novelty": 0.8,
+    "importance": 0.75,
+    "confidence": 0.9,
+    "reason": "The Linux 6.19 merge window merged the deadline-aware fair scheduler rework, replacing the vruntime heuristic for latency-sensitive tasks with explicit per-task deadlines.",
+    "factRefs": []
+  },
+  {
+    "storyId": "sable-orm-batch-loss",
+    "date": "2026-09-10",
+    "canonicalTitle": "Sable ORM 6.2.0 Bug Silently Drops Rows in Batched Upserts Exceeding Connection Pool",
+    "sourceItemIds": [
+      "itm-20260910-0033"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0033"
+    ],
+    "firstSeenAt": "2026-09-13T09:53:09.251Z",
+    "lastSeenAt": "2026-09-13T09:53:09.251Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.75,
+    "novelty": 0.75,
+    "importance": 0.75,
+    "confidence": 0.8,
+    "reason": "A critical issue filed against sable-orm 6.2.0 reveals that batched upsert operations silently discard rows when batch sizes exceed the connection pool size, with a verified minimal reproduction.",
+    "factRefs": []
+  },
+  {
+    "storyId": "fsb-stablecoin-reserve-rules",
+    "date": "2026-09-10",
+    "canonicalTitle": "FSB Mandates Daily Reserve Attestation and 80% Overnight Assets for Large Payment Stablecoins",
+    "sourceItemIds": [
+      "itm-20260910-0035",
+      "itm-20260910-0037",
+      "itm-20260910-0043"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0043"
+    ],
+    "firstSeenAt": "2026-09-13T09:53:13.554Z",
+    "lastSeenAt": "2026-09-13T09:53:13.554Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.85,
+    "novelty": 0.85,
+    "importance": 0.85,
+    "confidence": 0.95,
+    "reason": "The Financial Stability Board published a final rule requiring payment stablecoin issuers with over $10B circulation to publish daily third-party attested reserve compositions and maintain at least 80% in overnight instruments.",
+    "factRefs": []
+  },
+  {
+    "storyId": "accelerator-power-capping-idle-time",
+    "date": "2026-09-10",
+    "canonicalTitle": "Measurement Study Identifies Rack-Level Power Capping as Cause of 11% AI Accelerator Idle Time",
+    "sourceItemIds": [
+      "itm-20260910-0042"
+    ],
+    "primarySourceIds": [
+      "itm-20260910-0042"
+    ],
+    "firstSeenAt": "2026-09-13T09:53:18.002Z",
+    "lastSeenAt": "2026-09-13T09:53:18.002Z",
+    "status": "OPEN",
+    "changeType": "NEW",
+    "relevance": 0.75,
+    "novelty": 0.75,
+    "importance": 0.7,
+    "confidence": 0.85,
+    "reason": "Preprint study across four production accelerator clusters reveals 11% of wall-clock time is lost to rack-level power capping rather than scheduling inefficiencies.",
+    "factRefs": []
+  }
+]

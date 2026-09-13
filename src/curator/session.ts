@@ -60,6 +60,12 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 	const bundle = loadSkillBundle(skills[0]!);
 
 	let toolCalls = 0;
+	// An injected failure has to survive being thrown from inside a tool: Pi hands
+	// a thrown tool error back to the model as a correctable result, so the first
+	// throw is remembered here and re-thrown at every later boundary. The model
+	// can then make no further progress, the turn ends, and the attempt fails with
+	// the injected error -- exactly as a real provider outage would end it.
+	let faultError: Error | undefined;
 	const ctx: CuratorContext = {
 		date: opts.date,
 		manifest: opts.manifest,
@@ -69,6 +75,19 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 			toolCalls += 1;
 			opts.onEvent?.({ kind: "tool_call", stage: "CURATOR", tool: name, ...summary });
 		},
+		...(opts.checkFault
+			? {
+					onToolBoundary: async () => {
+						if (faultError) throw faultError;
+						try {
+							opts.checkFault?.((await opts.repo.processedItemIds(opts.date)).size);
+						} catch (err) {
+							faultError = err instanceof Error ? err : new Error(String(err));
+							throw faultError;
+						}
+					},
+				}
+			: {}),
 	};
 
 	const tools = [...createCuratorTools(ctx), createSkillReferenceTool(bundle)];
@@ -115,6 +134,7 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 						});
 
 		await driver.prompt(opening);
+		if (faultError) throw faultError;
 		opts.checkFault?.((await opts.repo.processedItemIds(opts.date)).size);
 
 		let nudges = 0;
@@ -124,6 +144,7 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 		while (!ctx.submitted && nudges < maxNudges) {
 			const current = await opts.repo.processedItemIds(opts.date);
 			const storyList = await opts.repo.listStories(opts.date);
+			if (faultError) throw faultError;
 			opts.checkFault?.(current.size);
 
 			// No new decisions since the last turn means the model is circling rather
@@ -156,6 +177,7 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 					storyCount: storyList.length,
 				}),
 			);
+			if (faultError) throw faultError;
 		}
 
 		if (!ctx.submitted) {
