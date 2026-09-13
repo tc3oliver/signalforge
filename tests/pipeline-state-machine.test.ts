@@ -6,7 +6,6 @@ import {
 	type PipelineState,
 	assertTransition,
 	isLegalTransition,
-	toPersistedStatus,
 } from "../src/pipeline/daily-run.ts";
 import { RunStatus } from "../src/schemas/run.ts";
 
@@ -62,11 +61,9 @@ describe("run state machine", () => {
 		expect(() => assertTransition("CREATED", "PUBLISHED")).toThrow(/CREATED -> PUBLISHED/);
 	});
 
-	it("maps every pipeline state onto a status the runs table accepts", () => {
+	it("persists every pipeline state verbatim, matching migration 002's check constraint", () => {
 		for (const state of PIPELINE_STATES) {
-			expect(RunStatus.safeParse(toPersistedStatus(state)).success).toBe(true);
+			expect(RunStatus.safeParse(state).success).toBe(true);
 		}
-		expect(toPersistedStatus("PUBLISHED")).toBe("COMPLETED");
-		expect(toPersistedStatus("COLLECTING")).toBe("CREATED");
 	});
 });

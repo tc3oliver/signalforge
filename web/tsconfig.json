@@ -19,6 +19,9 @@
 		"plugins": [{ "name": "next" }],
 		"paths": { "@/*": ["./*"] }
 	},
-	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "../src/**/*.ts"],
+	// Files under ../src are typechecked transitively, through what the app
+	// actually imports. Globbing the whole tree would make this build fail on
+	// unrelated pipeline code that the reader never loads.
+	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
 	"exclude": ["node_modules"]
 }

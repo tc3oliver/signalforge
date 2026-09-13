@@ -34,7 +34,7 @@ export const minifluxCollector: Collector = {
 	requiredSecrets: ["MINIFLUX_API_KEY"],
 
 	async check(ctx: CollectorContext) {
-		const hasUrl = Boolean(ctx.sourceConfig.baseUrl);
+		const hasUrl = Boolean(ctx.sourceConfig?.baseUrl);
 		const hasKey = await ctx.hasSecret("MINIFLUX_API_KEY");
 		if (!hasUrl || !hasKey) {
 			return { ok: false, detail: "a baseUrl and MINIFLUX_API_KEY are both required and not fully configured" };
@@ -48,7 +48,7 @@ export const minifluxCollector: Collector = {
 		const warnings: string[] = [];
 		let itemsFetched = 0;
 
-		const hasUrl = Boolean(ctx.sourceConfig.baseUrl);
+		const hasUrl = Boolean(ctx.sourceConfig?.baseUrl);
 		const hasKey = await ctx.hasSecret("MINIFLUX_API_KEY");
 		if (!hasUrl || !hasKey) {
 			const finishedAt = ctx.now().toISOString();
@@ -66,7 +66,7 @@ export const minifluxCollector: Collector = {
 			};
 		}
 
-		const baseUrl = (ctx.sourceConfig.baseUrl as string).replace(/\/$/, "");
+		const baseUrl = (ctx.sourceConfig!.baseUrl as string).replace(/\/$/, "");
 		const apiKey = await ctx.secret("MINIFLUX_API_KEY");
 		const bucket = new TokenBucket({ capacity: 5, refillPerSecond: 5 });
 		const get = (url: string) =>

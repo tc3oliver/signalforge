@@ -325,21 +325,20 @@ export async function findRelatedStories(
 			where s.lineage = $1 and s.story_id <> $2
 			order by s.story_id, s.date desc, s.ordinal desc
 		),
+		subject_shape as (
+			select s.source_item_ids as item_ids,
+				ledger_tokens(s.canonical_title || ' ' || s.reason) as tokens
+			from subject s
+		),
 		scored as (
 			select l.*,
 				(select count(*) from unnest(l.source_item_ids) v
-				 where v = any((select source_item_ids from subject))) as shared_item_count,
+				 where v = any(sub.item_ids)) as shared_item_count,
 				(
-					select count(*)::float8 from unnest(
-						(select ledger_tokens(canonical_title || ' ' || reason) from subject)
-					) q
+					select count(*)::float8 from unnest(sub.tokens) q
 					where q <> '' and q = any(ledger_tokens(l.canonical_title || ' ' || l.reason))
-				) / greatest(
-					array_length(
-						(select ledger_tokens(canonical_title || ' ' || reason) from subject), 1
-					), 1
-				) as token_overlap
-			from latest l
+				) / greatest(array_length(sub.tokens, 1), 1) as token_overlap
+			from latest l cross join subject_shape sub
 		)
 		select ${COLUMNS("s")}, s.shared_item_count::text as shared_item_count, s.token_overlap
 		from scored s

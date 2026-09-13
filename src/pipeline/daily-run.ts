@@ -12,7 +12,7 @@ import type { AgentDriverFactory } from "../runtime/agent-driver.ts";
 import { createPiAgentDriver } from "../runtime/agent-driver.ts";
 import { MODEL_CHAIN, modelKey, type ModelSpec } from "../runtime/model-config.ts";
 import { RouterState, runStageWithFallback } from "../runtime/model-router.ts";
-import type { DailyBrief, DailyManifest, DailyMaterials, RunState, RunStatus } from "../schemas/index.ts";
+import type { DailyBrief, DailyManifest, DailyMaterials, RunState } from "../schemas/index.ts";
 import { DailyBrief as DailyBriefSchema } from "../schemas/index.ts";
 import { PostgresStoryRepository } from "../stories/postgres-repository.ts";
 import { validateBrief } from "../validator/brief-validator.ts";
@@ -91,28 +91,11 @@ export function assertTransition(from: PipelineState, to: PipelineState): void {
 }
 
 /*
- * `daily_runs.status` has a CHECK constraint predating collection and publishing
- * (db/ is owned elsewhere and is forward-only), so the pipeline's own states are
- * mapped onto the statuses the column accepts. Nothing is lost: the precise
- * resume point is derived from durable artifacts (collection_runs, materials,
- * drafts, briefs), which is stronger evidence than a status string anyway.
+ * migration 002 widened `daily_runs_status_check` to accept every pipeline
+ * state (plus PUBLISHED and the back-compat COMPLETED), so `PipelineState`
+ * is persisted to `daily_runs.status` verbatim — no lossy mapping, and
+ * `/admin/runs` reads the real state directly.
  */
-export function toPersistedStatus(state: PipelineState): RunStatus {
-	switch (state) {
-		case "CREATED":
-		case "COLLECTING":
-		case "COLLECTED":
-		case "COLLECTION_FAILED":
-			return "CREATED";
-		case "PUBLISHED":
-			return "COMPLETED";
-		default:
-			return state;
-	}
-}
-
-/** Failure reasons are prefixed so a COLLECTION_FAILED run is recognisable after the mapping above. */
-const COLLECTION_FAILURE_PREFIX = "COLLECTION_FAILED: ";
 
 /* -------------------------------------------------------------------------- */
 /* Run                                                                         */
@@ -160,6 +143,8 @@ export interface DailyRunResult {
 	state: PipelineState;
 	/** One or more collectors failed; the run is still publishable. */
 	degraded: boolean;
+	/** Human-readable reason(s), mirrors `daily_runs.degraded_reason`; unset when healthy. */
+	degradedReason?: string;
 	collection?: CollectionSummary;
 	materials?: DailyMaterials;
 	brief?: DailyBrief;
@@ -186,7 +171,7 @@ function createRecorder(
 	let current = { ...seed };
 	let state = initial;
 	const write = async () => {
-		await upsertRun(sql, { ...current, status: toPersistedStatus(state), updatedAt: now().toISOString() }, lineage);
+		await upsertRun(sql, { ...current, status: state, updatedAt: now().toISOString() }, lineage);
 	};
 	return {
 		get state() {
@@ -289,7 +274,16 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 	if (!existing) await recorder.patch({});
 
 	const repo = new PostgresStoryRepository(options.sql, lineage);
-	let degraded = existing?.failureReason?.startsWith(COLLECTION_FAILURE_PREFIX) ?? false;
+	let degraded = existing?.degradedReason !== undefined;
+	// Human-readable reasons accumulate across the run — a collector outage and
+	// a search_web fallback can both degrade the same day. Joined into the
+	// single `degraded_reason` column an operator reads on /admin/runs.
+	const degradedReasons: string[] = existing?.degradedReason ? [existing.degradedReason] : [];
+	const addDegradedReason = async (reason: string): Promise<void> => {
+		degraded = true;
+		degradedReasons.push(reason);
+		await recorder.patch({ degradedReason: degradedReasons.join(" | ") });
+	};
 	let attempts = 0;
 	let fallbackOccurred = false;
 	const routerState = new RouterState();
@@ -328,25 +322,33 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 				...(options.collection ?? {}),
 			});
 			result.collection = summary;
-			degraded = summary.degraded;
+			if (summary.degraded) {
+				const failedReasons = summary.outcomes
+					.filter((o) => o.health === "FAILED")
+					.map((o) => `${o.collectorId} unavailable: ${o.error ?? "unknown error"}`);
+				await addDegradedReason(failedReasons.join("; ") || "one or more collectors failed");
+			}
 			if (summary.empty && summary.degraded) {
-				const reason = `${COLLECTION_FAILURE_PREFIX}every enabled collector failed`;
-				await recorder.transition("COLLECTION_FAILED", { failureReason: reason });
+				await recorder.transition("COLLECTION_FAILED", { failureReason: "every enabled collector failed" });
 				result.state = "COLLECTION_FAILED";
 				result.degraded = true;
+				result.degradedReason = degradedReasons.join(" | ") || undefined;
 				return result;
 			}
 			await recorder.transition("COLLECTED");
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
-			await recorder.transition("COLLECTION_FAILED", { failureReason: `${COLLECTION_FAILURE_PREFIX}${message}` });
+			await addDegradedReason(`collection crashed: ${message}`);
+			await recorder.transition("COLLECTION_FAILED", { failureReason: message });
 			result.state = "COLLECTION_FAILED";
 			result.degraded = true;
+			result.degradedReason = degradedReasons.join(" | ") || undefined;
 			return result;
 		}
 		if (stage === "collect") {
 			result.state = "COLLECTED";
 			result.degraded = degraded;
+			result.degradedReason = degradedReasons.join(" | ") || undefined;
 			return result;
 		}
 	}
@@ -368,7 +370,17 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 		await startAgentRun(options.sql, seed.runId, "CURATOR", startedAt.toISOString());
 		// Registered for this run only; an eval, gold or offline run leaves it
 		// unset and its curator never sees a network tool.
-		configureCuratorResearch(options.research);
+		configureCuratorResearch(
+			options.research
+				? {
+						...options.research,
+						onDegraded: (reason) => {
+							void addDegradedReason(reason);
+							options.research?.onDegraded?.(reason);
+						},
+					}
+				: undefined,
+		);
 		try {
 			const curated = await runStageWithFallback({
 				stage: "CURATOR",
@@ -417,6 +429,7 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 			await recorder.transition("CURATION_FAILED", { failureReason: message });
 			result.state = "CURATION_FAILED";
 			result.degraded = degraded;
+			result.degradedReason = degradedReasons.join(" | ") || undefined;
 			result.attempts = attempts;
 			return result;
 		} finally {
@@ -426,6 +439,7 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 			result.state = "MATERIALS_READY";
 			result.materials = materials;
 			result.degraded = degraded;
+			result.degradedReason = degradedReasons.join(" | ") || undefined;
 			result.attempts = attempts;
 			return result;
 		}
@@ -500,6 +514,7 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 			await recorder.transition("EDITOR_FAILED", { failureReason: message });
 			result.state = "EDITOR_FAILED";
 			result.degraded = degraded;
+			result.degradedReason = degradedReasons.join(" | ") || undefined;
 			result.attempts = attempts;
 			return result;
 		}
@@ -534,6 +549,7 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 		await recorder.transition("VALIDATION_FAILED", { failureReason: validation.errors.join("; ") });
 		result.state = "VALIDATION_FAILED";
 		result.degraded = degraded;
+		result.degradedReason = degradedReasons.join(" | ") || undefined;
 		result.attempts = attempts;
 		return result;
 	}
@@ -565,6 +581,7 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 	await recorder.transition("PUBLISHED");
 	result.state = "PUBLISHED";
 	result.degraded = degraded;
+	result.degradedReason = degradedReasons.join(" | ") || undefined;
 	result.attempts = attempts;
 	result.fallbackOccurred = fallbackOccurred;
 	result.signalsWritten = observed.length + faded.length;

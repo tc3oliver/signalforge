@@ -19,7 +19,11 @@
     "phase1:run": "tsx src/cli/run-phase1.ts",
     "eval:run": "tsx src/cli/run-eval.ts",
     "stability:run": "tsx src/cli/run-stability.ts",
-    "benchmark:models": "tsx src/cli/benchmark.ts"
+    "benchmark:models": "tsx src/cli/benchmark.ts",
+    "web:dev": "pnpm --dir web run dev",
+    "web:build": "pnpm --dir web run build",
+    "web:start": "pnpm --dir web run start",
+    "web:seed": "tsx --env-file-if-exists=.env web/scripts/seed-dev.ts"
   },
   "dependencies": {
     "@earendil-works/pi-coding-agent": "0.85.1",

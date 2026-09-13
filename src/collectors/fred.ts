@@ -66,7 +66,7 @@ export const fredCollector: Collector = {
 
 		const apiKey = await ctx.secret("FRED_API_KEY");
 		const bucket = new TokenBucket({ capacity: 2, refillPerSecond: 2 });
-		const series = ctx.watchlists.fred_series.map((s) => s.id);
+		const series = (ctx.watchlists?.fred_series ?? []).map((s) => s.id);
 
 		const cursorIn = parseCursor(ctx.cursor);
 		const cursorOut: Cursor = { ...cursorIn };

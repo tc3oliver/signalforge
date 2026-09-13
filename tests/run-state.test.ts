@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { AgentAttempt, RunStatus } from "../src/schemas/run.ts";
-import { RunState as RunStateSchema } from "../src/schemas/run.ts";
+import { RunState as RunStateSchema, RunStatus as RunStatusSchema } from "../src/schemas/run.ts";
 import { RunStateStore, generateRunId, isLegalTransition } from "../src/runtime/run-state.ts";
 
 const DATE = "2026-09-13";
@@ -212,5 +212,50 @@ describe("atomic writes", () => {
 		expect(entries.filter((f) => f.includes(".tmp-"))).toEqual([]);
 		expect(entries.sort()).toEqual(["attempts.json", "events.jsonl", "run-state.json"]);
 		expect(store.load()).toMatchObject({ totalItems: 42, processedItems: 7, status: "CURATING" });
+	});
+});
+
+describe("fixture lifecycle vs the production pipeline", () => {
+	const PRODUCTION_ONLY: RunStatus[] = ["COLLECTING", "COLLECTED", "COLLECTION_FAILED", "PUBLISHED"];
+
+	it("knows an edge rule for every RunStatus value", () => {
+		// Guards against RunStatus being widened without a decision being made
+		// here. tsc catches this too; this keeps it caught when types are loose.
+		for (const status of RunStatusSchema.options) {
+			expect(() => isLegalTransition(status, "CURATING")).not.toThrow();
+		}
+	});
+
+	it.each(PRODUCTION_ONLY)("%s is unreachable in the fixture lifecycle", (state) => {
+		// Nothing may enter it...
+		for (const from of RunStatusSchema.options) {
+			expect(isLegalTransition(from, state)).toBe(false);
+		}
+		// ...and nothing may leave it.
+		for (const to of RunStatusSchema.options) {
+			expect(isLegalTransition(state, to)).toBe(false);
+		}
+	});
+
+	it("never lets an offline run claim PUBLISHED", () => {
+		const store = newStore();
+		store.transition("CURATING");
+		store.transition("MATERIALS_READY");
+		store.transition("WRITING");
+		store.transition("DRAFT_READY");
+		store.transition("VALIDATING");
+		expect(() => store.transition("PUBLISHED")).toThrow(/Illegal run transition: VALIDATING -> PUBLISHED/);
+		expect(store.transition("COMPLETED").status).toBe("COMPLETED");
+	});
+
+	it("still allows the same-stage retry edges the model chain depends on", () => {
+		expect(isLegalTransition("CURATING", "CURATING")).toBe(true);
+		expect(isLegalTransition("WRITING", "WRITING")).toBe(true);
+	});
+
+	it("does not adopt the production pipeline's failure -> retry edges", () => {
+		expect(isLegalTransition("CURATION_FAILED", "CURATING")).toBe(false);
+		expect(isLegalTransition("EDITOR_FAILED", "WRITING")).toBe(false);
+		expect(isLegalTransition("VALIDATION_FAILED", "VALIDATING")).toBe(false);
 	});
 });

@@ -2,7 +2,13 @@ import type { DailyBrief } from "../schemas/brief.ts";
 import { jsonParam, type Sql } from "./client.ts";
 
 /* Bind parameter, not inlined SQL: see the note in src/db/items.ts. */
-const ISO = 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"';
+const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
+/*
+ * Same format as ISO, but without the SQL string quotes: inside a tagged
+ * template the value is sent as a bound parameter, so quoting it here would
+ * put literal quote characters into the to_char format string.
+ */
+const ISO_FMT = 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"';
 
 /**
  * Every editor attempt is kept. A validation failure is only diagnosable if the
@@ -80,7 +86,7 @@ export async function getBrief(
 			emerging_signals: DailyBrief["emergingSignals"];
 		}[]
 	>`
-		select to_char(produced_at at time zone 'utc', ${ISO}) as produced_at,
+		select to_char(produced_at at time zone 'utc', ${ISO_FMT}) as produced_at,
 			daily_analysis, watch_next, emerging_signals
 		from daily_briefs where lineage = ${lineage} and date = ${date}
 	`;

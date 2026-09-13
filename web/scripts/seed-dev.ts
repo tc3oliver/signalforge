@@ -538,6 +538,22 @@ async function main(): Promise<void> {
 	for (const [index, date] of DATES.entries()) {
 		const runId = `seed-run-${date}`;
 		const createdAt = at(date, "06:00:00");
+		// The run row must exist before any collection run can reference it.
+		await upsertRun(
+			sql,
+			{
+				runId,
+				date,
+				status: "COMPLETED",
+				createdAt,
+				updatedAt: at(date, "06:11:00"),
+				totalItems: ITEMS.length,
+				processedItems: ITEMS.length,
+				storyCount: index === 2 ? DAY3_STORIES.length : 2,
+			},
+			LINEAGE,
+		);
+
 		const collectorRuns: CollectorResult[] = COLLECTORS.filter((c) => c.enabled).map(
 			(collector, position) => {
 				// One collector fails on the middle day so the health views have a
@@ -588,21 +604,6 @@ async function main(): Promise<void> {
 			};
 		});
 		await upsertNormalizedItems(sql, LINEAGE, normalized);
-
-		await upsertRun(
-			sql,
-			{
-				runId,
-				date,
-				status: index === 1 ? "COMPLETED" : "COMPLETED",
-				createdAt,
-				updatedAt: at(date, "06:11:00"),
-				totalItems: ITEMS.length,
-				processedItems: ITEMS.length,
-				storyCount: index === 2 ? DAY3_STORIES.length : 2,
-			},
-			LINEAGE,
-		);
 
 		await startAgentRun(sql, runId, "CURATOR", at(date, "06:00:10"));
 		await finishAgentRun(sql, runId, "CURATOR", {
@@ -691,7 +692,11 @@ async function main(): Promise<void> {
 		}
 
 		const claimed = new Set(stories.flatMap((story) => story.itemIds));
-		const decisions: ItemDecision[] = ITEMS.map((item) => {
+		// Items fetched after the run was created were never presented to the
+		// curator, so they get no decision row — which is exactly what makes them
+		// show up under "New Since Morning".
+		const scanned = ITEMS.filter((item) => item.fetchedAt < createdAt);
+		const decisions: ItemDecision[] = scanned.map((item) => {
 			if (item.id === "it-dupe-anthropic") {
 				return {
 					itemId: item.id,
@@ -834,7 +839,7 @@ async function main(): Promise<void> {
 
 		if (index === 1) {
 			// A rejected draft, so /admin/runs has a real validation failure.
-			await saveDraft(sql, LINEAGE, { stories: [] }, {
+			await saveDraft(sql, LINEAGE, date, { stories: [] }, {
 				producedAt: at(date, "06:07:50"),
 				runId,
 				validationStatus: "FAILED",
@@ -844,7 +849,7 @@ async function main(): Promise<void> {
 				],
 			});
 		}
-		await saveDraft(sql, LINEAGE, brief, {
+		await saveDraft(sql, LINEAGE, date, brief, {
 			producedAt: at(date, "06:10:20"),
 			runId,
 			validationStatus: "PASSED",
@@ -923,5 +928,5 @@ async function main(): Promise<void> {
 
 main().catch((error: unknown) => {
 	console.error("[seed] failed", error);
-	process.exitCode = 1;
+	process.exit(1);
 });

@@ -32,7 +32,7 @@ export const secCollector: Collector = {
 	requiredSecrets: [],
 
 	async check(ctx: CollectorContext) {
-		const userAgent = await ctx.config("SEC_USER_AGENT");
+		const userAgent = await ctx.config?.("SEC_USER_AGENT");
 		if (!userAgent) {
 			return { ok: false, detail: "SEC_USER_AGENT is required (SEC policy mandates a descriptive contact UA)" };
 		}
@@ -46,7 +46,7 @@ export const secCollector: Collector = {
 		const warnings: string[] = [];
 		let itemsFetched = 0;
 
-		const userAgent = await ctx.config("SEC_USER_AGENT");
+		const userAgent = await ctx.config?.("SEC_USER_AGENT");
 		if (!userAgent) {
 			const finishedAt = ctx.now().toISOString();
 			return {
@@ -72,10 +72,11 @@ export const secCollector: Collector = {
 
 		// Only companies with a looked-up CIK can be polled; a null CIK is a
 		// documented gap in the watchlist, not a collection failure.
-		const companies = ctx.watchlists.sec_companies.filter((c): c is typeof c & { cik: string } => c.cik !== null);
-		const skipped = ctx.watchlists.sec_companies.length - companies.length;
+		const secCompanies = ctx.watchlists?.sec_companies ?? [];
+		const companies = secCompanies.filter((c): c is typeof c & { cik: string } => c.cik !== null);
+		const skipped = secCompanies.length - companies.length;
 		if (skipped > 0) warnings.push(`${skipped} watchlisted compan${skipped === 1 ? "y has" : "ies have"} no CIK on file, skipped`);
-		if (ctx.watchlists.sec_companies.length === 0) warnings.push("no SEC companies configured");
+		if (secCompanies.length === 0) warnings.push("no SEC companies configured");
 
 		for (const company of companies) {
 			const url = `https://data.sec.gov/submissions/CIK${company.cik}.json`;

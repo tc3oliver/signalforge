@@ -1,0 +1,527 @@
+[
+  {
+    "itemId": "itm-20260910-0001",
+    "disposition": "CANDIDATE",
+    "storyId": "surface-code-million-cycle-qubit",
+    "reason": "Fenwick Quantum 距離-9 表面碼邏輯量子位元維持百萬週期低於錯誤率門檻之論文預印本主來源",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0002",
+    "disposition": "IRRELEVANT",
+    "reason": "AskReddit 生活日常消費品閒聊討論串，無技術或決策價值",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0003",
+    "disposition": "DUPLICATE",
+    "storyId": "bis-accelerator-export-threshold",
+    "reason": "Reuters 報導 BIS 擴大 AI 加速晶片出口管制新門檻，為 BIS 官方公告之轉述",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0004",
+    "disposition": "CANDIDATE",
+    "storyId": "quarrystone-cve-2026-41882",
+    "reason": "Quarrystone 官方安全性公告，說明 CVE-2026-41882 修補與 SCRAM 通道繫結防護措施主來源",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0005",
+    "disposition": "IRRELEVANT",
+    "reason": "r/gaming 線上遊戲數值平衡更新抱怨討論串，無軟體架構或產業價值",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0006",
+    "disposition": "DUPLICATE",
+    "storyId": "surface-code-million-cycle-qubit",
+    "reason": "Nature News 報導 Fenwick Quantum 百萬週期邏輯量子位元實驗結果，為論文之科技新聞轉述",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0007",
+    "disposition": "IRRELEVANT",
+    "reason": "YouTube 300 元以下咖啡機開箱評測影片，消費性內容無決策價值",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0008",
+    "disposition": "DUPLICATE",
+    "storyId": "northbridge-useast2-outage",
+    "reason": "Hacker News 討論 Northbridge us-east-2 控制平面中斷，指向官方狀態頁",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0009",
+    "disposition": "DUPLICATE",
+    "storyId": "northbridge-useast2-outage",
+    "reason": "GitHub status repo 回報 Northbridge us-east-2 控制平面降級事件，為官方通報附屬渠道",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0010",
+    "disposition": "CANDIDATE",
+    "storyId": "bis-accelerator-export-threshold",
+    "reason": "美國 BIS 官方新聞稿，發布調整算力密度門檻以擴大加速器出口管制之臨時最終規則一手來源",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0011",
+    "disposition": "DUPLICATE",
+    "storyId": "us-jobless-claims-20260910",
+    "reason": "MarketWatch 報導美國初領失業金人數 21.4 萬人，轉述勞工部 FRED 數據",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0012",
+    "disposition": "CANDIDATE",
+    "storyId": "us-jobless-claims-20260910",
+    "reason": "FRED 發布勞工部初次申請失業救濟人數統計，為官方統計數據主來源",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0013",
+    "disposition": "IRRELEVANT",
+    "reason": "消費性無線耳機秋季選購指南與分潤連結，無技術決策價值",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0014",
+    "disposition": "DUPLICATE",
+    "storyId": "bis-accelerator-export-threshold",
+    "reason": "Hacker News 討論 BIS 新出口管制門檻封堵舊繞道晶片之討論串",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0015",
+    "disposition": "DUPLICATE",
+    "storyId": "meridian-long-context-enterprise",
+    "reason": "r/LocalLLaMA 社群討論 Meridian 200 萬 token 長上下文模型內測傳聞",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0016",
+    "disposition": "IRRELEVANT",
+    "reason": "汽車秋季常規保養五大注意事項，日常消費生活內容無決策價值",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0017",
+    "disposition": "IRRELEVANT",
+    "reason": "單一匿名消息指稱 Basalt 授權變更之 HN 討論，無佐證且官方無回應，屬極低信噪比社群謠言",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0018",
+    "disposition": "IRRELEVANT",
+    "reason": "日常健康專欄討論萬步目標迷思，非專業軟體或產業情報",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0019",
+    "disposition": "DUPLICATE",
+    "storyId": "vantiq-guidance-renewal-slippage",
+    "reason": "Stratechery 分析 Vantiq 8-K 申報中企業續約遞延與客戶流失之差異，為財報分析評述",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0020",
+    "disposition": "IRRELEVANT",
+    "reason": "r/gamedev 社群轉發單一匿名來源聲稱 Basalt 改授權之討論，缺乏佐證且信噪比低",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0021",
+    "disposition": "CANDIDATE",
+    "storyId": "northbridge-useast2-outage",
+    "reason": "Northbridge Cloud 官方發布 us-east-2 控制平面因憑證輪替失敗中斷初步檢討報告一手來源",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0022",
+    "disposition": "DUPLICATE",
+    "storyId": "aperture-nimbus7-release",
+    "reason": "Hacker News 討論 Aperture Nimbus-7 權重發布與限制服務授權條款",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0023",
+    "disposition": "DUPLICATE",
+    "storyId": "quarrystone-cve-2026-41882",
+    "reason": "BleepingComputer 報導 Quarrystone 資料庫 CVE-2026-41882 WAL 洩漏重大漏洞，為官方修復之媒體轉述",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0024",
+    "disposition": "IRRELEVANT",
+    "reason": "Solana 24 小時微跌 1.27% 例行無催化劑市場波動，無結構性機制說明",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0025",
+    "disposition": "IRRELEVANT",
+    "reason": "週末串流影集影評，消費性娛樂新聞無產業或技術價值",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0026",
+    "disposition": "IRRELEVANT",
+    "reason": "Dogecoin 24 小時微跌 2.58% 例行無催化劑市場波動，無結構性機制說明",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0027",
+    "disposition": "DUPLICATE",
+    "storyId": "rust-1-94-release",
+    "reason": "r/rust 社群測試 Rust 1.94 平行前端效能提升與冷檢查耗時比較討論串",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0028",
+    "disposition": "IRRELEVANT",
+    "reason": "Bitcoin 24 小時微跌 1.86% 例行常態區間價格波動，無結構性機制說明",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0029",
+    "disposition": "IRRELEVANT",
+    "reason": "YouTube 秋季書桌佈置巡禮影片，日常生活美學無決策價值",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0030",
+    "disposition": "CANDIDATE",
+    "storyId": "ashgrove-utilities-dividend-q3",
+    "reason": "Ashgrove Utilities 提交 SEC Form 8-K 申報例行季度股息一手來源",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0031",
+    "disposition": "IRRELEVANT",
+    "reason": "Chainlink 24 小時微跌 1.15% 例行無催化劑市場波動，無結構性機制說明",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0032",
+    "disposition": "DUPLICATE",
+    "storyId": "linux-6-19-deadline-scheduler",
+    "reason": "LWN 報導 Linux 6.19 合併具期限感知之排程器重構，為核心合併之技術媒體報導",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0033",
+    "disposition": "DUPLICATE",
+    "storyId": "sable-orm-batch-loss-bug",
+    "reason": "r/node 社群回報 Sable ORM 批次 upsert 靜默遺失列之除錯討論串，指向 GitHub issue",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0034",
+    "disposition": "DUPLICATE",
+    "storyId": "bis-accelerator-export-threshold",
+    "reason": "Stratechery 分析 BIS 修訂算力密度門檻對中階 AI 加速晶片市場之衝擊，為法規之分析評述",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0035",
+    "disposition": "DUPLICATE",
+    "storyId": "fsb-stablecoin-reserve-rule",
+    "reason": "CoinDesk 報導金融穩定委員會針對百億美元穩定幣實施每日儲備查核規定，為 FSB 規則之轉述",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0036",
+    "disposition": "DUPLICATE",
+    "storyId": "northbridge-useast2-outage",
+    "reason": "r/devops 社群討論 Northbridge us-east-2 自動擴展因控制平面故障卡死六小時之運維回報",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0037",
+    "disposition": "DUPLICATE",
+    "storyId": "fsb-stablecoin-reserve-rule",
+    "reason": "r/CryptoCurrency 社群討論 FSB 每日儲備查核新規對主要穩定幣發行商資產配置之影響",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0038",
+    "disposition": "DUPLICATE",
+    "storyId": "linux-6-19-deadline-scheduler",
+    "reason": "Hacker News 討論 Linux 6.19 期限感知排程器終結 vruntime 調校之討論串",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0039",
+    "disposition": "IRRELEVANT",
+    "reason": "社區週末市集重返城鎮廣場之地方活動通知，無產業價值",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0040",
+    "disposition": "IRRELEVANT",
+    "reason": "久坐族六種拉伸運動指南，日常健康生活專欄無技術情報價值",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0041",
+    "disposition": "IRRELEVANT",
+    "reason": "電影續集週末票房開盤不如預期之娛樂票房快報，無產業價值",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0042",
+    "disposition": "CANDIDATE",
+    "storyId": "accelerator-power-capping-idle-study",
+    "reason": "Ridgeway 大學研究團隊發表加速器叢集因機架級功率上限導致閒置 11% 之量測論文主來源",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0043",
+    "disposition": "CANDIDATE",
+    "storyId": "fsb-stablecoin-reserve-rule",
+    "reason": "金融穩定委員會 (FSB) 官方發布支付型穩定幣儲備揭露與 80% 隔夜資產最終規則一手來源",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0044",
+    "disposition": "IRRELEVANT",
+    "reason": "r/DIY 社群使用鷹架木板自製書架的木工分享，日常生活手工無技術價值",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0045",
+    "disposition": "DUPLICATE",
+    "storyId": "surface-code-million-cycle-qubit",
+    "reason": "Semantic Scholar 收錄 Fenwick Quantum 百萬週期邏輯量子位元論文之文獻索引記錄",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0046",
+    "disposition": "DUPLICATE",
+    "storyId": "surface-code-million-cycle-qubit",
+    "reason": "Hacker News 討論 Fenwick Quantum 表面碼持續維持低於錯誤門檻重要性之討論串",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0047",
+    "disposition": "DUPLICATE",
+    "storyId": "ashgrove-utilities-dividend-q3",
+    "reason": "PR Newswire 轉發 Ashgrove Utilities 申報每股 0.42 美元季度股利之公關稿",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0048",
+    "disposition": "IRRELEVANT",
+    "reason": "寵物無聊徵兆與應對方法之寵物飼養指南，日常生活內容無技術價值",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0049",
+    "disposition": "IRRELEVANT",
+    "reason": "小型休旅車秋季改款試駕心得評測，一般汽車消費報導無產業價值",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0050",
+    "disposition": "IRRELEVANT",
+    "reason": "Avalanche 24 小時微跌 0.01% 例行常態價格波動，無結構性機制說明",
+    "decidedAt": "2026-09-13T09:21:19.187Z"
+  },
+  {
+    "itemId": "itm-20260910-0051",
+    "disposition": "DUPLICATE",
+    "storyId": "quarrystone-cve-2026-41882",
+    "reason": "GitHub quarrystone/quarrystone 提交修復 SCRAM channel binding 複製 slot 限制之提交記錄",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0052",
+    "disposition": "DUPLICATE",
+    "storyId": "sable-orm-batch-loss-bug",
+    "reason": "Hacker News 討論 Sable ORM 6.2 批次 upsert 靜默遺失資料之討論串，指向 GitHub issue",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0053",
+    "disposition": "DUPLICATE",
+    "storyId": "meridian-long-context-enterprise",
+    "reason": "Hacker News 探討 Meridian 200 萬 token 長上下文模型傳聞真實性之 Ask HN 討論串",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0054",
+    "disposition": "DUPLICATE",
+    "storyId": "linux-6-19-deadline-scheduler",
+    "reason": "r/linux 社群測試 Linux 6.19 期限感知排程器於音訊設備抖動降低之實測回報討論串",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0055",
+    "disposition": "CANDIDATE",
+    "storyId": "anvil-datacenter-substation-deferral",
+    "reason": "Datacenter Dynamics 報導 Anvil 資料中心因變電所併網延至 2029 年推遲兩處園區建設主來源",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0056",
+    "disposition": "DUPLICATE",
+    "storyId": "vantiq-guidance-renewal-slippage",
+    "reason": "Hacker News 討論 Vantiq 財報中企業續約遞延與銷售流程問題之討論串",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0057",
+    "disposition": "DUPLICATE",
+    "storyId": "meridian-long-context-enterprise",
+    "reason": "Stratechery 分析 Meridian 200 萬 token 長上下文模型對 RAG 架構生態衝擊之評論分析",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0058",
+    "disposition": "DUPLICATE",
+    "storyId": "fsb-stablecoin-reserve-rule",
+    "reason": "Hacker News 討論 FSB 穩定幣 80% 隔夜資產儲備強制規定對發行商資產負債表影響之討論串",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0059",
+    "disposition": "DUPLICATE",
+    "storyId": "northbridge-useast2-outage",
+    "reason": "The Register 報導 Northbridge us-east-2 控制平面中斷卡死擴展 6 小時之科技新聞報導",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0060",
+    "disposition": "DUPLICATE",
+    "storyId": "quarrystone-cve-2026-41882",
+    "reason": "Hacker News 討論 Quarrystone 16/17 未授權讀取 WAL 漏洞之討論串",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0061",
+    "disposition": "DUPLICATE",
+    "storyId": "aperture-nimbus7-release",
+    "reason": "r/LocalLLaMA 社群討論 Aperture Nimbus-7 權重於雙卡運行與授權條款第 4 條限制之討論串",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0062",
+    "disposition": "IRRELEVANT",
+    "reason": "Ethereum 24 小時微跌 2.37% 常態區間價格波動，無結構性機制說明",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0063",
+    "disposition": "CANDIDATE",
+    "storyId": "linux-6-19-deadline-scheduler",
+    "reason": "torvalds/linux 核心程式碼庫合併 deadline-aware fair scheduler 針對 6.19 分支之一手記錄",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0064",
+    "disposition": "CANDIDATE",
+    "storyId": "vantiq-guidance-renewal-slippage",
+    "reason": "Vantiq Systems 提交 SEC EDGAR Form 8-K 申報下修全年營收指引與續約遞延之一手來源",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0065",
+    "disposition": "DUPLICATE",
+    "storyId": "vantiq-guidance-renewal-slippage",
+    "reason": "CNBC 報導 Vantiq Systems 因企業續約遞延下修營收展望，轉述 8-K 申報內容",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0066",
+    "disposition": "IRRELEVANT",
+    "reason": "園藝月刊秋季早春播種指南，日常園藝生活愛好內容無產業價值",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0067",
+    "disposition": "CANDIDATE",
+    "storyId": "meridian-long-context-enterprise",
+    "reason": "The Information 獨家報導 Meridian 正在企業客戶端測試 200 萬 token 長上下文無檢索模型之獨立技術媒體主來源",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0068",
+    "disposition": "DUPLICATE",
+    "storyId": "rust-1-94-release",
+    "reason": "Hacker News 討論 Rust 1.94 將平行前端設為預設之發布討論串",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0069",
+    "disposition": "CANDIDATE",
+    "storyId": "aperture-nimbus7-release",
+    "reason": "Aperture Research 官方新聞稿，發布 Nimbus-7 72B MoE 模型權重、評測與授權限制一手來源",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0070",
+    "disposition": "IRRELEVANT",
+    "reason": "文化專欄評述超長專輯在流行音樂的回歸，消費娛樂文化內容無技術決策價值",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0071",
+    "disposition": "DUPLICATE",
+    "storyId": "rust-1-94-release",
+    "reason": "GitHub rust-lang/rust 程式碼庫合併 1.94 預設開啟平行前端之 release PR 記錄",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0072",
+    "disposition": "CANDIDATE",
+    "storyId": "rust-1-94-release",
+    "reason": "Rust Project 官方發布 1.94.0 版本正式公告一手來源",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0073",
+    "disposition": "IRRELEVANT",
+    "reason": "藝術文化專欄評介值得再次參觀之博物館展覽，日常生活文化內容無技術價值",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0074",
+    "disposition": "IRRELEVANT",
+    "reason": "零售觀察超市會員忠誠計劃優惠比較，日常消費者購物比價無產業情報價值",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0075",
+    "disposition": "DUPLICATE",
+    "storyId": "aperture-nimbus7-release",
+    "reason": "GitHub aperture/nimbus-7 釋出 initial weights release 記錄，指向官方發布專案",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0076",
+    "disposition": "IRRELEVANT",
+    "reason": "Ask HN 討論辦公椅品牌與人體工學椅選購，例行社群生活家具閒聊無決策價值",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0077",
+    "disposition": "DUPLICATE",
+    "storyId": "sable-orm-batch-loss-bug",
+    "reason": "InfoQ 報導 Sable ORM 6.2 批次寫入靜默遺失資料之技術新聞報導，轉述 GitHub issue",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0078",
+    "disposition": "IRRELEVANT",
+    "reason": "馬拉松主辦單位公布新資格賽賽事時程窗口，一般業餘體育賽事資訊無產業價值",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  },
+  {
+    "itemId": "itm-20260910-0079",
+    "disposition": "CANDIDATE",
+    "storyId": "sable-orm-batch-loss-bug",
+    "reason": "GitHub sable-data/sable-orm 議題回報 6.2.0 批次 upsert 超過連線池時靜默遺失資料之 issue 一手來源",
+    "decidedAt": "2026-09-13T09:21:34.387Z"
+  }
+]

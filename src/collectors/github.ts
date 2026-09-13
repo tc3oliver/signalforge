@@ -105,7 +105,7 @@ export class GitHubCollector implements Collector {
 		};
 		if (token) headers["authorization"] = `Bearer ${token}`;
 
-		const repos = this.#repos ?? ctx.watchlists.github_repos;
+		const repos = this.#repos ?? ctx.watchlists?.github_repos ?? [];
 		let health: CollectorResult["health"] = "OK";
 		let error: string | undefined;
 		let sawRateLimit = false;

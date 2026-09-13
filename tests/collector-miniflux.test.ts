@@ -21,6 +21,24 @@ function makeCtx(overrides: Partial<CollectorContext> & { secrets?: Record<strin
 			return v;
 		}),
 		hasSecret: overrides.hasSecret ?? (async (name: string) => secrets[name] !== undefined),
+		watchlists: overrides.watchlists ?? {
+			github_repos: [],
+			sec_companies: [],
+			crypto_assets: [],
+			fred_series: [],
+			subreddits: [],
+			youtube_channels: [],
+			arxiv_categories: [],
+		},
+		sourceConfig: overrides.sourceConfig ?? {
+			enabled: true,
+			baseUrl: "https://miniflux.example.com",
+			rateLimitPerMinute: 60,
+			timeoutMs: 10_000,
+			pageSize: 100,
+			requiredSecrets: ["MINIFLUX_API_KEY"],
+		},
+		config: overrides.config ?? (async () => undefined),
 		fetch: overrides.fetch ?? (vi.fn() as unknown as typeof fetch),
 		signal: overrides.signal,
 		log: overrides.log ?? vi.fn(),
@@ -40,7 +58,7 @@ afterEach(() => {
 	vi.useRealTimers();
 });
 
-const CREDS = { MINIFLUX_URL: "https://miniflux.example.com", MINIFLUX_API_KEY: "top-secret-miniflux-key" };
+const CREDS = { MINIFLUX_API_KEY: "top-secret-miniflux-key" };
 
 function entry(id: number, title: string) {
 	return {
@@ -65,8 +83,11 @@ describe("minifluxCollector", () => {
 		expect(result.items).toEqual([]);
 	});
 
-	it("returns DISABLED when only one of URL/API key is set", async () => {
-		const ctx = makeCtx({ secrets: { MINIFLUX_URL: "https://miniflux.example.com" } });
+	it("returns DISABLED when only one of baseUrl/API key is set", async () => {
+		const ctx = makeCtx({
+			secrets: {},
+			sourceConfig: { enabled: true, baseUrl: "https://miniflux.example.com", rateLimitPerMinute: 60, timeoutMs: 10_000, pageSize: 100, requiredSecrets: ["MINIFLUX_API_KEY"] },
+		});
 		const result = await runCollect(ctx);
 		expect(result.health).toBe("DISABLED");
 	});

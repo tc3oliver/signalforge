@@ -7,7 +7,7 @@ import { jsonParam, type Sql } from "./client.ts";
  * hands jsonb back as raw text, so every read that returns a jsonb column has
  * to go through a tagged template.
  */
-const ISO = 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"';
+const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
 
 export interface RawItemRef {
 	rawItemId: number;
@@ -264,8 +264,13 @@ export interface LateItem {
  * "New since morning": items whose provider bytes were fetched after the first
  * run of `date` was created. The run's creation time is the cut-off rather than
  * a wall-clock hour, so a late or re-run morning pass still classifies
- * correctly. Only items the curator promoted, or that attached to an important
- * story, surface — an unfiltered list would be the raw firehose.
+ * correctly.
+ *
+ * What surfaces is what has not been ruled out: items with no decision yet
+ * (they arrived after the curator scanned, which is the normal case here),
+ * items it promoted, and items on a story above the importance floor. An item
+ * already judged IRRELEVANT or DUPLICATE is excluded — the pipeline has looked
+ * at it and said no, and repeating that on the front page would be noise.
  */
 export async function listItemsFetchedAfterMorningRun(
 	sql: Sql,
@@ -295,7 +300,8 @@ export async function listItemsFetchedAfterMorningRun(
 		 left join item_decisions d on d.lineage = n.lineage and d.date = $2 and d.item_id = n.item_id
 		 left join story_ledger sl on sl.lineage = n.lineage and sl.date = $2 and sl.story_id = d.story_id
 		 where n.lineage = $1 and m.at is not null and r.fetched_at > m.at
-			and (coalesce(sl.importance, 0) >= $3 or d.disposition = 'CANDIDATE')
+			and (d.disposition is null or d.disposition = 'CANDIDATE'
+				or coalesce(sl.importance, 0) >= $3)
 		 order by coalesce(sl.importance, 0) desc, r.fetched_at desc
 		 limit $4`,
 		[lineage, date, minImportance, limit],

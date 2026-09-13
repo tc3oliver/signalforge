@@ -51,7 +51,7 @@ export const coingeckoCollector: Collector = {
 		let health: "OK" | "DEGRADED" | "DISABLED" | "FAILED" = "OK";
 		let itemsFetched = 0;
 
-		const assets = ctx.watchlists.crypto_assets;
+		const assets = ctx.watchlists?.crypto_assets ?? [];
 		const hasKey = await ctx.hasSecret("COINGECKO_API_KEY");
 		// Public tier is heavily throttled (~5-15 calls/min); a demo key raises that
 		// somewhat but is still far from the paid pro tier, so we stay conservative.

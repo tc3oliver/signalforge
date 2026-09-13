@@ -16,6 +16,9 @@ function makeCtx(overrides: Partial<CollectorContext> = {}, fetchImpl: typeof fe
 			throw new Error(`unknown secret ${name}`);
 		},
 		hasSecret: async () => false,
+		watchlists: { github_repos: [], sec_companies: [], crypto_assets: [], fred_series: [], subreddits: [], youtube_channels: [], arxiv_categories: [] },
+		sourceConfig: { enabled: true, rateLimitPerMinute: 10, timeoutMs: 15_000, pageSize: 25, requiredSecrets: [] },
+		config: async () => undefined,
 		fetch: fetchImpl,
 		log: () => {},
 		...overrides,

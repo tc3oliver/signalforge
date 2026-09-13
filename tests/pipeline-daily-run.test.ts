@@ -151,14 +151,20 @@ describe.skipIf(!probe.available)("daily pipeline", () => {
 		expect(result.state).toBe("PUBLISHED");
 		// One collector died; the day is degraded and still published.
 		expect(result.degraded).toBe(true);
+		expect(result.degradedReason).toMatch(/fake-broken unavailable: provider returned 503/);
 		expect(result.collection?.outcomes.find((o) => o.collectorId === "fake-broken")?.health).toBe("FAILED");
 		expect(result.brief?.stories.length).toBeGreaterThanOrEqual(8);
 
 		const published = await getBrief(sql, lineage, DATE);
 		expect(published?.stories.length).toBe(result.brief?.stories.length);
 
+		// The real state is persisted verbatim (migration 002), not mapped away —
+		// /admin/runs must be able to tell PUBLISHED from every other status.
 		const run = await getRun(sql, result.runId);
-		expect(run?.status).toBe("COMPLETED");
+		expect(run?.status).toBe("PUBLISHED");
+		// degraded_reason is orthogonal to status: this run is both PUBLISHED and
+		// degraded, with the reason readable straight off the row.
+		expect(run?.degradedReason).toMatch(/fake-broken unavailable: provider returned 503/);
 	});
 
 	it("records emerging signals derived from the published brief", async () => {

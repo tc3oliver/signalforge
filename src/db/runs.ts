@@ -34,10 +34,12 @@ export async function getRun(sql: Sql, runId: string): Promise<RunState | undefi
 		{
 			run_id: string; date: string; status: string; total_items: number;
 			processed_items: number; story_count: number; failure_reason: string | null;
+			degraded_reason: string | null;
 			created_at: string; updated_at: string;
 		}[]
 	>(
 		`select run_id, date, status, total_items, processed_items, story_count, failure_reason,
+			degraded_reason,
 			to_char(created_at at time zone 'utc', ${ISO}) as created_at,
 			to_char(updated_at at time zone 'utc', ${ISO}) as updated_at
 		 from daily_runs where run_id = $1`,
@@ -55,6 +57,7 @@ export async function getRun(sql: Sql, runId: string): Promise<RunState | undefi
 		processedItems: r.processed_items,
 		storyCount: r.story_count,
 		...(r.failure_reason === null ? {} : { failureReason: r.failure_reason }),
+		...(r.degraded_reason === null ? {} : { degradedReason: r.degraded_reason }),
 	};
 }
 
@@ -147,11 +150,12 @@ export async function listRecentRuns(
 		{
 			run_id: string; lineage: string; date: string; status: string; total_items: number;
 			processed_items: number; story_count: number; failure_reason: string | null;
+			degraded_reason: string | null;
 			created_at: string; updated_at: string;
 		}[]
 	>(
 		`select run_id, lineage, date, status, total_items, processed_items, story_count,
-			failure_reason,
+			failure_reason, degraded_reason,
 			to_char(created_at at time zone 'utc', ${ISO}) as created_at,
 			to_char(updated_at at time zone 'utc', ${ISO}) as updated_at
 		 from daily_runs where lineage = $1
@@ -169,6 +173,7 @@ export async function listRecentRuns(
 		processedItems: r.processed_items,
 		storyCount: r.story_count,
 		...(r.failure_reason === null ? {} : { failureReason: r.failure_reason }),
+		...(r.degraded_reason === null ? {} : { degradedReason: r.degraded_reason }),
 	}));
 }
 

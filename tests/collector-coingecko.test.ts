@@ -21,6 +21,21 @@ function makeCtx(overrides: Partial<CollectorContext> & { secrets?: Record<strin
 			return v;
 		}),
 		hasSecret: overrides.hasSecret ?? (async (name: string) => secrets[name] !== undefined),
+		watchlists: overrides.watchlists ?? {
+			github_repos: [],
+			sec_companies: [],
+			crypto_assets: [
+				{ id: "bitcoin", symbol: "BTC" },
+				{ id: "ethereum", symbol: "ETH" },
+				{ id: "solana", symbol: "SOL" },
+			],
+			fred_series: [],
+			subreddits: [],
+			youtube_channels: [],
+			arxiv_categories: [],
+		},
+		sourceConfig: overrides.sourceConfig ?? { enabled: true, rateLimitPerMinute: 30, timeoutMs: 10_000, pageSize: 50, requiredSecrets: [] },
+		config: overrides.config ?? (async () => undefined),
 		fetch: overrides.fetch ?? (vi.fn() as unknown as typeof fetch),
 		signal: overrides.signal,
 		log: overrides.log ?? vi.fn(),

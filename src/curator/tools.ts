@@ -66,6 +66,13 @@ export interface CuratorResearchConfig {
 	router: ResearchRouter;
 	/** Ceiling from config/agent.yaml `searchWeb.maxResults`. */
 	maxResults: number;
+	/**
+	 * Called once per search_web outcome that was degraded (Tavily failed over
+	 * to Exa, or both providers were unavailable), with a human-readable reason
+	 * a run can surface as `daily_runs.degraded_reason`. Never called for a
+	 * clean Tavily success.
+	 */
+	onDegraded?: (reason: string) => void;
 }
 
 /*
@@ -575,8 +582,16 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 						throw new ToolRejection(`search_web refused (${outcome.reason}): ${outcome.message}`);
 					}
 					if (outcome.status === "DEGRADED_EMPTY") {
+						config.onDegraded?.(`Web search unavailable: ${outcome.degradedReason}`);
 						throw new ToolRejection(
 							"search_web is unavailable right now (every research provider failed or timed out). Continue from the evidence you already have and lower the story's confidence if that evidence is thin.",
+						);
+					}
+					if (outcome.degraded) {
+						config.onDegraded?.(
+							`Web search fell back to ${outcome.providerUsed}${
+								outcome.degradedReason ? ` (${outcome.degradedReason})` : ""
+							}`,
 						);
 					}
 

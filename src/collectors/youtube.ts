@@ -50,7 +50,7 @@ export const youtubeCollector: Collector = {
 		const warnings: string[] = [];
 		let itemsFetched = 0;
 
-		const channelIds = ctx.watchlists.youtube_channels;
+		const channelIds = ctx.watchlists?.youtube_channels ?? [];
 		const bucket = new TokenBucket({ capacity: 2, refillPerSecond: 2 });
 		const get = (url: string) => fetchWithRetry(url, {}, { fetchImpl: ctx.fetch, timeoutMs: 15_000, maxAttempts: 3, signal: ctx.signal, bucket });
 

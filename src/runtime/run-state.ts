@@ -9,12 +9,31 @@ export const ATTEMPTS_FILE = "attempts.json";
 export const EVENTS_FILE = "events.jsonl";
 
 /**
- * The run lifecycle. Anything not listed here is a bug in the caller, not a
- * recoverable condition — a run that reaches WRITING without MATERIALS_READY
- * would silently produce a brief from stale materials.
+ * The fixture/offline run lifecycle. Anything not listed here is a bug in the
+ * caller, not a recoverable condition — a run that reaches WRITING without
+ * MATERIALS_READY would silently produce a brief from stale materials.
+ *
+ * This is deliberately NOT the production pipeline's state machine (that one
+ * lives in `src/pipeline/daily-run.ts` and is keyed by `PipelineState`). The two
+ * differ on purpose: the fixture runner retries a stage in place on the next
+ * model in the chain (CURATING -> CURATING), treats a stage failure as terminal
+ * for the run, and finishes at COMPLETED; the production pipeline forbids the
+ * self-loops, offers failure -> retry edges, and finishes at PUBLISHED.
+ *
+ * The `Record<RunStatus, ...>` is exhaustive on purpose: widening `RunStatus`
+ * must break this build so the new state gets an explicit decision here.
  */
 const LEGAL_TRANSITIONS: Readonly<Record<RunStatus, readonly RunStatus[]>> = Object.freeze({
 	CREATED: ["CURATING"],
+	// Collection is a production-pipeline concern; the fixture runner starts
+	// from committed fixtures and never collects. No state below targets these,
+	// so they are unreachable here rather than merely terminal.
+	COLLECTING: [],
+	COLLECTED: [],
+	COLLECTION_FAILED: [],
+	// The fixture runner finishes at COMPLETED; PUBLISHED means "pushed to the
+	// live site", which an offline run must never claim.
+	PUBLISHED: [],
 	// Self-transition is a retry of the same stage on another model.
 	CURATING: ["CURATING", "MATERIALS_READY", "CURATION_FAILED"],
 	MATERIALS_READY: ["WRITING"],

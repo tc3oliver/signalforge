@@ -39,6 +39,9 @@ function makeCtx(overrides: Partial<CollectorContext> = {}, fetchImpl: typeof fe
 			throw new Error("no secrets needed");
 		},
 		hasSecret: async () => false,
+		watchlists: { github_repos: [], sec_companies: [], crypto_assets: [], fred_series: [], subreddits: [], youtube_channels: [], arxiv_categories: [] },
+		sourceConfig: { enabled: true, rateLimitPerMinute: 20, timeoutMs: 15_000, pageSize: 50, requiredSecrets: [] },
+		config: async () => undefined,
 		fetch: fetchImpl,
 		log: () => {},
 		...overrides,

@@ -90,7 +90,7 @@ export const redditCollector: Collector = {
 		const warnings: string[] = [];
 		let itemsFetched = 0;
 
-		const subreddits = ctx.watchlists.subreddits;
+		const subreddits = ctx.watchlists?.subreddits ?? [];
 		const hasClientId = await ctx.hasSecret("REDDIT_CLIENT_ID");
 		const hasClientSecret = await ctx.hasSecret("REDDIT_CLIENT_SECRET");
 		const useOAuth = hasClientId && hasClientSecret;

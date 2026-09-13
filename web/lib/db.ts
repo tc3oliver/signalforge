@@ -8,7 +8,7 @@ import { createSql, type Sql } from "../../src/db/client.ts";
  * into a client bundle. The guard below turns a mistaken client import into a
  * loud failure instead of a silently shipped credential.
  */
-if (typeof window !== "undefined") {
+if (typeof (globalThis as { window?: unknown }).window !== "undefined") {
 	throw new Error("web/lib/db.ts was imported into a client bundle; it is server-only.");
 }
 
