@@ -64,29 +64,73 @@ export interface BuildManifestOptions {
 	window?: ManifestWindow;
 	/** Safety valve so one runaway collector cannot produce an unbounded manifest. */
 	maxItems?: number;
+	/**
+	 * How far before the window to sweep up items the curator has never judged.
+	 * Zero disables the sweep and restores a strict day window.
+	 */
+	catchUpHours?: number;
 }
 
 const DEFAULT_MAX_ITEMS = 2000;
 
 /**
+ * Two days, because collection runs once a day and a publisher's clock is not
+ * ours. An item published at 23:50 is collected by the next morning's run, by
+ * which time a strict day window has already moved past it — so without this
+ * sweep it is never judged on any day. Two days covers that crossing and
+ * yesterday's releases without dragging in a stale archive.
+ */
+const DEFAULT_CATCH_UP_HOURS = 48;
+
+/**
  * Builds the day's manifest from stored items and facts. Reading rather than
  * re-collecting is what makes every later stage retryable: a curator crash costs
  * a curator session, never another pass over eleven providers.
+ *
+ * The item set is the day's published items plus any older item that has never
+ * been judged, back to `catchUpHours`. The second half exists because the two
+ * clocks disagree: `published_at` belongs to the source, collection happens on
+ * our schedule, and an item that falls between them was previously invisible to
+ * the curator on every day — not rejected, never seen. The `not exists` guard
+ * keeps the sweep idempotent: once an item has a decision it is never offered
+ * again.
  */
 export async function buildManifestFromDb(options: BuildManifestOptions): Promise<DailyManifest> {
 	const now = options.now ?? (() => new Date());
 	const window = options.window ?? dayWindow(options.date);
 	const limit = options.maxItems ?? DEFAULT_MAX_ITEMS;
+	const catchUpHours = options.catchUpHours ?? DEFAULT_CATCH_UP_HOURS;
+	const catchUpFrom = new Date(window.from.getTime() - catchUpHours * 60 * 60 * 1000);
 
+	// Selected newest-first so the cap, when it bites, drops the oldest items
+	// rather than the day's freshest; emitted oldest-first, as before.
 	const itemRows = await options.sql<ItemRow[]>`
+		with candidate as (
+			select item_id, source_type, source_name, title, summary, content, url,
+				published_at, metadata
+			from normalized_items n
+			where lineage = ${options.lineage}
+				and (
+					(
+						published_at >= ${window.from.toISOString()}::timestamptz
+						and published_at < ${window.to.toISOString()}::timestamptz
+					)
+					or (
+						published_at >= ${catchUpFrom.toISOString()}::timestamptz
+						and published_at < ${window.from.toISOString()}::timestamptz
+						and not exists (
+							select 1 from item_decisions d
+							where d.lineage = n.lineage and d.item_id = n.item_id
+						)
+					)
+				)
+			order by published_at desc, item_id desc
+			limit ${limit}
+		)
 		select item_id, source_type, source_name, title, summary, content, url,
 			to_char(published_at at time zone 'utc', ${ISO}) as published_at, metadata
-		from normalized_items
-		where lineage = ${options.lineage}
-			and published_at >= ${window.from.toISOString()}::timestamptz
-			and published_at < ${window.to.toISOString()}::timestamptz
+		from candidate
 		order by published_at, item_id
-		limit ${limit}
 	`;
 
 	const items: NormalizedItem[] = itemRows.map((r) => ({
