@@ -64,8 +64,16 @@ describe.skipIf(!probe.available)("daily manifest item window", () => {
 		await sql.end({ timeout: 5 });
 	});
 
+	// An explicit UTC window keeps these assertions independent of the machine's
+	// zone; the zone-to-window conversion is tested separately.
 	async function ids(over: { catchUpHours?: number; maxItems?: number } = {}): Promise<string[]> {
-		const manifest = await buildManifestFromDb({ sql, lineage, date: DATE, ...over });
+		const manifest = await buildManifestFromDb({
+			sql,
+			lineage,
+			date: DATE,
+			window: dayWindow(DATE, "UTC"),
+			...over,
+		});
 		return manifest.items.map((i) => i.id);
 	}
 
@@ -95,9 +103,8 @@ describe.skipIf(!probe.available)("daily manifest item window", () => {
 		expect(out).toEqual(["today-early", "today-late"]);
 	});
 
-	it("keeps the day window itself unchanged", () => {
-		const window = dayWindow(DATE);
-		expect(window.from.toISOString()).toBe("2026-09-13T00:00:00.000Z");
-		expect(window.to.toISOString()).toBe("2026-09-14T00:00:00.000Z");
+	it("bounds the day by the reader's zone, not by UTC", () => {
+		expect(dayWindow(DATE, "UTC").from.toISOString()).toBe("2026-09-13T00:00:00.000Z");
+		expect(dayWindow(DATE, "Asia/Taipei").from.toISOString()).toBe("2026-09-12T16:00:00.000Z");
 	});
 });

@@ -3,6 +3,8 @@ import { createSql } from "../db/client.ts";
 import { createPostgresCollectionStore, runCollectionForDay } from "../pipeline/collection.ts";
 import { createLogger } from "../runtime/logger.ts";
 import { loadSecretsFileAndReport } from "../config/secrets-file.ts";
+import { assertZone, localDateKey, reportingZone } from "../runtime/local-day.ts";
+import { dayWindow } from "../pipeline/manifest.ts";
 
 /**
  * Collection only — what the daytime incremental cron calls. It never touches a
@@ -11,10 +13,13 @@ import { loadSecretsFileAndReport } from "../config/secrets-file.ts";
  */
 async function main(): Promise<number> {
 	const flags = parseFlags(process.argv.slice(2));
-	const date = typeof flags["date"] === "string" ? flags["date"] : new Date().toISOString().slice(0, 10);
+	const zone = reportingZone();
+	assertZone(zone);
+	const date =
+		typeof flags["date"] === "string" ? flags["date"] : localDateKey(new Date(), zone);
 	const lineage = typeof flags["lineage"] === "string" ? flags["lineage"] : process.env["DI_LINEAGE"] ?? "default";
 	const since =
-		typeof flags["since"] === "string" ? new Date(flags["since"]) : new Date(`${date}T00:00:00.000Z`);
+		typeof flags["since"] === "string" ? new Date(flags["since"]) : dayWindow(date, zone).from;
 	if (Number.isNaN(since.getTime())) throw new Error(`Invalid --since value`);
 
 	const log = createLogger("collect");

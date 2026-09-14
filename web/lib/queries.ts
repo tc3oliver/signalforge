@@ -1,3 +1,4 @@
+import { localDateKey, reportingZone } from "../../src/runtime/local-day.ts";
 import {
 	briefAppearancesForStory,
 	getBrief,
@@ -308,7 +309,7 @@ export async function loadItemTrace(
 	const date =
 		requestedDate && availableDates.includes(requestedDate)
 			? requestedDate
-			: availableDates[0] ?? requestedDate ?? new Date().toISOString().slice(0, 10);
+			: availableDates[0] ?? requestedDate ?? localDateKey(new Date(), reportingZone());
 
 	const [explanation, counts] = await Promise.all([
 		explainItem(sql, LINEAGE, date, itemId),

@@ -2,6 +2,7 @@ import type { Sql } from "../db/client.ts";
 import type { StructuredFact } from "../schemas/fact.ts";
 import type { NormalizedItem } from "../schemas/item.ts";
 import { DailyManifest } from "../schemas/manifest.ts";
+import { localDayWindow, reportingZone } from "../runtime/local-day.ts";
 
 /*
  * The manifest is the agent-visible projection of one day. In Phase 1 it was a
@@ -24,11 +25,15 @@ export interface ManifestWindow {
 	to: Date;
 }
 
-/** UTC day containing `date`, which is how every collector stamps publishedAt. */
-export function dayWindow(date: string): ManifestWindow {
-	const from = new Date(`${date}T00:00:00.000Z`);
-	if (Number.isNaN(from.getTime())) throw new Error(`Invalid date "${date}"; expected YYYY-MM-DD`);
-	return { from, to: new Date(from.getTime() + 24 * 60 * 60 * 1000) };
+/**
+ * The reader's local day containing `date`, expressed as UTC bounds.
+ *
+ * Collectors stamp `publishedAt` in UTC, so the window is converted rather than
+ * the timestamps. A UTC day would put the boundary in the middle of the
+ * reader's morning; see `src/runtime/local-day.ts`.
+ */
+export function dayWindow(date: string, zone: string = reportingZone()): ManifestWindow {
+	return localDayWindow(date, zone);
 }
 
 interface ItemRow {

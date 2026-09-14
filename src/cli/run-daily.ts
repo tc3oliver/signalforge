@@ -11,6 +11,7 @@ import { ResearchBudgetTracker, ResearchRouter } from "../research/router.ts";
 import type { CuratorResearchConfig } from "../curator/tools.ts";
 import { createLogger } from "../runtime/logger.ts";
 import { loadSecretsFileAndReport } from "../config/secrets-file.ts";
+import { assertZone, localDateKey, reportingZone } from "../runtime/local-day.ts";
 import { writeJsonAtomic, writeTextAtomic } from "../runtime/atomic-json.ts";
 
 const STAGES: readonly PipelineStage[] = ["collect", "curate", "write", "validate", "publish"];
@@ -63,7 +64,12 @@ function archivePreviousBrief(
 
 async function main(): Promise<number> {
 	const flags = parseFlags(process.argv.slice(2));
-	const date = typeof flags["date"] === "string" ? flags["date"] : new Date().toISOString().slice(0, 10);
+	// The run belongs to the day the reader is in, not to UTC: a 05:30 Taipei
+	// schedule fires at 21:30 UTC the day before.
+	const zone = reportingZone();
+	assertZone(zone);
+	const date =
+		typeof flags["date"] === "string" ? flags["date"] : localDateKey(new Date(), zone);
 	const lineage = typeof flags["lineage"] === "string" ? flags["lineage"] : process.env["DI_LINEAGE"] ?? "default";
 	const resume = typeof flags["resume"] === "string" ? flags["resume"] : undefined;
 	const stageFlag = typeof flags["stage"] === "string" ? flags["stage"] : undefined;
