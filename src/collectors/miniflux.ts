@@ -81,6 +81,7 @@ export const minifluxCollector: Collector = {
 		let health: "OK" | "DEGRADED" | "FAILED" = "OK";
 		let offset = 0;
 		let total = Infinity;
+		let requestFailed = false;
 
 		while (offset < total) {
 			const params = new URLSearchParams({
@@ -89,8 +90,25 @@ export const minifluxCollector: Collector = {
 				limit: String(PAGE_LIMIT),
 				offset: String(offset),
 			});
-			if (startAfterId !== undefined) params.set("after_entry_id", String(startAfterId));
-			params.set("changed_after", Math.floor(ctx.since.getTime() / 1000).toString());
+			/*
+			 * The cursor and a time filter must never both be applied. They
+			 * disagree by design: the cursor says "everything above this id is
+			 * unread", a `changed_after` bound says "only what changed since the
+			 * window opened", and the window moves forward every day. Anything
+			 * the cursor had not reached before the window rolled past it became
+			 * invisible -- while the cursor still jumped to the highest id the
+			 * filtered page returned, abandoning the gap permanently. On
+			 * 2026-09-15 that gap was 1141 of 1191 unread entries.
+			 *
+			 * With a cursor, the cursor alone defines the increment. `since` is
+			 * the first-run bound only, so a fresh install does not pull the
+			 * instance's entire history.
+			 */
+			if (startAfterId !== undefined) {
+				params.set("after_entry_id", String(startAfterId));
+			} else {
+				params.set("changed_after", Math.floor(ctx.since.getTime() / 1000).toString());
+			}
 
 			const url = `${baseUrl}/v1/entries?${params.toString()}`;
 			try {
@@ -130,6 +148,7 @@ export const minifluxCollector: Collector = {
 				if (body.entries.length === 0) break;
 				offset += PAGE_LIMIT;
 			} catch (err) {
+				requestFailed = true;
 				warnings.push(
 					err instanceof HttpError
 						? `entries request returned ${err.status} at offset ${offset}`
@@ -139,7 +158,22 @@ export const minifluxCollector: Collector = {
 			}
 		}
 
-		if (warnings.length > 0) health = items.length > 0 ? "DEGRADED" : "FAILED";
+		/*
+		 * A configured aggregator that returns nothing is reported, not passed
+		 * off as healthy. Four consecutive runs on 2026-09-14 fetched zero
+		 * entries from 57 subscribed feeds and each recorded OK with no warning,
+		 * so the only trace was a line in the day's degraded reason.
+		 */
+		if (!requestFailed && itemsFetched === 0) {
+			warnings.push(
+				startAfterId === undefined
+					? `no entries changed since ${ctx.since.toISOString()}`
+					: `no entries above cursor ${startAfterId}`,
+			);
+		}
+
+		if (requestFailed) health = items.length > 0 ? "DEGRADED" : "FAILED";
+		else if (warnings.length > 0) health = "DEGRADED";
 
 		const finishedAt = ctx.now().toISOString();
 		return {

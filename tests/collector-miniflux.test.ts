@@ -143,6 +143,74 @@ describe("minifluxCollector", () => {
 		expect(r2.items.map((i) => i.externalId)).toEqual(["miniflux-3"]);
 	});
 
+	it("never combines the cursor with a time filter", async () => {
+		/*
+		 * The two disagree by design and the time filter wins, hiding entries the
+		 * cursor has not reached. Because the cursor still advances to the highest
+		 * id the filtered page returned, those entries are lost for good: on
+		 * 2026-09-15 that was 1141 of 1191 unread entries in one instance.
+		 */
+		let seen: URL | undefined;
+		const fetchMock = vi.fn(async (url: string) => {
+			seen = new URL(url);
+			return jsonResponse({ total: 1, entries: [entry(500, "Above the cursor")] });
+		});
+		const ctx = makeCtx({
+			fetch: fetchMock as unknown as typeof fetch,
+			secrets: CREDS,
+			cursor: "499",
+			since: new Date("2026-09-14T16:00:00.000Z"),
+		});
+
+		const result = await runCollect(ctx);
+		expect(seen?.searchParams.get("after_entry_id")).toBe("499");
+		expect(seen?.searchParams.has("changed_after")).toBe(false);
+		expect(result.items.map((i) => i.externalId)).toEqual(["miniflux-500"]);
+	});
+
+	it("bounds the very first run by `since`, so a fresh install takes no whole history", async () => {
+		let seen: URL | undefined;
+		const fetchMock = vi.fn(async (url: string) => {
+			seen = new URL(url);
+			return jsonResponse({ total: 1, entries: [entry(1, "First")] });
+		});
+		const ctx = makeCtx({
+			fetch: fetchMock as unknown as typeof fetch,
+			secrets: CREDS,
+			since: new Date("2026-09-14T16:00:00.000Z"),
+		});
+
+		await runCollect(ctx);
+		expect(seen?.searchParams.has("after_entry_id")).toBe(false);
+		expect(seen?.searchParams.get("changed_after")).toBe(
+			String(Math.floor(Date.parse("2026-09-14T16:00:00.000Z") / 1000)),
+		);
+	});
+
+	it("reports an empty result instead of passing it off as healthy", async () => {
+		// A subscribed aggregator returning nothing is a signal, not a quiet day:
+		// four consecutive production runs recorded OK with zero entries and the
+		// only trace was one line in the day's degraded reason.
+		const fetchMock = vi.fn(async () => jsonResponse({ total: 0, entries: [] }));
+		const ctx = makeCtx({ fetch: fetchMock as unknown as typeof fetch, secrets: CREDS, cursor: "213626" });
+
+		const result = await runCollect(ctx);
+		expect(result.itemsFetched).toBe(0);
+		expect(result.health).toBe("DEGRADED");
+		expect(result.warnings.join(" ")).toContain("no entries above cursor 213626");
+		// The cursor must not move when nothing was consumed.
+		expect(result.cursor).toBe("213626");
+	});
+
+	it("keeps a transport failure FAILED rather than merely degraded", async () => {
+		const fetchMock = vi.fn(async () => jsonResponse({ error: "boom" }, { status: 500 }));
+		const ctx = makeCtx({ fetch: fetchMock as unknown as typeof fetch, secrets: CREDS, cursor: "10" });
+
+		const result = await runCollect(ctx);
+		expect(result.health).toBe("FAILED");
+		expect(result.cursor).toBe("10");
+	});
+
 	it("retries a 429 via the shared http client", async () => {
 		let calls = 0;
 		const fetchMock = vi.fn(async () => {
