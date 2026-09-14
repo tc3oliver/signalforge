@@ -33,6 +33,43 @@ const REQUIRED_KEYS = [
 ] as const;
 
 /**
+ * The keys whose values are filesystem paths. `PATH` is colon-separated and is
+ * split before checking; `ProgramArguments` is an array whose entries all
+ * inherit its key.
+ */
+const PATH_KEYS = new Set(["ProgramArguments", "WorkingDirectory", "StandardOutPath", "StandardErrorPath", "PATH"]);
+
+/**
+ * Walks the plist in document order, pairing each `<string>` with the `<key>`
+ * that governs it. Array entries keep the key of the array itself, which is
+ * what makes every ProgramArguments entry checkable.
+ */
+function* stringValuesByKey(xml: string): Generator<{ key: string; value: string }> {
+	const token = /<key>([^<]*)<\/key>|<string>([^<]*)<\/string>|<(\/?)(array|dict)>/g;
+	let key = "";
+	let arrayKey: string | undefined;
+	let match: RegExpExecArray | null;
+	while ((match = token.exec(xml)) !== null) {
+		const [, keyName, stringValue, closing, container] = match;
+		if (keyName !== undefined) {
+			key = keyName;
+			continue;
+		}
+		if (container === "array") {
+			arrayKey = closing === "/" ? undefined : key;
+			continue;
+		}
+		if (stringValue === undefined) continue;
+		const governing = arrayKey ?? key;
+		if (governing === "PATH") {
+			for (const entry of stringValue.split(":")) yield { key: "PATH", value: entry };
+		} else {
+			yield { key: governing, value: stringValue };
+		}
+	}
+}
+
+/**
  * Structural + content checks on a rendered plist. This is not a general XML
  * validator — it checks the handful of things that have actually bitten a
  * launchd job before: an unfilled token, a relative path, a missing key, and
@@ -68,15 +105,17 @@ export function validatePlist(xml: string): PlistValidationResult {
 		}
 	}
 
-	// Every path-shaped value must be absolute. `ProgramArguments`,
-	// `WorkingDirectory`, `StandardOutPath`, `StandardErrorPath` all carry
-	// filesystem paths; a relative one is silently wrong under launchd
-	// (there is no shell to resolve it against).
-	const stringValues = xml.match(/<string>([^<]*)<\/string>/g) ?? [];
-	for (const raw of stringValues) {
-		const value = raw.slice("<string>".length, -"</string>".length);
-		const looksLikePath = value.startsWith("/") || value.includes("/");
-		if (looksLikePath && !value.startsWith("/") && !value.startsWith("$")) {
+	// Every path-shaped value must be absolute: a relative one is silently wrong
+	// under launchd, which has no shell to resolve it against.
+	//
+	// Only the keys that actually carry paths are checked. Scanning every
+	// `<string>` in the file would flag any value with a slash in it, and not
+	// everything with a slash is a path -- an IANA time zone (Asia/Taipei) is
+	// the case that proved it.
+	for (const { key, value } of stringValuesByKey(xml)) {
+		// A ProgramArguments entry without a slash is an argument, not a path.
+		if (!PATH_KEYS.has(key) || !value.includes("/")) continue;
+		if (!value.startsWith("/") && !value.startsWith("$")) {
 			errors.push(`relative path found in plist: ${value}`);
 		}
 	}

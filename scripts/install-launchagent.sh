@@ -21,6 +21,7 @@ UID_NUM="$(id -u)"
 
 DAILY_LABEL="com.dailyintelligence.daily"
 INCREMENTAL_LABEL="com.dailyintelligence.incremental"
+WEB_LABEL="com.dailyintelligence.web"
 
 fail() {
 	echo "install-launchagent: $*" >&2
@@ -36,6 +37,15 @@ PNPM_BIN="$(command -v pnpm || true)"
 
 [[ -n "${NODE_BIN}" ]] || fail "could not resolve 'node' on PATH (expected a mise-managed install)"
 [[ -n "${PNPM_BIN}" ]] || fail "could not resolve 'pnpm' on PATH (expected a mise-managed install)"
+
+# The date each run is stamped with comes from this zone, so it is baked into
+# the plist instead of being left to whatever launchd happens to inherit.
+# `web:start` shells out to pnpm again, and mise keeps node and pnpm in separate
+# install trees, so the pnpm directory has to be on PATH in its own right.
+PNPM_BIN_DIR="$(dirname "${PNPM_BIN}")"
+
+TIMEZONE="${DI_TIMEZONE:-$(readlink /etc/localtime | sed -e "s#.*/zoneinfo/##")}"
+[[ -n "${TIMEZONE}" ]] || fail "could not resolve the system time zone; set DI_TIMEZONE before running this"
 [[ -x "${NODE_BIN}" ]] || fail "resolved node at ${NODE_BIN} is not executable"
 [[ -x "${PNPM_BIN}" ]] || fail "resolved pnpm at ${PNPM_BIN} is not executable"
 
@@ -44,11 +54,13 @@ NODE_BIN_DIR="$(dirname -- "${NODE_BIN}")"
 [[ -d "${PROJECT_ROOT}" ]] || fail "project root does not exist: ${PROJECT_ROOT}"
 [[ -f "${LAUNCHD_DIR}/daily.plist.template" ]] || fail "missing template: ${LAUNCHD_DIR}/daily.plist.template"
 [[ -f "${LAUNCHD_DIR}/incremental.plist.template" ]] || fail "missing template: ${LAUNCHD_DIR}/incremental.plist.template"
+[[ -f "${LAUNCHD_DIR}/web.plist.template" ]] || fail "missing template: ${LAUNCHD_DIR}/web.plist.template"
 
 echo "install-launchagent: project root      = ${PROJECT_ROOT}"
 echo "install-launchagent: node               = ${NODE_BIN}"
 echo "install-launchagent: pnpm               = ${PNPM_BIN}"
 echo "install-launchagent: uid                = ${UID_NUM}"
+echo "install-launchagent: timezone           = ${TIMEZONE}"
 
 mkdir -p "${LOG_DIR}"
 mkdir -p "${TARGET_DIR}"
@@ -61,8 +73,10 @@ render_plist() {
 		-e "s#{{NODE_BIN}}#${NODE_BIN}#g" \
 		-e "s#{{PNPM_BIN}}#${PNPM_BIN}#g" \
 		-e "s#{{NODE_BIN_DIR}}#${NODE_BIN_DIR}#g" \
+		-e "s#{{PNPM_BIN_DIR}}#${PNPM_BIN_DIR}#g" \
 		-e "s#{{LOG_DIR}}#${LOG_DIR}#g" \
 		-e "s#{{UID}}#${UID_NUM}#g" \
+		-e "s#{{TIMEZONE}}#${TIMEZONE}#g" \
 		"${template}" >"${out}"
 }
 
@@ -95,6 +109,7 @@ install_job() {
 
 install_job "${DAILY_LABEL}" "${LAUNCHD_DIR}/daily.plist.template"
 install_job "${INCREMENTAL_LABEL}" "${LAUNCHD_DIR}/incremental.plist.template"
+install_job "${WEB_LABEL}" "${LAUNCHD_DIR}/web.plist.template"
 
 echo "install-launchagent: done."
 echo "install-launchagent: trigger a manual run with:"

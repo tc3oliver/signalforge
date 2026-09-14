@@ -13,11 +13,25 @@ const TOKENS = {
 	NODE_BIN: "/opt/runtimes/node/24/bin/node",
 	PNPM_BIN: "/opt/runtimes/pnpm/10/pnpm",
 	NODE_BIN_DIR: "/opt/runtimes/node/24/bin",
+	PNPM_BIN_DIR: "/opt/runtimes/pnpm/10",
 	LOG_DIR: "/home/example/daily-intelligence/logs",
 	UID: "501",
+	// Baked in rather than inherited: the date a run is stamped with depends on it.
+	TIMEZONE: "Asia/Taipei",
 };
 
+/** Every template, for the checks that hold whatever the job does. */
 const TEMPLATES = [
+	"../launchd/daily.plist.template",
+	"../launchd/incremental.plist.template",
+	"../launchd/web.plist.template",
+] as const;
+
+/**
+ * The scheduled jobs. The reader is excluded: it is a long-lived service, so
+ * starting at load is the point rather than an accident to guard against.
+ */
+const SCHEDULED_TEMPLATES = [
 	"../launchd/daily.plist.template",
 	"../launchd/incremental.plist.template",
 ] as const;
@@ -43,6 +57,8 @@ describe.each(TEMPLATES)("plist template %s", (path) => {
 		const strings = rendered.match(/<string>([^<]*)<\/string>/g) ?? [];
 		for (const raw of strings) {
 			const value = raw.slice("<string>".length, -"</string>".length);
+			// A slash does not make a value a path: an IANA zone has one too.
+			if (value === TOKENS.TIMEZONE) continue;
 			const looksLikePath = value.includes("/") && !value.includes(" ");
 			if (looksLikePath) {
 				expect(value.startsWith("/")).toBe(true);
@@ -57,9 +73,38 @@ describe.each(TEMPLATES)("plist template %s", (path) => {
 		expect(template).not.toMatch(/gui\/\d+/);
 	});
 
+});
+
+describe.each(SCHEDULED_TEMPLATES)("scheduled job %s", (path) => {
+	const template = readFileSync(new URL(path, import.meta.url), "utf8");
+
 	it("declares RunAtLoad false so installing never triggers an immediate run", () => {
 		const rendered = renderPlist(template, TOKENS);
 		expect(rendered).toMatch(/<key>RunAtLoad<\/key>\s*<false\s*\/>/);
+	});
+});
+
+describe("reader service template", () => {
+	const template = readFileSync(new URL("../launchd/web.plist.template", import.meta.url), "utf8");
+
+	it("starts at load and is restarted when it exits", () => {
+		const rendered = renderPlist(template, TOKENS);
+		expect(rendered).toMatch(/<key>RunAtLoad<\/key>\s*<true\s*\/>/);
+		expect(rendered).toMatch(/<key>KeepAlive<\/key>\s*<true\s*\/>/);
+		expect(rendered).toMatch(/<key>ThrottleInterval<\/key>\s*<integer>\d+<\/integer>/);
+	});
+
+	it("binds every interface so the edge can proxy to it", () => {
+		const rendered = renderPlist(template, TOKENS);
+		expect(rendered).toContain("<key>WEB_HOST</key>");
+		expect(rendered).toContain("<string>0.0.0.0</string>");
+		expect(rendered).toContain("<key>WEB_PORT</key>");
+	});
+
+	it("never enables the admin routes", () => {
+		// Admin is off unless SIGNALFORGE_ADMIN is set, and a public vhost is
+		// exactly where it must stay off.
+		expect(template).not.toContain("SIGNALFORGE_ADMIN");
 	});
 });
 

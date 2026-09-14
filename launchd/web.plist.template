@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.dailyintelligence.web</string>
+
+	<!--
+		The reader. Long-lived rather than scheduled: KeepAlive restarts it if it
+		exits, and RunAtLoad starts it on login so a reboot does not silently
+		leave the site down. It serves published rows only and runs no model.
+	-->
+	<key>ProgramArguments</key>
+	<array>
+		<string>{{PNPM_BIN}}</string>
+		<string>run</string>
+		<string>web:start</string>
+	</array>
+
+	<key>WorkingDirectory</key>
+	<string>{{PROJECT_ROOT}}</string>
+
+	<key>StandardOutPath</key>
+	<string>{{LOG_DIR}}/web.out.log</string>
+
+	<key>StandardErrorPath</key>
+	<string>{{LOG_DIR}}/web.err.log</string>
+
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>{{NODE_BIN_DIR}}:{{PNPM_BIN_DIR}}:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>NODE_ENV</key>
+		<string>production</string>
+		<!-- Stated rather than inherited: launchd does not carry the interactive
+		     shell's TZ, and the reader resolves "today" from it. -->
+		<key>DI_TIMEZONE</key>
+		<string>{{TIMEZONE}}</string>
+		<!--
+			Bound to every interface so the edge at 10.10.10.10 can proxy to it.
+			This is a LAN listener, not public ingress: the Mac mini owns every
+			route in from the Internet, and nothing is forwarded to this machine.
+		-->
+		<key>WEB_HOST</key>
+		<string>0.0.0.0</string>
+		<key>WEB_PORT</key>
+		<string>3300</string>
+	</dict>
+
+	<key>RunAtLoad</key>
+	<true/>
+
+	<key>KeepAlive</key>
+	<true/>
+
+	<!-- A crash loop backs off rather than hammering the database. -->
+	<key>ThrottleInterval</key>
+	<integer>10</integer>
+
+	<key>StandardInPath</key>
+	<string>/dev/null</string>
+</dict>
+</plist>

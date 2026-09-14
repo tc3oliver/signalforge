@@ -29,9 +29,13 @@
 	<key>EnvironmentVariables</key>
 	<dict>
 		<key>PATH</key>
-		<string>{{NODE_BIN_DIR}}:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<string>{{NODE_BIN_DIR}}:{{PNPM_BIN_DIR}}:/usr/bin:/bin:/usr/sbin:/sbin</string>
 		<key>NODE_ENV</key>
 		<string>production</string>
+		<!-- Stated rather than inherited: launchd does not carry the interactive
+		     shell's TZ, and the date a run is stamped with depends on it. -->
+		<key>DI_TIMEZONE</key>
+		<string>{{TIMEZONE}}</string>
 	</dict>
 
 	<key>StartCalendarInterval</key>
