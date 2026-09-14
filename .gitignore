@@ -29,3 +29,6 @@ config/*.local.yaml
 # thing that records what a run saw, and a production artifact directory is far
 # easier to ignore before it exists than after it has been committed once.
 observations/
+
+# Incremental typecheck state; regenerated on every run.
+web/tsconfig.tsbuildinfo
