@@ -3,7 +3,6 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { CollectedItem, Collector, CollectorResult } from "../src/collectors/types.ts";
 import { getBrief } from "../src/db/briefs.ts";
 import { createSql, type Sql } from "../src/db/client.ts";
-import { listCollectionRuns } from "../src/db/collector-health.ts";
 import { countRawItems } from "../src/db/items.ts";
 import { getMaterials } from "../src/db/materials.ts";
 import { migrate } from "../src/db/migrate.ts";
@@ -30,10 +29,10 @@ const GROUPS = 10;
 const SKILLS_ROOT = join(REPO_ROOT, "agent", "skills");
 
 /** Ten groups of two so the curator yields enough stories for a valid 8-15 story brief. */
-function syntheticItems(): CollectedItem[] {
+function syntheticItems(prefix = "g"): CollectedItem[] {
 	const items: CollectedItem[] = [];
 	for (let g = 1; g <= GROUPS; g++) {
-		const group = `g${String(g).padStart(2, "0")}`;
+		const group = `${prefix}${String(g).padStart(2, "0")}`;
 		for (let k = 0; k < 2; k++) {
 			const externalId = `${group}-${k}`;
 			items.push({
@@ -54,14 +53,14 @@ function syntheticItems(): CollectedItem[] {
 	return items;
 }
 
-function goodCollector(): Collector {
+function goodCollector(prefix = "g"): Collector {
 	return {
 		id: "fake-good",
 		sourceType: "rss",
 		requiredSecrets: [],
 		check: async () => ({ ok: true, detail: "fake" }),
 		collect: async (): Promise<CollectorResult> => {
-			const items = syntheticItems();
+			const items = syntheticItems(prefix);
 			return {
 				collectorId: "fake-good",
 				health: "OK",
@@ -139,6 +138,30 @@ afterAll(async () => {
 });
 
 describe.skipIf(!probe.available)("daily pipeline", () => {
+	/** Collection rows for one run, counted directly so an unrelated test's rows
+	 * cannot push them out of a "most recent N" listing. */
+	async function collectionRunsFor(runId: string): Promise<number> {
+		const rows = await sql<{ n: string }[]>`
+			select count(*)::text as n from collection_runs where run_id = ${runId}
+		`;
+		return Number(rows[0]?.n ?? "0");
+	}
+
+	/** Every decision recorded for the day, across runs. */
+	async function decisionCount(forLineage: string): Promise<number> {
+		const rows = await sql<{ n: string }[]>`
+			select count(*)::text as n from item_decisions where lineage = ${forLineage} and date = ${DATE}
+		`;
+		return Number(rows[0]?.n ?? "0");
+	}
+
+	/** CURATOR stage rows recorded against one run; one per curation attempt. */
+	async function curatorRunsFor(runId: string): Promise<{ stage: string }[]> {
+		return await sql<{ stage: string }[]>`
+			select stage from agent_runs where run_id = ${runId} and stage = 'CURATOR'
+		`;
+	}
+
 	it("publishes a degraded run and keeps the failed collector's data out without failing", async () => {
 		const result = await runDailyPipeline({
 			...baseOptions,
@@ -174,6 +197,44 @@ describe.skipIf(!probe.available)("daily pipeline", () => {
 		expect(Array.isArray(signals)).toBe(true);
 	});
 
+	it("curates again on a second run of the same day instead of republishing the first selection", async () => {
+		const secondLineage = testLineage("pipeline-second-run");
+		try {
+			const first = await runDailyPipeline({
+				...baseOptions,
+				sql,
+				lineage: secondLineage,
+				collection,
+				driverFactory: workingDriverFactory(),
+			});
+			expect(first.state).toBe("PUBLISHED");
+			expect((await curatorRunsFor(first.runId)).length).toBe(1);
+			const firstDecisions = await decisionCount(secondLineage);
+
+			// The day moves on: the next scheduled run collects items the first
+			// run never saw. This is the case that used to skip curation entirely.
+			const laterCollection = {
+				entries: [{ sourceKey: "fake-good", collector: goodCollector("h") }],
+				enabledSourceKeys: ["fake-good"],
+			};
+			const second = await runDailyPipeline({
+				...baseOptions,
+				sql,
+				lineage: secondLineage,
+				collection: laterCollection,
+				driverFactory: workingDriverFactory(),
+			});
+
+			expect(second.state).toBe("PUBLISHED");
+			expect(second.runId).not.toBe(first.runId);
+			// Its own curator ran, and the newly collected items were judged.
+			expect((await curatorRunsFor(second.runId)).length).toBe(1);
+			expect(await decisionCount(secondLineage)).toBeGreaterThan(firstDecisions);
+		} finally {
+			await purgeLineage(sql, secondLineage);
+		}
+	});
+
 	it("retries a failed stage from persisted state without re-collecting", async () => {
 		const retryLineage = testLineage("pipeline-retry");
 		try {
@@ -188,9 +249,7 @@ describe.skipIf(!probe.available)("daily pipeline", () => {
 			expect(crashed.state).toBe("CURATION_FAILED");
 
 			const rawAfterCollection = await countRawItems(sql);
-			const collectionRunsAfter = (await listCollectionRuns(sql, 200)).filter(
-				(r) => r.runId === crashed.runId,
-			).length;
+			const collectionRunsAfter = await collectionRunsFor(crashed.runId);
 			expect(collectionRunsAfter).toBe(2);
 
 			// 2. Retry only the curator stage on the same run.
@@ -208,9 +267,7 @@ describe.skipIf(!probe.available)("daily pipeline", () => {
 
 			// Nothing was collected again: no new raw rows, no new collection runs.
 			expect(await countRawItems(sql)).toBe(rawAfterCollection);
-			expect(
-				(await listCollectionRuns(sql, 200)).filter((r) => r.runId === crashed.runId).length,
-			).toBe(collectionRunsAfter);
+			expect(await collectionRunsFor(crashed.runId)).toBe(collectionRunsAfter);
 
 			// 3. Retry the writing stage; validation and publishing follow.
 			const published = await runDailyPipeline({

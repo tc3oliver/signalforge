@@ -16,7 +16,7 @@ import type { DailyBrief, DailyManifest, DailyMaterials, RunState } from "../sch
 import { DailyBrief as DailyBriefSchema } from "../schemas/index.ts";
 import { PostgresStoryRepository } from "../stories/postgres-repository.ts";
 import { validateBrief } from "../validator/brief-validator.ts";
-import { buildManifestFromDb } from "./manifest.ts";
+import { buildManifestFromDb, dayWindow } from "./manifest.ts";
 import {
 	type CollectionSummary,
 	type RegistryEntry,
@@ -315,7 +315,7 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 		try {
 			const summary = await runCollectionForDay({
 				store: createPostgresCollectionStore(options.sql, lineage),
-				since: options.since ?? new Date(`${options.date}T00:00:00.000Z`),
+				since: options.since ?? dayWindow(options.date).from,
 				now,
 				runId: seed.runId,
 				log,
@@ -380,7 +380,19 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 	// ---- Curation ---------------------------------------------------------
 	const wantsCuration = stage === undefined || stage === "curate";
 	let materials = await getMaterials(options.sql, lineage, options.date);
-	if (wantsCuration && (stage === "curate" || !materials)) {
+	/*
+	 * Stored materials are reused only when this run produced them. Resuming is
+	 * what makes a crash cheap: the curator is the expensive stage and a run that
+	 * already paid for it must not pay twice.
+	 *
+	 * A fresh run is the opposite case and used to take the same branch. The
+	 * second run of a day found the first run's materials and skipped curation
+	 * entirely, so it republished the earlier selection and every item collected
+	 * in between was never judged -- not rejected, never looked at. On
+	 * 2026-09-13 the 05:30 run collected 1790 items and curated none of them.
+	 */
+	const reuseMaterials = existing !== undefined && stage !== "curate" && materials !== undefined;
+	if (wantsCuration && !reuseMaterials) {
 		await recorder.transition("CURATING");
 		const startedAt = now();
 		await startAgentRun(options.sql, seed.runId, "CURATOR", startedAt.toISOString());
