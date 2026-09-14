@@ -4,6 +4,7 @@ import type { AgentDriverFactory } from "../runtime/agent-driver.ts";
 import type { ModelSpec } from "../runtime/model-config.ts";
 import { InvalidAgentOutputError } from "../runtime/error-classifier.ts";
 import { loadProjectSkills } from "../runtime/pi-runtime.ts";
+import { withTurnTimeout } from "../runtime/turn-timeout.ts";
 import {
 	createSkillReferenceTool,
 	loadSkillBundle,
@@ -30,6 +31,8 @@ export interface EditorStageOptions {
 	lastError?: string;
 	now?: () => Date;
 	maxNudges?: number;
+	/** Bound on a single model turn; see runtime/turn-timeout.ts. */
+	timeoutMs?: number;
 	onEvent?: (event: Record<string, unknown>) => void;
 	onText?: (delta: string) => void;
 	/**
@@ -127,13 +130,15 @@ export async function runEditorStage(opts: EditorStageOptions): Promise<EditorSt
 				? `${buildEditorTaskPrompt(promptCtx)}\n\nA previous attempt failed with:\n${opts.lastError}\nAvoid repeating that mistake.`
 				: buildEditorTaskPrompt(promptCtx);
 
-		await driver.prompt(opening);
+		await withTurnTimeout(driver, "editor", opts.timeoutMs, () => driver.prompt(opening));
 
 		let nudges = 0;
 		while (!ctx.submitted && nudges < maxNudges) {
 			nudges += 1;
 			opts.onEvent?.({ kind: "nudge", stage: "EDITOR", attempt: nudges });
-			await driver.prompt(buildEditorNudgePrompt({ lastError }));
+			await withTurnTimeout(driver, "editor", opts.timeoutMs, () =>
+				driver.prompt(buildEditorNudgePrompt({ lastError })),
+			);
 			lastError = undefined;
 		}
 

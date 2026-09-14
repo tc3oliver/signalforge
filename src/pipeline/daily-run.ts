@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { loadConfig } from "../config/loader.ts";
 import { runCuratorStage } from "../curator/session.ts";
 import { configureCuratorResearch, type CuratorResearchConfig } from "../curator/tools.ts";
 import { runEditorStage } from "../editor/session.ts";
@@ -111,6 +112,8 @@ export interface DailyRunOptions {
 	runId?: string;
 	/** Run exactly one stage of an existing run, reading everything else from the store. */
 	stage?: PipelineStage;
+	/** Per-stage tuning; read from config/agent.yaml when omitted. */
+	stages?: StageTuning;
 	/** Skip collection entirely (a resumed run whose collection already finished). */
 	skipCollection?: boolean;
 	now?: () => Date;
@@ -248,11 +251,35 @@ async function loadKnownSignals(sql: Sql, lineage: string): Promise<KnownSignal[
  * stage's memory, which is the whole point: a curator crash is retried with a
  * curator session, never with another pass over eleven providers.
  */
+export interface StageTuning {
+	CURATOR: { timeoutMs: number; maxAttemptsPerModel: number; maxNudges: number };
+	EDITOR: { timeoutMs: number; maxAttemptsPerModel: number; maxNudges: number };
+}
+
+/** Reads the stage block, falling back to the code defaults if it is absent. */
+function loadStageTuning(): StageTuning | undefined {
+	try {
+		return loadConfig().agent.stages;
+	} catch {
+		// A config that cannot be read is the config loader's problem to report
+		// on its own terms; the stages are tuning, not correctness.
+		return undefined;
+	}
+}
+
 export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyRunResult> {
 	const now = options.now ?? (() => new Date());
 	const lineage = options.lineage ?? process.env["DI_LINEAGE"] ?? "default";
 	const log = options.log ?? (() => {});
 	const chain = options.chain ?? MODEL_CHAIN;
+	/*
+	 * `config/agent.yaml` has declared per-stage tuning since the pipeline was
+	 * written, and nothing read it: the code defaults applied instead, and
+	 * `timeoutMs` bounded nothing at all. The editor consequently spent 114
+	 * minutes on one 2026-09-13 attempt without any stage being considered
+	 * failed. Read here so one file governs both stages.
+	 */
+	const stages = options.stages ?? loadStageTuning();
 	const driverFactory = options.driverFactory ?? createPiAgentDriver;
 	const stage = options.stage;
 
@@ -413,12 +440,14 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 			const curated = await runStageWithFallback({
 				stage: "CURATOR",
 				chain,
+				...(stages ? { maxAttemptsPerModel: stages.CURATOR.maxAttemptsPerModel } : {}),
 				routerState,
 				recordAttempt: recordStageAttempt,
 				now,
 				onAttempt: async ({ spec, mode, checkFault }) => {
 					log("curator attempt", { model: modelKey(spec), mode });
 					return runCuratorStage({
+						...(stages ? { maxNudges: stages.CURATOR.maxNudges, timeoutMs: stages.CURATOR.timeoutMs } : {}),
 						date: options.date,
 						manifest,
 						repo,
@@ -496,12 +525,14 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 			const written = await runStageWithFallback({
 				stage: "EDITOR",
 				chain,
+				...(stages ? { maxAttemptsPerModel: stages.EDITOR.maxAttemptsPerModel } : {}),
 				routerState,
 				recordAttempt: recordStageAttempt,
 				now,
 				onAttempt: async ({ spec, mode, checkFault }) => {
 					log("editor attempt", { model: modelKey(spec), mode });
 					return runEditorStage({
+						...(stages ? { maxNudges: stages.EDITOR.maxNudges, timeoutMs: stages.EDITOR.timeoutMs } : {}),
 						date: options.date,
 						manifest,
 						materials: materials!,

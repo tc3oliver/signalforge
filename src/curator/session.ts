@@ -4,6 +4,7 @@ import type { AgentDriverFactory } from "../runtime/agent-driver.ts";
 import type { ModelSpec } from "../runtime/model-config.ts";
 import { InvalidAgentOutputError, ToolLoopError } from "../runtime/error-classifier.ts";
 import { loadProjectSkills } from "../runtime/pi-runtime.ts";
+import { withTurnTimeout } from "../runtime/turn-timeout.ts";
 import {
 	createSkillReferenceTool,
 	loadSkillBundle,
@@ -31,6 +32,8 @@ export interface CuratorStageOptions {
 	lastError?: string;
 	now?: () => Date;
 	maxNudges?: number;
+	/** Bound on a single model turn; see runtime/turn-timeout.ts. */
+	timeoutMs?: number;
 	onEvent?: (event: Record<string, unknown>) => void;
 	onText?: (delta: string) => void;
 	/**
@@ -133,7 +136,7 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 							skillSection: "",
 						});
 
-		await driver.prompt(opening);
+		await withTurnTimeout(driver, "curator", opts.timeoutMs, () => driver.prompt(opening));
 		if (faultError) throw faultError;
 		opts.checkFault?.((await opts.repo.processedItemIds(opts.date)).size);
 
@@ -170,12 +173,14 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 				total: opts.manifest.items.length,
 			});
 
-			await driver.prompt(
-				buildCuratorNudgePrompt({
+			await withTurnTimeout(driver, "curator", opts.timeoutMs, () =>
+				driver.prompt(
+					buildCuratorNudgePrompt({
 					unseenItems: opts.manifest.items.length - current.size,
-					totalItems: opts.manifest.items.length,
-					storyCount: storyList.length,
-				}),
+						totalItems: opts.manifest.items.length,
+						storyCount: storyList.length,
+					}),
+				),
 			);
 			if (faultError) throw faultError;
 		}

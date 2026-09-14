@@ -10,6 +10,12 @@ import { createRestrictedSession } from "./pi-runtime.ts";
 export interface AgentDriver {
 	prompt(text: string): Promise<void>;
 	getActiveToolNames(): string[];
+	/**
+	 * Stops the turn in flight. Optional because the fake driver in the tests
+	 * resolves synchronously and has nothing to stop; a real one must implement
+	 * it or a stalled turn cannot be bounded.
+	 */
+	abort?(): Promise<void>;
 	dispose(): void;
 }
 
@@ -50,6 +56,7 @@ export const createPiAgentDriver: AgentDriverFactory = async (opts) => {
 	return {
 		prompt: (text) => restricted.session.prompt(text),
 		getActiveToolNames: () => restricted.session.getActiveToolNames(),
+		abort: () => restricted.session.abort(),
 		dispose: () => restricted.dispose(),
 	};
 };

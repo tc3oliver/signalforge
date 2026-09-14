@@ -235,6 +235,39 @@ describe.skipIf(!probe.available)("daily pipeline", () => {
 		}
 	});
 
+	it("bounds a turn that never returns, using the configured stage timeout", async () => {
+		/*
+		 * The tuning in config/agent.yaml was read by nothing, so no limit
+		 * applied: on 2026-09-13 the editor spent 114 minutes across six turns
+		 * that each produced nothing, and because the stage never failed, the
+		 * router never fell back. A turn that stops returning must end the
+		 * attempt.
+		 */
+		const stalledLineage = testLineage("pipeline-stalled");
+		const hangingFactory = createResolvedDriverFactory(() => () => new Promise<void>(() => {}));
+		try {
+			const result = await runDailyPipeline({
+				...baseOptions,
+				sql,
+				lineage: stalledLineage,
+				collection,
+				driverFactory: hangingFactory,
+				stages: {
+					CURATOR: { timeoutMs: 100, maxAttemptsPerModel: 1, maxNudges: 1 },
+					EDITOR: { timeoutMs: 100, maxAttemptsPerModel: 1, maxNudges: 1 },
+				},
+			});
+			expect(result.state).toBe("CURATION_FAILED");
+			const attempts = await sql<{ fallback_reason: string | null }[]>`
+				select fallback_reason from agent_attempts where run_id = ${result.runId}
+			`;
+			expect(attempts.length).toBeGreaterThan(0);
+			expect(attempts.map((a) => a.fallback_reason ?? "").join(" ")).toMatch(/TIMEOUT/);
+		} finally {
+			await purgeLineage(sql, stalledLineage);
+		}
+	}, 60_000);
+
 	it("retries a failed stage from persisted state without re-collecting", async () => {
 		const retryLineage = testLineage("pipeline-retry");
 		try {
