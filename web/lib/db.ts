@@ -25,7 +25,12 @@ type PoolHolder = { [POOL_KEY]?: Sql };
 
 export function db(): Sql {
 	const holder = globalThis as unknown as PoolHolder;
-	holder[POOL_KEY] ??= createSql({ ...dbConfig(), max: 5 });
+	/*
+	 * A page render is a read that should either answer or fail. Ten seconds is
+	 * far longer than any query here needs and short enough that a stalled
+	 * database produces an error page rather than a request that never returns.
+	 */
+	holder[POOL_KEY] ??= createSql({ ...dbConfig(), max: 5, statementTimeoutMs: 10_000 });
 	return holder[POOL_KEY];
 }
 

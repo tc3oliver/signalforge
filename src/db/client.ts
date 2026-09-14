@@ -23,6 +23,16 @@ export interface DbConfig {
 	max?: number;
 	/** Pins every connection in the pool to a schema; used to isolate test runs. */
 	searchPath?: string;
+	/** Seconds to wait for a connection before giving up. */
+	connectTimeoutSeconds?: number;
+	/** Seconds an unused pooled connection is kept before it is closed. */
+	idleTimeoutSeconds?: number;
+	/**
+	 * Server-side cap on a single statement, in milliseconds. Omitted by
+	 * default: the pipeline's scans and bulk writes are legitimately long, and a
+	 * cap that suits a page render would abort them.
+	 */
+	statementTimeoutMs?: number;
 }
 
 /** DATABASE_URL wins; the discrete PG* variables are the fallback. */
@@ -42,13 +52,37 @@ export function dbConfigFromEnv(env: NodeJS.ProcessEnv = process.env): DbConfig 
 	};
 }
 
+/*
+ * Defaults chosen so an unreachable database fails instead of hanging.
+ *
+ * On 2026-09-15 the host suspended its container VM. Sockets stayed open from
+ * this side and no reply ever came, so every caller waited forever: the reader
+ * served nothing for ten minutes while its supervisor saw a live process and
+ * left it alone. An unreachable database has to surface as an error, and these
+ * are the two places it can be made to.
+ */
+const DEFAULT_CONNECT_TIMEOUT_SECONDS = 10;
+const DEFAULT_IDLE_TIMEOUT_SECONDS = 60;
+
 /**
  * Build a pooled client. Nothing connects yet — `postgres` is lazy, so call
  * `assertReachable` when a stage must fail fast rather than at first query.
  */
 export function createSql(config: DbConfig = dbConfigFromEnv()): Sql {
+	/*
+	 * `statement_timeout` is a connection parameter rather than a driver option,
+	 * so it rides along with search_path on the same connection settings.
+	 */
+	const connection: Record<string, string> = {};
+	if (config.searchPath !== undefined) connection["search_path"] = config.searchPath;
+	if (config.statementTimeoutMs !== undefined) {
+		connection["statement_timeout"] = String(config.statementTimeoutMs);
+	}
+
 	const options: postgres.Options<DbTypes> = {
 		max: config.max ?? 10,
+		connect_timeout: config.connectTimeoutSeconds ?? DEFAULT_CONNECT_TIMEOUT_SECONDS,
+		idle_timeout: config.idleTimeoutSeconds ?? DEFAULT_IDLE_TIMEOUT_SECONDS,
 		// Timestamps are carried as ISO strings end to end. Left alone, the driver
 		// hands back Date objects and a round-trip would lose the exact string the
 		// JSON-backed ledger stored.
@@ -62,9 +96,7 @@ export function createSql(config: DbConfig = dbConfigFromEnv()): Sql {
 		},
 		onnotice: () => {},
 		transform: { undefined: null },
-		...(config.searchPath === undefined
-			? {}
-			: { connection: { search_path: config.searchPath } }),
+		...(Object.keys(connection).length === 0 ? {} : { connection }),
 	};
 	if (config.url) return postgres(config.url, options);
 	return postgres({
