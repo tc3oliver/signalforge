@@ -8,7 +8,7 @@ import { getMaterials } from "../src/db/materials.ts";
 import { migrate } from "../src/db/migrate.ts";
 import { getRun } from "../src/db/runs.ts";
 import { listSignals } from "../src/db/signals.ts";
-import { announceSkip, probeDatabase, purgeLineage, testLineage } from "../src/db/test-support.ts";
+import { announceSkip, probeDatabase, purgeIssuedLineages, purgeLineage, testLineage } from "../src/db/test-support.ts";
 import { runDailyPipeline } from "../src/pipeline/daily-run.ts";
 import type { RegistryEntry } from "../src/pipeline/collection.ts";
 import { MODEL_CHAIN } from "../src/runtime/model-config.ts";
@@ -128,11 +128,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
 	if (!probe.available) return;
-	await purgeLineage(sql, lineage);
-	await sql`delete from agent_attempts where run_id in (select run_id from daily_runs where lineage = ${lineage})`;
-	await sql`delete from agent_runs where run_id in (select run_id from daily_runs where lineage = ${lineage})`;
-	await sql`delete from collection_runs where run_id in (select run_id from daily_runs where lineage = ${lineage})`;
-	await sql`delete from daily_runs where lineage = ${lineage}`;
+	// Every lineage this file named, not just the shared one: each scenario below
+	// names its own, and purging only `lineage` is how 194 of them accumulated.
+	await purgeIssuedLineages(sql);
 	await sql`delete from source_configs where collector_id in ('fake-good','fake-broken')`;
 	await sql.end({ timeout: 5 });
 });

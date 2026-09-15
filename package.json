@@ -23,6 +23,7 @@
     "build": "pnpm run typecheck && pnpm --dir web run build",
     "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
     "db:reset": "tsx --env-file-if-exists=.env src/db/migrate.ts --reset",
+    "db:prune-test": "tsx --env-file-if-exists=.env src/cli/prune-test-lineages.ts",
     "collect": "tsx --env-file-if-exists=.env src/cli/run-collection.ts",
     "daily": "tsx --env-file-if-exists=.env src/cli/run-daily.ts",
     "postinstall": "pnpm --dir web install --prefer-offline",

@@ -115,11 +115,48 @@ export function announceMissingFixtures(suite: string, present: boolean, detail:
 	console.log(`[${suite}] skipped — generated fixtures not present (${detail}).`);
 }
 
+/**
+ * Every lineage this process handed out, so teardown cannot miss one.
+ *
+ * A suite that names a lineage inline -- `tests/pipeline-daily-run.test.ts`
+ * alone names nine of them, one per scenario -- would otherwise have to remember
+ * to purge each by hand, and it did not: 194 abandoned `test-*` lineages had
+ * built up against 1 real one. Registering here makes forgetting impossible
+ * rather than merely discouraged.
+ */
+const issuedLineages = new Set<string>();
+
 /** Isolated lineage per suite so parallel test files cannot collide. */
 export function testLineage(prefix: string): string {
-	return `test-${prefix}-${process.pid}-${Math.random().toString(36).slice(2, 8)}`;
+	const lineage = `test-${prefix}-${process.pid}-${Math.random().toString(36).slice(2, 8)}`;
+	issuedLineages.add(lineage);
+	return lineage;
 }
 
+/**
+ * Purge every lineage this process created. Call it once from a suite's
+ * `afterAll`; purging a lineage another file owns is not possible, because the
+ * registry is per process and vitest gives each file its own.
+ */
+export async function purgeIssuedLineages(sql: Sql): Promise<void> {
+	for (const lineage of issuedLineages) await purgeLineage(sql, lineage);
+	issuedLineages.clear();
+}
+
+/**
+ * Remove everything one lineage produced, including the run rows.
+ *
+ * This used to stop at the lineage-keyed tables and leave `daily_runs` and the
+ * per-run children behind, so every integration run added rows that nothing
+ * would ever delete: the live database had accumulated 194 `test-*` lineages,
+ * 197 `fake-broken` and 242 `fake-good` collection runs against 1 real lineage.
+ * Nothing user-visible read them -- lineage isolation held -- but it grew
+ * without bound and put a `where lineage = 'default'` on every ad-hoc query
+ * anyone would ever write against this database.
+ *
+ * Order matters: raw_items hangs off collection_runs, and the agent and
+ * collection tables hang off daily_runs, so the leaves go first.
+ */
 export async function purgeLineage(sql: Sql, lineage: string): Promise<void> {
 	await sql.begin(async (tx) => {
 		await tx`delete from item_decisions where lineage = ${lineage}`;
@@ -133,5 +170,23 @@ export async function purgeLineage(sql: Sql, lineage: string): Promise<void> {
 		await tx`delete from structured_facts where lineage = ${lineage}`;
 		await tx`delete from emerging_signals where lineage = ${lineage}`;
 		await tx`delete from normalized_items where lineage = ${lineage}`;
+
+		// Spelled out per statement rather than held in a reusable fragment: the
+		// driver's tagged templates are queries, not composable SQL values, and a
+		// silently unexecuted one here would look exactly like a clean purge.
+		await tx`delete from raw_items where collection_run_id in (
+			select collection_run_id from collection_runs
+			where run_id in (select run_id from daily_runs where lineage = ${lineage})
+		)`;
+		await tx`delete from agent_attempts where run_id in (
+			select run_id from daily_runs where lineage = ${lineage}
+		)`;
+		await tx`delete from agent_runs where run_id in (
+			select run_id from daily_runs where lineage = ${lineage}
+		)`;
+		await tx`delete from collection_runs where run_id in (
+			select run_id from daily_runs where lineage = ${lineage}
+		)`;
+		await tx`delete from daily_runs where lineage = ${lineage}`;
 	});
 }
