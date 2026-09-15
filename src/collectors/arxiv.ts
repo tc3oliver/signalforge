@@ -2,10 +2,26 @@ import type { Collector, CollectorContext, CollectorResult } from "./types.ts";
 import { CollectedItem } from "./types.ts";
 import { RequestBudget, TokenBucket, fetchWithRetry } from "./http.ts";
 
-const API_BASE = "https://export.arxiv.org/api/query";
+/*
+ * arXiv is read through the per-category announcement feeds, not through the
+ * export API.
+ *
+ * `export.arxiv.org/api/query` answered every single request from this machine
+ * with `429 Rate exceeded.` -- 27 consecutive FAILED runs over three days, no
+ * items, and no `Retry-After` to back off against. The throttle is applied by
+ * arXiv's frontend per client and its window is long enough that a 3-second
+ * spacing, which is what arXiv's own guidance asks for, does not clear it; the
+ * collector was already well-behaved and was still getting nothing.
+ *
+ * `rss.arxiv.org/rss/<category>` serves the same announcements, is cached, and
+ * is the interface arXiv points daily readers at. It is also a better fit for
+ * what this pipeline wants: one request per category returns exactly that day's
+ * announcements, instead of paginating a sorted search and hoping the watermark
+ * lands in the right place.
+ */
+const RSS_BASE = "https://rss.arxiv.org/rss";
 // arXiv's usage guidance asks for >= 3s between requests from a single client.
 const MIN_REQUEST_INTERVAL_MS = 3_000;
-const PAGE_SIZE = 50;
 /*
  * arXiv asks clients to identify themselves. This one names the software, not
  * the operator: a personal account URL in a shipped default would be sent from
@@ -17,83 +33,123 @@ const USER_AGENT =
 
 const DEFAULT_CATEGORIES = ["cs.CL", "cs.LG", "cs.AI", "cs.DC"];
 
-interface ArxivEntry {
-	id: string;
+interface ArxivItem {
+	externalId: string;
 	title: string;
 	summary: string;
-	published: string;
-	updated: string;
+	link: string;
+	/** ISO 8601, derived from the feed's RFC-822 pubDate. */
+	announcedAt: string;
+	announceType: string;
 	authors: string[];
-	links: { href: string; rel?: string; type?: string }[];
 	categories: string[];
 }
 
-/** Cursor: last successfully processed `updated` watermark plus the `start` offset for the in-progress page. */
+/**
+ * Cursor: the newest announcement timestamp already consumed.
+ *
+ * Every item in one build of a category feed carries the same `pubDate` -- the
+ * announcement, not the paper -- so the watermark is a day boundary rather than
+ * a per-paper one. That is the grain arXiv publishes at; pretending to a finer
+ * one would only invent precision the feed does not have.
+ */
 interface ArxivCursor {
-	lastUpdated?: string;
-	nextStart: number;
+	lastAnnounced?: string;
 }
 
 function parseCursor(raw: string | undefined): ArxivCursor {
-	if (!raw) return { nextStart: 0 };
+	if (!raw) return {};
 	try {
 		const parsed = JSON.parse(raw) as unknown;
-		if (parsed && typeof parsed === "object" && typeof (parsed as ArxivCursor).nextStart === "number") {
-			return parsed as ArxivCursor;
+		if (parsed && typeof parsed === "object") {
+			const value = (parsed as ArxivCursor).lastAnnounced;
+			if (typeof value === "string") return { lastAnnounced: value };
 		}
 	} catch {
-		// Malformed cursor is treated as "start over" rather than fatal.
+		// Malformed cursor is treated as "start over" rather than fatal. A cursor
+		// left by the old export-API collector also lands here: it has no
+		// lastAnnounced, so the first RSS run simply takes the current feed.
 	}
-	return { nextStart: 0 };
+	return {};
 }
 
 /**
- * Minimal, dependency-free Atom XML entry extractor. Deliberately narrow: it
- * only pulls the handful of fields this collector needs, tolerating
- * whitespace/attribute variation rather than being a general XML parser.
+ * Minimal, dependency-free RSS 2.0 item extractor. Deliberately narrow: it only
+ * pulls the handful of fields this collector needs, tolerating whitespace and
+ * attribute variation rather than being a general XML parser.
  */
-function extractEntries(xml: string): ArxivEntry[] {
-	const entries: ArxivEntry[] = [];
-	const entryBlocks = xml.match(/<entry>[\s\S]*?<\/entry>/g) ?? [];
-	for (const block of entryBlocks) {
-		const id = matchTag(block, "id");
+function extractItems(xml: string): { items: ArxivItem[]; malformed: number } {
+	const items: ArxivItem[] = [];
+	let malformed = 0;
+	for (const block of xml.match(/<item>[\s\S]*?<\/item>/g) ?? []) {
 		const title = collapseWhitespace(matchTag(block, "title"));
-		const summary = collapseWhitespace(matchTag(block, "summary"));
-		const published = matchTag(block, "published");
-		const updated = matchTag(block, "updated");
-		const authors = Array.from(block.matchAll(/<author>\s*<name>([\s\S]*?)<\/name>/g)).map((m) => decodeEntities((m[1] ?? "").trim()));
-		const categories = Array.from(block.matchAll(/<category[^>]*term="([^"]*)"/g)).map((m) => m[1] ?? "");
-		const links = Array.from(block.matchAll(/<link([^>]*)\/?>/g)).map((m) => {
-			const attrs = m[1] ?? "";
-			return {
-				href: attrOf(attrs, "href") ?? "",
-				rel: attrOf(attrs, "rel"),
-				type: attrOf(attrs, "type"),
-			};
-		});
-		if (!id || !title) continue; // malformed entry: dropped and counted by the caller
-		entries.push({
-			id,
+		const link = matchTag(block, "link") ?? "";
+		const guid = matchTag(block, "guid");
+		const externalId = idFrom(guid, link);
+		const pubDate = matchTag(block, "pubDate");
+		const announcedAt = pubDate ? toIso(pubDate) : undefined;
+		if (!externalId || !title || !announcedAt) {
+			malformed++;
+			continue;
+		}
+		items.push({
+			externalId,
 			title,
-			summary,
-			published: published ?? "",
-			updated: updated ?? published ?? "",
-			authors,
-			links,
-			categories,
+			summary: stripAbstractPreamble(matchTag(block, "description")),
+			link: link || `https://arxiv.org/abs/${externalId}`,
+			announcedAt,
+			announceType: matchTag(block, "arxiv:announce_type") ?? "unknown",
+			// dc:creator carries the full author list, comma-separated.
+			authors: splitCreators(matchTag(block, "dc:creator")),
+			categories: Array.from(block.matchAll(/<category>([\s\S]*?)<\/category>/g)).map((m) =>
+				decodeEntities((m[1] ?? "").trim()),
+			),
 		});
 	}
-	return entries;
+	return { items, malformed };
+}
+
+/**
+ * `oai:arXiv.org:2609.13151v1` -> `2609.13151v1`. The version suffix is kept:
+ * a replacement really is a new announcement, and dropping the version would
+ * make v2 collide with v1 and disappear as a duplicate.
+ */
+function idFrom(guid: string | undefined, link: string): string | undefined {
+	const fromGuid = guid?.match(/([0-9]{4}\.[0-9]+(?:v[0-9]+)?)\s*$/)?.[1];
+	if (fromGuid) return fromGuid;
+	const fromLink = link.match(/abs\/(.+)$/)?.[1]?.trim();
+	return fromLink && fromLink.length > 0 ? fromLink : undefined;
+}
+
+/**
+ * Feed descriptions open with `arXiv:2609.13151v1 Announce Type: new` before
+ * the abstract. That preamble is already structured elsewhere on the item, so
+ * carrying it in the summary would only spend the curator's attention twice.
+ */
+function stripAbstractPreamble(description: string | undefined): string {
+	const text = collapseWhitespace(description);
+	const abstractAt = text.indexOf("Abstract:");
+	if (abstractAt >= 0) return text.slice(abstractAt + "Abstract:".length).trim();
+	return text.replace(/^arXiv:\S+\s+Announce Type:\s*\S+\s*/i, "").trim();
+}
+
+function splitCreators(raw: string | undefined): string[] {
+	if (!raw) return [];
+	return raw
+		.split(",")
+		.map((name) => name.trim())
+		.filter((name) => name.length > 0);
+}
+
+/** RFC-822 (`Tue, 15 Sep 2026 00:00:00 -0400`) to ISO, so the watermark sorts. */
+function toIso(pubDate: string): string | undefined {
+	const ms = Date.parse(pubDate);
+	return Number.isNaN(ms) ? undefined : new Date(ms).toISOString();
 }
 
 function matchTag(block: string, tag: string): string | undefined {
 	const m = block.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`));
 	return m ? decodeEntities((m[1] ?? "").trim()) : undefined;
-}
-
-function attrOf(attrs: string, name: string): string | undefined {
-	const m = attrs.match(new RegExp(`${name}="([^"]*)"`));
-	return m ? decodeEntities(m[1] ?? "") : undefined;
 }
 
 function collapseWhitespace(s: string | undefined): string {
@@ -109,24 +165,30 @@ function decodeEntities(s: string): string {
 		.replace(/&amp;/g, "&");
 }
 
-function totalResultsOf(xml: string): number {
-	const m = xml.match(/<opensearch:totalResults[^>]*>(\d+)<\/opensearch:totalResults>/);
-	return m?.[1] ? Number(m[1]) : 0;
-}
-
 export class ArxivCollector implements Collector {
 	readonly id = "arxiv";
 	readonly sourceType = "arxiv" as const;
 	readonly requiredSecrets: readonly string[] = [];
 	#categories: string[];
 	#sleep: (ms: number, signal?: AbortSignal) => Promise<void>;
+	/**
+	 * Overridable so a test need not spend the real politeness interval waiting.
+	 * It paces both the explicit gap between feeds and the token bucket, which
+	 * would otherwise make the gap real again on the bucket's side.
+	 */
+	#intervalMs: number;
 
 	#explicitCategories: string[] | undefined;
 
-	constructor(opts?: { categories?: string[]; sleep?: (ms: number, signal?: AbortSignal) => Promise<void> }) {
+	constructor(opts?: {
+		categories?: string[];
+		sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
+		minRequestIntervalMs?: number;
+	}) {
 		this.#explicitCategories = opts?.categories;
 		this.#categories = opts?.categories ?? DEFAULT_CATEGORIES;
 		this.#sleep = opts?.sleep ?? defaultSleep;
+		this.#intervalMs = opts?.minRequestIntervalMs ?? MIN_REQUEST_INTERVAL_MS;
 	}
 
 	async check(_ctx: CollectorContext): Promise<{ ok: boolean; detail: string }> {
@@ -138,66 +200,87 @@ export class ArxivCollector implements Collector {
 		const warnings: string[] = [];
 		const items: CollectedItem[] = [];
 		const budget = new RequestBudget(200);
-		const bucket = new TokenBucket({ capacity: 1, refillPerSecond: 1 / (MIN_REQUEST_INTERVAL_MS / 1000) });
+		const bucket = new TokenBucket({ capacity: 1, refillPerSecond: 1 / (this.#intervalMs / 1000) });
 		const cursor = parseCursor(ctx.cursor);
 
-		let health: CollectorResult["health"] = "OK";
 		let error: string | undefined;
-		let start = cursor.nextStart;
-		let latestUpdated = cursor.lastUpdated;
-		let fetchedThisRun = 0;
-		let firstRequest = true;
+		let latestAnnounced = cursor.lastAnnounced;
+		// A paper cross-listed in two watched categories is announced in both feeds.
+		const seen = new Set<string>();
+		let succeeded = 0;
 
 		// The configured categories win over the constructor default, so the list the
 		// user curates in config/watchlists.yaml is the one actually queried. The
 		// constructor override stays for tests, which must not read the real config.
 		const configured = ctx.watchlists?.arxiv_categories ?? [];
 		const categories = this.#explicitCategories ?? (configured.length > 0 ? configured : this.#categories);
-		const searchQuery = categories.map((c) => `cat:${c}`).join(" OR ");
 
 		try {
-			for (;;) {
-				if (!firstRequest) await this.#sleep(MIN_REQUEST_INTERVAL_MS, ctx.signal);
+			let firstRequest = true;
+			for (const category of categories) {
+				if (!firstRequest) await this.#sleep(this.#intervalMs, ctx.signal);
 				firstRequest = false;
 
-				const url = `${API_BASE}?search_query=${encodeURIComponent(searchQuery)}&sortBy=lastUpdatedDate&sortOrder=descending&start=${start}&max_results=${PAGE_SIZE}`;
-				const res = await fetchWithRetry(url, { headers: { "user-agent": USER_AGENT } }, {
-					fetchImpl: ctx.fetch,
-					signal: ctx.signal,
-					budget,
-					bucket,
-					// arXiv's export API answers slowly when it is busy -- a 16s
-					// response is normal, not a fault -- so the ceiling is the one
-					// operators set in config/sources.yaml rather than a constant
-					// buried here that no amount of config editing could change.
-					timeoutMs: ctx.sourceConfig.timeoutMs,
-				});
-				const xml = await res.text();
-				const total = totalResultsOf(xml);
-				const entries = extractEntries(xml);
-
-				let stop = false;
-				for (const entry of entries) {
-					if (cursor.lastUpdated && entry.updated <= cursor.lastUpdated) {
-						// Reached entries already seen last run: incremental cutoff.
-						stop = true;
-						break;
-					}
-					items.push(toCollectedItem(entry, startedAt));
-					if (!latestUpdated || entry.updated > latestUpdated) latestUpdated = entry.updated;
+				let xml: string;
+				try {
+					const res = await fetchWithRetry(
+						`${RSS_BASE}/${encodeURIComponent(category)}`,
+						{ headers: { "user-agent": USER_AGENT } },
+						{
+							fetchImpl: ctx.fetch,
+							signal: ctx.signal,
+							budget,
+							bucket,
+							// The ceiling is the one operators set in config/sources.yaml
+							// rather than a constant buried here that no amount of config
+							// editing could change.
+							timeoutMs: ctx.sourceConfig.timeoutMs,
+						},
+					);
+					xml = await res.text();
+				} catch (err) {
+					// One unavailable category is not the whole source failing: the
+					// remaining feeds are independent and still worth having.
+					warnings.push(`${category}: ${(err as Error).message}`);
+					continue;
 				}
-				fetchedThisRun += entries.length;
-				start += entries.length;
+				succeeded++;
 
-				if (stop || entries.length === 0 || start >= total || fetchedThisRun >= 500) break;
+				const { items: parsed, malformed } = extractItems(xml);
+				if (malformed > 0) warnings.push(`${category}: dropped ${malformed} malformed item(s)`);
+
+				for (const item of parsed) {
+					if (cursor.lastAnnounced && item.announcedAt <= cursor.lastAnnounced) continue;
+					if (seen.has(item.externalId)) continue;
+					seen.add(item.externalId);
+					items.push(toCollectedItem(item, startedAt));
+					if (!latestAnnounced || item.announcedAt > latestAnnounced) latestAnnounced = item.announcedAt;
+				}
 			}
 		} catch (err) {
-			health = "FAILED";
+			// Only an abort or a budget exhaustion reaches here; per-feed failures
+			// are handled above.
 			error = (err as Error).message;
 		}
 
+		/*
+		 * A run that reached no feed at all is FAILED; one that reached some is
+		 * DEGRADED. Distinguishing them matters because arXiv answering nothing is
+		 * the shape this collector was rewritten to escape, and it must not be
+		 * reported as the same thing as one category being briefly unavailable.
+		 */
+		const health: CollectorResult["health"] =
+			error !== undefined || (succeeded === 0 && categories.length > 0)
+				? "FAILED"
+				: warnings.length > 0
+					? "DEGRADED"
+					: "OK";
+		if (health === "FAILED" && error === undefined) {
+			error = warnings[0] ?? "no arxiv category feed could be read";
+		}
+
 		const finishedAt = ctx.now().toISOString();
-		const nextCursor: ArxivCursor = { lastUpdated: latestUpdated ?? cursor.lastUpdated, nextStart: 0 };
+		const nextCursor: ArxivCursor = latestAnnounced ? { lastAnnounced: latestAnnounced } : {};
 		return {
 			collectorId: this.id,
 			health,
@@ -228,23 +311,23 @@ function defaultSleep(ms: number, signal?: AbortSignal): Promise<void> {
 	});
 }
 
-function toCollectedItem(entry: ArxivEntry, fetchedAt: string): CollectedItem {
-	const arxivId = entry.id.replace(/^https?:\/\/arxiv\.org\/abs\//, "");
-	const absLink = entry.links.find((l) => l.rel === "alternate")?.href ?? entry.id;
+function toCollectedItem(item: ArxivItem, fetchedAt: string): CollectedItem {
 	return CollectedItem.parse({
 		sourceType: "arxiv",
 		sourceName: "arxiv",
-		externalId: arxivId,
-		title: entry.title,
-		summary: entry.summary,
-		url: absLink,
-		author: entry.authors[0],
-		publishedAt: entry.published || fetchedAt,
+		externalId: item.externalId,
+		title: item.title,
+		summary: item.summary,
+		url: item.link,
+		author: item.authors[0],
+		publishedAt: item.announcedAt,
 		metadata: {
-			authors: entry.authors,
-			categories: entry.categories,
-			updated: entry.updated,
+			authors: item.authors,
+			categories: item.categories,
+			// `new`, `cross` or `replace`. Kept rather than filtered on: deciding a
+			// revision is not worth reading is the curator's call, not a collector's.
+			announceType: item.announceType,
 		},
-		raw: { externalId: arxivId, body: entry, fetchedAt },
+		raw: { externalId: item.externalId, body: item, fetchedAt },
 	});
 }

@@ -16,7 +16,7 @@ Everything below was read out of the collector source, `config/sources.yaml` and
 | web (Tavily) | `TAVILY_API_KEY` | Required | false | **Not a collector.** Reached only via the `search_web` curator tool; degrades to Exa, then unavailable. **Working** — resolved from `secrets.env`, not the Keychain; see below |
 | github | `GITHUB_TOKEN` | Optional | true | **OK (authenticated)** — 5000 req/h, 1018 items on the first authenticated run |
 | hackernews | — | None | true | **OK** |
-| arxiv | — | None | true | **FAILED (transient)** — the export API is rate-limiting this address; see the arxiv section |
+| arxiv | — | None | true | OK — reads the announcement feeds (`rss.arxiv.org`); the export API is permanently 429 here, see the arxiv section |
 | semantic-scholar | `SEMANTIC_SCHOLAR_API_KEY` | Optional | true | **OK (anonymous)** — keyless public tier; enrichment-only, needs arXiv ids |
 | coingecko | `COINGECKO_API_KEY` | Optional | true | **OK** — public tier, no demo key present |
 | fred | `FRED_API_KEY` | Required | true | **OK** — authenticated; most days add no observations, which is not a fault |
@@ -228,45 +228,66 @@ monotonically increasing) so the cursor stays bounded.
 
 ## arxiv
 
-**What it collects.** Papers in the categories from `config/watchlists.yaml`
-(`arxiv_categories`), as `cat:X OR cat:Y`, newest-updated first. The configured
-categories win over the constructor default, so the list the operator curates is the
-one actually queried; the constructor override exists only so tests never read the
-real config.
+**What it collects.** One request per category in `config/watchlists.yaml`
+(`arxiv_categories`), returning that day's announcements for the category. The
+configured categories win over the constructor default, so the list the operator
+curates is the one actually queried; the constructor override exists only so tests
+never read the real config.
 
-**Endpoints.** `https://export.arxiv.org/api/query?search_query=…&sortBy=
-lastUpdatedDate&sortOrder=descending&start={n}&max_results={PAGE_SIZE}`, Atom XML,
-parsed without a dependency. Sent with an explicit descriptive `user-agent`.
+**Endpoints.** `https://rss.arxiv.org/rss/{category}`, RSS 2.0, parsed without a
+dependency. Sent with an explicit descriptive `user-agent`.
 
 **Credential.** **None.** `requiredSecrets: []`.
 
-**Current status: FAILED, and it is the provider, not the collector.** arXiv's export
-API is answering this address with `429 Rate exceeded` after a ~16s wait. The
-collector honours `Retry-After` (`fetchWithRetry` in `src/collectors/http.ts`), so a
-rate-limited poll spends its whole request budget backing off and ends at the
-configured timeout, recorded as `FAILED` with the reason visible in
-`/admin/sources`. Nothing downstream fails: the day is marked degraded, with
-`daily_runs.degraded_reason` naming arXiv, and the other sources publish as normal.
+**Why not the export API.** `export.arxiv.org/api/query` answered every request from
+this address with `429 Rate exceeded.` in under 400ms — 27 consecutive FAILED runs
+across three days, zero items, and no `Retry-After` to back off against. The
+collector was already pacing at the 3 seconds arXiv's guidance asks for, and on the
+ordinary five-a-day schedule; the throttle is applied per client by arXiv's frontend
+and its window outlasts that spacing. An earlier version of this document predicted
+the limiting was self-inflicted by acceptance testing and would clear on its own. It
+did not, and the prediction is recorded here rather than removed, because "wait and
+it will recover" is the assumption that cost three days of this source.
 
-Two things about this are worth stating plainly. First, the timeout is now the one in
-`config/sources.yaml` (45s) rather than a constant compiled into the collector — a
-15s ceiling used to turn arXiv's ordinary slowness into a failure that no amount of
-config editing could fix. Second, the rate limiting is self-inflicted and temporary:
-it followed repeated back-to-back collection runs during acceptance. Polling on the
-normal schedule (five incremental runs a day) does not approach arXiv's limits.
+The announcement feeds serve the same papers, are cached, answer in well under a
+second, and are the interface arXiv points daily readers at. They are also a closer
+fit for what this pipeline wants: one request per category returns exactly one day of
+announcements, instead of paginating a sorted search and hoping the watermark lands
+in the right place.
 
-**Incrementality.** The cursor holds `lastUpdated` (the last successfully processed
-`updated` watermark) and `nextStart`. Pagination walks `start` until `totalResults`
-is reached or an entry with `updated <= lastUpdated` appears — that is the
-incremental cutoff, and it stops the page walk immediately.
+**Volume.** A day of `cs.CL` + `cs.LG` is roughly 800 items, against roughly 600 from
+every other source combined. Narrowing `arxiv_categories` is the lever; there is no
+cap inside the collector, because a cap would silently drop announcements and
+"looks unimportant" is the curator's judgement, not a collector's.
+
+**Incrementality.** The cursor holds `lastAnnounced`, the newest announcement
+timestamp already consumed. Every item in one build of a feed carries the same
+`pubDate` — the announcement, not the paper — so the watermark is a day boundary
+rather than a per-paper one. That is the grain arXiv publishes at. A cursor left by
+the export-API collector has no `lastAnnounced`, so the first run after the change
+simply takes the current feed.
+
+**De-duplication.** A paper cross-listed in two watched categories is announced in
+both feeds and collected once. The version suffix is kept in the external id
+(`2609.13151v1`), so a replacement is a distinct announcement rather than a duplicate
+of the original — which is what it is.
+
+**Announce types.** `new`, `cross` and `replace` are all collected, with the type in
+`metadata.announceType`. Deciding a revision is not worth reading is the curator's
+call; dropping it here would be editorial filtering before Pi.
+
+**Health.** A run that reached no feed at all is `FAILED`; one that reached some is
+`DEGRADED`, with the unavailable category named in the warnings. The distinction
+matters because arXiv answering nothing is the shape this collector was rewritten to
+escape, and it must not be reported as the same thing as one feed being briefly
+unavailable.
 
 **Rate limits.** `RequestBudget(200)` and a token bucket sized from
-`MIN_REQUEST_INTERVAL_MS`, with an explicit sleep of at least that interval between
-paginated requests. Two tests cover this: it "paginates using start/max_results until
-totalResults is reached" and "waits at least the configured interval between
-paginated requests".
+`MIN_REQUEST_INTERVAL_MS` (3s), with an explicit sleep of at least that interval
+between feeds. The interval is injectable so tests need not spend it.
 
-**Enabled:** `true`. **Current status: OK.**
+**Enabled:** `true`. **Current status: OK** — 788 items on the first live run after
+the change.
 
 ---
 

@@ -44,9 +44,11 @@ collectors:
   arxiv:
     enabled: true
     rateLimitPerMinute: 20
-    # arXiv's export API routinely takes 15-20s to answer when busy, and answers
-    # a burst with 429 + Retry-After. 15s turned normal slowness into a FAILED
-    # collector; 45s leaves room for the slow-but-successful case.
+    # Read through the per-category announcement feeds (rss.arxiv.org), not the
+    # export API: that API answered every request from here with 429 for three
+    # days straight, with no Retry-After to back off against. The feeds are
+    # cached and answer quickly, but arXiv can still be slow when busy, so the
+    # ceiling stays generous. pageSize is unused -- one feed is one day.
     timeoutMs: 45000
     pageSize: 50
     requiredSecrets: []
