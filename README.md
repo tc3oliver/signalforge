@@ -2,6 +2,10 @@
 
 > SignalForge reads the noise so you can read the signal.
 
+Built and run daily by [Oliver Yu](https://meowcoder.com). The design
+decisions behind it are written up as a
+[case study](https://meowcoder.com/work/signalforge/).
+
 Self-hosted personal intelligence system that turns noisy multi-source
 information into **events, changes, emerging signals, and a source-grounded
 daily brief** — and shows you, in ten seconds, what actually matters today.
