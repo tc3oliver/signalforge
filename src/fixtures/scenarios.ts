@@ -122,7 +122,7 @@ const ARC_EVENTS: EventSpec[] = [
 		detail:
 			"A follow-up write-up restates yesterday's sourcing without adding a named source, a benchmark, a date or a price, and the aggregator threads simply relink the original report.",
 		impact:
-			"The state of knowledge is unchanged: there is still no primary artifact, so the story should not advance in the ledger.",
+			"Meridian Labs has still published nothing, and both accounts trace back to the same unnamed attendee quoted yesterday.",
 		context: "Meridian Labs again declined to comment when contacted for this piece.",
 		roles: [
 			r("media", "What we know so far about Meridian's rumoured flagship"),
@@ -270,7 +270,7 @@ const ARC_EVENTS: EventSpec[] = [
 		channel: "The Changelog",
 		detail:
 			"Follow-on coverage summarises yesterday's release notes without new benchmarks, adoption numbers or migration reports from real deployments.",
-		impact: "Nothing has changed about what Halyard 2.0 is or what upgrading costs.",
+		impact: "The migration guide, the breaking-change list and the published timings are the ones that shipped with the release notes.",
 		roles: [
 			r("media", "Halyard 2.0: what is new for pipeline authors"),
 			r("reddit", "Anyone actually migrated off YAML v1 yet? Asking for a Friday deploy"),
@@ -488,7 +488,7 @@ const ARC_EVENTS: EventSpec[] = [
 		sub: "gamedev",
 		detail:
 			"A thread claims without evidence that Basalt Engine will move to a revenue-share licence at the next major version, citing an unnamed partner call.",
-		impact: "No primary artifact exists, so the claim is not actionable.",
+		impact: "Basalt's licence file, changelog and governance repository are unchanged, and the partner call is neither quoted nor dated.",
 		roles: [
 			r("reddit", "Heard from a partner that Basalt is going revenue-share in v7"),
 			r("hackernews", "Basalt licence change rumour (single unnamed source)"),
@@ -646,7 +646,7 @@ const ROUTINE_EVENTS: EventSpec[] = DATES.flatMap((date, i): EventSpec[] => {
 			org: "Department of Labor",
 			outlet: "MarketWatch",
 			detail: `Initial jobless claims printed at ${claims.toLocaleString("en-US")}, inside the range of the past six weeks and consistent with an unchanged labour market.`,
-			impact: "A print inside the recent range carries no new information for policy.",
+			impact: "The four-week moving average moved by less than the series' typical weekly revision.",
 			roles: [
 				r("fred", `ICSA: Initial Claims, week ending ${date}`),
 				r("media", `Jobless claims little changed at ${claims.toLocaleString("en-US")}`),
@@ -682,7 +682,7 @@ const ROUTINE_EVENTS: EventSpec[] = DATES.flatMap((date, i): EventSpec[] => {
 			org: "Ashgrove Utilities",
 			outlet: "PR Newswire",
 			detail: `Ashgrove Utilities filed an 8-K declaring a quarterly dividend of ${payout.toFixed(2)} dollars per share, payable next quarter to holders of record at month end.`,
-			impact: "A dividend declaration in line with the prior quarter is administrative, not informative.",
+			impact: "The payout matches each of the prior four quarters, and the filing states no change to the payout policy.",
 			roles: [
 				r("sec", `Ashgrove Utilities Corp. Form 8-K, Item 8.01 dividend declaration`),
 				r("media", `Ashgrove Utilities declares quarterly dividend of ${payout.toFixed(2)} dollars`),

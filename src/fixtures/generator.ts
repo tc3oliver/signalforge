@@ -102,7 +102,7 @@ function isoAt(date: DateKey, minuteOfDay: number): string {
 }
 
 const ROLE_VOICE: Record<Role, (e: EventSpec) => string> = {
-	official: (e) => `${e.org} published this as a primary source document.`,
+	official: (e) => `Statement issued by ${e.org}.`,
 	github: (e) => `Repository activity on ${e.repo ?? e.org}.`,
 	hackernews: () => "Front page discussion thread.",
 	reddit: (e) => `Community thread in r/${e.sub ?? "technology"}.`,
@@ -140,12 +140,22 @@ const SUBSTANTIVE: ReadonlySet<Role> = new Set<Role>([
 	"fred",
 ]);
 
+/*
+ * One closing for every item, carrying no role information.
+ *
+ * It used to branch on role: official/sec/fred items closed with "the
+ * authoritative record for this item; downstream coverage should be read
+ * against it", and no other role did. Those are exactly the roles gold names in
+ * `primaryItemIds`, so the sentence was a perfect lexical marker -- a regex for
+ * it recovered 29 of 57 primary items with zero false positives, and
+ * `selected_story_precision` is scored against that field. The channel is still
+ * knowable from `sourceType`, `sourceName` and the lead sentence, which is where
+ * a real feed carries it; what is gone is a sentence stating the conclusion,
+ * which no real press release writes about itself.
+ */
 function buildContent(role: Role, event: EventSpec): string {
 	const lead = ROLE_VOICE[role](event);
-	const closing =
-		role === "official" || role === "sec" || role === "fred"
-			? "The document above is the authoritative record for this item; downstream coverage should be read against it."
-			: `Further reporting is expected as ${event.org} and the affected downstream projects respond.`;
+	const closing = `Further reporting is expected as ${event.org} and the affected downstream projects respond.`;
 	return [
 		`${lead} ${event.detail}`,
 		event.context ?? `Context reported alongside the item is limited to what ${event.org} has said publicly so far.`,

@@ -266,3 +266,110 @@ function jaccard(a: string, b: string): number {
 	for (const w of sa) if (sb.has(w)) shared += 1;
 	return shared / (sa.size + sb.size - shared);
 }
+
+/*
+ * The leak guards above check gold *field names*, eventId substrings and
+ * canonical titles. None of them looks at prose, and prose is where the leak
+ * actually was: the generator gave official/sec/fred items -- exactly the roles
+ * gold names in `primaryItemIds` -- a closing sentence calling the document "the
+ * authoritative record for this item", and gave every `expectedImportant: false`
+ * event an impact sentence stating that verdict in editorial language. Measured
+ * against the committed gold, a regex for either recovered half its class with
+ * ZERO false positives. `selected_story_precision` and `important_story_recall`
+ * are scored against those two fields, so half of each was solvable by string
+ * match rather than judgement.
+ *
+ * The guard is a vocabulary list rather than a statistical precision test, and
+ * that is deliberate. A pure "no phrase may predict gold membership" test would
+ * fire on legitimate signal: "Filing text from EDGAR" appears only on sec items,
+ * and sec items really are primary sources. Channel identity correlating with
+ * gold is the fixture being realistic. What must never appear is the system's
+ * own vocabulary for the answer, or a sentence that states the conclusion a
+ * curator is supposed to reach.
+ */
+const FORBIDDEN_PHRASES = [
+	// The evaluator's and the ledger's own terms.
+	"primary source",
+	"primary artifact",
+	"authoritative record",
+	"the ledger",
+	"change type",
+	"changetype",
+	"material change",
+	"no material change",
+	"emerging signal",
+	"scan coverage",
+	// Verdict language: stating the conclusion instead of the evidence for it.
+	"nothing has changed",
+	"no new information",
+	"not informative",
+	"not actionable",
+	"should not advance",
+	"is not important",
+	"is not newsworthy",
+	/*
+	 * Anything that would tell a model it is being graded. Deliberately narrow:
+	 * "benchmark", "score", "metric" and "threshold" are ordinary words in
+	 * technology and economics reporting -- one generated item legitimately
+	 * discusses "the revised density threshold" -- so banning them would be
+	 * banning realism. Only phrasings that make no sense except as grading are
+	 * listed.
+	 */
+	"gold truth",
+	"the correct answer",
+	"expected important",
+	"being graded",
+	"acceptance harness",
+];
+
+describe("fixture prose does not carry the answer", () => {
+	it("never uses the system's own verdict vocabulary in item text", () => {
+		for (const day of days) {
+			for (const item of day.manifest.items) {
+				const text = `${item.title} ${item.summary} ${item.content ?? ""}`.toLowerCase();
+				for (const phrase of FORBIDDEN_PHRASES) {
+					expect(text, `${day.date} ${item.id} contains "${phrase}"`).not.toContain(phrase);
+				}
+			}
+		}
+	});
+
+	it("closes every item the same way, so the closing carries no role", () => {
+		/*
+		 * The specific regression: the closing branched on role, and the roles it
+		 * singled out (official, sec, fred) are the ones gold names in
+		 * primaryItemIds -- so the sentence identified the primary sources exactly.
+		 * Asserting one shared closing is what makes that unrepeatable; the org
+		 * name inside it varies per event and carries nothing about primacy.
+		 */
+		const CLOSING = /and the affected downstream projects respond\.$/;
+		for (const day of days) {
+			const primary = new Set(day.gold.events.flatMap((e) => e.primaryItemIds));
+			let checkedPrimary = 0;
+			for (const item of day.manifest.items) {
+				if (!item.content) continue;
+				expect(item.content.trim(), `${day.date} ${item.id}`).toMatch(CLOSING);
+				if (primary.has(item.id)) checkedPrimary++;
+			}
+			// The assertion is only worth anything if primary items were in scope.
+			expect(checkedPrimary, `${day.date} had no primary item with content`).toBeGreaterThan(0);
+		}
+	});
+
+	it("does not label the unimportant events as unimportant", () => {
+		// Each of these six events used to carry its own verdict in `impact`.
+		for (const day of days) {
+			const unimportant = new Set(
+				day.gold.events.filter((e) => !e.expectedImportant).flatMap((e) => e.itemIds),
+			);
+			expect(unimportant.size).toBeGreaterThan(0);
+			for (const item of day.manifest.items) {
+				if (!unimportant.has(item.id)) continue;
+				const text = `${item.title} ${item.summary} ${item.content ?? ""}`.toLowerCase();
+				for (const phrase of ["nothing has changed", "no new information", "not informative", "not actionable"]) {
+					expect(text, `${day.date} ${item.id} states its own verdict`).not.toContain(phrase);
+				}
+			}
+		}
+	});
+});
