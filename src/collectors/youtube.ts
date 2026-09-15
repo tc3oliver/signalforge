@@ -215,7 +215,13 @@ export const youtubeCollector: Collector = {
 			seen.add(item.externalId);
 			deduped.push(item);
 		}
-		if (duplicates > 0) warnings.push(`dropped ${duplicates} exact duplicate video(s) seen via multiple sources`);
+		/*
+		 * Deliberately not a warning. A video surfacing via both its channel feed
+		 * and a discovery query is what this de-duplication is for, not a fault,
+		 * and any warning makes the run DEGRADED -- which left youtube permanently
+		 * DEGRADED and the health signal worth nothing. The count stays visible as
+		 * the gap between itemsFetched and the items actually returned.
+		 */
 
 		const health: "OK" | "DEGRADED" | "FAILED" = warnings.length > 0 ? (deduped.length > 0 ? "DEGRADED" : "FAILED") : "OK";
 		const finishedAt = ctx.now().toISOString();

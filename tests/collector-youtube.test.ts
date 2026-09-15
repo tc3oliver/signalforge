@@ -165,7 +165,13 @@ describe("youtubeCollector", () => {
 		const result = await runCollect(ctx);
 		const matches = result.items.filter((i) => i.externalId === "youtube-shared1");
 		expect(matches.length).toBe(1);
-		expect(result.warnings.some((w) => w.includes("duplicate"))).toBe(true);
+		// The drop stays visible as the gap between what was read and what came
+		// back, without being reported as a problem.
+		expect(result.itemsFetched).toBeGreaterThan(result.items.length);
+		// Normal operation, so it must not warn -- any warning marks the run
+		// DEGRADED, and a source that is always DEGRADED tells an operator nothing.
+		expect(result.warnings.some((w) => w.includes("duplicate"))).toBe(false);
+		expect(result.health).toBe("OK");
 	});
 
 	it("is idempotent across two runs with the same feed", async () => {
