@@ -11,6 +11,11 @@
  *
  *   pnpm exec tsx --env-file=.env web/scripts/seed-dev.ts
  *   DI_LINEAGE=web-dev pnpm run web:start
+ *
+ * It has no teardown on purpose -- the point is to browse the data afterwards --
+ * so it leaves its lineage, its `seed-*` source configs, collection runs and raw
+ * items behind. `pnpm db:prune-test` removes all of it when you are done; it
+ * never touches a production lineage.
  */
 import { createSql, assertReachable } from "../../src/db/client.ts";
 import { saveBrief, saveDraft } from "../../src/db/briefs.ts";
