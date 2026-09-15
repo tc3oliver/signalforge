@@ -100,3 +100,73 @@ describe("redaction", () => {
 		expect(JSON.parse(lines[0] as string).err).toEqual({ name: "Error", message: "kaboom" });
 	});
 });
+
+describe("redact: credential-shaped values, not just keys", () => {
+	it("redacts the newer secret key names the old regex missed", () => {
+		expect(
+			redact({
+				auth: "a",
+				credential: "b",
+				credentials: "c",
+				passphrase: "d",
+				pwd: "e",
+				jwt: "f",
+				signature: "g",
+				keep: 1,
+			}),
+		).toEqual({
+			auth: "[REDACTED]",
+			credential: "[REDACTED]",
+			credentials: "[REDACTED]",
+			passphrase: "[REDACTED]",
+			pwd: "[REDACTED]",
+			jwt: "[REDACTED]",
+			signature: "[REDACTED]",
+			keep: 1,
+		});
+	});
+
+	it("scrubs a credential pasted into a string value under an innocent key", () => {
+		// The field name gives nothing away, so only the value layer can catch it.
+		expect(redact({ detail: "401 from provider: invalid key sk-live-ABCDEF123456" })).toEqual({
+			detail: "401 from provider: invalid key [REDACTED]",
+		});
+	});
+
+	it("scrubs bearer tokens, forge tokens and AWS access key ids", () => {
+		expect(redact({ note: "sent Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.abc" })).toEqual({
+			note: "sent Authorization: Bearer [REDACTED]",
+		});
+		expect(redact({ note: "token ghp_AbCdEf0123456789 rejected" })).toEqual({
+			note: "token [REDACTED] rejected",
+		});
+		expect(redact({ note: "github_pat_11ABCDEFG0abcdefg expired" })).toEqual({
+			note: "[REDACTED] expired",
+		});
+		expect(redact({ note: "xoxb-1234567890-abcdef failed" })).toEqual({
+			note: "[REDACTED] failed",
+		});
+		expect(redact({ note: "AKIAIOSFODNN7EXAMPLE denied" })).toEqual({
+			note: "[REDACTED] denied",
+		});
+	});
+
+	it("strips the userinfo out of a connection URL but keeps the host", () => {
+		expect(redact({ dsn: "postgres://di:hunter2@10.10.10.10:5432/signalforge" })).toEqual({
+			dsn: "postgres://[REDACTED]@10.10.10.10:5432/signalforge",
+		});
+	});
+
+	it("scrubs strings nested in arrays and errors too", () => {
+		expect(redact(["plain", "key sk-live-ABCDEF123456"])).toEqual(["plain", "key [REDACTED]"]);
+		expect(redact(new Error("bad Bearer eyJhbGciOiJIUzI1NiJ9.abc"))).toEqual({
+			name: "Error",
+			message: "bad Bearer [REDACTED]",
+		});
+	});
+
+	it("leaves ordinary prose alone", () => {
+		const message = "curator made no progress across 3 turns at 12/40 items decided";
+		expect(redact({ msg: message })).toEqual({ msg: message });
+	});
+});

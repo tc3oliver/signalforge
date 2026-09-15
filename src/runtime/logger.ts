@@ -4,8 +4,8 @@
  * same records into its `events.jsonl`.
  */
 
-const SECRET_KEY_RE = /token|key|secret|authorization|cookie|bearer|password/i;
-const REDACTED = "[REDACTED]";
+import { redactValue, scrubSecrets } from "./redact.ts";
+
 const MAX_DEPTH = 4;
 
 export type LogLevel = "info" | "warn" | "error";
@@ -40,26 +40,13 @@ export type LoggerOptions = {
  * Recursively redact credential-shaped fields. Log fields are frequently built
  * by spreading a provider response, so this runs on every value, not just the
  * top level.
+ *
+ * The rules are shared with the error classifier (`runtime/redact.ts`) so a key
+ * added for one is never missing from the other. Log records are not truncated:
+ * a log line is diagnostic and losing its tail costs more than it saves.
  */
 export function redact(value: unknown, depth = 0): unknown {
-	if (value === null || value === undefined) return value;
-	const t = typeof value;
-	if (t === "string" || t === "number" || t === "boolean") return value;
-	if (t === "bigint") return (value as bigint).toString();
-	if (t === "function" || t === "symbol") return undefined;
-	if (depth >= MAX_DEPTH) return undefined;
-	if (value instanceof Error) return { name: value.name, message: value.message };
-	if (Array.isArray(value)) return value.map((v) => redact(v, depth + 1));
-	const out: Record<string, unknown> = {};
-	for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-		if (SECRET_KEY_RE.test(k)) {
-			out[k] = REDACTED;
-			continue;
-		}
-		const r = redact(v, depth + 1);
-		if (r !== undefined) out[k] = r;
-	}
-	return out;
+	return redactValue(value, { maxDepth: MAX_DEPTH }, depth);
 }
 
 export function createLogger(scope: string, options: LoggerOptions = {}): Logger {
@@ -68,7 +55,16 @@ export function createLogger(scope: string, options: LoggerOptions = {}): Logger
 
 	function emit(level: LogLevel, msg: string, fields?: Record<string, unknown>): void {
 		const safeFields = (fields ? redact(fields) : {}) as Record<string, unknown>;
-		const record: LogRecord = { ...safeFields, ts: now().toISOString(), level, scope, msg };
+		// `msg` is spread in after the redacted fields, so it would otherwise reach
+		// stderr and events.jsonl verbatim. Every call site passes a constant
+		// today; this is what stops the first interpolated URL from leaking.
+		const record: LogRecord = {
+			...safeFields,
+			ts: now().toISOString(),
+			level,
+			scope,
+			msg: scrubSecrets(msg),
+		};
 		write(JSON.stringify(record));
 		options.sink?.(record);
 	}

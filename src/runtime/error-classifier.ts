@@ -1,10 +1,9 @@
 import type { FailureClass } from "../schemas/run.ts";
-
-/** Keys whose values must never leave this process. */
-const SECRET_KEY_RE = /token|key|secret|authorization|cookie|bearer|password/i;
+import { redactValue, scrubSecrets } from "./redact.ts";
 
 const MAX_MESSAGE_LENGTH = 500;
 const MAX_SANITIZE_DEPTH = 4;
+const MAX_SANITIZE_ARRAY = 20;
 
 /* -------------------------------------------------------------------------- */
 /* Marker errors the app throws itself                                        */
@@ -38,41 +37,31 @@ export class ProgrammerError extends Error {
 /* Sanitization                                                               */
 /* -------------------------------------------------------------------------- */
 
-const REDACTED = "[REDACTED]";
-
 /**
  * Recursively strip anything that looks like a credential. Applied to every
  * value that reaches errorMeta, so a provider SDK error carrying request
  * headers can never leak an Authorization bearer token into run artifacts.
+ *
+ * The matching rules live in `runtime/redact.ts` and are shared with the
+ * logger; this wrapper only adds the classifier's own limits.
+ *
+ * Note the asymmetry with classification: only the *persisted* copy is
+ * scrubbed. `classifyError` reads the original error, so redacting a message
+ * like "invalid api key sk-live-..." cannot change which FailureClass it maps
+ * to.
  */
 export function sanitizeValue(value: unknown, depth = 0): unknown {
-	if (value === null || value === undefined) return value;
-	const t = typeof value;
-	if (t === "string") return truncate(value as string);
-	if (t === "number" || t === "boolean") return value;
-	if (t === "bigint") return (value as bigint).toString();
-	if (t === "function" || t === "symbol") return undefined;
-	if (depth >= MAX_SANITIZE_DEPTH) return undefined;
-	if (Array.isArray(value)) {
-		return value.slice(0, 20).map((v) => sanitizeValue(v, depth + 1));
-	}
-	if (value instanceof Error) {
-		return { name: value.name, message: truncate(value.message) };
-	}
-	const out: Record<string, unknown> = {};
-	for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-		if (SECRET_KEY_RE.test(k)) {
-			out[k] = REDACTED;
-			continue;
-		}
-		const s = sanitizeValue(v, depth + 1);
-		if (s !== undefined) out[k] = s;
-	}
-	return out;
+	return redactValue(
+		value,
+		{ truncate: MAX_MESSAGE_LENGTH, maxArray: MAX_SANITIZE_ARRAY, maxDepth: MAX_SANITIZE_DEPTH },
+		depth,
+	);
 }
 
+/** Scrub, then truncate: a secret must not survive by sitting past the cut. */
 function truncate(s: string): string {
-	return s.length > MAX_MESSAGE_LENGTH ? `${s.slice(0, MAX_MESSAGE_LENGTH)}…` : s;
+	const safe = scrubSecrets(s);
+	return safe.length > MAX_MESSAGE_LENGTH ? `${safe.slice(0, MAX_MESSAGE_LENGTH)}…` : safe;
 }
 
 /* -------------------------------------------------------------------------- */

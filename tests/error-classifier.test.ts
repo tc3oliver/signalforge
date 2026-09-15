@@ -4,6 +4,7 @@ import {
 	ProgrammerError,
 	ToolLoopError,
 	classifyError,
+	sanitizeValue,
 } from "../src/runtime/error-classifier.ts";
 
 function withProps<T extends object>(err: Error, props: T): Error {
@@ -255,3 +256,70 @@ describe("classifyError — abort is not automatically the user's doing", () => 
 		expect(classifyError(coded).failureClass).toBe("TIMEOUT");
 	});
 });
+
+describe("errorMeta redaction", () => {
+	it("scrubs a credential out of the persisted message instead of only truncating it", () => {
+		const err = new Error("401 Unauthorized: invalid api key sk-live-ABCDEF123456");
+		const { errorMeta } = classifyError(err);
+		expect(errorMeta["message"]).toBe("401 Unauthorized: invalid api key [REDACTED]");
+	});
+
+	it("classifies on the original message, not the scrubbed copy", () => {
+		// The scrub removes the key but must not remove the words the classifier
+		// reads, or a real AUTH failure would degrade to UNKNOWN and be retried.
+		const err = new Error("invalid api key sk-live-ABCDEF123456");
+		expect(classifyError(err).failureClass).toBe("AUTH");
+	});
+
+	it("redacts the newer secret key names on an error's own properties", () => {
+		const err = withProps(new Error("boom"), {
+			auth: "a",
+			credentials: "b",
+			passphrase: "c",
+			pwd: "d",
+			jwt: "e",
+			signature: "f",
+		});
+		const meta = classifyError(err).errorMeta as Record<string, unknown>;
+		// buildErrorMeta whitelists the fields it copies, so assert through
+		// sanitizeValue, which is what guards anything that does get copied.
+		const sanitized = sanitizeValue({
+			auth: "a",
+			credentials: "b",
+			passphrase: "c",
+			pwd: "d",
+			jwt: "e",
+			signature: "f",
+		}) as Record<string, unknown>;
+		expect(sanitized).toEqual({
+			auth: "[REDACTED]",
+			credentials: "[REDACTED]",
+			passphrase: "[REDACTED]",
+			pwd: "[REDACTED]",
+			jwt: "[REDACTED]",
+			signature: "[REDACTED]",
+		});
+		expect(meta["name"]).toBe("Error");
+	});
+
+	it("scrubs a credential in a cause-chain message", () => {
+		const inner = new Error("connect failed to postgres://di:hunter2@10.10.10.10:5432/sf");
+		const outer = new Error("fetch failed", { cause: inner });
+		const { errorMeta } = classifyError(outer);
+		const chain = errorMeta["causeChain"] as Array<{ message: string }>;
+		expect(chain[0]?.message).toBe(
+			"connect failed to postgres://[REDACTED]@10.10.10.10:5432/sf",
+		);
+	});
+
+	it("still truncates a long message after scrubbing it", () => {
+		const err = new Error(`${"x".repeat(600)} Bearer eyJhbGciOiJIUzI1NiJ9.abc`);
+		const message = errorMetaMessage(err);
+		expect(message.endsWith("…")).toBe(true);
+		expect(message).not.toContain("eyJhbGciOiJIUzI1NiJ9");
+	});
+});
+
+function errorMetaMessage(err: unknown): string {
+	return String(classifyError(err).errorMeta["message"]);
+}

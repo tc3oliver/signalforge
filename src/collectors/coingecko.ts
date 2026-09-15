@@ -1,13 +1,15 @@
+import { scrubSecrets } from "../runtime/redact.ts";
 import { HttpError, TokenBucket, fetchWithRetry } from "./http.ts";
 import type { Collector, CollectorContext, CollectorResult, CollectedItem, CollectedFact } from "./types.ts";
 import { UNTRUSTED_EXTERNAL_CONTENT } from "./types.ts";
 
 const API_BASE = "https://api.coingecko.com/api/v3";
 
-/** CoinGecko demo keys are passed as a query param; never let one reach a log or raw payload. */
-function redactUrl(url: string): string {
-	return url.replace(/([?&]x_cg_demo_api_key=)[^&]+/i, "$1REDACTED");
-}
+/**
+ * CoinGecko demo keys are passed as a query param; never let one reach a log or
+ * raw payload. Shared so a new keyed collector inherits redaction by default.
+ */
+const redactUrl = scrubSecrets;
 
 interface SimplePriceEntry {
 	usd?: number;
