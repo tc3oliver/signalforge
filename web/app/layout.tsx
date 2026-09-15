@@ -50,8 +50,30 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 					{children}
 				</main>
 				<footer className="site">
-					所有內容都來自已發布的資料。每個數字都依引用從結構化事實庫讀出，頁面呈現時不會執行任何語言模型。{" "}
-					<Link href="/feed.xml">Atom 訂閱</Link>
+					<p>
+						所有內容都來自已發布的資料。每個數字都依引用從結構化事實庫讀出，頁面呈現時不會執行任何語言模型。{" "}
+						<Link href="/feed.xml">Atom 訂閱</Link>
+					</p>
+					{/* Plain anchors, not next/link: these leave the site, and they are
+					    the route back to who built this and to the source. */}
+					<p className="site-colophon">
+						SignalForge 由{" "}
+						<a href="https://meowcoder.com" rel="me noopener">
+							Oliver Yu
+						</a>{" "}
+						設計與維運 ·{" "}
+						<a href="https://github.com/tc3oliver/signalforge" rel="noopener">
+							原始碼
+						</a>{" "}
+						·{" "}
+						<a href="https://meowcoder.com/work/signalforge/" rel="noopener">
+							案例研究
+						</a>{" "}
+						·{" "}
+						<a href="https://study.meowcoder.com/posts/260915-signalforge-design-decisions/" rel="noopener">
+							設計筆記
+						</a>
+					</p>
 				</footer>
 			</body>
 		</html>

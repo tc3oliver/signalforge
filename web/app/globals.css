@@ -1047,6 +1047,20 @@ footer.site {
 	color: var(--text-muted);
 }
 
+footer.site p {
+	margin: 0;
+}
+
+footer.site .site-colophon {
+	margin-top: 10px;
+}
+
+footer.site a {
+	color: inherit;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
 /* ------------------------------------------------------------ responsive -- */
 
 @media (max-width: 900px) {

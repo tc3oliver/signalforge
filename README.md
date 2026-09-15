@@ -2,8 +2,10 @@
 
 > SignalForge reads the noise so you can read the signal.
 
-Built and run daily by [Oliver Yu](https://meowcoder.com). The design
-decisions behind it are written up as a
+Built and run daily by [Oliver Yu](https://meowcoder.com). My own instance
+is readable at [signal.meowcoder.com](https://signal.meowcoder.com) — the
+Today page, the archive and the signals, exactly as the pipeline publishes
+them. The design decisions behind it are written up as a
 [case study](https://meowcoder.com/work/signalforge/).
 
 Self-hosted personal intelligence system that turns noisy multi-source
