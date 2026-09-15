@@ -82,6 +82,20 @@ an address only the rendering machine can reach, so a link previews blank
 everywhere else. It affects metadata only — nothing binds to it and no route
 reads it at request time.
 
+Under launchd it is baked into the plist rather than inherited, like `DI_TIMEZONE`
+and for the same reason: a LaunchAgent inherits nothing from a login shell.
+`scripts/install-launchagent.sh` reads it from the environment when you run the
+installer and writes it into `com.dailyintelligence.web.plist`, so set it there:
+
+```sh
+SIGNALFORGE_SITE_URL=https://signal.meowcoder.com ./scripts/install-launchagent.sh
+```
+
+Unset, the installer writes `http://127.0.0.1:3300`, which is correct for an
+install the edge does not proxy. The reader also says so once on startup in
+production, because an unset value is otherwise invisible: the site serves
+normally and only the share cards and feed links are wrong.
+
 ## Pi packages actually installed
 
 | Package | Version |

@@ -45,6 +45,15 @@
 		<string>0.0.0.0</string>
 		<key>WEB_PORT</key>
 		<string>3300</string>
+		<!--
+			The origin this site is reached at from outside, used for the absolute
+			URLs in share cards and feed entries. Unset, they resolve against
+			localhost and a shared link previews blank everywhere but this machine.
+			It is a name the edge already serves; nothing here becomes reachable
+			because it is written down.
+		-->
+		<key>SIGNALFORGE_SITE_URL</key>
+		<string>{{SITE_URL}}</string>
 	</dict>
 
 	<key>RunAtLoad</key>

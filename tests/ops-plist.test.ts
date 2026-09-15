@@ -18,6 +18,9 @@ const TOKENS = {
 	UID: "501",
 	// Baked in rather than inherited: the date a run is stamped with depends on it.
 	TIMEZONE: "Asia/Taipei",
+	// Likewise baked in: the origin the reader's absolute metadata URLs are
+	// built from. A stand-in, for the same reason the paths above are.
+	SITE_URL: "https://reader.example.com",
 };
 
 /** Every template, for the checks that hold whatever the job does. */
@@ -57,8 +60,10 @@ describe.each(TEMPLATES)("plist template %s", (path) => {
 		const strings = rendered.match(/<string>([^<]*)<\/string>/g) ?? [];
 		for (const raw of strings) {
 			const value = raw.slice("<string>".length, -"</string>".length);
-			// A slash does not make a value a path: an IANA zone has one too.
+			// A slash does not make a value a path: an IANA zone has one too, and
+			// so does a URL, which is an absolute address of a different kind.
 			if (value === TOKENS.TIMEZONE) continue;
+			if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) continue;
 			const looksLikePath = value.includes("/") && !value.includes(" ");
 			if (looksLikePath) {
 				expect(value.startsWith("/")).toBe(true);

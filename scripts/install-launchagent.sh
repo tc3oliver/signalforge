@@ -46,10 +46,19 @@ PNPM_BIN_DIR="$(dirname "${PNPM_BIN}")"
 
 TIMEZONE="${DI_TIMEZONE:-$(readlink /etc/localtime | sed -e "s#.*/zoneinfo/##")}"
 [[ -n "${TIMEZONE}" ]] || fail "could not resolve the system time zone; set DI_TIMEZONE before running this"
+
 [[ -x "${NODE_BIN}" ]] || fail "resolved node at ${NODE_BIN} is not executable"
 [[ -x "${PNPM_BIN}" ]] || fail "resolved pnpm at ${PNPM_BIN} is not executable"
 
 NODE_BIN_DIR="$(dirname -- "${NODE_BIN}")"
+
+# The origin readers reach this site at, baked in for the same reason as the
+# time zone: launchd inherits nothing. An unset value is not a visible failure
+# -- the site serves normally and only the share cards and feed links come out
+# pointing at localhost -- so it gets a default rather than an error, and the
+# default is the loopback the reader binds, which is right for an install the
+# edge does not proxy.
+SITE_URL="${SIGNALFORGE_SITE_URL:-http://127.0.0.1:3300}"
 
 [[ -d "${PROJECT_ROOT}" ]] || fail "project root does not exist: ${PROJECT_ROOT}"
 [[ -f "${LAUNCHD_DIR}/daily.plist.template" ]] || fail "missing template: ${LAUNCHD_DIR}/daily.plist.template"
@@ -61,6 +70,7 @@ echo "install-launchagent: node               = ${NODE_BIN}"
 echo "install-launchagent: pnpm               = ${PNPM_BIN}"
 echo "install-launchagent: uid                = ${UID_NUM}"
 echo "install-launchagent: timezone           = ${TIMEZONE}"
+echo "install-launchagent: site url           = ${SITE_URL}"
 
 mkdir -p "${LOG_DIR}"
 mkdir -p "${TARGET_DIR}"
@@ -77,6 +87,7 @@ render_plist() {
 		-e "s#{{LOG_DIR}}#${LOG_DIR}#g" \
 		-e "s#{{UID}}#${UID_NUM}#g" \
 		-e "s#{{TIMEZONE}}#${TIMEZONE}#g" \
+		-e "s#{{SITE_URL}}#${SITE_URL}#g" \
 		"${template}" >"${out}"
 }
 
