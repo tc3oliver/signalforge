@@ -4,10 +4,27 @@ import Link from "next/link";
 import { ADMIN_ENABLED } from "../lib/admin.ts";
 import "./globals.css";
 
+/*
+ * What a shared link says about this site. The old description was the
+ * engineering guarantee ("reads published rows, runs no model"), which is true
+ * and belongs in the footer, not on a LINE card: a person deciding whether to
+ * tap needs to know what they will get, not how it is served.
+ */
+const SITE_DESCRIPTION =
+	"每天早上把幾百則來源讀完，留下真正有變化的十幾件事：什麼發生了、為什麼重要、和昨天比變了什麼。每個數字都有出處。";
+
 export const metadata: Metadata = {
-	title: "SignalForge",
-	description: "每日重點整理。只讀取已發布的資料，頁面呈現時不會執行任何模型。",
-	// The reader is LAN/localhost only; nothing here should ever be indexed.
+	title: "SignalForge — 每日重點",
+	description: SITE_DESCRIPTION,
+	openGraph: {
+		title: "SignalForge",
+		description: SITE_DESCRIPTION,
+		siteName: "SignalForge",
+		locale: "zh_TW",
+		type: "website",
+	},
+	// Not indexed: the content is model-written and changes daily; the site is
+	// meant to be shared as a link, not found through search.
 	robots: { index: false, follow: false },
 };
 
