@@ -49,9 +49,10 @@ export const metadata: Metadata = {
 		locale: "zh_TW",
 		type: "website",
 	},
-	// Not indexed: the content is model-written and changes daily; the site is
-	// meant to be shared as a link, not found through search.
-	robots: { index: false, follow: false },
+	// Indexed. This was noindex while the reader was assumed to be LAN-only;
+	// it is now served publicly, linked from the README and from a case study,
+	// and carries a share card, so refusing to be found was the odd one out.
+	robots: { index: true, follow: true },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
