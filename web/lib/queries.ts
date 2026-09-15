@@ -30,9 +30,11 @@ import {
 	type LateItem,
 } from "../../src/db/items.ts";
 import {
+	getRun,
 	listAgentRuns,
 	listAttempts,
 	listRecentRuns,
+	listRunsForDate,
 	type AgentRunRow,
 	type AttemptRow,
 	type RunSummary,
@@ -54,7 +56,7 @@ import type { NormalizedItem } from "../../src/schemas/item.ts";
 import type { StoryLedgerEntry } from "../../src/schemas/story.ts";
 import { db, LINEAGE } from "./db.ts";
 import { collectFactRefs, collectSourceItemIds } from "./sections.ts";
-import { DASHBOARD_LIMITS } from "./dashboard.ts";
+import { DASHBOARD_LIMITS, type DayWorkload } from "./dashboard.ts";
 
 /*
  * Page-shaped reads. Every function here is a composition of the repo's own
@@ -107,6 +109,33 @@ export async function loadBriefPage(date: string): Promise<BriefPageData | undef
 			next: index > 0 ? dates[index - 1] : undefined,
 		},
 	};
+}
+
+/**
+ * What the day's run read, for the Today page's closing paragraph. Counts come
+ * from the rows the pipeline wrote — decisions, the run row, collection runs —
+ * never from the brief's own prose. A date with no run row yields undefined and
+ * the page omits the paragraph rather than guessing.
+ */
+export async function loadDayWorkload(date: string): Promise<DayWorkload | undefined> {
+	const sql = db();
+	const runIds = await listRunsForDate(sql, LINEAGE, date);
+	if (runIds.length === 0) return undefined;
+	const [runs, dispositions, collectionRuns] = await Promise.all([
+		Promise.all(runIds.map((id) => getRun(sql, id))),
+		dispositionCounts(sql, LINEAGE, date),
+		listCollectionRuns(sql, 400),
+	]);
+	// A day can hold more than one run (a retry, an incremental pass); the
+	// scan-coverage number is the largest processed count any of them reached.
+	const itemsScanned = Math.max(0, ...runs.map((run) => run?.processedItems ?? 0));
+	const runIdSet = new Set(runIds);
+	const sources = new Set(
+		collectionRuns
+			.filter((row) => row.runId !== undefined && runIdSet.has(row.runId) && row.itemsFetched > 0)
+			.map((row) => row.collectorId),
+	).size;
+	return { itemsScanned, sources, dispositions };
 }
 
 export async function loadLatestBriefDate(): Promise<string | undefined> {

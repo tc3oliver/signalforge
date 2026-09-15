@@ -170,6 +170,38 @@ describe("Today page markup", () => {
 	});
 });
 
+describe("Today page day in review", () => {
+	it("closes the page with what the run read, from recorded counts only", () => {
+		const out = render({
+			workload: {
+				itemsScanned: 1243,
+				sources: 9,
+				dispositions: { IRRELEVANT: 1180, DUPLICATE: 41, CANDIDATE: 22 },
+			},
+			ledger: [ledger(), ledger({ storyId: "st-9", changeType: "NO_MATERIAL_CHANGE" })],
+		});
+		expect(out).toContain('id="day-in-review"');
+		expect(out).toContain("<strong>1,243</strong> 則項目");
+		expect(out).toContain("<strong>9</strong> 個來源");
+		expect(out).toContain("<strong>1,180</strong> 則與追蹤的主題無關");
+		expect(out).toContain("<strong>41</strong> 則是重複報導");
+		expect(out).toContain("<strong>3</strong> 則事件");
+		expect(out).toContain("<strong>1</strong> 則只是舊聞再報導");
+		// 3 of 1,243, rounded up so a tiny share never reads as 0%.
+		expect(out).toContain("<strong>1%</strong>");
+		// It is the last section: after the inbox, before the full-brief link.
+		expect(out.indexOf('id="day-in-review"')).toBeGreaterThan(out.indexOf("watch-next"));
+		expect(out.indexOf('id="day-in-review"')).toBeLessThan(out.indexOf('class="full-brief"'));
+	});
+
+	it("omits the paragraph when the day left no run record", () => {
+		expect(render()).not.toContain('id="day-in-review"');
+		expect(render({ workload: { itemsScanned: 0, sources: 0, dispositions: {} } })).not.toContain(
+			'id="day-in-review"',
+		);
+	});
+});
+
 describe("Today page empty states", () => {
 	it("says so when nothing changed and omits the signal block when there is none", () => {
 		const out = render({

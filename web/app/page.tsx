@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ADMIN_ENABLED } from "../lib/admin.ts";
 import { TodayDashboard } from "../components/dashboard/today-dashboard.tsx";
 import { buildDashboard } from "../lib/dashboard.ts";
-import { loadBriefPage, loadLatestBriefDate } from "../lib/queries.ts";
+import { loadBriefPage, loadDayWorkload, loadLatestBriefDate } from "../lib/queries.ts";
 
 /*
  * Always dynamic. The brief for "today" changes when the pipeline publishes,
@@ -28,7 +28,7 @@ export default async function TodayPage() {
 			</section>
 		);
 	}
-	const data = await loadBriefPage(date);
+	const [data, workload] = await Promise.all([loadBriefPage(date), loadDayWorkload(date)]);
 	if (!data) {
 		return (
 			<section className="hero">
@@ -44,6 +44,7 @@ export default async function TodayPage() {
 		ledger: data.ledger,
 		signalRecords: data.signalRecords,
 		lateItems: data.lateItems,
+		...(workload ? { workload } : {}),
 	});
 	return <TodayDashboard view={view} />;
 }

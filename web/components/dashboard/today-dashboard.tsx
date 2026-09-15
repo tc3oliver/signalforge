@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { DashboardView } from "../../lib/dashboard.ts";
 import { formatDateKey } from "../../lib/format.ts";
 import { DailyAnalysisPreview } from "./analysis-preview.tsx";
+import { DayInReview } from "./day-in-review.tsx";
 import { MustKnowGrid } from "./must-know.tsx";
 import { NewSinceMorning } from "./new-since-morning.tsx";
 import { EmergingSignals } from "./signal-card.tsx";
@@ -18,7 +19,9 @@ import { WhatChanged } from "./what-changed.tsx";
  *            compact sections
  *   Level 3  is /story/[id]            -- reading, when it is worth it
  *
- * New-since-morning is an inbox and sits last. The full day is /brief/[date].
+ * New-since-morning is an inbox and sits after the brief. The day-in-review
+ * paragraph closes the page: how much was read so that this much remained.
+ * The full day is /brief/[date].
  */
 export function TodayDashboard({ view }: { view: DashboardView }) {
 	return (
@@ -35,6 +38,7 @@ export function TodayDashboard({ view }: { view: DashboardView }) {
 			<DailyAnalysisPreview analysis={view.analysis} date={view.date} />
 			<WatchNext entries={view.watchNext} />
 			<NewSinceMorning feed={view.newSinceMorning} />
+			<DayInReview workload={view.workload} />
 			<p className="full-brief">
 				<Link href={`/brief/${view.date}`}>
 					{formatDateKey(view.date)} 完整內容 <span aria-hidden="true">→</span>

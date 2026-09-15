@@ -194,6 +194,29 @@ export interface DashboardView {
 	newSinceMorning: { total: number; capped: boolean; items: LateItemView[] };
 	analysis: { preview: string; full: string; truncated: boolean };
 	watchNext: string[];
+	/** What the day's run read and discarded; absent when the run left no record. */
+	workload: DayWorkloadView | undefined;
+}
+
+/** The day's work, as the pipeline recorded it. Every field is a count of rows. */
+export interface DayWorkload {
+	/** Items the curator recorded a decision on — the scan-coverage number. */
+	itemsScanned: number;
+	/** Collectors that fetched at least one item for this run. */
+	sources: number;
+	/** Decisions by disposition; a missing key is zero. */
+	dispositions: Readonly<Partial<Record<"IRRELEVANT" | "DUPLICATE" | "CANDIDATE", number>>>;
+}
+
+export interface DayWorkloadView {
+	itemsScanned: number;
+	sources: number;
+	irrelevant: number;
+	duplicate: number;
+	/** Stories in the brief — what the reader actually gets. */
+	storiesKept: number;
+	/** Ledger rows judged NO_MATERIAL_CHANGE: read, recorded, and kept out. */
+	unchangedStories: number;
 }
 
 export interface DashboardInput {
@@ -203,6 +226,8 @@ export interface DashboardInput {
 	/** Tracked signal records; matched to the brief's signals by label. */
 	signalRecords: readonly EmergingSignal[];
 	lateItems: readonly LateItem[];
+	/** Optional: a page rendered from fixtures, or a day whose run row is gone, has none. */
+	workload?: DayWorkload;
 }
 
 export const DASHBOARD_LIMITS = Object.freeze({
@@ -276,6 +301,7 @@ export function buildDashboard(input: DashboardInput): DashboardView {
 				storyId: item.storyId,
 			})),
 		},
+		workload: input.workload ? toWorkloadView(input.workload, brief, input.ledger) : undefined,
 		analysis: {
 			preview: analysisPreview,
 			full: analysisFull,
@@ -345,4 +371,19 @@ function daySpan(first: string, last: string): number | undefined {
 	if (Number.isNaN(a) || Number.isNaN(b)) return undefined;
 	const days = Math.floor((b - a) / 86_400_000);
 	return Math.max(1, days + 1);
+}
+
+function toWorkloadView(
+	workload: DayWorkload,
+	brief: DailyBrief,
+	ledger: readonly StoryLedgerEntry[],
+): DayWorkloadView {
+	return {
+		itemsScanned: workload.itemsScanned,
+		sources: workload.sources,
+		irrelevant: workload.dispositions.IRRELEVANT ?? 0,
+		duplicate: workload.dispositions.DUPLICATE ?? 0,
+		storiesKept: brief.stories.length,
+		unchangedStories: ledger.filter((entry) => entry.changeType === "NO_MATERIAL_CHANGE").length,
+	};
 }

@@ -368,6 +368,29 @@ h3 {
 	font-size: 0.8rem;
 }
 
+/* day in review */
+
+.day-in-review {
+	margin-top: 32px;
+	padding: 20px 24px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-lg);
+	background: var(--bg-raised);
+}
+
+.day-in-review p {
+	margin: 8px 0 0;
+	font-size: 0.95rem;
+	line-height: 1.7;
+	color: var(--text-muted);
+}
+
+.day-in-review strong {
+	color: var(--text);
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
 /* must know */
 
 .must-know {
