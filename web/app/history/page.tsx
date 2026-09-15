@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { loadBriefHistory } from "../../lib/queries.ts";
+import { loadBriefHistoryPage } from "../../lib/queries.ts";
 import { formatDateKey, formatInstant, sectionLabel } from "../../lib/format.ts";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +8,8 @@ export const runtime = "nodejs";
 export const metadata = { title: "歷史 — SignalForge" };
 
 export default async function HistoryPage() {
-	const briefs = await loadBriefHistory(120);
+	const SHOWN = 120;
+	const { briefs, total } = await loadBriefHistoryPage(SHOWN);
 	if (briefs.length === 0) {
 		return (
 			<>
@@ -20,7 +21,10 @@ export default async function HistoryPage() {
 	return (
 		<div className="ref-history">
 			<h1>歷史</h1>
-			<p className="dateline">共 {briefs.length} 天 · 由新到舊</p>
+			<p className="dateline">
+				{total > briefs.length ? `共 ${total} 天（顯示最近 ${SHOWN} 天）` : `共 ${total} 天`} ·
+				由新到舊
+			</p>
 			<ol className="timeline">
 				{briefs.map((brief) => {
 					// One muted line, not three chips: the counts only ever

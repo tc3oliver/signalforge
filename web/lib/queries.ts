@@ -1,7 +1,9 @@
+import { cache } from "react";
 import { localDateKey, reportingZone } from "../../src/runtime/local-day.ts";
 import {
 	briefAppearancesForStory,
 	getBrief,
+	countBriefs,
 	latestBriefDate,
 	listBriefSummaries,
 	listDraftValidationFailures,
@@ -12,8 +14,10 @@ import {
 	type DraftValidationRecord,
 } from "../../src/db/briefs.ts";
 import {
+	collectionRunsForRunIds,
 	collectorThroughput,
 	listCollectionRuns,
+	maxProcessedItemsForRunIds,
 	listSourceConfigs,
 	type CollectionRunRow,
 	type CollectorThroughput,
@@ -30,7 +34,6 @@ import {
 	type LateItem,
 } from "../../src/db/items.ts";
 import {
-	getRun,
 	listAgentRuns,
 	listAttempts,
 	listRecentRuns,
@@ -43,6 +46,7 @@ import { listSignals, signalsForStory, type EmergingSignal } from "../../src/db/
 import {
 	findRelatedStories,
 	getLatestStory,
+	latestStoryTitles,
 	listDecisionsForItem,
 	listStoriesForDate,
 	listStoryItemRoles,
@@ -79,7 +83,39 @@ export interface BriefPageData {
 	neighbours: { previous: string | undefined; next: string | undefined };
 }
 
-export async function loadBriefPage(date: string): Promise<BriefPageData | undefined> {
+/**
+ * What the Today page needs, and nothing else. `/` renders the dashboard, which
+ * reads the brief, its ledger, the tracked signals and the late items; the fact
+ * and item bodies the full brief page renders are several hundred rows the
+ * dashboard never looks at, so they are not fetched here.
+ */
+export type TodayPageData = Pick<
+	BriefPageData,
+	"brief" | "ledger" | "signalRecords" | "lateItems"
+>;
+
+export const loadTodayPage = cache(async function loadTodayPage(
+	date: string,
+): Promise<TodayPageData | undefined> {
+	const sql = db();
+	const brief = await getBrief(sql, LINEAGE, date);
+	if (!brief) return undefined;
+	const [lateItems, ledger, signalRecords] = await Promise.all([
+		listItemsFetchedAfterMorningRun(sql, LINEAGE, date, 0.6, DASHBOARD_LIMITS.lateItemsFetch),
+		listStoriesForDate(sql, LINEAGE, date),
+		listSignals(sql, LINEAGE),
+	]);
+	return { brief, ledger, signalRecords, lateItems };
+});
+
+/*
+ * Memoised per request: a route can call this from both `generateMetadata` and
+ * the component, and React's `cache` collapses those into one set of queries
+ * for the duration of a single render.
+ */
+export const loadBriefPage = cache(async function loadBriefPage(
+	date: string,
+): Promise<BriefPageData | undefined> {
 	const sql = db();
 	const brief = await getBrief(sql, LINEAGE, date);
 	if (!brief) return undefined;
@@ -109,7 +145,7 @@ export async function loadBriefPage(date: string): Promise<BriefPageData | undef
 			next: index > 0 ? dates[index - 1] : undefined,
 		},
 	};
-}
+});
 
 /**
  * What the day's run read, for the Today page's closing paragraph. Counts come
@@ -121,19 +157,17 @@ export async function loadDayWorkload(date: string): Promise<DayWorkload | undef
 	const sql = db();
 	const runIds = await listRunsForDate(sql, LINEAGE, date);
 	if (runIds.length === 0) return undefined;
-	const [runs, dispositions, collectionRuns] = await Promise.all([
-		Promise.all(runIds.map((id) => getRun(sql, id))),
+	const [itemsScanned, dispositions, collectionRuns] = await Promise.all([
+		// A day can hold more than one run (a retry, an incremental pass); the
+		// scan-coverage number is the largest processed count any of them reached.
+		maxProcessedItemsForRunIds(sql, runIds),
 		dispositionCounts(sql, LINEAGE, date),
-		listCollectionRuns(sql, 400),
+		// Filtered by run id in SQL. A recency window over the whole table
+		// answers a different question and undercounts any day but the newest.
+		collectionRunsForRunIds(sql, runIds),
 	]);
-	// A day can hold more than one run (a retry, an incremental pass); the
-	// scan-coverage number is the largest processed count any of them reached.
-	const itemsScanned = Math.max(0, ...runs.map((run) => run?.processedItems ?? 0));
-	const runIdSet = new Set(runIds);
 	const sources = new Set(
-		collectionRuns
-			.filter((row) => row.runId !== undefined && runIdSet.has(row.runId) && row.itemsFetched > 0)
-			.map((row) => row.collectorId),
+		collectionRuns.filter((row) => row.itemsFetched > 0).map((row) => row.collectorId),
 	).size;
 	return { itemsScanned, sources, dispositions };
 }
@@ -146,6 +180,21 @@ export async function loadBriefHistory(limit = 90): Promise<BriefSummary[]> {
 	return listBriefSummaries(db(), LINEAGE, limit);
 }
 
+export interface BriefHistory {
+	briefs: BriefSummary[];
+	/** Every published day, not just the ones on this page. */
+	total: number;
+}
+
+export async function loadBriefHistoryPage(limit = 90): Promise<BriefHistory> {
+	const sql = db();
+	const [briefs, total] = await Promise.all([
+		listBriefSummaries(sql, LINEAGE, limit),
+		countBriefs(sql, LINEAGE),
+	]);
+	return { briefs, total };
+}
+
 export interface StoryPageData {
 	latest: StoryLedgerEntry;
 	timeline: StoryLedgerEntry[];
@@ -156,20 +205,26 @@ export interface StoryPageData {
 	unresolvedSourceIds: string[];
 	related: RelatedStory[];
 	signals: EmergingSignal[];
-	roles: Map<string, "PRIMARY" | "SUPPORTING">;
 }
 
-export async function loadStoryPage(storyId: string): Promise<StoryPageData | undefined> {
+export const loadStoryPage = cache(async function loadStoryPage(
+	storyId: string,
+): Promise<StoryPageData | undefined> {
 	const sql = db();
+	/*
+	 * The ledger lookup is a cheap gate and runs first: the id is a path segment,
+	 * so an unknown one costs a single query rather than five. Everything else
+	 * keyed on the id alone then goes out together; only the role lookup needs
+	 * `latest.date`, so it is the one query that waits for the second wave.
+	 */
 	const latest = await getLatestStory(sql, LINEAGE, storyId);
 	if (!latest) return undefined;
 
-	const [timeline, appearances, related, signals, roleRows] = await Promise.all([
+	const [timeline, appearances, related, signals] = await Promise.all([
 		listStoryTimeline(sql, LINEAGE, storyId),
 		briefAppearancesForStory(sql, LINEAGE, storyId),
 		findRelatedStories(sql, LINEAGE, storyId),
 		signalsForStory(sql, LINEAGE, storyId),
-		listStoryItemRoles(sql, LINEAGE, storyId, latest.date),
 	]);
 
 	// The union across the whole timeline, not just the latest day: a source
@@ -182,9 +237,10 @@ export async function loadStoryPage(storyId: string): Promise<StoryPageData | un
 		...timeline.flatMap((entry) => entry.factRefs),
 		...appearances.flatMap((a) => a.factRefs),
 	]);
-	const [facts, items] = await Promise.all([
+	const [facts, items, roleRows] = await Promise.all([
 		getFacts(sql, LINEAGE, factRefs),
 		getNormalizedItems(sql, LINEAGE, sourceIds),
+		listStoryItemRoles(sql, LINEAGE, storyId, latest.date),
 	]);
 
 	const byId = new Map(items.map((i) => [i.id, i] as const));
@@ -192,10 +248,6 @@ export async function loadStoryPage(storyId: string): Promise<StoryPageData | un
 		...timeline.flatMap((entry) => entry.primarySourceIds),
 		...roleRows.filter((r) => r.role === "PRIMARY").map((r) => r.itemId),
 	]);
-	const roles = new Map<string, "PRIMARY" | "SUPPORTING">(
-		sourceIds.map((id) => [id, primaryIds.has(id) ? "PRIMARY" : "SUPPORTING"] as const),
-	);
-
 	return {
 		latest,
 		timeline,
@@ -208,9 +260,8 @@ export async function loadStoryPage(storyId: string): Promise<StoryPageData | un
 		unresolvedSourceIds: sourceIds.filter((id) => !byId.has(id)),
 		related,
 		signals,
-		roles,
 	};
-}
+});
 
 export async function loadSignals(): Promise<{
 	signals: EmergingSignal[];
@@ -219,13 +270,7 @@ export async function loadSignals(): Promise<{
 	const sql = db();
 	const signals = await listSignals(sql, LINEAGE);
 	const storyIds = unique(signals.flatMap((s) => s.storyIds));
-	const entries = await Promise.all(
-		storyIds.map(async (id) => [id, await getLatestStory(sql, LINEAGE, id)] as const),
-	);
-	const storyTitles = new Map<string, string>();
-	for (const [id, entry] of entries) {
-		if (entry) storyTitles.set(id, entry.canonicalTitle);
-	}
+	const storyTitles = await latestStoryTitles(sql, LINEAGE, storyIds);
 	return { signals, storyTitles };
 }
 

@@ -381,3 +381,64 @@ export async function listCollectionRuns(
 		latencyMs: r.latency_ms,
 	}));
 }
+
+/**
+ * Collection runs belonging to specific pipeline runs. The web reader counts
+ * how many sources fed one day; a recency window over the whole table answers
+ * a different question and silently undercounts as soon as the day is not the
+ * most recent one.
+ */
+export async function collectionRunsForRunIds(
+	sql: Sql,
+	runIds: readonly string[],
+): Promise<CollectionRunRow[]> {
+	if (runIds.length === 0) return [];
+	const rows = await sql.unsafe<
+		{
+			collection_run_id: string; run_id: string | null; collector_id: string;
+			health: string; items_fetched: number; warnings: string[]; error: string | null;
+			started_at: string; finished_at: string; latency_ms: number;
+		}[]
+	>(
+		`select collection_run_id, run_id, collector_id, health, items_fetched, warnings, error,
+			to_char(started_at at time zone 'utc', ${ISO}) as started_at,
+			to_char(finished_at at time zone 'utc', ${ISO}) as finished_at,
+			latency_ms
+		 from collection_runs where run_id = any($1::text[])
+		 order by started_at desc`,
+		[runIds as string[]],
+	);
+	return rows.map((r) => ({
+		collectionRunId: r.collection_run_id,
+		runId: r.run_id ?? undefined,
+		collectorId: r.collector_id,
+		health: r.health as CollectorHealth,
+		itemsFetched: r.items_fetched,
+		warnings: r.warnings,
+		error: r.error ?? undefined,
+		startedAt: r.started_at,
+		finishedAt: r.finished_at,
+		latencyMs: r.latency_ms,
+	}));
+}
+
+/**
+ * The largest processed-item count any of these runs reached — the day's
+ * scan-coverage number. A day can hold several runs (a retry, an incremental
+ * pass), and the answer is one aggregate rather than one row fetch per run.
+ *
+ * It lives here rather than in runs.ts because it is a reader-facing coverage
+ * projection, the same question `collectionRunsForRunIds` answers for sources.
+ */
+export async function maxProcessedItemsForRunIds(
+	sql: Sql,
+	runIds: readonly string[],
+): Promise<number> {
+	if (runIds.length === 0) return 0;
+	const rows = await sql.unsafe<{ processed: string | null }[]>(
+		`select coalesce(max(processed_items), 0)::text as processed
+		 from daily_runs where run_id = any($1::text[])`,
+		[runIds as string[]],
+	);
+	return Number(rows[0]?.processed ?? 0);
+}

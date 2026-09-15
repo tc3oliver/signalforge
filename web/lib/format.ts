@@ -148,6 +148,27 @@ export function displaySourceName(name: string): string {
 	return name.replace(/^Miniflux:\s*/, "");
 }
 
+/**
+ * 1234567 -> "1,234,567". Grouped by hand for the same reason the dates are:
+ * `toLocaleString` resolves against the runtime's locale data, which differs
+ * between the server and the browser and produces a hydration mismatch.
+ */
+export function formatCount(value: number): string {
+	if (!Number.isFinite(value)) return String(value);
+	// Above 1e21 String() switches to exponential notation, and grouping by
+	// character position would render "1e+21" as "1e,+21". No count here reaches
+	// that, but a wrong number is worse than an ungrouped one.
+	if (!Number.isSafeInteger(Math.trunc(value))) return String(value);
+	const negative = value < 0;
+	const digits = String(Math.trunc(Math.abs(value)));
+	let grouped = "";
+	for (let i = 0; i < digits.length; i += 1) {
+		if (i > 0 && (digits.length - i) % 3 === 0) grouped += ",";
+		grouped += digits[i];
+	}
+	return negative ? `-${grouped}` : grouped;
+}
+
 /** 0.732 -> "73%". Scores in this schema are always 0..1. */
 export function formatScore(score: number | undefined): string {
 	if (score === undefined || Number.isNaN(score)) return "—";

@@ -16,7 +16,16 @@ export async function GET(request: Request): Promise<Response> {
 	return new Response(xml, {
 		headers: {
 			"content-type": "application/atom+xml; charset=utf-8",
-			"cache-control": "no-store",
+			/*
+			 * The feed is a list of published days, not a live resource, so a reader
+			 * polling every few minutes should hit its own cache, not Postgres.
+			 *
+			 * `private`, not `public`: every link in the body embeds the origin this
+			 * request arrived on, so a shared cache could serve a LAN-derived feed to
+			 * a public subscriber -- broken links, and this host's internal address
+			 * handed out by the edge. Browser caches are origin-keyed and unaffected.
+			 */
+			"cache-control": "private, max-age=300",
 		},
 	});
 }

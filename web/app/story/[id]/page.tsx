@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
 import { FactList } from "../../../components/facts.tsx";
 import { SourceList } from "../../../components/sources.tsx";
@@ -17,19 +18,37 @@ import {
 	storyStatusLabel,
 } from "../../../lib/format.ts";
 
-export const dynamic = "force-dynamic";
+/* A story page reflects published ledger rows; see /brief/[date] for why 300s. */
+export const revalidate = 300;
 export const runtime = "nodejs";
+
+/*
+ * A story id is a slug the curator writes, and it arrives here as a path
+ * segment: user input. Matching the stored shape before any query keeps a
+ * garbage id from costing a round trip, and -- because this route is revalidated
+ * rather than dynamic -- from leaving a full-route cache entry on disk per
+ * distinct string anyone chooses to request.
+ */
+const STORY_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/i;
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params;
-	const data = await loadStoryPage(decodeURIComponent(id));
+	const storyId = decodeURIComponent(id);
+	if (!STORY_ID.test(storyId)) return { title: "找不到事件 — SignalForge" };
+	const data = await loadStoryPage(storyId);
 	return { title: data ? `${data.latest.canonicalTitle} — SignalForge` : "找不到事件 — SignalForge" };
 }
 
 export default async function StoryPage({ params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params;
-	const data = await loadStoryPage(decodeURIComponent(id));
-	if (!data) notFound();
+	const storyId = decodeURIComponent(id);
+	if (!STORY_ID.test(storyId)) notFound();
+	const data = await loadStoryPage(storyId);
+	if (!data) {
+		// As on /brief/[date]: a miss must not be cached for 300s.
+		noStore();
+		notFound();
+	}
 
 	const { latest, timeline, appearances, facts, primarySources, allSources, related, signals } =
 		data;

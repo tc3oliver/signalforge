@@ -391,3 +391,24 @@ export async function listStoryItemRoles(
 	`;
 	return rows.map((r) => ({ itemId: r.item_id, role: r.role as "PRIMARY" | "SUPPORTING" }));
 }
+
+/**
+ * The current title of each of several stories, in one query. The reader lists
+ * signals and needs a title per referenced story; one `getLatestStory` per id
+ * is the same answer at N round trips.
+ */
+export async function latestStoryTitles(
+	sql: Sql,
+	lineage: string,
+	storyIds: readonly string[],
+): Promise<Map<string, string>> {
+	if (storyIds.length === 0) return new Map();
+	const rows = await sql.unsafe<{ story_id: string; canonical_title: string }[]>(
+		`select distinct on (s.story_id) s.story_id, s.canonical_title
+		 from story_ledger s
+		 where s.lineage = $1 and s.story_id = any($2::text[])
+		 order by s.story_id, s.date desc`,
+		[lineage, storyIds as string[]],
+	);
+	return new Map(rows.map((r) => [r.story_id, r.canonical_title] as const));
+}

@@ -13,6 +13,7 @@ import {
 	changeTypeLabel,
 	changeTypeShortLabel,
 	confidenceLabel,
+	formatCount,
 	formatDateKey,
 	displaySourceName,
 	formatInstant,
@@ -210,6 +211,23 @@ describe("public reader wording", () => {
 		expect(card).toContain("1 天");
 		expect(card).not.toContain("Confidence");
 		expect(card).not.toContain("Evidence");
+	});
+});
+
+describe("locale-independent number formatting", () => {
+	it("groups thousands by hand, identically on server and client", () => {
+		// `toLocaleString` would resolve against whichever locale data the
+		// runtime has, which is how a hydration mismatch gets into a page.
+		expect(formatCount(0)).toBe("0");
+		expect(formatCount(7)).toBe("7");
+		expect(formatCount(999)).toBe("999");
+		expect(formatCount(1000)).toBe("1,000");
+		expect(formatCount(12_345)).toBe("12,345");
+		expect(formatCount(1_234_567)).toBe("1,234,567");
+		expect(formatCount(-4200)).toBe("-4,200");
+		// A count is a row count; a fractional one is truncated, not rendered.
+		expect(formatCount(1234.9)).toBe("1,234");
+		expect(formatCount(Number.NaN)).toBe("NaN");
 	});
 });
 

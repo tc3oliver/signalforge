@@ -75,6 +75,13 @@ The web app binds to `127.0.0.1:3300` by default in both `dev` and `start`
 Postgres does. `WEB_HOST` / `WEB_PORT` override it deliberately; every route is
 read-only and unauthenticated, and `/admin` stays off unless `SIGNALFORGE_ADMIN=1`.
 
+`SIGNALFORGE_SITE_URL` is the public origin a shared link is opened at, e.g.
+`https://signal.meowcoder.com`. Next resolves the OpenGraph image against it;
+unset, it falls back to `http://localhost:3300` and the share card resolves to
+an address only the rendering machine can reach, so a link previews blank
+everywhere else. It affects metadata only — nothing binds to it and no route
+reads it at request time.
+
 ## Pi packages actually installed
 
 | Package | Version |
@@ -172,6 +179,7 @@ Other variables the code reads, none of them required:
 | `DI_SEED_LINEAGE` | lineage written by `pnpm demo` (default `web-dev`) |
 | `WEB_HOST` / `WEB_PORT` | reader bind address and port (default `127.0.0.1:3300`) |
 | `SIGNALFORGE_ADMIN` | `1` enables the `/admin` routes |
+| `SIGNALFORGE_SITE_URL` | public origin for absolute metadata URLs (default `http://localhost:3300`) |
 | `DAILY_INTELLIGENCE_FAULT_INJECTION` | test-only fault injection, `docs/DEVELOPMENT.md`; absent in normal operation |
 
 Collector credentials are listed per source in `docs/DATA_SOURCES.md` and

@@ -30,7 +30,7 @@ export function db(): Sql {
 	 * far longer than any query here needs and short enough that a stalled
 	 * database produces an error page rather than a request that never returns.
 	 */
-	holder[POOL_KEY] ??= createSql({ ...dbConfig(), max: 5, statementTimeoutMs: 10_000 });
+	holder[POOL_KEY] ??= createSql({ ...dbConfig(), max: 8, statementTimeoutMs: 10_000 });
 	return holder[POOL_KEY];
 }
 

@@ -10,8 +10,10 @@ import {
 } from "../src/db/briefs.ts";
 import { createSql, type Sql } from "../src/db/client.ts";
 import {
+	collectionRunsForRunIds,
 	collectorThroughput,
 	listCollectionRuns,
+	maxProcessedItemsForRunIds,
 	listSourceConfigs,
 	recordCollectionRun,
 	upsertSourceConfig,
@@ -35,6 +37,7 @@ import {
 } from "../src/db/runs.ts";
 import {
 	findRelatedStories,
+	latestStoryTitles,
 	listDecisionsForItem,
 	listStoryTimeline,
 	upsertDecisions,
@@ -421,5 +424,41 @@ describe.skipIf(!probe.available)("web read projections", () => {
 		// future relative to nothing in particular, so only the shape is asserted.
 		const throughput = await collectorThroughput(sql, 24 * 365 * 50);
 		expect(Array.isArray(throughput)).toBe(true);
+	});
+
+	it("scopes collection runs to the day's own runs", async () => {
+		// The point of the run-id filter: the answer does not depend on how much
+		// unrelated collection history sits ahead of these rows in the table.
+		const mine = await collectionRunsForRunIds(sql, [runIdA]);
+		expect(mine.map((r) => r.collectionRunId)).toEqual([`cr-${suffix}`]);
+		expect(mine[0]?.collectorId).toBe(`col-${suffix}`);
+		expect(mine[0]?.itemsFetched).toBe(2);
+
+		// runIdB collected nothing, so the union is still just the one run.
+		const both = await collectionRunsForRunIds(sql, [runIdA, runIdB]);
+		expect(both.map((r) => r.collectionRunId)).toEqual([`cr-${suffix}`]);
+		expect(await collectionRunsForRunIds(sql, [])).toEqual([]);
+		expect(await collectionRunsForRunIds(sql, [`${lineage}-absent`])).toEqual([]);
+	});
+
+	it("takes scan coverage as the largest processed count across a day's runs", async () => {
+		expect(await maxProcessedItemsForRunIds(sql, [runIdA])).toBe(3);
+		expect(await maxProcessedItemsForRunIds(sql, [runIdA, runIdB])).toBe(3);
+		// No run rows is zero, not a crash: Math.max of nothing is -Infinity.
+		expect(await maxProcessedItemsForRunIds(sql, [])).toBe(0);
+		expect(await maxProcessedItemsForRunIds(sql, [`${lineage}-absent`])).toBe(0);
+	});
+
+	it("resolves many story titles in one lookup, newest row per story", async () => {
+		const titles = await latestStoryTitles(sql, lineage, [
+			"st-widget",
+			"st-widget-recall",
+			"st-absent",
+		]);
+		expect(titles.get("st-widget")).toBe("Quantum widget factory");
+		expect(titles.get("st-widget-recall")).toBe("Quantum widget recall");
+		// A signal may cite a story this lineage never wrote; it is simply absent.
+		expect(titles.has("st-absent")).toBe(false);
+		expect(await latestStoryTitles(sql, lineage, [])).toEqual(new Map());
 	});
 });
