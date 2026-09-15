@@ -14,6 +14,7 @@ import {
 	changeTypeShortLabel,
 	confidenceLabel,
 	formatDateKey,
+	displaySourceName,
 	formatInstant,
 	importanceLabel,
 	sectionLabel,
@@ -242,6 +243,11 @@ describe("presentation mappings", () => {
 		expect(storyStatusLabel("OPEN")).toBe("追蹤中");
 		expect(signalStateLabel("emerging")).toBe("剛浮現");
 		expect(signalStateLabel("fading")).toBe("逐漸淡出");
+	});
+
+	it("names the source, not the transport it was fetched through", () => {
+		expect(displaySourceName("Miniflux: PANews")).toBe("PANews");
+		expect(displaySourceName("Hacker News")).toBe("Hacker News");
 	});
 
 	it("formats dates the way a Taiwanese reader writes them", () => {

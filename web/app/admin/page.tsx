@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { loadRecentItemsForAdmin } from "../../lib/queries.ts";
-import { dispositionLabel, formatScore, formatTimeOfDay } from "../../lib/format.ts";
+import { displaySourceName, dispositionLabel, formatScore, formatTimeOfDay } from "../../lib/format.ts";
 import { preview } from "../../lib/untrusted.ts";
 
 export const dynamic = "force-dynamic";
@@ -62,7 +62,7 @@ export default async function AdminHomePage() {
 							<li key={item.itemId}>
 								<Link href={`/admin/item/${encodeURIComponent(item.itemId)}`}>{item.title}</Link>
 								<div className="host">
-									{item.sourceName} · fetched {formatTimeOfDay(item.fetchedAt)} ·{" "}
+									{displaySourceName(item.sourceName)} · fetched {formatTimeOfDay(item.fetchedAt)} ·{" "}
 									{dispositionLabel(item.disposition)}
 									{item.importance === undefined
 										? ""

@@ -2,6 +2,7 @@ import type { DailyBrief, DailyBriefStory, ConfidenceLevel } from "../../src/sch
 import type { ChangeType, StoryLedgerEntry } from "../../src/schemas/story.ts";
 import type { EmergingSignal, SignalState } from "../../src/db/signals.ts";
 import type { LateItem } from "../../src/db/items.ts";
+import { displaySourceName } from "./format.ts";
 import { TOPICAL_SECTIONS } from "./sections.ts";
 import { confidenceLevelFromScore } from "./format.ts";
 
@@ -295,7 +296,7 @@ export function buildDashboard(input: DashboardInput): DashboardView {
 			items: lateItems.slice(0, DASHBOARD_LIMITS.lateItems).map((item) => ({
 				itemId: item.itemId,
 				title: item.title,
-				sourceName: item.sourceName,
+				sourceName: displaySourceName(item.sourceName),
 				url: item.url,
 				fetchedAt: item.fetchedAt,
 				storyId: item.storyId,

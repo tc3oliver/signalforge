@@ -130,7 +130,9 @@ export const minifluxCollector: Collector = {
 					const externalId = `miniflux-${entry.id}`;
 					items.push({
 						sourceType: "rss",
-						sourceName: entry.feed?.title ? `Miniflux: ${entry.feed.title}` : "Miniflux",
+						// The feed's own name. Miniflux is the transport, not the source,
+						// and a reader should see "PANews", not where it was fetched from.
+						sourceName: entry.feed?.title ?? "Miniflux",
 						externalId,
 						title: entry.title,
 						summary: entry.content ? entry.content.replace(/<[^>]+>/g, "").slice(0, 500) : entry.title,

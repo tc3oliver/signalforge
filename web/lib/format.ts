@@ -138,6 +138,16 @@ export function formatTimeOfDay(iso: string | undefined, zone: string = reportin
 	return `${pad(local.getUTCHours())}:${pad(local.getUTCMinutes())} ${zoneLabel(zone)}`;
 }
 
+/**
+ * A source name as a reader should see it. Items collected before the
+ * Miniflux collector stopped prefixing its feed titles still carry
+ * "Miniflux: PANews"; the transport is not the source, so it is dropped here
+ * rather than by rewriting stored rows.
+ */
+export function displaySourceName(name: string): string {
+	return name.replace(/^Miniflux:\s*/, "");
+}
+
 /** 0.732 -> "73%". Scores in this schema are always 0..1. */
 export function formatScore(score: number | undefined): string {
 	if (score === undefined || Number.isNaN(score)) return "—";

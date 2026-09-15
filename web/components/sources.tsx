@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ADMIN_ENABLED } from "../lib/admin.ts";
 import type { NormalizedItem } from "../../src/schemas/item.ts";
+import { displaySourceName } from "../lib/format.ts";
 import { displayHost, safeExternalUrl } from "../lib/untrusted.ts";
 
 /*
@@ -17,7 +18,7 @@ export function SourceLink({ item }: { item: NormalizedItem }) {
 	const host = displayHost(item.url);
 	return (
 		<>
-			<span className="host">{item.sourceName}</span>
+			<span className="host">{displaySourceName(item.sourceName)}</span>
 			{" · "}
 			{href ? (
 				<a href={href} target="_blank" rel="noreferrer noopener nofollow external">
