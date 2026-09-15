@@ -62,6 +62,17 @@ What stays out, permanently and for the same reason as before:
   exact duplicate, corrupt, unsupported, or a source-policy violation. "Looks
   unimportant" is Pi's judgement and making it early is how a pipeline silently
   stops seeing things.
+
+  One exception exists, and it is listed here so it stays visible rather than
+  becoming precedent. The arxiv collector drops `replace` and `replace-cross`
+  announcements (`src/collectors/arxiv.ts`, recorded in `docs/DATA_SOURCES.md`).
+  The announcement feeds carry one date per build and none for the paper, so a
+  revision arrives stamped with today: on 2026-09-15 that presented a paper first
+  published in 2013 as the day's news. That is wrong input rather than a
+  judgement the curator could make differently, and the feed has no field that
+  separates a substantive revision from a typo fix. It reverses the moment arXiv
+  exposes the original publication date on these feeds. A new exception needs the
+  same standard: the input is factually wrong, not merely uninteresting.
 - **Public ingress.** This machine is LAN-only compute. No tunnel, no port forward,
   no publicly reachable database or LLM endpoint.
 
