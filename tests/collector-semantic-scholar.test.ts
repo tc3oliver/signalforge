@@ -85,6 +85,42 @@ describe("SemanticScholarCollector", () => {
 		expect(result.warnings.length).toBeGreaterThan(0);
 	});
 
+	it("strips the arXiv version before asking Semantic Scholar", async () => {
+		/*
+		 * `ArXiv:2609.13151v1` comes back 400 "No valid paper ids given" and takes
+		 * the whole batch with it; `ArXiv:2609.13151` resolves. The arxiv collector
+		 * keeps the version on purpose -- a replacement is a distinct announcement
+		 * there -- so the strip belongs at this boundary.
+		 */
+		let sentIds: unknown;
+		const fetchImpl = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+			sentIds = JSON.parse(String(init?.body)).ids;
+			return jsonResponse([PAPER]);
+		});
+		const collector = new SemanticScholarCollector({ arxivIds: ["2609.13151v1", "2411.00002v3"] });
+		const result = await collector.collect(
+			makeCtx({ hasSecret: async () => true }, fetchImpl as unknown as typeof fetch),
+		);
+
+		expect(sentIds).toEqual(["ArXiv:2609.13151", "ArXiv:2411.00002"]);
+		expect(result.health).toBe("OK");
+	});
+
+	it("loses one rejected batch rather than the whole source", async () => {
+		// Semantic Scholar rejects an entire batch when any id in it is malformed.
+		// Enrichment is best-effort: a hundred papers is a degradation, the source
+		// going dark is not warranted.
+		const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ error: "No valid paper ids given" }, 400));
+		const collector = new SemanticScholarCollector({ arxivIds: ["2509.00001"] });
+		const result = await collector.collect(
+			makeCtx({ hasSecret: async () => true }, fetchImpl as unknown as typeof fetch),
+		);
+
+		expect(result.health).toBe("DEGRADED");
+		expect(result.error).toBeUndefined();
+		expect(result.warnings.join(" ")).toContain("malformed");
+	});
+
 	it("is idempotent: enriching the same ids twice yields the same external ids", async () => {
 		const collector1 = new SemanticScholarCollector({ arxivIds: ["2509.00001"] });
 		const result1 = await collector1.collect(

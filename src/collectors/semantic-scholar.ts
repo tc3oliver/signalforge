@@ -31,6 +31,23 @@ interface SsCursor {
 
 const MAX_SEEN = 5000;
 
+/**
+ * Semantic Scholar identifies an arXiv paper without its version.
+ *
+ * `ArXiv:2609.13151v1` is rejected -- the whole batch comes back 400 "No valid
+ * paper ids given", so one versioned id in a hundred loses the other ninety-nine
+ * -- while `ArXiv:2609.13151` resolves. The arxiv collector keeps the version on
+ * purpose, because a replacement is a distinct announcement there, so the strip
+ * belongs here, at the boundary that cares.
+ *
+ * This was latent rather than new: the export-API collector produced versioned
+ * ids too, and the bug was simply unreachable for as long as arxiv was returning
+ * nothing at all.
+ */
+function toPaperId(arxivId: string): string {
+	return arxivId.replace(/v\d+$/, "");
+}
+
 function parseCursor(raw: string | undefined): SsCursor {
 	if (!raw) return { seenArxivIds: [] };
 	try {
@@ -92,7 +109,7 @@ export class SemanticScholarCollector implements Collector {
 		try {
 			for (let i = 0; i < toFetch.length; i += BATCH_SIZE) {
 				const batch = toFetch.slice(i, i + BATCH_SIZE);
-				const ids = batch.map((id) => `ArXiv:${id}`);
+				const ids = batch.map((id) => `ArXiv:${toPaperId(id)}`);
 				let res: Response;
 				try {
 					res = await fetchWithRetry(
@@ -104,6 +121,18 @@ export class SemanticScholarCollector implements Collector {
 					if (err instanceof HttpError && err.status === 429) {
 						health = "DEGRADED";
 						warnings.push(`batch starting at ${i} rate-limited and exhausted retries`);
+						continue;
+					}
+					if (err instanceof HttpError && err.status === 400) {
+						/*
+						 * Semantic Scholar rejects a whole batch when any id in it is
+						 * malformed, so one bad id used to take the entire collector
+						 * down with it. Enrichment is best-effort: losing a hundred
+						 * papers is a degradation, losing the source is not warranted.
+						 */
+						health = "DEGRADED";
+						warnings.push(`batch starting at ${i} rejected as malformed (${batch.length} id(s) skipped)`);
+						for (const id of batch) seen.add(id);
 						continue;
 					}
 					throw err;
