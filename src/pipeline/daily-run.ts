@@ -429,12 +429,25 @@ async function runPipelineBody(
 		}
 	}
 
+	const truncations: { candidates: number; kept: number; dropped: number }[] = [];
 	const manifest: DailyManifest = await buildManifestFromDb({
 		sql: options.sql,
 		lineage,
 		date: options.date,
 		now,
+		onTruncated: (info) => truncations.push(info),
 	});
+	for (const t of truncations) {
+		/*
+		 * The manifest cap dropped the oldest items. Scan coverage cannot catch
+		 * this -- it is measured against the manifest, so a truncated one is 100%
+		 * covered -- which is exactly why it has to be said out loud here.
+		 */
+		log("manifest truncated by the item cap", t);
+		await addDegradedReason(
+			`manifest truncated: ${t.dropped} of ${t.candidates} item(s) were dropped by the cap and will not be judged`,
+		);
+	}
 	await recorder.patch({ totalItems: manifest.items.length });
 
 	// ---- Curation ---------------------------------------------------------

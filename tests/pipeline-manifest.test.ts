@@ -103,6 +103,41 @@ describe.skipIf(!probe.available)("daily manifest item window", () => {
 		expect(out).toEqual(["today-early", "today-late"]);
 	});
 
+	it("says so when the cap drops items, rather than dropping them in silence", async () => {
+		/*
+		 * Scan coverage cannot catch this. It is measured against the manifest, so
+		 * a truncated manifest is 100% covered by definition -- the guarantee the
+		 * whole system rests on reports green while items nobody looked at were
+		 * discarded one level above it. The only defence is that truncation is
+		 * loud.
+		 */
+		const seen: { candidates: number; kept: number; dropped: number }[] = [];
+		await buildManifestFromDb({
+			sql,
+			lineage,
+			date: DATE,
+			window: dayWindow(DATE, "UTC"),
+			maxItems: 2,
+			onTruncated: (info) => seen.push(info),
+		});
+		expect(seen).toEqual([{ candidates: 3, kept: 2, dropped: 1 }]);
+	});
+
+	it("stays quiet when the cap is merely reached exactly", async () => {
+		// Exactly at the limit nothing was lost, and a false alarm every day is
+		// how an operator learns to ignore the real one.
+		const seen: unknown[] = [];
+		await buildManifestFromDb({
+			sql,
+			lineage,
+			date: DATE,
+			window: dayWindow(DATE, "UTC"),
+			maxItems: 3,
+			onTruncated: (info) => seen.push(info),
+		});
+		expect(seen).toEqual([]);
+	});
+
 	it("bounds the day by the reader's zone, not by UTC", () => {
 		expect(dayWindow(DATE, "UTC").from.toISOString()).toBe("2026-09-13T00:00:00.000Z");
 		expect(dayWindow(DATE, "Asia/Taipei").from.toISOString()).toBe("2026-09-12T16:00:00.000Z");

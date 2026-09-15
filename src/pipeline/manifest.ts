@@ -61,6 +61,14 @@ export interface BuildManifestOptions {
 	 * Zero disables the sweep and restores a strict day window.
 	 */
 	catchUpHours?: number;
+	/**
+	 * Called when the cap actually bites. The cap silently dropping the oldest
+	 * items is a breach of the guarantee the whole system is built on -- every
+	 * item gets a decision -- one level above where that guarantee is enforced,
+	 * because scan coverage is measured against the manifest and a truncated
+	 * manifest is fully covered by definition. So truncation has to be loud.
+	 */
+	onTruncated?: (info: { candidates: number; kept: number; dropped: number }) => void;
 }
 
 const DEFAULT_MAX_ITEMS = 2000;
@@ -126,6 +134,33 @@ export async function buildManifestFromDb(options: BuildManifestOptions): Promis
 	`;
 
 	const items: NormalizedItem[] = itemRows.map(toItem);
+
+	if (options.onTruncated && items.length >= limit) {
+		// Only counted when the cap was reached, so the ordinary day pays nothing.
+		const [row] = await options.sql<{ n: string }[]>`
+			select count(*)::text as n
+			from normalized_items n
+			where lineage = ${options.lineage}
+				and (
+					(
+						published_at >= ${window.from.toISOString()}::timestamptz
+						and published_at < ${window.to.toISOString()}::timestamptz
+					)
+					or (
+						published_at >= ${catchUpFrom.toISOString()}::timestamptz
+						and published_at < ${window.from.toISOString()}::timestamptz
+						and not exists (
+							select 1 from item_decisions d
+							where d.lineage = n.lineage and d.item_id = n.item_id
+						)
+					)
+				)
+		`;
+		const candidates = Number(row?.n ?? items.length);
+		if (candidates > items.length) {
+			options.onTruncated({ candidates, kept: items.length, dropped: candidates - items.length });
+		}
+	}
 
 	const factRows = await options.sql<FactRow[]>`
 		select fact_id, kind, label, value, unit,
