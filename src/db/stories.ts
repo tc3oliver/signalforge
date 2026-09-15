@@ -1,4 +1,4 @@
-import type { StoryLedgerEntry, StoryUpsertInput } from "../schemas/story.ts";
+import type { StoryLedgerEntry, StoryUpsertPayload } from "../schemas/story.ts";
 import type { ItemDecision } from "../schemas/decision.ts";
 import type { Sql } from "./client.ts";
 
@@ -12,6 +12,7 @@ interface LedgerRow {
 	source_item_ids: string[];
 	primary_source_ids: string[];
 	fact_refs: string[];
+	topic_ids: string[];
 	first_seen_at: string;
 	last_seen_at: string;
 	status: string;
@@ -31,6 +32,7 @@ function toEntry(row: LedgerRow): StoryLedgerEntry {
 		sourceItemIds: row.source_item_ids,
 		primarySourceIds: row.primary_source_ids,
 		factRefs: row.fact_refs,
+		topicIds: row.topic_ids,
 		firstSeenAt: row.first_seen_at,
 		lastSeenAt: row.last_seen_at,
 		status: row.status as StoryLedgerEntry["status"],
@@ -45,7 +47,7 @@ function toEntry(row: LedgerRow): StoryLedgerEntry {
 
 const COLUMNS = (alias: string): string =>
 	`${alias}.story_id, ${alias}.date, ${alias}.canonical_title, ${alias}.source_item_ids,
-	 ${alias}.primary_source_ids, ${alias}.fact_refs,
+	 ${alias}.primary_source_ids, ${alias}.fact_refs, ${alias}.topic_ids,
 	 to_char(${alias}.first_seen_at at time zone 'utc', ${ISO}) as first_seen_at,
 	 to_char(${alias}.last_seen_at at time zone 'utc', ${ISO}) as last_seen_at,
 	 ${alias}.status, ${alias}.change_type, ${alias}.relevance, ${alias}.novelty,
@@ -84,22 +86,38 @@ export async function listStoriesForDate(
  * Merge-on-conflict for (lineage, story_id, date). A first write on a later
  * date inherits firstSeenAt from the earliest prior date the story appeared on,
  * which is what gives a story cross-day continuity.
+ *
+ * The same statement rewrites this story's `story_items` rows. That table is
+ * the canonical story-to-item relation -- the web story page reads roles from
+ * it -- and until now nothing but the dev seeder ever wrote there, so in
+ * production the role display was always empty. Doing it here, in the one
+ * statement that writes the ledger, is what makes the two impossible to
+ * disagree by half a pass: Postgres applies every data-modifying CTE of a
+ * statement atomically, so there is no window where a story exists without its
+ * items.
+ *
+ * The rows mirror this pass's input, not the merged arrays on the ledger. The
+ * arrays union across a day's passes and never shrink, which is right for a
+ * cache of everything the story has ever cited; the relation answers "which
+ * items does this story cite now", so an item the curator dropped on a later
+ * pass is deleted rather than left behind, and an item demoted out of
+ * `primarySourceIds` comes back as SUPPORTING.
  */
 export async function upsertStoryRow(
 	sql: Sql,
 	lineage: string,
 	date: string,
-	input: StoryUpsertInput,
+	input: StoryUpsertPayload,
 	nowIso: string,
 ): Promise<StoryLedgerEntry> {
 	const rows = await sql.unsafe<LedgerRow[]>(
 		`with upserted as (
 			insert into story_ledger (
 				lineage, story_id, date, canonical_title, source_item_ids, primary_source_ids,
-				fact_refs, first_seen_at, last_seen_at, status, change_type,
+				fact_refs, topic_ids, first_seen_at, last_seen_at, status, change_type,
 				relevance, novelty, importance, confidence, reason
 			) values (
-				$1, $2, $3, $4, $5::text[], $6::text[], $7::text[],
+				$1, $2, $3, $4, $5::text[], $6::text[], $7::text[], $16::text[],
 				coalesce(
 					(select p.first_seen_at from story_ledger p
 					 where p.lineage = $1 and p.story_id = $2 and p.date < $3
@@ -113,6 +131,15 @@ export async function upsertStoryRow(
 				source_item_ids    = array_union_ordered(story_ledger.source_item_ids, excluded.source_item_ids),
 				primary_source_ids = array_union_ordered(story_ledger.primary_source_ids, excluded.primary_source_ids),
 				fact_refs          = array_union_ordered(story_ledger.fact_refs, excluded.fact_refs),
+				/*
+				 * Replaced, not unioned, unlike the id arrays above. Those are a
+				 * cache of everything a story ever cited; this is what the curator
+				 * says the story is about now. A story that stops matching a topic
+				 * -- because the reader reweighted, or because the story moved on --
+				 * must be able to lose it, or the field only ever grows and stops
+				 * meaning anything.
+				 */
+				topic_ids          = excluded.topic_ids,
 				status             = excluded.status,
 				change_type        = excluded.change_type,
 				relevance          = excluded.relevance,
@@ -123,6 +150,29 @@ export async function upsertStoryRow(
 				last_seen_at       = excluded.last_seen_at,
 				updated_at         = now()
 			returning *
+		),
+		/*
+		 * A primary id that the curator left out of sourceItemIds would otherwise
+		 * have no row at all, so the item set is the union of both arrays rather
+		 * than sourceItemIds alone. The distinct collapses the duplicate an id
+		 * present in both produces; both copies carry the same PRIMARY role.
+		 */
+		desired as (
+			select distinct t.item_id,
+				case when t.item_id = any($6::text[]) then 'PRIMARY' else 'SUPPORTING' end as role
+			from unnest($5::text[] || $6::text[]) as t(item_id)
+		),
+		pruned as (
+			delete from story_items si
+			using upserted u
+			where si.lineage = u.lineage and si.story_id = u.story_id and si.date = u.date
+			  and si.item_id not in (select d.item_id from desired d)
+		),
+		written as (
+			insert into story_items (lineage, story_id, date, item_id, role)
+			select u.lineage, u.story_id, u.date, d.item_id, d.role
+			from upserted u cross join desired d
+			on conflict (lineage, story_id, date, item_id) do update set role = excluded.role
 		)
 		select ${COLUMNS("s")} from upserted s`,
 		[
@@ -141,6 +191,7 @@ export async function upsertStoryRow(
 			input.importance,
 			input.confidence,
 			input.reason,
+			input.topicIds ?? [],
 		],
 	);
 	const row = rows[0];

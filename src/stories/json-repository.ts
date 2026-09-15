@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { readJsonIfExists, writeJsonAtomic } from "../runtime/atomic-json.ts";
 import type { ItemDecision } from "../schemas/decision.ts";
-import type { StoryLedgerEntry, StoryUpsertInput } from "../schemas/story.ts";
+import type { StoryLedgerEntry, StoryUpsertPayload } from "../schemas/story.ts";
 import type { StoryHistoryQuery, StoryRepository } from "./repository.ts";
 
 const DEFAULT_HISTORY_LIMIT = 10;
@@ -121,13 +121,17 @@ export class JsonStoryRepository implements StoryRepository {
 
 	async upsertStory(
 		date: string,
-		input: StoryUpsertInput,
+		input: StoryUpsertPayload,
 		now: Date,
 	): Promise<StoryLedgerEntry> {
 		const nowIso = now.toISOString();
 		const entries = this.#loadStories(date);
 		const index = entries.findIndex((s) => s.storyId === input.storyId);
 		const factRefs = input.factRefs ?? [];
+		// Replaced rather than unioned, matching the Postgres repository: the id
+		// arrays are a cache of everything a story ever cited, while this is what
+		// the curator says the story is about now, and it has to be able to shrink.
+		const topicIds = input.topicIds ?? [];
 
 		let entry: StoryLedgerEntry;
 		if (index >= 0) {
@@ -138,6 +142,7 @@ export class JsonStoryRepository implements StoryRepository {
 				sourceItemIds: union(prior.sourceItemIds, input.sourceItemIds),
 				primarySourceIds: union(prior.primarySourceIds, input.primarySourceIds),
 				factRefs: union(prior.factRefs, factRefs),
+				topicIds: [...topicIds],
 				status: input.status,
 				changeType: input.changeType,
 				relevance: input.relevance,
@@ -167,6 +172,7 @@ export class JsonStoryRepository implements StoryRepository {
 				confidence: input.confidence,
 				reason: input.reason,
 				factRefs: [...factRefs],
+				topicIds: [...topicIds],
 			};
 			entries.push(entry);
 		}

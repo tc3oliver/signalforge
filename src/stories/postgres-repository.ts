@@ -10,7 +10,7 @@ import {
 	upsertStoryRow,
 } from "../db/stories.ts";
 import type { ItemDecision } from "../schemas/decision.ts";
-import type { StoryLedgerEntry, StoryUpsertInput } from "../schemas/story.ts";
+import type { StoryLedgerEntry, StoryUpsertPayload } from "../schemas/story.ts";
 import type { StoryHistoryQuery, StoryRepository } from "./repository.ts";
 
 const DEFAULT_HISTORY_LIMIT = 10;
@@ -49,7 +49,7 @@ export class PostgresStoryRepository implements StoryRepository {
 
 	async upsertStory(
 		date: string,
-		input: StoryUpsertInput,
+		input: StoryUpsertPayload,
 		now: Date,
 	): Promise<StoryLedgerEntry> {
 		return upsertStoryRow(this.#sql, this.#lineage, date, input, now.toISOString());

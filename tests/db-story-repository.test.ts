@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createSql, type Sql } from "../src/db/client.ts";
-import { migrate } from "../src/db/migrate.ts";
+import { loadMigrations, migrate } from "../src/db/migrate.ts";
+import { listStoryItemRoles } from "../src/db/stories.ts";
 import { announceSkip, probeDatabase, purgeLineage, testLineage } from "../src/db/test-support.ts";
 import type { ItemDecision } from "../src/schemas/decision.ts";
 import type { StoryUpsertInput } from "../src/schemas/story.ts";
@@ -8,6 +9,19 @@ import { PostgresStoryRepository } from "../src/stories/postgres-repository.ts";
 
 const probe = await probeDatabase();
 announceSkip("db-story-repository", probe);
+
+/*
+ * The backfill is exercised as the file that actually ships, not as a copy of
+ * its SQL, so a later edit to one cannot quietly diverge from the other. It is
+ * safe to re-run here: the statement is `on conflict do nothing`, so once the
+ * migration has been applied it inserts nothing outside the rows the test
+ * itself just deleted from its own lineage.
+ */
+const backfillSql = (() => {
+	const file = loadMigrations().find((f) => f.name === "006_backfill-story-items.sql");
+	if (!file) throw new Error("006_backfill-story-items.sql is missing");
+	return file.sql;
+})();
 
 function upsertInput(over: Partial<StoryUpsertInput> = {}): StoryUpsertInput {
 	return {
@@ -23,6 +37,7 @@ function upsertInput(over: Partial<StoryUpsertInput> = {}): StoryUpsertInput {
 		confidence: 0.5,
 		reason: "initial",
 		factRefs: [],
+		topicIds: [],
 		...over,
 	};
 }
@@ -80,6 +95,7 @@ describe.skipIf(!probe.available)("PostgresStoryRepository", () => {
 					sourceItemIds: ["item-1", "item-2"],
 					primarySourceIds: ["item-2"],
 					factRefs: ["fact-2"],
+					topicIds: [],
 					canonicalTitle: "OpenAI ships a new model (updated)",
 					changeType: "UPDATE",
 					status: "RESOLVED",
@@ -237,6 +253,99 @@ describe.skipIf(!probe.available)("PostgresStoryRepository", () => {
 		it("returns nothing for an empty query text", async () => {
 			expect(await repo.findHistory({ text: "   ", beforeDate: "2026-09-13" })).toEqual([]);
 			expect(await repo.findHistory({ text: "openai", beforeDate: "2026-09-13", limit: 0 })).toEqual([]);
+		});
+	});
+
+	// story_items is what the web story page reads roles from, and for most of
+	// this table's life nothing but the dev seeder wrote to it. These pin the
+	// relation to the ledger upsert that now maintains it.
+	describe("story_items", () => {
+		const roles = async (date = "2026-09-13") => listStoryItemRoles(sql, lineage, "story-a", date);
+
+		it("derives PRIMARY from primarySourceIds and SUPPORTING for the rest", async () => {
+			await repo.upsertStory(
+				"2026-09-13",
+				upsertInput({ sourceItemIds: ["item-1", "item-2", "item-3"], primarySourceIds: ["item-2"] }),
+				new Date("2026-09-13T08:00:00.000Z"),
+			);
+			expect(await roles()).toEqual([
+				{ itemId: "item-2", role: "PRIMARY" },
+				{ itemId: "item-1", role: "SUPPORTING" },
+				{ itemId: "item-3", role: "SUPPORTING" },
+			]);
+		});
+
+		it("gives a primary id its row even when sourceItemIds omits it", async () => {
+			await repo.upsertStory(
+				"2026-09-13",
+				upsertInput({ sourceItemIds: ["item-1"], primarySourceIds: ["item-9"] }),
+				new Date("2026-09-13T08:00:00.000Z"),
+			);
+			expect(await roles()).toEqual([
+				{ itemId: "item-9", role: "PRIMARY" },
+				{ itemId: "item-1", role: "SUPPORTING" },
+			]);
+		});
+
+		it("is idempotent: re-running the same pass leaves the same rows", async () => {
+			const input = upsertInput({
+				sourceItemIds: ["item-1", "item-2"],
+				primarySourceIds: ["item-1"],
+			});
+			await repo.upsertStory("2026-09-13", input, new Date("2026-09-13T08:00:00.000Z"));
+			const first = await roles();
+			await repo.upsertStory("2026-09-13", input, new Date("2026-09-13T12:00:00.000Z"));
+			expect(await roles()).toEqual(first);
+			expect(first).toHaveLength(2);
+		});
+
+		// The ledger arrays union and so can never drop an item; the relation has
+		// to, or a re-curation that discards a source leaves it on the page.
+		it("drops an item the next pass no longer cites, and re-roles a demoted one", async () => {
+			await repo.upsertStory(
+				"2026-09-13",
+				upsertInput({ sourceItemIds: ["item-1", "item-2"], primarySourceIds: ["item-1"] }),
+				new Date("2026-09-13T08:00:00.000Z"),
+			);
+			await repo.upsertStory(
+				"2026-09-13",
+				upsertInput({ sourceItemIds: ["item-2"], primarySourceIds: ["item-2"] }),
+				new Date("2026-09-13T12:00:00.000Z"),
+			);
+			expect(await roles()).toEqual([{ itemId: "item-2", role: "PRIMARY" }]);
+		});
+
+		it("keeps a story's rows on one date out of another date's", async () => {
+			await repo.upsertStory(
+				"2026-09-12",
+				upsertInput({ sourceItemIds: ["item-1"], primarySourceIds: ["item-1"] }),
+				new Date("2026-09-12T08:00:00.000Z"),
+			);
+			await repo.upsertStory(
+				"2026-09-13",
+				upsertInput({ sourceItemIds: ["item-5"], primarySourceIds: [] }),
+				new Date("2026-09-13T08:00:00.000Z"),
+			);
+			expect(await roles("2026-09-12")).toEqual([{ itemId: "item-1", role: "PRIMARY" }]);
+			expect(await roles()).toEqual([{ itemId: "item-5", role: "SUPPORTING" }]);
+		});
+
+		// 006_backfill-story-items.sql reconstructs the relation from the ledger
+		// arrays for every story written before the writer existed. On a story
+		// curated in a single pass -- which is every story the backfill has to
+		// reach -- it must land on exactly what the writer produces, or the
+		// history and the present would show roles by different rules.
+		it("matches what 006_backfill-story-items.sql reconstructs from the arrays", async () => {
+			const input = upsertInput({
+				sourceItemIds: ["item-1", "item-2", "item-3"],
+				primarySourceIds: ["item-2", "item-3"],
+			});
+			await repo.upsertStory("2026-09-13", input, new Date("2026-09-13T08:00:00.000Z"));
+			const written = await roles();
+
+			await sql`delete from story_items where lineage = ${lineage}`;
+			await sql.unsafe(backfillSql);
+			expect(await roles()).toEqual(written);
 		});
 	});
 });

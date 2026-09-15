@@ -1,5 +1,5 @@
 import type { ItemDecision } from "../schemas/decision.ts";
-import type { StoryLedgerEntry, StoryUpsertInput } from "../schemas/story.ts";
+import type { StoryLedgerEntry, StoryUpsertPayload } from "../schemas/story.ts";
 
 /** Free-text / id search over prior days' ledger entries. */
 export interface StoryHistoryQuery {
@@ -29,7 +29,7 @@ export interface StoryRepository {
 	 * occurrence, which is what gives a story cross-day continuity. Otherwise
 	 * create fresh with firstSeenAt = lastSeenAt = now.
 	 */
-	upsertStory(date: string, input: StoryUpsertInput, now: Date): Promise<StoryLedgerEntry>;
+	upsertStory(date: string, input: StoryUpsertPayload, now: Date): Promise<StoryLedgerEntry>;
 	findHistory(query: StoryHistoryQuery): Promise<StoryLedgerEntry[]>;
 	/** Idempotent per itemId: re-recording an itemId replaces its prior decision. */
 	recordDecisions(date: string, decisions: ItemDecision[]): Promise<void>;
