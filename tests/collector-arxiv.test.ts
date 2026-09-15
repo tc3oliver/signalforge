@@ -116,20 +116,59 @@ describe("ArxivCollector", () => {
 		expect(result.items[0]?.summary).toBe("The actual abstract.");
 	});
 
-	it("carries every author and the announce type, and filters neither", async () => {
+	it("carries every author and the announce type", async () => {
 		const feed = rssFeed("cs.CL", [
-			{ id: "2609.00002v2", title: "A Revision", announceType: "replace", creators: "Ada Lovelace, Grace Hopper" },
+			{ id: "2609.00002v1", title: "A Paper", announceType: "cross", creators: "Ada Lovelace, Grace Hopper" },
 		]);
 		const result = await new ArxivCollector({ sleep: noSleep, minRequestIntervalMs: FAST_MS }).collect(
 			makeCtx({}, (async () => xmlResponse(feed)) as unknown as typeof fetch),
 		);
-		// A replacement is an announcement like any other. Deciding a revision is
-		// not worth reading is the curator's call; dropping it here would be
-		// editorial filtering before Pi.
 		expect(result.items).toHaveLength(1);
-		expect(result.items[0]?.metadata["announceType"]).toBe("replace");
+		expect(result.items[0]?.metadata["announceType"]).toBe("cross");
 		expect(result.items[0]?.metadata["authors"]).toEqual(["Ada Lovelace", "Grace Hopper"]);
 		expect(result.items[0]?.author).toBe("Ada Lovelace");
+	});
+
+	it("keeps new and cross announcements and drops revisions, without degrading", async () => {
+		/*
+		 * The deliberate exception to "no editorial filtering before Pi", and the
+		 * reason for it: the feed carries one date per build -- the announcement --
+		 * and none for the paper, so a revision arrives stamped with today. On
+		 * 2026-09-15 one of the 225 replacements was arXiv 1304.3111, first
+		 * published in 2013. A 2013 paper presented as today's news is wrong input,
+		 * not a judgement the curator could make differently.
+		 */
+		const feed = rssFeed("cs.CL", [
+			{ id: "2609.00010v1", title: "New Today", announceType: "new" },
+			{ id: "2609.00011v1", title: "Newly Cross-listed", announceType: "cross" },
+			{ id: "1304.3111v2", title: "A 2013 Paper, Revised", announceType: "replace" },
+			{ id: "2306.00001v3", title: "Revised And Cross-listed", announceType: "replace-cross" },
+		]);
+		const logged: { msg: string; fields?: Record<string, unknown> }[] = [];
+		const result = await new ArxivCollector({ sleep: noSleep, minRequestIntervalMs: FAST_MS }).collect(
+			makeCtx({ log: (msg, fields) => logged.push({ msg, ...(fields ? { fields } : {}) }) },
+				(async () => xmlResponse(feed)) as unknown as typeof fetch),
+		);
+
+		expect(result.items.map((i) => i.externalId)).toEqual(["2609.00010v1", "2609.00011v1"]);
+		// Normal operation, so it must not warn: any warning marks the run DEGRADED.
+		expect(result.health).toBe("OK");
+		expect(result.warnings).toEqual([]);
+		// But it must be visible, because a silent drop is how a source stops
+		// carrying half of what it used to and nobody notices.
+		expect(logged.some((l) => l.msg.includes("revision"))).toBe(true);
+		expect(logged.find((l) => l.msg.includes("revision"))?.fields?.["revisions"]).toBe(2);
+	});
+
+	it("collects an announcement type it does not recognise rather than dropping it", async () => {
+		// The filter fails open on purpose. If arXiv renames the field or adds a
+		// type, the curator sees the item; the alternative is the source quietly
+		// losing most of its volume with nothing in the logs.
+		const feed = rssFeed("cs.CL", [{ id: "2609.00012v1", title: "Unknown Type", announceType: "something-new" }]);
+		const result = await new ArxivCollector({ sleep: noSleep, minRequestIntervalMs: FAST_MS }).collect(
+			makeCtx({}, (async () => xmlResponse(feed)) as unknown as typeof fetch),
+		);
+		expect(result.items).toHaveLength(1);
 	});
 
 	it("keeps the version suffix so a replacement does not collide with the original", async () => {

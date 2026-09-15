@@ -255,10 +255,12 @@ fit for what this pipeline wants: one request per category returns exactly one d
 announcements, instead of paginating a sorted search and hoping the watermark lands
 in the right place.
 
-**Volume.** A day of `cs.CL` + `cs.LG` is roughly 800 items, against roughly 600 from
-every other source combined. Narrowing `arxiv_categories` is the lever; there is no
-cap inside the collector, because a cap would silently drop announcements and
-"looks unimportant" is the curator's judgement, not a collector's.
+**Volume.** A day of `cs.CL` + `cs.LG` + `cs.AI` + `cs.DC` is roughly 1,200
+announcements, against roughly 600 items from every other source combined. After the
+revision policy below it is roughly 800. Narrowing `arxiv_categories` is the lever if
+that is still too much; there is no cap inside the collector, because a cap would
+silently truncate a day and "looks unimportant" is the curator's judgement, not a
+collector's.
 
 **Incrementality.** The cursor holds `lastAnnounced`, the newest announcement
 timestamp already consumed. Every item in one build of a feed carries the same
@@ -272,9 +274,29 @@ both feeds and collected once. The version suffix is kept in the external id
 (`2609.13151v1`), so a replacement is a distinct announcement rather than a duplicate
 of the original — which is what it is.
 
-**Announce types.** `new`, `cross` and `replace` are all collected, with the type in
-`metadata.announceType`. Deciding a revision is not worth reading is the curator's
-call; dropping it here would be editorial filtering before Pi.
+**Announce types, and a recorded exception to the filtering rule.** arXiv announces
+four kinds of thing: `new` (published today), `cross` (an existing paper newly listed
+into a watched category, so new to a reader of that category), `replace` and
+`replace-cross` (a revision of a paper already out). On 2026-09-15 that was 431, 362,
+225 and 169 respectively. `new` and `cross` are collected; the two revision types are
+not, and the type is kept in `metadata.announceType` either way.
+
+This is editorial filtering before Pi, which `AGENTS.md` forbids, so it is written
+down rather than done quietly. The reason is correctness rather than taste: the feed
+carries one date per build — the announcement — and none for the paper, so a revision
+arrives stamped with today. One of the 225 replacements that day was arXiv
+`1304.3111`, first published in 2013. Handing the curator a 2013 paper described as
+today's news is not a judgement it could make differently with better instructions;
+it is wrong input, and the feed offers no field that would distinguish a substantive
+revision from a typo fix. **If arXiv ever exposes the original publication date on
+these feeds, the right move is to collect replacements and date them properly.**
+
+The check asks whether an announcement is explicitly a replacement rather than
+whether it is one of the two kept types, so the filter fails open: an unrecognised
+type is collected. A renamed field would otherwise make this source quietly lose most
+of its volume with nothing in the logs. The skipped count is logged per run, and is
+not a warning — skipping revisions is normal operation, and any warning would mark
+every run DEGRADED.
 
 **Health.** A run that reached no feed at all is `FAILED`; one that reached some is
 `DEGRADED`, with the unavailable category named in the warnings. The distinction

@@ -33,6 +33,44 @@ const USER_AGENT =
 
 const DEFAULT_CATEGORIES = ["cs.CL", "cs.LG", "cs.AI", "cs.DC"];
 
+/*
+ * Announcement types this collector keeps, and a deliberate, recorded exception
+ * to the rule that no editorial filtering happens before Pi.
+ *
+ * arXiv announces four kinds of thing: `new` (published today), `cross` (an
+ * existing paper newly listed into a watched category, so new to a reader of
+ * that category), `replace` and `replace-cross` (a revision of a paper already
+ * out). A day of cs.CL + cs.LG + cs.AI + cs.DC is 431 new, 362 cross, 225
+ * replace and 169 replace-cross.
+ *
+ * The replacements are dropped for a reason that is about correctness rather
+ * than taste. The feed gives one date per build -- the announcement -- and no
+ * date for the paper, so a revision arrives stamped with today. One of the 225
+ * on 2026-09-15 was arXiv 1304.3111, first published in 2013. Handing the
+ * curator a 2013 paper described as today's news is not a judgement call it can
+ * make differently with better instructions; it is wrong input. Dropping the
+ * whole class is the only honest option the feed leaves, because there is no
+ * field to tell an interesting revision from a typo fix.
+ *
+ * This is written down rather than done quietly because it is an exception to a
+ * binding rule. If arXiv ever exposes the original publication date on these
+ * feeds, the right move is to keep replacements and date them properly.
+ */
+const REVISION_ANNOUNCE_PREFIX = "replace";
+
+/**
+ * Whether this announcement is a revision of a paper already out.
+ *
+ * Phrased as "is it explicitly a replacement" rather than "is it one of the two
+ * types we keep", so the filter fails open. If arXiv renames the field or adds
+ * a type, an unrecognised announcement is collected and the curator sees it; the
+ * alternative would make the source quietly lose most of its volume with nothing
+ * in the logs, which is the failure this collector was rewritten to escape.
+ */
+function isRevision(announceType: string): boolean {
+	return announceType.toLowerCase().startsWith(REVISION_ANNOUNCE_PREFIX);
+}
+
 interface ArxivItem {
 	externalId: string;
 	title: string;
@@ -208,6 +246,9 @@ export class ArxivCollector implements Collector {
 		// A paper cross-listed in two watched categories is announced in both feeds.
 		const seen = new Set<string>();
 		let succeeded = 0;
+		// Counted, not warned about: skipping revisions is this collector's normal
+		// operation, and a warning would mark every run DEGRADED.
+		let revisions = 0;
 
 		// The configured categories win over the constructor default, so the list the
 		// user curates in config/watchlists.yaml is the one actually queried. The
@@ -250,6 +291,10 @@ export class ArxivCollector implements Collector {
 				if (malformed > 0) warnings.push(`${category}: dropped ${malformed} malformed item(s)`);
 
 				for (const item of parsed) {
+					if (isRevision(item.announceType)) {
+						revisions++;
+						continue;
+					}
 					if (cursor.lastAnnounced && item.announcedAt <= cursor.lastAnnounced) continue;
 					if (seen.has(item.externalId)) continue;
 					seen.add(item.externalId);
@@ -277,6 +322,10 @@ export class ArxivCollector implements Collector {
 					: "OK";
 		if (health === "FAILED" && error === undefined) {
 			error = warnings[0] ?? "no arxiv category feed could be read";
+		}
+
+		if (revisions > 0) {
+			ctx.log("arxiv: skipped revision announcements", { revisions, kept: items.length });
 		}
 
 		const finishedAt = ctx.now().toISOString();
