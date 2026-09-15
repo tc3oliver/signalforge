@@ -189,6 +189,48 @@ describe("runStageWithFallback", () => {
 		]);
 		expect(attempts.map((a) => a.status)).toEqual(["FAILED", "FAILED", "SUCCESS"]);
 		expect(attempts.slice(0, 2).every((a) => a.failureClass === "SERVER_ERROR")).toBe(true);
+
+		/*
+		 * Only the second failure is a fallback. `fallbackReason` used to be filled
+		 * in on both branches, and every consumer counts fallbacks by testing it for
+		 * truthiness — so one transient blip retried on the same model reported a
+		 * cross-model fallback that never happened, and inflated the benchmark's
+		 * fallbackCount for every model it compared.
+		 */
+		expect(attempts[0]?.fallbackReason).toBeUndefined();
+		expect(attempts[0]?.errorMeta?.["retryReason"]).toMatch(/SERVER_ERROR; RETRY_SAME/);
+		expect(attempts[1]?.fallbackReason).toMatch(/falling back/);
+		expect(attempts[1]?.errorMeta?.["retryReason"]).toBeUndefined();
+		expect(attempts.filter((a) => a.fallbackReason)).toHaveLength(1);
+		for (const a of attempts) expect(() => AgentAttemptSchema.parse(a)).not.toThrow();
+	});
+
+	/*
+	 * Same-model actions other than the plain retry must not be counted either:
+	 * CONTEXT_OVERFLOW deliberately stays on the model, so a run that never
+	 * reaches a second model must report no fallback at all.
+	 */
+	it("does not report a fallback when the router stays on the same model", async () => {
+		const attempts: AgentAttempt[] = [];
+		let calls = 0;
+
+		const result = await runStageWithFallback<string>({
+			stage: "CURATOR",
+			chain: MODEL_CHAIN,
+			routerState: new RouterState(),
+			onAttempt: async () => {
+				calls++;
+				if (calls === 1) throw new Error("maximum context length exceeded");
+				return "ok";
+			},
+			recordAttempt: (a) => attempts.push(a),
+			now: fakeClock(),
+		});
+
+		expect(result).toBe("ok");
+		expect(attempts.map((a) => a.status)).toEqual(["FAILED", "SUCCESS"]);
+		expect(attempts.some((a) => a.fallbackReason)).toBe(false);
+		expect(attempts[0]?.errorMeta?.["retryReason"]).toMatch(/CONTEXT_OVERFLOW; FRESH_SESSION_SAME/);
 	});
 
 	it("passes mode CORRECTIVE on the retry after INVALID_AGENT_OUTPUT", async () => {

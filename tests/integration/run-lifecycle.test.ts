@@ -109,7 +109,10 @@ describe("run state transitions", () => {
 		const attempts = store.readAttempts();
 		expect(attempts).toHaveLength(1);
 		expect(attempts[0]!.failureClass).toBe("PROGRAMMER_ERROR");
-		expect(attempts[0]!.fallbackReason).toMatch(/PROGRAMMER_ERROR; FAIL/);
+		// A FAIL is not a fallback: it never reaches a second model, so the counter
+		// must not see one. The wording lives in errorMeta instead.
+		expect(attempts[0]!.fallbackReason).toBeUndefined();
+		expect(attempts[0]!.errorMeta?.["retryReason"]).toMatch(/PROGRAMMER_ERROR; FAIL/);
 		expect(models).toEqual(["gemini-3.8-flash"]);
 
 		const transitions = store
@@ -160,6 +163,70 @@ describe("tool loop detection", () => {
 				mode: "FRESH",
 			}),
 		).rejects.toThrow(/no progress across 3 turns at 0\/10 items decided/);
+	});
+});
+
+describe("resuming an existing run", () => {
+	/*
+	 * The fixture lifecycle allows CURATING from CREATED and from CURATING only,
+	 * and `runPhase1Day` transitions to CURATING unconditionally — so reopening a
+	 * run that had already finished curating died on a bare "Illegal run
+	 * transition" naming two states and no run. Rejected up front instead, with
+	 * the run's actual state in the message. Skipping ahead to the editor is the
+	 * larger change: nothing reads `materials.json` back, and the editor stage
+	 * needs the curator result, not just the package.
+	 */
+	it("rejects a run that is already past curation, naming its state", async () => {
+		const paths = makeTestPaths(root);
+		writeManifest(paths, makeManifest({ date: DATE, groups: 10, perGroup: 2 }));
+
+		const first = await runPhase1Day({
+			date: DATE,
+			paths,
+			chain: [MODEL_CHAIN[0]!],
+			driverFactory: competentFactory(),
+		});
+		expect(RunStateStore.open({ root: paths.runsDir, date: DATE, runId: first.runId }).load().status)
+			.toBe("COMPLETED");
+
+		await expect(
+			runPhase1Day({
+				date: DATE,
+				paths,
+				runId: first.runId,
+				chain: [MODEL_CHAIN[0]!],
+				driverFactory: competentFactory(),
+			}),
+		).rejects.toThrow(`Run ${first.runId} is at COMPLETED`);
+
+		// The finished run is left exactly as it was.
+		const after = RunStateStore.open({ root: paths.runsDir, date: DATE, runId: first.runId }).load();
+		expect(after.status).toBe("COMPLETED");
+	});
+
+	/*
+	 * The case --resume exists for: the process died mid-curation, so the run
+	 * directory is still at CURATING and nothing has been decided about it. That
+	 * is the one state the gate above must let through.
+	 */
+	it("continues a run that was interrupted mid-curation", async () => {
+		const paths = makeTestPaths(root);
+		writeManifest(paths, makeManifest({ date: DATE, groups: 10, perGroup: 2 }));
+
+		const store = RunStateStore.create({ root: paths.runsDir, date: DATE });
+		store.transition("CURATING");
+
+		const resumed = await runPhase1Day({
+			date: DATE,
+			paths,
+			runId: store.runId,
+			chain: [MODEL_CHAIN[0]!],
+			driverFactory: competentFactory(),
+		});
+
+		expect(resumed.runId).toBe(store.runId);
+		expect(resumed.brief).toBeDefined();
+		expect(store.load().status).toBe("COMPLETED");
 	});
 });
 

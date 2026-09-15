@@ -1,19 +1,24 @@
-import { cpSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parse as parseYaml } from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 import { reloadConfig } from "../src/config/loader.ts";
-import { loadStageTuning } from "../src/config/stage-tuning.ts";
+import { DEFAULT_STAGE_TUNING, loadStageTuning } from "../src/config/stage-tuning.ts";
 
 /**
  * The stage bounds are what stop a hung turn: the editor once spent 114 minutes
  * on one attempt because `timeoutMs` was declared in config/agent.yaml and read
  * by nobody. Both the production pipeline and the fixture orchestrator resolve
  * them through this one loader, so its failure mode matters more than its happy
- * path -- an unreadable config must leave the stages on their code defaults
- * rather than refuse to start a run, and that swallowed catch is the entire
- * reason the function exists.
+ * path.
+ *
+ * The failure mode used to be `undefined`, and every call site spread it away
+ * with `...(stages ? … : {})` — so a typo in any of the five config files, a
+ * gitignored `*.local.yaml` included, quietly restored the unbounded turn the
+ * timeout exists to prevent. An unreadable config must still leave every stage
+ * bounded; that, not "must not throw", is the contract under test.
  */
 const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -38,33 +43,58 @@ describe("loadStageTuning", () => {
 		return root;
 	}
 
-	it("swallows a malformed agent.yaml instead of throwing", () => {
+	function expectBounded(tuning: ReturnType<typeof loadStageTuning>): void {
+		for (const stage of ["CURATOR", "EDITOR"] as const) {
+			expect(tuning[stage].timeoutMs).toBeGreaterThan(0);
+			expect(Number.isFinite(tuning[stage].timeoutMs)).toBe(true);
+			expect(tuning[stage].maxAttemptsPerModel).toBeGreaterThan(0);
+		}
+	}
+
+	it("falls back to the built-in bounds on a malformed agent.yaml", () => {
 		const root = configRootWithAgentYaml(": this is not valid yaml :\n\t- [\n");
 
 		expect(() => loadStageTuning(root)).not.toThrow();
-		expect(loadStageTuning(root)).toBeUndefined();
+		expect(loadStageTuning(root)).toEqual(DEFAULT_STAGE_TUNING);
 	});
 
-	it("swallows an agent.yaml that parses but fails validation", () => {
+	it("falls back when agent.yaml parses but fails validation", () => {
 		const root = configRootWithAgentYaml("stages:\n  CURATOR: not-an-object\n");
 
-		expect(loadStageTuning(root)).toBeUndefined();
+		expect(loadStageTuning(root)).toEqual(DEFAULT_STAGE_TUNING);
 	});
 
-	it("returns undefined when the config root does not exist at all", () => {
+	it("falls back when the config root does not exist at all", () => {
 		const absent = join(tmpdir(), `stage-tuning-absent-${String(process.hrtime.bigint())}`);
 
-		expect(loadStageTuning(absent)).toBeUndefined();
+		expect(loadStageTuning(absent)).toEqual(DEFAULT_STAGE_TUNING);
+	});
+
+	/**
+	 * The defect this replaces: an unreadable config yielded `undefined`, call
+	 * sites spread nothing, and the stage ran with no deadline at all.
+	 */
+	it("still gives every stage a finite turn deadline when the config cannot be read", () => {
+		const root = configRootWithAgentYaml("stages:\n  CURATOR: not-an-object\n");
+
+		expectBounded(loadStageTuning(root));
+		expectBounded(loadStageTuning(join(tmpdir(), "stage-tuning-nowhere")));
 	});
 
 	it("reads the stage block when the config is valid", () => {
-		const tuning = loadStageTuning();
+		expectBounded(loadStageTuning());
+	});
 
-		// The repository ships a stage block; if that ever stops being true this
-		// asserts the shape rather than a specific number, which is tuning.
-		if (tuning !== undefined) {
-			expect(tuning.CURATOR.timeoutMs).toBeGreaterThan(0);
-			expect(tuning.EDITOR.timeoutMs).toBeGreaterThan(0);
-		}
+	/**
+	 * The code default is a copy of the shipped config, and a copy drifts. An
+	 * operator editing `config/agent.yaml` should not silently leave a different
+	 * bound behind for the case where their own config stops loading.
+	 */
+	it("keeps DEFAULT_STAGE_TUNING in agreement with config/agent.yaml", () => {
+		const shipped = parseYaml(readFileSync(join(PROJECT_ROOT, "config", "agent.yaml"), "utf8")) as {
+			stages: unknown;
+		};
+
+		expect(shipped.stages).toEqual(DEFAULT_STAGE_TUNING);
 	});
 });

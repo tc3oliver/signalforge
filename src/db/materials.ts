@@ -47,15 +47,35 @@ export async function saveMaterials(
 	});
 }
 
+/**
+ * A stored materials package together with the run that produced it.
+ *
+ * The run id is part of the result rather than an implementation detail because
+ * `daily_materials` is keyed by (lineage, date) and therefore holds at most one
+ * package per day, whoever wrote it. A resuming run has to be able to tell its
+ * own work from an earlier run's before it decides to skip curation.
+ */
+export interface StoredMaterials {
+	materials: DailyMaterials;
+	/** Null for rows written before the column was populated. */
+	runId?: string;
+}
+
 export async function getMaterials(
 	sql: Sql,
 	lineage: string,
 	date: string,
-): Promise<DailyMaterials | undefined> {
+): Promise<StoredMaterials | undefined> {
 	const head = await sql<
-		{ produced_at: string; curator_notes: string; emerging_signals: DailyMaterials["emergingSignals"] }[]
+		{
+			run_id: string | null;
+			produced_at: string;
+			curator_notes: string;
+			emerging_signals: DailyMaterials["emergingSignals"];
+		}[]
 	>`
-		select to_char(produced_at at time zone 'utc', ${ISO_FMT}) as produced_at, curator_notes, emerging_signals
+		select run_id, to_char(produced_at at time zone 'utc', ${ISO_FMT}) as produced_at,
+			curator_notes, emerging_signals
 		from daily_materials where lineage = ${lineage} and date = ${date}
 	`;
 	const h = head[0];
@@ -73,22 +93,25 @@ export async function getMaterials(
 		order by ordinal
 	`;
 	return {
-		date,
-		producedAt: h.produced_at,
-		curatorNotes: h.curator_notes,
-		emergingSignals: h.emerging_signals,
-		stories: stories.map((s) => ({
-			storyId: s.story_id,
-			tier: s.tier as DailyMaterials["stories"][number]["tier"],
-			canonicalTitle: s.canonical_title,
-			whySelected: s.why_selected,
-			changeType: s.change_type as DailyMaterials["stories"][number]["changeType"],
-			importance: s.importance,
-			novelty: s.novelty,
-			confidence: s.confidence,
-			sourceItemIds: s.source_item_ids,
-			primarySourceIds: s.primary_source_ids,
-			factRefs: s.fact_refs,
-		})) as DailyMaterials["stories"],
+		...(h.run_id === null ? {} : { runId: h.run_id }),
+		materials: {
+			date,
+			producedAt: h.produced_at,
+			curatorNotes: h.curator_notes,
+			emergingSignals: h.emerging_signals,
+			stories: stories.map((s) => ({
+				storyId: s.story_id,
+				tier: s.tier as DailyMaterials["stories"][number]["tier"],
+				canonicalTitle: s.canonical_title,
+				whySelected: s.why_selected,
+				changeType: s.change_type as DailyMaterials["stories"][number]["changeType"],
+				importance: s.importance,
+				novelty: s.novelty,
+				confidence: s.confidence,
+				sourceItemIds: s.source_item_ids,
+				primarySourceIds: s.primary_source_ids,
+				factRefs: s.fact_refs,
+			})) as DailyMaterials["stories"],
+		},
 	};
 }

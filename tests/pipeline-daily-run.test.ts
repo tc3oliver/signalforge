@@ -416,4 +416,65 @@ describe.skipIf(!probe.available)("daily pipeline", () => {
 			await sql`delete from daily_runs where lineage = ${retryLineage}`;
 		}
 	});
+
+	/*
+	 * `daily_materials` is keyed by (lineage, date), so a second run of the same
+	 * day finds the first run's package sitting there. The reuse gate used to ask
+	 * only "does a run exist and is there a package", which is true for a resumed
+	 * run B looking at run A's work: B skipped curation entirely and published a
+	 * selection it never made, against a manifest it had grown by 400 items.
+	 */
+	it("refuses to reuse another run's materials when resuming", async () => {
+		const crossLineage = testLineage("pipeline-cross-run");
+		try {
+			// Run A curates and publishes the day.
+			const runA = await runDailyPipeline({
+				...baseOptions,
+				sql,
+				lineage: crossLineage,
+				collection,
+				driverFactory: workingDriverFactory(),
+			});
+			expect(runA.state).toBe("PUBLISHED");
+			expect((await getMaterials(sql, crossLineage, DATE))?.runId).toBe(runA.runId);
+
+			// Run B is a separate run of the same date that dies during curation.
+			const runB = await runDailyPipeline({
+				...baseOptions,
+				sql,
+				lineage: crossLineage,
+				collection,
+				driverFactory: createThrowingDriverFactory(new Error("model unavailable - quota exceeded")),
+			});
+			expect(runB.state).toBe("CURATION_FAILED");
+			expect(runB.runId).not.toBe(runA.runId);
+
+			/*
+			 * Resuming B must go through the curator again, because the stored
+			 * package is A's. A curator that cannot run is how that is observed: the
+			 * old gate skipped the stage outright and walked B to WRITING on A's
+			 * selection, so reaching CURATION_FAILED is the whole point.
+			 */
+			const resumed = await runDailyPipeline({
+				...baseOptions,
+				sql,
+				lineage: crossLineage,
+				runId: runB.runId,
+				collection,
+				driverFactory: createThrowingDriverFactory(new Error("model unavailable - quota exceeded")),
+			});
+
+			expect(resumed.runId).toBe(runB.runId);
+			expect(resumed.state).toBe("CURATION_FAILED");
+			expect(resumed.brief).toBeUndefined();
+			// A's package is untouched; B never claimed it.
+			expect((await getMaterials(sql, crossLineage, DATE))?.runId).toBe(runA.runId);
+		} finally {
+			await purgeLineage(sql, crossLineage);
+			await sql`delete from collection_runs where run_id in (select run_id from daily_runs where lineage = ${crossLineage})`;
+			await sql`delete from agent_attempts where run_id in (select run_id from daily_runs where lineage = ${crossLineage})`;
+			await sql`delete from agent_runs where run_id in (select run_id from daily_runs where lineage = ${crossLineage})`;
+			await sql`delete from daily_runs where lineage = ${crossLineage}`;
+		}
+	}, 60_000);
 });

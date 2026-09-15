@@ -420,7 +420,8 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 
 	// ---- Curation ---------------------------------------------------------
 	const wantsCuration = stage === undefined || stage === "curate";
-	let materials = await getMaterials(options.sql, lineage, options.date);
+	const storedMaterials = await getMaterials(options.sql, lineage, options.date);
+	let materials = storedMaterials?.materials;
 	/*
 	 * Stored materials are reused only when this run produced them. Resuming is
 	 * what makes a crash cheap: the curator is the expensive stage and a run that
@@ -431,8 +432,16 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 	 * entirely, so it republished the earlier selection and every item collected
 	 * in between was never judged -- not rejected, never looked at. On
 	 * 2026-09-13 the 05:30 run collected 1790 items and curated none of them.
+	 *
+	 * "This run produced them" is the run id, not the presence of a row.
+	 * `daily_materials` is keyed by (lineage, date) and holds one package per
+	 * day whoever wrote it, so the earlier gate ("some run exists") still let run
+	 * B resume onto run A's package: curation skipped, B advanced to
+	 * MATERIALS_READY carrying work it never did, against a manifest it had
+	 * enlarged by 400 items.
 	 */
-	const reuseMaterials = existing !== undefined && stage !== "curate" && materials !== undefined;
+	const reuseMaterials =
+		existing !== undefined && stage !== "curate" && storedMaterials?.runId === seed.runId;
 	if (wantsCuration && !reuseMaterials) {
 		await recorder.transition("CURATING");
 		const startedAt = now();
@@ -454,7 +463,7 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 			const curated = await runStageWithFallback({
 				stage: "CURATOR",
 				chain,
-				...(stages ? { maxAttemptsPerModel: stages.CURATOR.maxAttemptsPerModel } : {}),
+				maxAttemptsPerModel: stages.CURATOR.maxAttemptsPerModel,
 				routerState,
 				recordAttempt: recordStageAttempt,
 				now,
@@ -464,7 +473,8 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 						// A corrective retry is only corrective if the stage is told what
 						// went wrong; without this it re-sends the prompt that just failed.
 						...(lastError === undefined ? {} : { lastError }),
-						...(stages ? { maxNudges: stages.CURATOR.maxNudges, timeoutMs: stages.CURATOR.timeoutMs } : {}),
+						maxNudges: stages.CURATOR.maxNudges,
+						timeoutMs: stages.CURATOR.timeoutMs,
 						date: options.date,
 						manifest,
 						repo,
@@ -544,7 +554,7 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 			const written = await runStageWithFallback({
 				stage: "EDITOR",
 				chain,
-				...(stages ? { maxAttemptsPerModel: stages.EDITOR.maxAttemptsPerModel } : {}),
+				maxAttemptsPerModel: stages.EDITOR.maxAttemptsPerModel,
 				routerState,
 				recordAttempt: recordStageAttempt,
 				now,
@@ -553,7 +563,8 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 					return runEditorStage({
 						// See the curator stage: the corrective prompt needs the failure.
 						...(lastError === undefined ? {} : { lastError }),
-						...(stages ? { maxNudges: stages.EDITOR.maxNudges, timeoutMs: stages.EDITOR.timeoutMs } : {}),
+						maxNudges: stages.EDITOR.maxNudges,
+						timeoutMs: stages.EDITOR.timeoutMs,
 						date: options.date,
 						manifest,
 						materials: materials!,

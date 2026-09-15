@@ -111,6 +111,25 @@ export async function runPhase1Day(opts: Phase1RunOptions): Promise<Phase1RunRes
 		: RunStateStore.create({ root: opts.paths.runsDir, date: opts.date, now });
 	const runDir = store.dir;
 
+	/*
+	 * Reopening is only ever a resumption of curation. The fixture lifecycle
+	 * allows CURATING from CREATED and from CURATING and from nowhere else, so
+	 * reopening a run that already reached MATERIALS_READY or beyond used to die
+	 * three lines below on an opaque `Illegal run transition`. Rejected here, by
+	 * name, instead: the alternative — skipping straight to the editor — would
+	 * mean reading `materials.json` back and reconstructing the curator result
+	 * the editor stage needs, which is a larger change than the defect warrants.
+	 */
+	if (opts.runId) {
+		const status = store.load().status;
+		if (status !== "CREATED" && status !== "CURATING") {
+			throw new Error(
+				`Run ${opts.runId} is at ${status}; --resume only continues a run that has not finished curating. ` +
+					"Start a new run for this date instead.",
+			);
+		}
+	}
+
 	store.patch({ totalItems: manifest.items.length });
 	writeJsonAtomic(join(runDir, "manifest.json"), manifest);
 
@@ -126,7 +145,7 @@ export async function runPhase1Day(opts: Phase1RunOptions): Promise<Phase1RunRes
 	const curatorResult = await runStageWithFallback({
 		stage: "CURATOR",
 		chain,
-		...(stages ? { maxAttemptsPerModel: stages.CURATOR.maxAttemptsPerModel } : {}),
+		maxAttemptsPerModel: stages.CURATOR.maxAttemptsPerModel,
 		routerState,
 		recordAttempt: (a) => {
 			attempts += 1;
@@ -137,7 +156,8 @@ export async function runPhase1Day(opts: Phase1RunOptions): Promise<Phase1RunRes
 		onAttempt: async ({ spec, mode, checkFault, lastError }) => {
 			log.info("curator attempt", { model: modelKey(spec), mode });
 			return runCuratorStage({
-				...(stages ? { maxNudges: stages.CURATOR.maxNudges, timeoutMs: stages.CURATOR.timeoutMs } : {}),
+				maxNudges: stages.CURATOR.maxNudges,
+				timeoutMs: stages.CURATOR.timeoutMs,
 				...(lastError === undefined ? {} : { lastError }),
 				date: opts.date,
 				manifest,
@@ -190,7 +210,7 @@ export async function runPhase1Day(opts: Phase1RunOptions): Promise<Phase1RunRes
 	const editorResult = await runStageWithFallback({
 		stage: "EDITOR",
 		chain,
-		...(stages ? { maxAttemptsPerModel: stages.EDITOR.maxAttemptsPerModel } : {}),
+		maxAttemptsPerModel: stages.EDITOR.maxAttemptsPerModel,
 		routerState,
 		recordAttempt: (a) => {
 			attempts += 1;
@@ -201,7 +221,8 @@ export async function runPhase1Day(opts: Phase1RunOptions): Promise<Phase1RunRes
 		onAttempt: async ({ spec, mode, checkFault, lastError }) => {
 			log.info("editor attempt", { model: modelKey(spec), mode });
 			return runEditorStage({
-				...(stages ? { maxNudges: stages.EDITOR.maxNudges, timeoutMs: stages.EDITOR.timeoutMs } : {}),
+				maxNudges: stages.EDITOR.maxNudges,
+				timeoutMs: stages.EDITOR.timeoutMs,
 				...(lastError === undefined ? {} : { lastError }),
 				date: opts.date,
 				manifest,

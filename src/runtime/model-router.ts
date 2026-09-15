@@ -225,11 +225,25 @@ export async function runStageWithFallback<T>(opts: RunStageOptions<T>): Promise
 					durationMs: finishedAt.getTime() - startedAt.getTime(),
 					status: "FAILED",
 					failureClass,
-					fallbackReason:
+					/*
+					 * Only a real fallback sets this. It used to be filled in on both
+					 * branches, and every consumer tests it for truthiness to count
+					 * fallbacks — so one RETRY_SAME after a transient blip reported a
+					 * cross-model fallback that never happened and inflated
+					 * `fallbackCount` in src/cli/benchmark.ts for every model compared.
+					 * The same-model wording moved to `errorMeta.retryReason`, where the
+					 * attempt record still explains itself without lying to the counter.
+					 */
+					...(effective.kind === "FALLBACK"
+						? { fallbackReason: `${modelKey(spec)} failed with ${failureClass}; falling back` }
+						: {}),
+					errorMeta:
 						effective.kind === "FALLBACK"
-							? `${modelKey(spec)} failed with ${failureClass}; falling back`
-							: `${modelKey(spec)} failed with ${failureClass}; ${effective.kind}`,
-					errorMeta,
+							? errorMeta
+							: {
+									...errorMeta,
+									retryReason: `${modelKey(spec)} failed with ${failureClass}; ${effective.kind}`,
+								},
 					...(faultInjected ? { faultInjected } : {}),
 				});
 
