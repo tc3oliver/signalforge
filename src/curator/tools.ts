@@ -11,7 +11,7 @@ import {
 import type { ResearchRouter } from "../research/router.ts";
 import { toCollectedItem } from "../research/types.ts";
 import type { StoryRepository } from "../stories/repository.ts";
-import { validateMaterials } from "../validator/materials-validator.ts";
+import { scanCoverage, validateMaterials } from "../validator/materials-validator.ts";
 import {
 	defineFindHistoryTool,
 	defineStructuredFactsTool,
@@ -129,12 +129,17 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			for (const item of ctx.manifest.items) {
 				itemsBySource[item.sourceType] = (itemsBySource[item.sourceType] ?? 0) + 1;
 			}
+			const coverage = scanCoverage({
+				manifest: ctx.manifest,
+				knownStoryIds: new Set(),
+				processedItemIds: processed,
+			});
 			const payload = {
 				date: ctx.date,
-				totalItems: ctx.manifest.items.length,
+				totalItems: coverage.total,
 				itemsBySource,
-				processedItems: processed.size,
-				unseenItems: ctx.manifest.items.length - processed.size,
+				processedItems: coverage.decided,
+				unseenItems: coverage.unseenItemIds.length,
 				storyCount: stories.length,
 			};
 			note("get_daily_inventory", payload);
@@ -411,11 +416,16 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 
 			await ctx.repo.recordDecisions(ctx.date, parsedList);
 			const processed = await ctx.repo.processedItemIds(ctx.date);
+			const coverage = scanCoverage({
+				manifest: ctx.manifest,
+				knownStoryIds: new Set(),
+				processedItemIds: processed,
+			});
 			const payload = {
 				recorded: parsedList.length,
-				processedItems: processed.size,
-				totalItems: ctx.manifest.items.length,
-				unseenItems: ctx.manifest.items.length - processed.size,
+				processedItems: coverage.decided,
+				totalItems: coverage.total,
+				unseenItems: coverage.unseenItemIds.length,
 			};
 			note("record_item_decisions", payload);
 			return ok(payload);
@@ -487,18 +497,21 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 
 			const processed = await ctx.repo.processedItemIds(ctx.date);
 			const knownStoryIds = new Set((await ctx.repo.listStories(ctx.date)).map((s) => s.storyId));
-			const result = validateMaterials(parsed.data, {
+			const validationCtx = {
 				manifest: ctx.manifest,
 				knownStoryIds,
-				totalItems: ctx.manifest.items.length,
-				processedItems: processed.size,
-			});
+				processedItemIds: processed,
+			};
+			const result = validateMaterials(parsed.data, validationCtx);
 			if (!result.ok) {
 				throw new ToolRejection(
 					`submit_materials rejected:\n- ${result.errors.join("\n- ")}\nNothing was saved. Fix these and call submit_materials again.`,
 				);
 			}
 
+			// Recomputed from the same context the gate used, so the success line
+			// can only report coverage that was actually verified.
+			const coverage = scanCoverage(validationCtx);
 			const materials: DailyMaterials = {
 				date: ctx.date,
 				producedAt: ctx.now().toISOString(),
@@ -510,7 +523,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 				content: [
 					{
 						type: "text" as const,
-						text: `Accepted ${materials.stories.length} stories with full scan coverage (${processed.size}/${ctx.manifest.items.length} items decided). Curation is complete — stop here.`,
+						text: `Accepted ${materials.stories.length} stories with full scan coverage (${coverage.decided}/${coverage.total} manifest items decided). Curation is complete — stop here.`,
 					},
 				],
 				details: {},

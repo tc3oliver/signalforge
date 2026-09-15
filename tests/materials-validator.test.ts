@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { validateMaterials } from "../src/validator/materials-validator.ts";
 import type { MaterialsValidationContext } from "../src/validator/materials-validator.ts";
-import type { DailyManifest } from "../src/schemas/manifest.ts";
+import { DailyManifest } from "../src/schemas/manifest.ts";
 import type { DailyMaterialsInput } from "../src/schemas/materials.ts";
 
 const manifest: DailyManifest = {
@@ -46,8 +46,7 @@ function ctx(over: Partial<MaterialsValidationContext> = {}): MaterialsValidatio
 	return {
 		manifest,
 		knownStoryIds: new Set(["story-a", "story-b"]),
-		totalItems: 2,
-		processedItems: 2,
+		processedItemIds: new Set(["item-1", "item-2"]),
 		...over,
 	};
 }
@@ -87,12 +86,50 @@ describe("validateMaterials", () => {
 		expect(result.errors.some((e) => e.startsWith("Schema error at stories:"))).toBe(true);
 	});
 
-	it("fails when scan coverage is incomplete and names the count difference", () => {
-		const result = validateMaterials(materials(), ctx({ totalItems: 5, processedItems: 2 }));
+	it("fails when scan coverage is incomplete and names the undecided item ids", () => {
+		const result = validateMaterials(
+			materials(),
+			ctx({ processedItemIds: new Set(["item-1"]) }),
+		);
 		expect(result.ok).toBe(false);
 		expect(
-			result.errors.some((e) => e.includes("2 of 5 items processed, 3 still unseen")),
+			result.errors.some(
+				(e) => e.includes("1 of 2 items processed, 1 still unseen") && e.includes("item-2"),
+			),
 		).toBe(true);
+	});
+
+	it("rejects a submission whose decision count matches but whose membership differs", () => {
+		// Run A decided item-1 and a since-aged-out item-0; re-collection swapped
+		// item-0 for item-2. Two decisions, two manifest items, one never scanned.
+		const result = validateMaterials(
+			materials(),
+			ctx({ processedItemIds: new Set(["item-0", "item-1"]) }),
+		);
+		expect(result.ok).toBe(false);
+		expect(result.errors.some((e) => e.includes("Scan coverage incomplete"))).toBe(true);
+		expect(result.errors.some((e) => e.includes("item-2"))).toBe(true);
+	});
+
+	it("does not let decisions from an unrelated run satisfy coverage", () => {
+		const result = validateMaterials(
+			materials(),
+			ctx({ processedItemIds: new Set(["item-1", "other-run-a", "other-run-b"]) }),
+		);
+		expect(result.ok).toBe(false);
+		expect(
+			result.errors.some(
+				(e) => e.includes("1 of 2 items processed") && e.includes("item-2"),
+			),
+		).toBe(true);
+	});
+
+	it("accepts when every manifest id is decided, even alongside extra decisions", () => {
+		const result = validateMaterials(
+			materials(),
+			ctx({ processedItemIds: new Set(["item-1", "item-2", "stale-item"]) }),
+		);
+		expect(result).toEqual({ ok: true, errors: [] });
 	});
 
 	it("rejects unknown sourceItemIds", () => {
@@ -173,5 +210,20 @@ describe("validateMaterials", () => {
 		const result = validateMaterials(materials({ stories: [base, { ...base }] }), ctx());
 		expect(result.ok).toBe(false);
 		expect(result.errors.some((e) => e.includes('Duplicate storyId "story-a"'))).toBe(true);
+	});
+});
+
+describe("DailyManifest item id uniqueness", () => {
+	it("accepts a manifest whose item ids are unique", () => {
+		expect(DailyManifest.safeParse(manifest).success).toBe(true);
+	});
+
+	it("rejects a manifest with a duplicate item id and names the duplicate", () => {
+		const dup = { ...manifest, items: [manifest.items[0]!, manifest.items[1]!, manifest.items[0]!] };
+		const parsed = DailyManifest.safeParse(dup);
+		expect(parsed.success).toBe(false);
+		if (parsed.success) return;
+		expect(parsed.error.issues.some((i) => i.message.includes("item-1"))).toBe(true);
+		expect(parsed.error.issues.some((i) => i.message.includes("Duplicate item id"))).toBe(true);
 	});
 });

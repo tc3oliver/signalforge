@@ -10,8 +10,33 @@ export interface ValidationResult {
 export interface MaterialsValidationContext {
 	manifest: DailyManifest;
 	knownStoryIds: Set<string>;
-	totalItems: number;
-	processedItems: number;
+	/**
+	 * Ids of items that have a recorded decision. Identity, not a count:
+	 * decisions are stored per lineage+date, so a re-collected manifest can hold
+	 * the same number of items as an earlier run while the membership differs.
+	 */
+	processedItemIds: Set<string>;
+}
+
+export interface ScanCoverage {
+	total: number;
+	decided: number;
+	unseenItemIds: string[];
+}
+
+/**
+ * Coverage of this run's manifest, by item id. `decided` counts only manifest
+ * items, so decisions left behind by another run of the same date cannot
+ * inflate it.
+ */
+export function scanCoverage(ctx: MaterialsValidationContext): ScanCoverage {
+	const unseenItemIds: string[] = [];
+	let decided = 0;
+	for (const item of ctx.manifest.items) {
+		if (ctx.processedItemIds.has(item.id)) decided += 1;
+		else unseenItemIds.push(item.id);
+	}
+	return { total: ctx.manifest.items.length, decided, unseenItemIds };
 }
 
 function formatIssuePath(path: ReadonlyArray<PropertyKey>): string {
@@ -40,11 +65,18 @@ export function validateMaterials(
 	}
 	const materials = parsed.data;
 
-	// Scan coverage is the hard gate: the curator must have decided on every item.
-	const unseen = ctx.totalItems - ctx.processedItems;
-	if (ctx.processedItems !== ctx.totalItems || unseen !== 0) {
+	// Scan coverage is the hard gate: the curator must have decided on every item
+	// in THIS manifest. Compared by id, never by count — equal counts can still
+	// hide an item that was never looked at.
+	const coverage = scanCoverage(ctx);
+	if (coverage.unseenItemIds.length > 0) {
+		const named = coverage.unseenItemIds.slice(0, 10).join(", ");
+		const rest =
+			coverage.unseenItemIds.length > 10
+				? ` and ${coverage.unseenItemIds.length - 10} more`
+				: "";
 		errors.push(
-			`Scan coverage incomplete: ${ctx.processedItems} of ${ctx.totalItems} items processed, ${unseen} still unseen. Record a decision for every remaining item before submitting materials.`,
+			`Scan coverage incomplete: ${coverage.decided} of ${coverage.total} items processed, ${coverage.unseenItemIds.length} still unseen: ${named}${rest}. Record a decision for every one of these item ids before submitting materials.`,
 		);
 	}
 
