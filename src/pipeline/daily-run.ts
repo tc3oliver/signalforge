@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { loadConfig } from "../config/loader.ts";
+import { loadStageTuning, type StageTuning } from "../config/stage-tuning.ts";
 import { runCuratorStage } from "../curator/session.ts";
 import { configureCuratorResearch, type CuratorResearchConfig } from "../curator/tools.ts";
 import { runEditorStage } from "../editor/session.ts";
@@ -206,6 +206,7 @@ async function findPreviousBrief(
 }
 
 interface DraftRow {
+	draft_no: number;
 	body: unknown;
 	validation_status: string;
 }
@@ -220,15 +221,19 @@ async function loadLatestDraft(
 	sql: Sql,
 	lineage: string,
 	date: string,
-): Promise<{ brief: DailyBrief; validated: boolean } | undefined> {
+): Promise<{ draftNo: number; brief: DailyBrief; validated: boolean } | undefined> {
 	const rows = await sql<DraftRow[]>`
-		select body, validation_status from daily_brief_drafts
+		select draft_no, body, validation_status from daily_brief_drafts
 		where lineage = ${lineage} and date = ${date}
 		order by draft_no desc limit 1
 	`;
 	const row = rows[0];
 	if (!row) return undefined;
-	return { brief: DailyBriefSchema.parse(row.body), validated: row.validation_status === "PASSED" };
+	return {
+		draftNo: row.draft_no,
+		brief: DailyBriefSchema.parse(row.body),
+		validated: row.validation_status === "PASSED",
+	};
 }
 
 async function loadKnownSignals(sql: Sql, lineage: string): Promise<KnownSignal[]> {
@@ -251,21 +256,12 @@ async function loadKnownSignals(sql: Sql, lineage: string): Promise<KnownSignal[
  * stage's memory, which is the whole point: a curator crash is retried with a
  * curator session, never with another pass over eleven providers.
  */
-export interface StageTuning {
-	CURATOR: { timeoutMs: number; maxAttemptsPerModel: number; maxNudges: number };
-	EDITOR: { timeoutMs: number; maxAttemptsPerModel: number; maxNudges: number };
-}
-
-/** Reads the stage block, falling back to the code defaults if it is absent. */
-function loadStageTuning(): StageTuning | undefined {
-	try {
-		return loadConfig().agent.stages;
-	} catch {
-		// A config that cannot be read is the config loader's problem to report
-		// on its own terms; the stages are tuning, not correctness.
-		return undefined;
-	}
-}
+/*
+ * Defined in `src/config/stage-tuning.ts` and re-exported here, because the
+ * orchestrator reads the same block: two copies of this would let the fixture
+ * path and the production path drift apart on the bound that stops a hung turn.
+ */
+export type { StageTuning };
 
 export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyRunResult> {
 	const now = options.now ?? (() => new Date());
@@ -306,24 +302,33 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 	// a search_web fallback can both degrade the same day. Joined into the
 	// single `degraded_reason` column an operator reads on /admin/runs.
 	const degradedReasons: string[] = existing?.degradedReason ? [existing.degradedReason] : [];
+	/** Fire-and-forget DB writes that must still be finished before the run ends. */
+	const pendingWrites: Promise<void>[] = [];
 	const addDegradedReason = async (reason: string): Promise<void> => {
 		degraded = true;
 		degradedReasons.push(reason);
 		await recorder.patch({ degradedReason: degradedReasons.join(" | ") });
+	};
+	/**
+	 * Same reason, from a caller that cannot await — the curator's research
+	 * tool reports a fallback from inside a synchronous callback. Queued rather
+	 * than fired and forgotten, so the write is finished before the run is.
+	 */
+	const queueDegradedReason = (reason: string): void => {
+		pendingWrites.push(addDegradedReason(reason));
 	};
 	let attempts = 0;
 	let fallbackOccurred = false;
 	const routerState = new RouterState();
 	// runStageWithFallback records attempts synchronously; the DB write is queued
 	// and drained after the stage so no insert outlives the run.
-	const attemptWrites: Promise<void>[] = [];
 	const recordStageAttempt = (attempt: Parameters<typeof recordAttempt>[2]): void => {
 		attempts += 1;
 		if (attempt.fallbackReason) fallbackOccurred = true;
-		attemptWrites.push(recordAttempt(options.sql, seed.runId, attempt));
+		pendingWrites.push(recordAttempt(options.sql, seed.runId, attempt));
 	};
 	const drainAttempts = async (): Promise<void> => {
-		await Promise.allSettled(attemptWrites.splice(0, attemptWrites.length));
+		await Promise.allSettled(pendingWrites.splice(0, pendingWrites.length));
 	};
 
 	const result: DailyRunResult = {
@@ -333,6 +338,24 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 		signalsWritten: 0,
 		attempts: 0,
 		fallbackOccurred: false,
+	};
+
+	/**
+	 * The single exit. Every return from this function reports the same five
+	 * fields, and they were copied out at each of the seven exits: the copies
+	 * had drifted, and `fallbackOccurred` was set on the published path alone,
+	 * so a run that fell back to a second model and then failed validation
+	 * reported no fallback at all. Draining here is what makes the queued
+	 * attempt and degraded-reason writes finish before the caller sees a result.
+	 */
+	const finish = async (state: PipelineState): Promise<DailyRunResult> => {
+		await drainAttempts();
+		result.state = state;
+		result.degraded = degraded;
+		result.degradedReason = degradedReasons.join(" | ") || undefined;
+		result.attempts = attempts;
+		result.fallbackOccurred = fallbackOccurred;
+		return result;
 	};
 
 	// ---- Collection -------------------------------------------------------
@@ -373,26 +396,17 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 			 */
 			if (summary.suspiciousReason !== undefined) {
 				await recorder.transition("COLLECTION_FAILED", { failureReason: summary.suspiciousReason });
-				result.state = "COLLECTION_FAILED";
-				result.degraded = true;
-				result.degradedReason = degradedReasons.join(" | ") || undefined;
-				return result;
+				return finish("COLLECTION_FAILED");
 			}
 			await recorder.transition("COLLECTED");
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			await addDegradedReason(`collection crashed: ${message}`);
 			await recorder.transition("COLLECTION_FAILED", { failureReason: message });
-			result.state = "COLLECTION_FAILED";
-			result.degraded = true;
-			result.degradedReason = degradedReasons.join(" | ") || undefined;
-			return result;
+			return finish("COLLECTION_FAILED");
 		}
 		if (stage === "collect") {
-			result.state = "COLLECTED";
-			result.degraded = degraded;
-			result.degradedReason = degradedReasons.join(" | ") || undefined;
-			return result;
+			return finish("COLLECTED");
 		}
 	}
 
@@ -430,7 +444,7 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 				? {
 						...options.research,
 						onDegraded: (reason) => {
-							void addDegradedReason(reason);
+							queueDegradedReason(reason);
 							options.research?.onDegraded?.(reason);
 						},
 					}
@@ -444,9 +458,12 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 				routerState,
 				recordAttempt: recordStageAttempt,
 				now,
-				onAttempt: async ({ spec, mode, checkFault }) => {
+				onAttempt: async ({ spec, mode, checkFault, lastError }) => {
 					log("curator attempt", { model: modelKey(spec), mode });
 					return runCuratorStage({
+						// A corrective retry is only corrective if the stage is told what
+						// went wrong; without this it re-sends the prompt that just failed.
+						...(lastError === undefined ? {} : { lastError }),
 						...(stages ? { maxNudges: stages.CURATOR.maxNudges, timeoutMs: stages.CURATOR.timeoutMs } : {}),
 						date: options.date,
 						manifest,
@@ -484,21 +501,13 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 				durationMs: now().getTime() - startedAt.getTime(),
 			});
 			await recorder.transition("CURATION_FAILED", { failureReason: message });
-			result.state = "CURATION_FAILED";
-			result.degraded = degraded;
-			result.degradedReason = degradedReasons.join(" | ") || undefined;
-			result.attempts = attempts;
-			return result;
+			return finish("CURATION_FAILED");
 		} finally {
 			configureCuratorResearch(undefined);
 		}
 		if (stage === "curate") {
-			result.state = "MATERIALS_READY";
 			result.materials = materials;
-			result.degraded = degraded;
-			result.degradedReason = degradedReasons.join(" | ") || undefined;
-			result.attempts = attempts;
-			return result;
+			return finish("MATERIALS_READY");
 		}
 	}
 
@@ -510,7 +519,17 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 	// ---- Writing ----------------------------------------------------------
 	const wantsWriting = stage === undefined || stage === "write";
 	let draft = await loadLatestDraft(options.sql, lineage, options.date);
-	if (wantsWriting || !draft) {
+	if (!wantsWriting && !draft) {
+		/*
+		 * `--stage validate` and `--stage publish` act on the draft the editor
+		 * already wrote. With no stored draft this used to fall through into a
+		 * fresh EDITOR session, so asking to validate silently spent a model run
+		 * writing something new and then validated that -- the same shape as the
+		 * missing-materials error just above, and it gets the same answer.
+		 */
+		throw new Error(`No draft stored for ${options.date}; run the write stage first`);
+	}
+	if (wantsWriting) {
 		if (recorder.state !== "MATERIALS_READY") {
 			// Resuming straight into the editor: the materials are already durable,
 			// so the run walks the legal edges to WRITING without redoing curation.
@@ -529,9 +548,11 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 				routerState,
 				recordAttempt: recordStageAttempt,
 				now,
-				onAttempt: async ({ spec, mode, checkFault }) => {
+				onAttempt: async ({ spec, mode, checkFault, lastError }) => {
 					log("editor attempt", { model: modelKey(spec), mode });
 					return runEditorStage({
+						// See the curator stage: the corrective prompt needs the failure.
+						...(lastError === undefined ? {} : { lastError }),
 						...(stages ? { maxNudges: stages.EDITOR.maxNudges, timeoutMs: stages.EDITOR.timeoutMs } : {}),
 						date: options.date,
 						manifest,
@@ -555,12 +576,12 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 				finishedAt: now().toISOString(),
 				durationMs: now().getTime() - startedAt.getTime(),
 			});
-			draft = { brief: written.brief, validated: false };
-			await saveDraft(options.sql, lineage, options.date, written.brief, {
+			const draftNo = await saveDraft(options.sql, lineage, options.date, written.brief, {
 				producedAt: written.brief.producedAt,
 				runId: seed.runId,
 				validationStatus: "PENDING",
 			});
+			draft = { draftNo, brief: written.brief, validated: false };
 			await recorder.transition("DRAFT_READY");
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
@@ -571,11 +592,7 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 				durationMs: now().getTime() - startedAt.getTime(),
 			});
 			await recorder.transition("EDITOR_FAILED", { failureReason: message });
-			result.state = "EDITOR_FAILED";
-			result.degraded = degraded;
-			result.degradedReason = degradedReasons.join(" | ") || undefined;
-			result.attempts = attempts;
-			return result;
+			return finish("EDITOR_FAILED");
 		}
 	} else if (recorder.state !== "DRAFT_READY") {
 		await recorder.transition("CURATING");
@@ -584,6 +601,7 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 		await recorder.transition("DRAFT_READY");
 	}
 
+	if (!draft) throw new Error(`No draft stored for ${options.date}; run the write stage first`);
 	const brief = draft.brief;
 	result.brief = brief;
 
@@ -598,19 +616,22 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 		},
 		{ manifest, materials },
 	);
+	/*
+	 * The verdict lands on the draft that was judged, not on a second copy of
+	 * it. saveDraft is append-only, so every run used to store the identical
+	 * brief twice -- once PENDING and once with the verdict -- and the draft
+	 * history claimed the editor had written two.
+	 */
 	await saveDraft(options.sql, lineage, options.date, brief, {
 		producedAt: brief.producedAt,
 		runId: seed.runId,
 		validationStatus: validation.ok ? "PASSED" : "FAILED",
 		validationErrors: validation.ok ? [] : validation.errors,
+		draftNo: draft.draftNo,
 	});
 	if (!validation.ok) {
 		await recorder.transition("VALIDATION_FAILED", { failureReason: validation.errors.join("; ") });
-		result.state = "VALIDATION_FAILED";
-		result.degraded = degraded;
-		result.degradedReason = degradedReasons.join(" | ") || undefined;
-		result.attempts = attempts;
-		return result;
+		return finish("VALIDATION_FAILED");
 	}
 
 	// ---- Publish ----------------------------------------------------------
@@ -638,12 +659,7 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 	}
 
 	await recorder.transition("PUBLISHED");
-	result.state = "PUBLISHED";
-	result.degraded = degraded;
-	result.degradedReason = degradedReasons.join(" | ") || undefined;
-	result.attempts = attempts;
-	result.fallbackOccurred = fallbackOccurred;
 	result.signalsWritten = observed.length + faded.length;
 	result.markdown = renderBriefMarkdown(brief, { facts: manifest.facts, items: manifest.items });
-	return result;
+	return finish("PUBLISHED");
 }

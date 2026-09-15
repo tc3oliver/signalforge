@@ -1,14 +1,19 @@
 import type { DailyBrief } from "../schemas/brief.ts";
-import { jsonParam, type Sql } from "./client.ts";
+import { ISO, ISO_FMT, jsonParam, type Sql } from "./client.ts";
 
-/* Bind parameter, not inlined SQL: see the note in src/db/items.ts. */
-const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
-/*
- * Same format as ISO, but without the SQL string quotes: inside a tagged
- * template the value is sent as a bound parameter, so quoting it here would
- * put literal quote characters into the to_char format string.
- */
-const ISO_FMT = 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"';
+export interface DraftMeta {
+	producedAt: string;
+	runId?: string;
+	validationStatus?: "PENDING" | "PASSED" | "FAILED";
+	validationErrors?: unknown[];
+	/**
+	 * Update this draft in place instead of appending a new one. The pipeline
+	 * saves a draft as PENDING the moment the editor produces it, then records
+	 * the verdict against that same draft — without this, every run stored the
+	 * identical brief twice and the history said the editor had written two.
+	 */
+	draftNo?: number;
+}
 
 /**
  * Every editor attempt is kept. A validation failure is only diagnosable if the
@@ -19,22 +24,50 @@ export async function saveDraft(
 	lineage: string,
 	date: string,
 	draft: unknown,
-	meta: { producedAt: string; runId?: string; validationStatus?: "PENDING" | "PASSED" | "FAILED"; validationErrors?: unknown[] },
+	meta: DraftMeta,
 ): Promise<number> {
-	const rows = await sql.unsafe<{ draft_no: number }[]>(
-		`insert into daily_brief_drafts (lineage, date, draft_no, run_id, body, produced_at,
-			validation_status, validation_errors)
-		 select $1, $2,
-			coalesce((select max(draft_no) from daily_brief_drafts where lineage = $1 and date = $2), 0) + 1,
-			$3, $4::jsonb, $5::timestamptz, $6, $7::jsonb
-		 returning draft_no`,
-		[
-			lineage, date, meta.runId ?? null, jsonParam(sql, draft), meta.producedAt,
-			meta.validationStatus ?? "PENDING", jsonParam(sql, meta.validationErrors ?? []),
-		],
-	);
+	const params = [
+		lineage, date, meta.runId ?? null, jsonParam(sql, draft), meta.producedAt,
+		meta.validationStatus ?? "PENDING", jsonParam(sql, meta.validationErrors ?? []),
+	];
+	const rows =
+		meta.draftNo === undefined
+			? await sql.unsafe<{ draft_no: number }[]>(
+					`insert into daily_brief_drafts (lineage, date, draft_no, run_id, body, produced_at,
+						validation_status, validation_errors)
+					 select $1, $2,
+						coalesce((select max(draft_no) from daily_brief_drafts where lineage = $1 and date = $2), 0) + 1,
+						$3, $4::jsonb, $5::timestamptz, $6, $7::jsonb
+					 returning draft_no`,
+					params,
+				)
+			: /*
+				 * Only the verdict is written back. `run_id` and `produced_at` belong
+				 * to the attempt that authored this body: on a `--stage validate` of
+				 * an earlier day, rewriting them would make the table say the
+				 * validating run produced a brief it never wrote, which is exactly
+				 * the provenance this append-only table exists to keep.
+				 */
+				await sql.unsafe<{ draft_no: number }[]>(
+					`update daily_brief_drafts set validation_status = $3, validation_errors = $4::jsonb
+					 where lineage = $1 and date = $2 and draft_no = $5
+					 returning draft_no`,
+					[
+						lineage,
+						date,
+						meta.validationStatus ?? "PENDING",
+						jsonParam(sql, meta.validationErrors ?? []),
+						meta.draftNo,
+					],
+				);
 	const row = rows[0];
-	if (!row) throw new Error("draft insert returned no row");
+	if (!row) {
+		throw new Error(
+			meta.draftNo === undefined
+				? "draft insert returned no row"
+				: `draft ${meta.draftNo} for ${date} does not exist`,
+		);
+	}
 	return row.draft_no;
 }
 
@@ -327,4 +360,16 @@ export async function listDraftValidationFailures(
 		validationStatus: r.validation_status as DraftValidationRecord["validationStatus"],
 		validationErrors: Array.isArray(r.validation_errors) ? r.validation_errors : [],
 	}));
+}
+
+/**
+ * How many days exist, independent of any page limit. /history shows a window
+ * and has to say so honestly: without this it reported its own limit as the
+ * total, which becomes a false statement the day the archive outgrows it.
+ */
+export async function countBriefs(sql: Sql, lineage: string): Promise<number> {
+	const rows = await sql<{ total: number }[]>`
+		select count(*)::int as total from daily_briefs where lineage = ${lineage}
+	`;
+	return rows[0]?.total ?? 0;
 }

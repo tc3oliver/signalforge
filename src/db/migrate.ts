@@ -58,6 +58,29 @@ export interface MigrateResult {
 export async function migrate(sql: Sql, dir: string = MIGRATIONS_DIR): Promise<MigrateResult> {
 	await assertReachable(sql);
 	await ensureLedger(sql);
+	/*
+	 * One migrator at a time, cluster-wide. Nothing serialises callers otherwise:
+	 * the daily and incremental agents can start together, and the test suites
+	 * run in parallel against one database. Two processes then apply the same
+	 * pending file at once and collide inside Postgres -- `create index if not
+	 * exists` races on the catalogue and raises a duplicate key on pg_class,
+	 * which reads like a corrupt schema rather than the lost race it is.
+	 *
+	 * The lock is released in `finally`, and a crashed process drops it with its
+	 * session, so a migrator that dies cannot wedge the next one.
+	 */
+	await sql`select pg_advisory_lock(${MIGRATION_LOCK_KEY})`;
+	try {
+		return await applyPending(sql, dir);
+	} finally {
+		await sql`select pg_advisory_unlock(${MIGRATION_LOCK_KEY})`;
+	}
+}
+
+/** Arbitrary but fixed: only this module ever takes it. */
+const MIGRATION_LOCK_KEY = 4_120_251_015;
+
+async function applyPending(sql: Sql, dir: string): Promise<MigrateResult> {
 	const applied = await sql<{ version: number; name: string; checksum: string }[]>`
 		select version, name, checksum from schema_migrations
 	`;

@@ -1,7 +1,5 @@
 import type { StructuredFact } from "../schemas/fact.ts";
-import type { Sql } from "./client.ts";
-
-const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
+import { ISO, type Sql } from "./client.ts";
 
 const COLUMNS = `fact_id, kind, label, value, unit,
 	to_char(as_of at time zone 'utc', ${ISO}) as as_of,
@@ -26,19 +24,38 @@ function toFact(r: FactRow): StructuredFact {
 	};
 }
 
-/** Re-ingesting the same reading overwrites it rather than duplicating it. */
+/** How many facts go into one `unnest` statement; see the note in items.ts. */
+const CHUNK = 500;
+
+/**
+ * Re-ingesting the same reading overwrites it rather than duplicating it.
+ *
+ * Chunked `unnest`: a numeric collector brings back a reading per series per
+ * day and this was one round trip each. `on conflict do update` may not touch
+ * the same row twice in one statement, so a fact id repeated within the batch is
+ * collapsed to its last occurrence, which is what the per-row loop did by
+ * overwriting.
+ */
 export async function upsertFacts(
 	sql: Sql,
 	lineage: string,
 	facts: readonly StructuredFact[],
 ): Promise<void> {
 	if (facts.length === 0) return;
+	const byId = new Map<string, StructuredFact>();
+	for (const f of facts) byId.set(f.factId, f);
+	const unique = [...byId.values()];
 	await sql.begin(async (tx) => {
-		for (const f of facts) {
+		for (let i = 0; i < unique.length; i += CHUNK) {
+			const chunk = unique.slice(i, i + CHUNK);
 			await tx.unsafe(
 				`insert into structured_facts (lineage, fact_id, kind, label, value, unit, as_of,
 					source_item_id, previous_value, change_pct)
-				 values ($1,$2,$3,$4,$5,$6,$7::timestamptz,$8,$9,$10)
+				 select $1, t.fact_id, t.kind, t.label, t.value, t.unit, t.as_of,
+					t.source_item_id, t.previous_value, t.change_pct
+				 from unnest($2::text[], $3::text[], $4::text[], $5::double precision[], $6::text[],
+					$7::timestamptz[], $8::text[], $9::double precision[], $10::double precision[])
+					as t(fact_id, kind, label, value, unit, as_of, source_item_id, previous_value, change_pct)
 				 on conflict (lineage, fact_id) do update set
 					kind = excluded.kind, label = excluded.label, value = excluded.value,
 					unit = excluded.unit, as_of = excluded.as_of,
@@ -46,8 +63,16 @@ export async function upsertFacts(
 					previous_value = excluded.previous_value, change_pct = excluded.change_pct,
 					updated_at = now()`,
 				[
-					lineage, f.factId, f.kind, f.label, f.value, f.unit, f.asOf,
-					f.sourceItemId, f.previousValue ?? null, f.changePct ?? null,
+					lineage,
+					chunk.map((f) => f.factId),
+					chunk.map((f) => f.kind),
+					chunk.map((f) => f.label),
+					chunk.map((f) => f.value),
+					chunk.map((f) => f.unit),
+					chunk.map((f) => f.asOf),
+					chunk.map((f) => f.sourceItemId),
+					chunk.map((f) => f.previousValue ?? null),
+					chunk.map((f) => f.changePct ?? null),
 				],
 			);
 		}

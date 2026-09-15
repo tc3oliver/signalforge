@@ -3,7 +3,14 @@ import type { CollectedItem } from "../src/collectors/types.ts";
 import { saveBrief } from "../src/db/briefs.ts";
 import { createSql, type Sql } from "../src/db/client.ts";
 import { dispositionCounts, explainItem } from "../src/db/decisions.ts";
-import { countRawItems, getNormalizedItem, upsertNormalizedItems, upsertRawItems } from "../src/db/items.ts";
+import { getFacts, upsertFacts } from "../src/db/facts.ts";
+import {
+	countRawItems,
+	getNormalizedItem,
+	getNormalizedItems,
+	upsertNormalizedItems,
+	upsertRawItems,
+} from "../src/db/items.ts";
 import { migrate } from "../src/db/migrate.ts";
 import { observeSignal } from "../src/db/signals.ts";
 import { announceSkip, probeDatabase, purgeLineage, testLineage } from "../src/db/test-support.ts";
@@ -93,6 +100,117 @@ describe.skipIf(!probe.available)("raw + normalized items", () => {
 			select body from raw_items where raw_item_id = ${ref?.rawItemId ?? 0}
 		`;
 		expect(raw[0]?.body.payload).toBe("verbatim");
+	});
+
+	it("writes a batch larger than one chunk and reports what it created", async () => {
+		// Each item used to be its own round trip inside the transaction; the
+		// batched write has to produce the same refs, in input order.
+		const items = Array.from({ length: 1200 }, (_, i) => collected(`${suffix}-b${i}`));
+		const before = await countRawItems(sql);
+
+		const refs = await upsertRawItems(sql, items);
+		expect(refs).toHaveLength(1200);
+		expect(refs.every((r) => r.inserted)).toBe(true);
+		expect(refs.map((r) => r.externalId)).toEqual(items.map((i) => i.raw.externalId));
+		expect(new Set(refs.map((r) => r.rawItemId)).size).toBe(1200);
+		expect(await countRawItems(sql)).toBe(before + 1200);
+
+		// A second pass over a batch that spans chunks conflicts on every row.
+		const again = await upsertRawItems(sql, items);
+		expect(again.some((r) => r.inserted)).toBe(false);
+		expect(again.map((r) => r.rawItemId)).toEqual(refs.map((r) => r.rawItemId));
+		expect(await countRawItems(sql)).toBe(before + 1200);
+	});
+
+	it("links a batch to its collection run, whose id is text and not a uuid", async () => {
+		// collection_runs.collection_run_id is text, and the ids the pipeline mints
+		// are not all UUID-shaped. A "::uuid" cast on the way in threw
+		// "invalid input syntax for type uuid" on every one of them.
+		const collectionRunId = `cr-${suffix}`;
+		await sql`
+			insert into collection_runs (collection_run_id, collector_id, health, items_fetched,
+				started_at, finished_at, latency_ms)
+			values (${collectionRunId}, 'fake-collector', 'OK', 1,
+				'2026-09-13T06:00:00.000Z'::timestamptz, '2026-09-13T06:00:05.000Z'::timestamptz, 5)
+		`;
+		try {
+			const refs = await upsertRawItems(sql, [collected(`${suffix}-run`)], collectionRunId);
+			expect(refs).toHaveLength(1);
+
+			const rows = await sql<{ collection_run_id: string | null }[]>`
+				select collection_run_id from raw_items where raw_item_id = ${refs[0]?.rawItemId ?? 0}
+			`;
+			expect(rows[0]?.collection_run_id).toBe(collectionRunId);
+		} finally {
+			await sql`delete from raw_items where collection_run_id = ${collectionRunId}`;
+			await sql`delete from collection_runs where collection_run_id = ${collectionRunId}`;
+		}
+	});
+
+	it("stores the same record twice in one batch only once", async () => {
+		const duplicate = collected(`${suffix}-dup`);
+		const refs = await upsertRawItems(sql, [duplicate, duplicate]);
+		expect(refs).toHaveLength(2);
+		expect(refs[0]?.rawItemId).toBe(refs[1]?.rawItemId);
+		// Only the first occurrence may claim to have created the row.
+		expect(refs.map((r) => r.inserted)).toEqual([true, false]);
+	});
+
+	it("upserts a batch of normalized items, with the last write of an id winning", async () => {
+		const base = {
+			sourceType: "rss" as const,
+			trust: "UNTRUSTED_EXTERNAL_CONTENT" as const,
+			sourceName: "Example Feed",
+			summary: "normalized summary",
+			publishedAt: "2026-09-13T06:00:00.000Z",
+			metadata: {},
+		};
+		const many = Array.from({ length: 600 }, (_, i) => ({
+			...base,
+			id: `${suffix}-n${i}`,
+			title: `Title ${i}`,
+		}));
+		await upsertNormalizedItems(sql, lineage, [
+			...many,
+			{ ...base, id: `${suffix}-n0`, title: "Rewritten" },
+		]);
+
+		const stored = await getNormalizedItems(
+			sql,
+			lineage,
+			many.map((m) => m.id),
+		);
+		expect(stored).toHaveLength(600);
+		expect(stored.find((i) => i.id === `${suffix}-n0`)?.title).toBe("Rewritten");
+		// The timestamp survives the round trip as the exact ISO string it went in as.
+		expect(stored[0]?.publishedAt).toBe("2026-09-13T06:00:00.000Z");
+	});
+
+	it("upserts a batch of facts, with the last write of a fact id winning", async () => {
+		const facts = Array.from({ length: 600 }, (_, i) => ({
+			factId: `${suffix}-f${i}`,
+			kind: "crypto" as const,
+			label: `Series ${i}`,
+			value: i,
+			unit: "usd",
+			asOf: "2026-09-13T06:00:00.000Z",
+			sourceItemId: `${suffix}-src`,
+		}));
+		await upsertFacts(sql, lineage, [
+			...facts,
+			{ ...facts[0]!, value: 999, previousValue: 1, changePct: 0.5 },
+		]);
+
+		const stored = await getFacts(
+			sql,
+			lineage,
+			facts.map((f) => f.factId),
+		);
+		expect(stored).toHaveLength(600);
+		const first = stored.find((f) => f.factId === `${suffix}-f0`);
+		expect(first?.value).toBe(999);
+		expect(first?.previousValue).toBe(1);
+		expect(first?.asOf).toBe("2026-09-13T06:00:00.000Z");
 	});
 
 	it("tracks an emerging signal's age across sightings", async () => {

@@ -718,4 +718,100 @@ describe("collection success semantics", () => {
 		expect(summary.outcomes.find((o) => o.collectorId === "second")?.health).toBe("OK");
 		expect(store.items.size).toBe(1);
 	});
+
+	it("reports a collector whose run row cannot be written, and does not abort the pool", async () => {
+		// recordRun sat outside every try as well. One Postgres hiccup while a
+		// collector's row was being written rejected the whole pool, so ten
+		// working collectors became a failed run with half-persisted state.
+		const store = memoryStore();
+		const failing: CollectionStore = {
+			...store.store,
+			recordRun: async (collectionRunId, result, runId) => {
+				if (result.collectorId === "first") throw new Error("connection terminated unexpectedly");
+				await store.store.recordRun(collectionRunId, result, runId);
+			},
+		};
+
+		const summary = await runCollection({
+			store: failing,
+			since: SINCE,
+			now: () => NOW,
+			enabledSourceKeys: ["first", "second"],
+			entries: [
+				entry(fakeCollector({ id: "first", items: [collectedItem("rss", "a1")] }), "first"),
+				entry(
+					fakeCollector({ id: "second", sourceType: "hackernews", items: [collectedItem("hackernews", "h1")] }),
+					"second",
+				),
+			],
+		});
+
+		expect(summary.outcomes).toHaveLength(2);
+		const first = summary.outcomes.find((o) => o.collectorId === "first")!;
+		expect(first.health).toBe("FAILED");
+		expect(first.error).toContain("connection terminated");
+		// The row could not be opened, so nothing of that collector was persisted.
+		expect(store.items.size).toBe(1);
+		expect(summary.outcomes.find((o) => o.collectorId === "second")?.health).toBe("OK");
+	});
+
+	it("reports a collector whose cursor could not be advanced", async () => {
+		// The data is durable and the cursor is not, so the next run re-reads the
+		// window. That is the safe direction, but it is still a failed run.
+		const store = memoryStore();
+		const failing: CollectionStore = {
+			...store.store,
+			recordRun: async (collectionRunId, result, runId) => {
+				if (result.cursor !== undefined) throw new Error("cursor write failed");
+				await store.store.recordRun(collectionRunId, result, runId);
+			},
+		};
+
+		const summary = await runCollection({
+			store: failing,
+			since: SINCE,
+			now: () => NOW,
+			enabledSourceKeys: ["cursored"],
+			entries: [
+				entry(
+					fakeCollector({ id: "cursored", items: [collectedItem("rss", "a1")], cursor: "2026-09-13" }),
+					"cursored",
+				),
+			],
+		});
+
+		const outcome = summary.outcomes.find((o) => o.collectorId === "cursored")!;
+		expect(outcome.health).toBe("FAILED");
+		expect(outcome.error).toContain("cursor write failed");
+		expect(outcome.cursorAdvanced).toBe(false);
+		expect(store.cursors.get("cursored")).toBeUndefined();
+		// The items themselves did land; only the cursor did not move.
+		expect(store.items.size).toBe(1);
+		expect(outcome.itemsInserted).toBe(1);
+	});
+
+	it("reports a collector whose secret lookup throws", async () => {
+		const store = memoryStore();
+		const summary = await runCollection({
+			store: store.store,
+			since: SINCE,
+			now: () => NOW,
+			enabledSourceKeys: ["needs-secret"],
+			secrets: {
+				secret: async () => "unused",
+				hasSecret: async () => {
+					throw new Error("keychain is locked");
+				},
+			},
+			entries: [
+				entry(fakeCollector({ id: "needs-secret", requiredSecrets: ["SOME_TOKEN"] }), "needs-secret"),
+			],
+		});
+
+		const outcome = summary.outcomes.find((o) => o.collectorId === "needs-secret")!;
+		expect(outcome.health).toBe("FAILED");
+		expect(outcome.error).toContain("keychain is locked");
+		// The name of the failure, never the value of the credential.
+		expect(outcome.error).not.toContain("unused");
+	});
 });

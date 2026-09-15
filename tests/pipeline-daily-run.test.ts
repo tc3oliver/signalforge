@@ -235,6 +235,99 @@ describe.skipIf(!probe.available)("daily pipeline", () => {
 		}
 	});
 
+	it("stores one draft per run and records the verdict on it", async () => {
+		// saveDraft is append-only, so the PENDING save and the verdict save wrote
+		// the identical brief twice and the history claimed two editor attempts.
+		const draftLineage = testLineage("pipeline-draft");
+		try {
+			const result = await runDailyPipeline({
+				...baseOptions,
+				sql,
+				lineage: draftLineage,
+				collection,
+				driverFactory: workingDriverFactory(),
+			});
+			expect(result.state).toBe("PUBLISHED");
+
+			const drafts = await sql<{ draft_no: number; validation_status: string }[]>`
+				select draft_no, validation_status from daily_brief_drafts
+				where lineage = ${draftLineage} and date = ${DATE} order by draft_no
+			`;
+			expect(drafts).toHaveLength(1);
+			expect(drafts[0]?.validation_status).toBe("PASSED");
+		} finally {
+			await purgeLineage(sql, draftLineage);
+		}
+	});
+
+	it("reports a fallback on a run that then failed, not only on a published one", async () => {
+		// fallbackOccurred was set on the PUBLISHED path alone, so the runs where
+		// knowing a model had been swapped matters most reported none.
+		const fallbackLineage = testLineage("pipeline-fallback");
+		try {
+			const result = await runDailyPipeline({
+				...baseOptions,
+				sql,
+				lineage: fallbackLineage,
+				chain: MODEL_CHAIN.slice(0, 2),
+				collection,
+				driverFactory: createThrowingDriverFactory(new Error("model unavailable - quota exceeded")),
+			});
+			expect(result.state).toBe("CURATION_FAILED");
+			expect(result.attempts).toBeGreaterThan(1);
+			expect(result.fallbackOccurred).toBe(true);
+		} finally {
+			await purgeLineage(sql, fallbackLineage);
+		}
+	});
+
+	it("refuses to validate a day that has no stored draft instead of writing a new one", async () => {
+		// "--stage validate" used to fall through into a fresh EDITOR session, so
+		// asking to validate quietly spent a model run writing something new.
+		const validateLineage = testLineage("pipeline-validate");
+		try {
+			const collected = await runDailyPipeline({
+				...baseOptions,
+				sql,
+				lineage: validateLineage,
+				stage: "collect",
+				collection,
+				driverFactory: workingDriverFactory(),
+			});
+			expect(collected.state).toBe("COLLECTED");
+			const curated = await runDailyPipeline({
+				...baseOptions,
+				sql,
+				lineage: validateLineage,
+				runId: collected.runId,
+				stage: "curate",
+				collection,
+				driverFactory: workingDriverFactory(),
+			});
+			expect(curated.state).toBe("MATERIALS_READY");
+
+			await expect(
+				runDailyPipeline({
+					...baseOptions,
+					sql,
+					lineage: validateLineage,
+					runId: curated.runId,
+					stage: "validate",
+					collection,
+					driverFactory: workingDriverFactory(),
+				}),
+			).rejects.toThrow(/No draft stored/);
+
+			const drafts = await sql<{ n: string }[]>`
+				select count(*)::text as n from daily_brief_drafts
+				where lineage = ${validateLineage} and date = ${DATE}
+			`;
+			expect(drafts[0]?.n).toBe("0");
+		} finally {
+			await purgeLineage(sql, validateLineage);
+		}
+	});
+
 	it("bounds a turn that never returns, using the configured stage timeout", async () => {
 		/*
 		 * The tuning in config/agent.yaml was read by nothing, so no limit

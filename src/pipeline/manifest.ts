@@ -1,4 +1,5 @@
-import type { Sql } from "../db/client.ts";
+import { ISO_FMT, type Sql } from "../db/client.ts";
+import { type ItemRow, toItem } from "../db/items.ts";
 import type { StructuredFact } from "../schemas/fact.ts";
 import type { NormalizedItem } from "../schemas/item.ts";
 import { DailyManifest } from "../schemas/manifest.ts";
@@ -16,8 +17,6 @@ import { localDayWindow, reportingZone } from "../runtime/local-day.ts";
  * encodes.
  */
 
-const ISO = 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"';
-
 export interface ManifestWindow {
 	/** Inclusive lower bound. */
 	from: Date;
@@ -34,18 +33,6 @@ export interface ManifestWindow {
  */
 export function dayWindow(date: string, zone: string = reportingZone()): ManifestWindow {
 	return localDayWindow(date, zone);
-}
-
-interface ItemRow {
-	item_id: string;
-	source_type: string;
-	source_name: string;
-	title: string;
-	summary: string;
-	content: string | null;
-	url: string | null;
-	published_at: string;
-	metadata: Record<string, unknown>;
 }
 
 interface FactRow {
@@ -133,27 +120,16 @@ export async function buildManifestFromDb(options: BuildManifestOptions): Promis
 			limit ${limit}
 		)
 		select item_id, source_type, source_name, title, summary, content, url,
-			to_char(published_at at time zone 'utc', ${ISO}) as published_at, metadata
+			to_char(published_at at time zone 'utc', ${ISO_FMT}) as published_at, metadata
 		from candidate
 		order by published_at, item_id
 	`;
 
-	const items: NormalizedItem[] = itemRows.map((r) => ({
-		id: r.item_id,
-		trust: "UNTRUSTED_EXTERNAL_CONTENT",
-		sourceType: r.source_type as NormalizedItem["sourceType"],
-		sourceName: r.source_name,
-		title: r.title,
-		summary: r.summary,
-		...(r.content === null ? {} : { content: r.content }),
-		...(r.url === null ? {} : { url: r.url }),
-		publishedAt: r.published_at,
-		metadata: r.metadata,
-	}));
+	const items: NormalizedItem[] = itemRows.map(toItem);
 
 	const factRows = await options.sql<FactRow[]>`
 		select fact_id, kind, label, value, unit,
-			to_char(as_of at time zone 'utc', ${ISO}) as as_of,
+			to_char(as_of at time zone 'utc', ${ISO_FMT}) as as_of,
 			source_item_id, previous_value, change_pct
 		from structured_facts
 		where lineage = ${options.lineage}

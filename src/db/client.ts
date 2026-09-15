@@ -134,3 +134,16 @@ export async function assertReachable(sql: Sql): Promise<void> {
 export function jsonParam(sql: Sql, value: unknown): ReturnType<Sql["json"]> {
 	return sql.json(value as Parameters<Sql["json"]>[0]);
 }
+
+/**
+ * The one timestamp format this schema reads back. Timestamps are carried as
+ * ISO strings end to end, so every `to_char` in the repository modules has to
+ * agree on the same pattern; it lived as a copy in each of them and a single
+ * edited copy would have silently changed one reader's output.
+ *
+ * `ISO_FMT` is the bare pattern, for a value sent as a bound parameter inside a
+ * tagged template. `ISO` is the same pattern with SQL string quotes, for a
+ * pattern inlined into a `sql.unsafe` query text.
+ */
+export const ISO_FMT = 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"';
+export const ISO = `'${ISO_FMT}'`;

@@ -62,6 +62,19 @@ describe.skipIf(!probe.available)("migrations", () => {
 		}
 	});
 
+	it("indexes the columns the pipeline filters on every run", async () => {
+		const rows = await sql<{ indexname: string }[]>`
+			select indexname from pg_indexes where schemaname = ${SCHEMA}
+		`;
+		const indexes = new Set(rows.map((r) => r.indexname));
+		// raw_items.collection_run_id carried no index at all, so every provenance
+		// lookup scanned the append-only table.
+		expect(indexes).toContain("raw_items_collection_run_idx");
+		// The manifest filters facts by lineage and an as_of range with no kind,
+		// which the leading (lineage, kind) index cannot serve.
+		expect(indexes).toContain("structured_facts_as_of_idx");
+	});
+
 	it("is re-runnable: a second pass applies nothing", async () => {
 		const second = await migrate(sql);
 		expect(second.applied).toEqual([]);

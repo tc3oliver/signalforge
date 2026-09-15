@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { scrubSecrets } from "../runtime/redact.ts";
 import type {
 	CollectedFact,
 	CollectedItem,
@@ -25,6 +26,7 @@ import type { Sql } from "../db/client.ts";
 import { listCollectorStatus, recordCollectionRun, upsertSourceConfig } from "../db/collector-health.ts";
 import { upsertFacts } from "../db/facts.ts";
 import { type RawItemRef, upsertNormalizedItems, upsertRawItems } from "../db/items.ts";
+import { mapWithConcurrency } from "../collectors/http.ts";
 import type { StructuredFact } from "../schemas/fact.ts";
 import type { NormalizedItem } from "../schemas/item.ts";
 
@@ -245,6 +247,12 @@ export interface CollectionOptions {
 	entries?: readonly RegistryEntry[];
 	/** Defaults to `config/sources.yaml`. */
 	enabledSourceKeys?: readonly string[];
+	/**
+	 * Cursor per collector id. Defaults to reading them from the store; a
+	 * caller that runs collection in more than one pass resolves them once and
+	 * passes them in, so the same table is not read for every pass.
+	 */
+	cursors?: ReadonlyMap<string, string | undefined>;
 	secrets?: SecretAccess;
 	/** Defaults to the real config on disk; tests inject one so they stay hermetic. */
 	appConfig?: AppConfig;
@@ -358,24 +366,6 @@ async function withDeadline<T>(
 	}
 }
 
-async function pool<T>(
-	tasks: readonly (() => Promise<T>)[],
-	concurrency: number,
-): Promise<T[]> {
-	const results: T[] = new Array(tasks.length);
-	let next = 0;
-	const workers = Array.from({ length: Math.min(concurrency, tasks.length) }, async () => {
-		for (;;) {
-			const index = next++;
-			const task = tasks[index];
-			if (!task) return;
-			results[index] = await task();
-		}
-	});
-	await Promise.all(workers);
-	return results;
-}
-
 function disabledResult(
 	collectorId: string,
 	reason: string,
@@ -414,22 +404,65 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
 	const enabledKeys = new Set(
 		options.enabledSourceKeys ?? resolveEnabledSources(appConfig),
 	);
-	const cursors = await options.store.loadCursors();
+	const cursors = options.cursors ?? (await options.store.loadCursors());
 	/** arXiv ids seen this run; the Semantic Scholar enrichment worklist. */
 	const arxivExternalIds: string[] = [];
 
-	const outcomes = await pool(
-		entries.map((entry) => async (): Promise<CollectorOutcome> => {
+	const outcomes = await mapWithConcurrency(
+		entries,
+		options.concurrency ?? DEFAULT_CONCURRENCY,
+		async (entry): Promise<CollectorOutcome> => {
 			const { collector } = entry;
 			const collectionRunId = randomUUID();
 			const enabled = enabledKeys.has(entry.sourceKey);
+
+			const base = {
+				collectorId: collector.id,
+				sourceType: collector.sourceType,
+				collectionRunId,
+			};
+
+			/**
+			 * This collector could not do its job. Every store failure below turns
+			 * into one of these rather than a rejection, because the pool does not
+			 * catch and a rejecting task takes the other ten collectors with it.
+			 */
+			const failure = (message: string, over: Partial<CollectorOutcome> = {}): CollectorOutcome => ({
+				...base,
+				health: "FAILED",
+				itemsFetched: 0,
+				itemsInserted: 0,
+				factsInserted: 0,
+				warnings: [],
+				error: message,
+				cursorAdvanced: false,
+				latencyMs: 0,
+				...over,
+			});
+
 			/*
-			 * Registration used to sit outside every try in this task, and `pool`
-			 * does not catch: one transient failure here took all ten collectors
-			 * down with it and left the in-flight ones half-persisted. It is also
-			 * the first await, so a throw produced no row at all -- the source
-			 * simply was not in the run, which is the one failure shape this
-			 * pipeline must never have.
+			 * Writing the collection_runs row is a database call like any other, and
+			 * it used to sit outside every try in this task. One Postgres hiccup
+			 * while a collector was being recorded therefore rejected the whole
+			 * pool: ten working collectors became a failed run, with whatever the
+			 * in-flight ones had already persisted left behind. Returns the message
+			 * instead of throwing so each call site can decide what the outcome is.
+			 */
+			const record = async (result: CollectorResult): Promise<string | undefined> => {
+				try {
+					await options.store.recordRun(collectionRunId, result, options.runId);
+					return undefined;
+				} catch (err) {
+					const message = scrubSecrets(err instanceof Error ? err.message : String(err));
+					log("collector run record failed", { collector: collector.id, error: message });
+					return message;
+				}
+			};
+
+			/*
+			 * Registration is the first await, so a throw here produced no row at
+			 * all -- the source simply was not in the run, which is the one failure
+			 * shape this pipeline must never have.
 			 */
 			try {
 				await options.store.registerCollector({
@@ -439,40 +472,29 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
 					requiredSecrets: collector.requiredSecrets,
 				});
 			} catch (err) {
-				const message = err instanceof Error ? err.message : String(err);
+				const message = scrubSecrets(err instanceof Error ? err.message : String(err));
 				log("collector registration failed", { collector: collector.id, error: message });
-				return {
-					collectorId: collector.id,
-					sourceType: collector.sourceType,
-					collectionRunId,
-					health: "FAILED",
-					itemsFetched: 0,
-					itemsInserted: 0,
-					factsInserted: 0,
-					warnings: [],
-					error: message,
-					cursorAdvanced: false,
-					latencyMs: 0,
-				};
+				return failure(message);
 			}
-
-			const base = {
-				collectorId: collector.id,
-				sourceType: collector.sourceType,
-				collectionRunId,
-			};
 
 			if (!enabled) {
 				const reason = `disabled for source "${entry.sourceKey}" in config/sources.yaml`;
 				const at = now().toISOString();
-				await options.store.recordRun(collectionRunId, disabledResult(collector.id, reason, at), options.runId);
+				const recordError = await record(disabledResult(collector.id, reason, at));
+				/*
+				 * A bookkeeping write that fails does not change the collector's
+				 * verdict: this source is switched off, and reporting FAILED instead
+				 * would name a deliberately disabled collector as unavailable in the
+				 * run's degraded reason, and make the "every enabled collector
+				 * returned zero items" check count a source that never ran.
+				 */
 				return {
 					...base,
 					health: "DISABLED",
 					itemsFetched: 0,
 					itemsInserted: 0,
 					factsInserted: 0,
-					warnings: [reason],
+					warnings: recordError === undefined ? [reason] : [reason, `run row not written: ${recordError}`],
 					disabledReason: reason,
 					cursorAdvanced: false,
 					latencyMs: 0,
@@ -482,20 +504,35 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
 			// A missing credential is an operational fact, not a run failure: the
 			// source is simply not available today and says so.
 			const missing: string[] = [];
-			for (const name of collector.requiredSecrets) {
-				if (!(await secrets.hasSecret(name))) missing.push(name);
+			try {
+				for (const name of collector.requiredSecrets) {
+					if (!(await secrets.hasSecret(name))) missing.push(name);
+				}
+			} catch (err) {
+				// The resolver itself broke (a locked Keychain, a missing file). The
+				// name is safe to log; the value is never read here.
+				const message = scrubSecrets(err instanceof Error ? err.message : String(err));
+				log("secret lookup failed", { collector: collector.id, error: message });
+				return failure(message);
 			}
 			if (missing.length > 0) {
 				const reason = `missing required secret(s): ${missing.join(", ")}`;
 				const at = now().toISOString();
-				await options.store.recordRun(collectionRunId, disabledResult(collector.id, reason, at), options.runId);
+				const recordError = await record(disabledResult(collector.id, reason, at));
+				/*
+				 * A bookkeeping write that fails does not change the collector's
+				 * verdict: this source is switched off, and reporting FAILED instead
+				 * would name a deliberately disabled collector as unavailable in the
+				 * run's degraded reason, and make the "every enabled collector
+				 * returned zero items" check count a source that never ran.
+				 */
 				return {
 					...base,
 					health: "DISABLED",
 					itemsFetched: 0,
 					itemsInserted: 0,
 					factsInserted: 0,
-					warnings: [reason],
+					warnings: recordError === undefined ? [reason] : [reason, `run row not written: ${recordError}`],
 					disabledReason: reason,
 					cursorAdvanced: false,
 					latencyMs: 0,
@@ -530,7 +567,7 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
 				);
 			} catch (err) {
 				const finishedAt = now();
-				const message = err instanceof Error ? err.message : String(err);
+				const message = scrubSecrets(err instanceof Error ? err.message : String(err));
 				const failed: CollectorResult = {
 					collectorId: collector.id,
 					health: "FAILED",
@@ -545,41 +582,46 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
 				};
 				// No cursor is passed on, so the next run re-reads from the last good
 				// position rather than skipping whatever this attempt missed.
-				await options.store.recordRun(collectionRunId, { ...failed, cursor: undefined }, options.runId);
+				const recordError = await record({ ...failed, cursor: undefined });
 				log("collector failed", { collector: collector.id, error: message });
-				return {
-					...base,
-					health: "FAILED",
-					itemsFetched: 0,
-					itemsInserted: 0,
-					factsInserted: 0,
-					warnings: [],
-					error: message,
-					cursorAdvanced: false,
-					latencyMs: failed.latencyMs,
-				};
+				return failure(
+					recordError === undefined
+						? message
+						: message + '; and its run row could not be written: ' + recordError,
+					{ latencyMs: failed.latencyMs },
+				);
 			}
 
 			if (result.health === "FAILED") {
-				await options.store.recordRun(collectionRunId, { ...result, cursor: undefined }, options.runId);
-				return {
-					...base,
-					health: "FAILED",
-					itemsFetched: result.itemsFetched,
-					itemsInserted: 0,
-					factsInserted: 0,
-					warnings: result.warnings,
-					...(result.error === undefined ? {} : { error: result.error }),
-					cursorAdvanced: false,
-					latencyMs: result.latencyMs,
-				};
+				const recordError = await record({ ...result, cursor: undefined });
+				/*
+				 * Both failures matter and they are not interchangeable. The
+				 * collector's own error is what an operator acts on; the bookkeeping
+				 * failure explains why the run row does not say so. Reporting only
+				 * the second would lose the 401 that actually stopped the collector.
+				 */
+				const collectorError = result.error ?? "collector reported FAILED";
+				return failure(
+					recordError === undefined
+						? collectorError
+						: `${collectorError}; and its run row could not be written: ${recordError}`,
+					{
+						itemsFetched: result.itemsFetched,
+						warnings: result.warnings,
+						latencyMs: result.latencyMs,
+					},
+				);
 			}
 
 			// The collection_runs row has to exist before raw items can reference it,
 			// but it is written WITHOUT the cursor first: the cursor is only
 			// advanced once the data it describes is durably stored, so a crash
 			// half way through persistence re-reads the same window next time.
-			await options.store.recordRun(collectionRunId, { ...result, cursor: undefined }, options.runId);
+			const openError = await record({ ...result, cursor: undefined });
+			// Nothing may be persisted without that row: raw_items references it.
+			if (openError) {
+				return failure(openError, { itemsFetched: result.itemsFetched, latencyMs: result.latencyMs });
+			}
 
 			let inserted = 0;
 			let factsInserted = 0;
@@ -626,24 +668,32 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
 				await options.store.persistFacts(facts);
 				factsInserted = facts.length;
 			} catch (err) {
-				const message = err instanceof Error ? err.message : String(err);
+				const message = scrubSecrets(err instanceof Error ? err.message : String(err));
 				log("collector persistence failed", { collector: collector.id, error: message });
-				return {
-					...base,
-					health: "FAILED",
+				return failure(message, {
 					itemsFetched: result.itemsFetched,
-					itemsInserted: 0,
-					factsInserted: 0,
 					warnings: result.warnings,
-					error: message,
-					cursorAdvanced: false,
 					latencyMs: result.latencyMs,
-				};
+				});
 			}
 
 			// Everything landed: now the cursor may move.
+			let cursorAdvanced = false;
 			if (result.cursor !== undefined) {
-				await options.store.recordRun(collectionRunId, result, options.runId);
+				const cursorError = await record(result);
+				if (cursorError) {
+					// The data is durable and the cursor is not, so the next run re-reads
+					// this window. That is the safe direction, but it is still a failure
+					// of this collector's run and has to be visible as one.
+					return failure(cursorError, {
+						itemsFetched: result.itemsFetched,
+						itemsInserted: inserted,
+						factsInserted,
+						warnings: [...result.warnings, ...persistWarnings],
+						latencyMs: result.latencyMs,
+					});
+				}
+				cursorAdvanced = true;
 			}
 
 			return {
@@ -654,11 +704,10 @@ export async function runCollection(options: CollectionOptions): Promise<Collect
 				factsInserted,
 				warnings: [...result.warnings, ...persistWarnings],
 				...(result.error === undefined ? {} : { error: result.error }),
-				cursorAdvanced: result.cursor !== undefined,
+				cursorAdvanced,
 				latencyMs: result.latencyMs,
 			};
-		}),
-		options.concurrency ?? DEFAULT_CONCURRENCY,
+		},
 	);
 
 	const active = outcomes.filter((o) => o.health !== "DISABLED");
@@ -744,19 +793,29 @@ export async function runCollectionForDay(
 ): Promise<CollectionSummary> {
 	if (options.entries) return runCollection(options);
 
-	const arxivEntry = buildRegistry().find((e) => e.sourceKey === "arxiv")!;
-	const first = await runCollection({ ...options, entries: [arxivEntry] });
+	/*
+	 * One resolution for both passes. The config file was read from disk up to
+	 * three times and the cursor table queried twice for what is one run, and
+	 * the two passes disagreeing about either would be a genuinely confusing
+	 * failure -- the second half of a run built against a different config than
+	 * the first.
+	 */
+	const appConfig = options.appConfig ?? loadConfig();
+	const enabledSourceKeys = options.enabledSourceKeys ?? resolveEnabledSources(appConfig);
+	const cursors = options.cursors ?? (await options.store.loadCursors());
+	const registry = buildRegistry();
+	const shared = { ...options, appConfig, enabledSourceKeys, cursors };
+
+	const arxivEntry = registry.find((e) => e.sourceKey === "arxiv")!;
+	const first = await runCollection({ ...shared, entries: [arxivEntry] });
 	const arxivIds = first.arxivExternalIds;
 
 	const rest = await runCollection({
-		...options,
+		...shared,
 		entries: buildRegistry({ arxivIds }).filter((e) => e.sourceKey !== "arxiv"),
 	});
 
-	const missing = unimplementedOutcomes(
-		options.enabledSourceKeys ?? resolveEnabledSources(options.appConfig ?? loadConfig()),
-		buildRegistry(),
-	);
+	const missing = unimplementedOutcomes(enabledSourceKeys, registry);
 
 	// The two passes are halves of one run, so emptiness is only real when both
 	// halves are empty -- and the suspicion that follows from it has to be

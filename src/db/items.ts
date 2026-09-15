@@ -1,13 +1,6 @@
 import type { CollectedItem } from "../collectors/types.ts";
 import type { NormalizedItem } from "../schemas/item.ts";
-import { jsonParam, type Sql } from "./client.ts";
-
-/*
- * Passed as a bind parameter rather than inlined: `sql.unsafe(query, params)`
- * hands jsonb back as raw text, so every read that returns a jsonb column has
- * to go through a tagged template.
- */
-const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
+import { ISO, type Sql } from "./client.ts";
 
 export interface RawItemRef {
 	rawItemId: number;
@@ -17,48 +10,99 @@ export interface RawItemRef {
 }
 
 /**
+ * How many rows go into one `unnest` statement. A collection run brings back
+ * thousands of records, and one statement per record was thousands of round
+ * trips inside a single transaction; a bounded chunk keeps the parameter arrays
+ * small enough for the write to stay predictable.
+ */
+const CHUNK = 500;
+
+function chunked<T>(items: readonly T[], size = CHUNK): T[][] {
+	const out: T[][] = [];
+	for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+	return out;
+}
+
+/** `source_type` is a closed enum with no colon in it, so this key is unambiguous. */
+const refKey = (sourceType: string, externalId: string): string => `${sourceType}::${externalId}`;
+
+/**
  * Append-only ingest. UNIQUE(source_type, external_id) makes a re-collection of
  * the same window a no-op, so a collector may be re-run without duplicating.
+ *
+ * Written in chunks through `unnest`. The insert returns the rows it actually
+ * created and one follow-up select resolves the ids of the rows that conflicted,
+ * which is the distinction the `inserted` flag on each ref carries.
  */
 export async function upsertRawItems(
 	sql: Sql,
 	items: readonly CollectedItem[],
 	collectionRunId?: string,
 ): Promise<RawItemRef[]> {
-	const out: RawItemRef[] = [];
-	if (items.length === 0) return out;
+	if (items.length === 0) return [];
+	const resolved = new Map<string, { rawItemId: number; inserted: boolean }>();
 	await sql.begin(async (tx) => {
-		for (const item of items) {
-			const rows = await tx.unsafe<{ raw_item_id: string; inserted: boolean }[]>(
-				`with ins as (
-					insert into raw_items (collection_run_id, source_type, source_name, external_id, body, fetched_at)
-					values ($1,$2,$3,$4,$5::jsonb,$6::timestamptz)
-					on conflict (source_type, external_id) do nothing
-					returning raw_item_id
-				)
-				select raw_item_id::text as raw_item_id, true as inserted from ins
-				union all
-				select raw_item_id::text, false from raw_items
-				where source_type = $2 and external_id = $4 and not exists (select 1 from ins)`,
+		for (const chunk of chunked(items)) {
+			const inserted = await tx.unsafe<
+				{ raw_item_id: string; source_type: string; external_id: string }[]
+			>(
+				`insert into raw_items (collection_run_id, source_type, source_name, external_id, body, fetched_at)
+				 select $1::text, t.source_type, t.source_name, t.external_id, t.body::jsonb, t.fetched_at
+				 from unnest($2::text[], $3::text[], $4::text[], $5::text[], $6::timestamptz[])
+					as t(source_type, source_name, external_id, body, fetched_at)
+				 on conflict (source_type, external_id) do nothing
+				 returning raw_item_id::text as raw_item_id, source_type, external_id`,
 				[
 					collectionRunId ?? null,
-					item.sourceType,
-					item.sourceName,
-					item.raw.externalId,
-					jsonParam(sql, item.raw.body ?? null),
-					item.raw.fetchedAt,
+					chunk.map((i) => i.sourceType),
+					chunk.map((i) => i.sourceName),
+					chunk.map((i) => i.raw.externalId),
+					chunk.map((i) => JSON.stringify(i.raw.body ?? null)),
+					chunk.map((i) => i.raw.fetchedAt),
 				],
 			);
-			const row = rows[0];
-			if (!row) continue;
-			out.push({
-				rawItemId: Number(row.raw_item_id),
-				sourceType: item.sourceType,
-				externalId: item.raw.externalId,
-				inserted: row.inserted,
-			});
+			for (const row of inserted) {
+				resolved.set(refKey(row.source_type, row.external_id), {
+					rawItemId: Number(row.raw_item_id),
+					inserted: true,
+				});
+			}
+			const missing = chunk.filter((i) => !resolved.has(refKey(i.sourceType, i.raw.externalId)));
+			if (missing.length === 0) continue;
+			const existing = await tx.unsafe<
+				{ raw_item_id: string; source_type: string; external_id: string }[]
+			>(
+				`select r.raw_item_id::text as raw_item_id, r.source_type, r.external_id
+				 from raw_items r
+				 join unnest($1::text[], $2::text[]) as t(source_type, external_id)
+					on t.source_type = r.source_type and t.external_id = r.external_id`,
+				[missing.map((i) => i.sourceType), missing.map((i) => i.raw.externalId)],
+			);
+			for (const row of existing) {
+				resolved.set(refKey(row.source_type, row.external_id), {
+					rawItemId: Number(row.raw_item_id),
+					inserted: false,
+				});
+			}
 		}
 	});
+
+	const out: RawItemRef[] = [];
+	const seen = new Set<string>();
+	for (const item of items) {
+		const key = refKey(item.sourceType, item.raw.externalId);
+		const row = resolved.get(key);
+		if (!row) continue;
+		out.push({
+			rawItemId: row.rawItemId,
+			sourceType: item.sourceType,
+			externalId: item.raw.externalId,
+			// The same record twice in one batch is stored once, so only its first
+			// occurrence can claim to have created the row.
+			inserted: row.inserted && !seen.has(key),
+		});
+		seen.add(key);
+	}
 	return out;
 }
 
@@ -73,18 +117,32 @@ export interface NormalizedItemWrite extends NormalizedItem {
 	embedding?: readonly number[];
 }
 
+/**
+ * Chunked `unnest` upsert. `on conflict do update` may not touch the same row
+ * twice in one statement, so an id repeated within the batch is collapsed to its
+ * last occurrence first — which is exactly what the per-row loop did by
+ * overwriting.
+ */
 export async function upsertNormalizedItems(
 	sql: Sql,
 	lineage: string,
 	items: readonly NormalizedItemWrite[],
 ): Promise<void> {
 	if (items.length === 0) return;
+	const byId = new Map<string, NormalizedItemWrite>();
+	for (const item of items) byId.set(item.id, item);
+	const unique = [...byId.values()];
 	await sql.begin(async (tx) => {
-		for (const item of items) {
+		for (const chunk of chunked(unique)) {
 			await tx.unsafe(
 				`insert into normalized_items (lineage, item_id, raw_item_id, source_type, source_name,
 					title, summary, content, url, published_at, metadata, embedding)
-				 values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::timestamptz,$11::jsonb,$12::vector)
+				 select $1, t.item_id, t.raw_item_id, t.source_type, t.source_name, t.title, t.summary,
+					t.content, t.url, t.published_at, t.metadata::jsonb, t.embedding::vector
+				 from unnest($2::text[], $3::bigint[], $4::text[], $5::text[], $6::text[], $7::text[],
+					$8::text[], $9::text[], $10::timestamptz[], $11::text[], $12::text[])
+					as t(item_id, raw_item_id, source_type, source_name, title, summary, content, url,
+						published_at, metadata, embedding)
 				 on conflict (lineage, item_id) do update set
 					raw_item_id = coalesce(excluded.raw_item_id, normalized_items.raw_item_id),
 					source_type = excluded.source_type,
@@ -98,49 +156,22 @@ export async function upsertNormalizedItems(
 					embedding = coalesce(excluded.embedding, normalized_items.embedding),
 					updated_at = now()`,
 				[
-					lineage, item.id, item.rawItemId ?? null, item.sourceType, item.sourceName,
-					item.title, item.summary, item.content ?? null, item.url ?? null,
-					item.publishedAt, jsonParam(sql, item.metadata ?? {}),
-					item.embedding ? `[${item.embedding.join(",")}]` : null,
+					lineage,
+					chunk.map((i) => i.id),
+					chunk.map((i) => i.rawItemId ?? null),
+					chunk.map((i) => i.sourceType),
+					chunk.map((i) => i.sourceName),
+					chunk.map((i) => i.title),
+					chunk.map((i) => i.summary),
+					chunk.map((i) => i.content ?? null),
+					chunk.map((i) => i.url ?? null),
+					chunk.map((i) => i.publishedAt),
+					chunk.map((i) => JSON.stringify(i.metadata ?? {})),
+					chunk.map((i) => (i.embedding ? `[${i.embedding.join(",")}]` : null)),
 				],
 			);
 		}
 	});
-}
-
-export async function getNormalizedItem(
-	sql: Sql,
-	lineage: string,
-	itemId: string,
-): Promise<NormalizedItem | undefined> {
-	const rows = await sql<
-		{
-			item_id: string; source_type: string; source_name: string; title: string;
-			summary: string; content: string | null; url: string | null;
-			published_at: string; metadata: Record<string, unknown>;
-		}[]
-	>`
-		select item_id, source_type, source_name, title, summary, content, url,
-			to_char(published_at at time zone 'utc', ${ISO}) as published_at, metadata
-		from normalized_items where lineage = ${lineage} and item_id = ${itemId}
-	`;
-	const r = rows[0];
-	if (!r) return undefined;
-	return {
-		id: r.item_id,
-		// Set here rather than stored: it has been true of every row in this table
-		// since the column list was written, so a read cannot get it wrong and an
-		// older row cannot lose it.
-		trust: "UNTRUSTED_EXTERNAL_CONTENT",
-		sourceType: r.source_type as NormalizedItem["sourceType"],
-		sourceName: r.source_name,
-		title: r.title,
-		summary: r.summary,
-		...(r.content === null ? {} : { content: r.content }),
-		...(r.url === null ? {} : { url: r.url }),
-		publishedAt: r.published_at,
-		metadata: r.metadata,
-	};
 }
 
 /** Lexical candidate search. The same-event call stays with the curator agent. */
@@ -167,13 +198,13 @@ export async function searchNormalizedItems(
 const ITEM_COLUMNS = `item_id, source_type, source_name, title, summary, content, url,
 	to_char(published_at at time zone 'utc', ${ISO}) as published_at, metadata`;
 
-interface ItemRow {
+export interface ItemRow {
 	item_id: string; source_type: string; source_name: string; title: string;
 	summary: string; content: string | null; url: string | null;
 	published_at: string; metadata: Record<string, unknown>;
 }
 
-function toItem(r: ItemRow): NormalizedItem {
+export function toItem(r: ItemRow): NormalizedItem {
 	return {
 		id: r.item_id,
 		// Set here rather than stored: it has been true of every row in this table
@@ -207,6 +238,21 @@ export async function getNormalizedItems(
 		[lineage, itemIds as string[]],
 	);
 	return rows.map(toItem);
+}
+
+/**
+ * Single-id read. It delegates rather than carrying a second copy of the column
+ * list and the row mapping: the copy it used to carry had drifted, passing the
+ * quoted `to_char` pattern as a bind parameter so the quotes landed in the
+ * returned timestamp.
+ */
+export async function getNormalizedItem(
+	sql: Sql,
+	lineage: string,
+	itemId: string,
+): Promise<NormalizedItem | undefined> {
+	const items = await getNormalizedItems(sql, lineage, [itemId]);
+	return items[0];
 }
 
 export interface ItemProvenance {

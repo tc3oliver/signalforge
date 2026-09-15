@@ -1,7 +1,5 @@
 import type { AgentAttempt, RunState, Stage } from "../schemas/run.ts";
-import { jsonParam, type Sql } from "./client.ts";
-
-const ISO = `'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'`;
+import { ISO, jsonParam, type Sql } from "./client.ts";
 
 /** Re-running a stage must not create a second run row for the same runId. */
 export async function upsertRun(
