@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- SignalForge: the noise that was read (grey, left) becoming the one
+       signal that remains (blue, right). Ground and blue match the reader's
+       dark text colour and accent, so the tab icon reads as the same product. -->
+  <rect width="32" height="32" rx="7" fill="#15181c"/>
+  <path d="M4 16.5 l2 -1.8 2 2.6 2 -2.2 2 1.6 2 -1.4" fill="none" stroke="#7d8593" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/>
+  <path d="M14 16.5 h3.2 l2.3 -8.5 2.3 15.5 2.3 -7 H28" fill="none" stroke="#5b8cff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
