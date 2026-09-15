@@ -3,7 +3,7 @@ import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { loadEvalInput } from "../src/eval/evaluator.ts";
+import { evaluate, loadEvalInput } from "../src/eval/evaluator.ts";
 
 const DATE = "2026-09-12";
 
@@ -163,5 +163,51 @@ describe("loadEvalInput — structured output retries", () => {
 
 	it("reports no retries when the run never recorded an attempt", () => {
 		expect(load().structuredOutputRetriesNeeded).toBe(0);
+	});
+});
+
+/*
+ * `loadEvalInput`'s own docstring promises that "a brief that fails its schema
+ * is still evaluated, with schema_validity recording the fact, because 'the
+ * model produced garbage' is a result and not a crash". It did the opposite: an
+ * unchecked cast handed the metrics a brief with no `stories`, and
+ * `briefStoryViews` threw on `.map` before any metric was computed -- so the run
+ * produced no evaluation.json, no MANUAL_REVIEW.md and no schema_validity: FAIL.
+ * The one input the report exists to describe was the one that killed it.
+ */
+describe("loadEvalInput — a brief that fails its schema", () => {
+	it("is scored as invalid rather than crashing the evaluation", () => {
+		writeJson(join(runDir, "brief.json"), { date: DATE });
+
+		const input = load();
+		expect(input.briefSchemaValid).toBe(false);
+		expect(input.brief.stories).toEqual([]);
+
+		const report = evaluate(input);
+		const validity = report.metrics.find((m) => m.name === "schema_validity");
+		expect(validity?.pass).toBe(false);
+		expect(report.overallPass).toBe(false);
+	});
+
+	it("survives a brief.json that is not an object at all", () => {
+		writeJson(join(runDir, "brief.json"), "not a brief");
+
+		const input = load();
+		expect(input.briefSchemaValid).toBe(false);
+		expect(() => evaluate(input)).not.toThrow();
+	});
+
+	it("keeps the stories of a brief that is merely missing another field", () => {
+		// Partial garbage is still evidence: whatever parsed has to survive, or
+		// every metric reads zero and the report blames the wrong thing.
+		writeJson(join(runDir, "brief.json"), {
+			date: DATE,
+			stories: [{ storyId: "s1", sourceItemIds: ["i1"], factRefs: [] }],
+		});
+
+		const input = load();
+		expect(input.briefSchemaValid).toBe(false);
+		expect(input.brief.stories).toHaveLength(1);
+		expect(input.brief.stories[0]?.storyId).toBe("s1");
 	});
 });

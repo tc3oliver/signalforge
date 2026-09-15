@@ -31,6 +31,31 @@ export interface LoadEvalInputOptions {
  * fails its schema is still evaluated, with `schema_validity` recording the fact,
  * because "the model produced garbage" is a result and not a crash.
  */
+/**
+ * Make an unparsable brief walkable without pretending it is valid.
+ *
+ * The cast this replaced -- `rawBrief as DailyBrief` -- was a lie the type
+ * system accepted and the metrics did not: `briefStoryViews` does
+ * `input.brief.stories.map(...)`, so a brief.json of `{"date":"..."}` threw
+ * `Cannot read properties of undefined (reading 'map')` and the run produced no
+ * evaluation.json, no MANUAL_REVIEW.md and no `schema_validity: FAIL` at all.
+ * The one input the report exists to describe was the one input that killed it.
+ *
+ * Only the arrays the evaluator walks are filled, and only when they are not
+ * already arrays. `briefSchemaValid` stays false, so the metric still records
+ * what happened; this just lets the other metrics reach their own conclusions
+ * about a brief that has no stories, which is the honest score of zero rather
+ * than an absent report.
+ */
+function coerceUnparsableBrief(raw: unknown): DailyBrief {
+	const source = (typeof raw === "object" && raw !== null ? raw : {}) as Partial<DailyBrief>;
+	return {
+		...source,
+		stories: Array.isArray(source.stories) ? source.stories : [],
+		emergingSignals: Array.isArray(source.emergingSignals) ? source.emergingSignals : [],
+	} as DailyBrief;
+}
+
 export function loadEvalInput(
 	runDir: string,
 	date: string,
@@ -44,7 +69,7 @@ export function loadEvalInput(
 
 	const rawBrief = readJson<unknown>(join(runDir, "brief.json"));
 	const parsed = DailyBrief.safeParse(rawBrief);
-	const brief = parsed.success ? parsed.data : (rawBrief as DailyBrief);
+	const brief = parsed.success ? parsed.data : coerceUnparsableBrief(rawBrief);
 
 	const retries = readRetryCount(runDir);
 
