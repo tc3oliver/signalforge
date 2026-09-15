@@ -372,7 +372,114 @@ describe("GitHubCollector narrowing", () => {
 		const collector = new GitHubCollector({ repos: [REPO] });
 		const result = await collector.collect(makeCtx({ hasSecret: async () => true }, baseHandlers() as unknown as typeof fetch));
 		const cursor = JSON.parse(result.cursor as string) as Record<string, { issuesSince?: string }>;
-		expect(cursor[REPO]?.issuesSince).toBe("2026-09-13T00:00:00.000Z");
+		// Advanced, but never past what the page actually contained: the newest
+		// updated_at on it, not the local clock at the moment the cursor was written.
+		expect(cursor[REPO]?.issuesSince).toBe("2026-09-12T00:00:00.000Z");
+	});
+
+	it("stamps the issues watermark from the response's own clock, not the local one", async () => {
+		const SERVER_DATE = "Sat, 12 Sep 2026 12:00:00 GMT";
+		const fetchImpl = vi.fn().mockImplementation(async (url: string) => {
+			if (url.includes("/releases")) return jsonResponse([], { "x-ratelimit-remaining": "100" });
+			if (url.includes("/tags")) return jsonResponse([], { "x-ratelimit-remaining": "100" });
+			if (url.includes("/issues")) {
+				return jsonResponse([], { "x-ratelimit-remaining": "100", date: SERVER_DATE });
+			}
+			throw new Error(`unexpected url ${url}`);
+		});
+		const collector = new GitHubCollector({ repos: [REPO] });
+		// The local clock is most of a day ahead of GitHub's. The old code wrote the local
+		// clock, so everything GitHub updated in that span was skipped forever.
+		const result = await collector.collect(
+			makeCtx({ hasSecret: async () => true, now: () => new Date("2026-09-13T00:00:00Z") }, fetchImpl as unknown as typeof fetch),
+		);
+
+		const cursor = JSON.parse(result.cursor as string) as Record<string, { issuesSince?: string }>;
+		expect(cursor[REPO]?.issuesSince).toBe(new Date(SERVER_DATE).toISOString());
+		expect(Date.parse(cursor[REPO]?.issuesSince as string)).toBeLessThanOrEqual(Date.parse(SERVER_DATE));
+	});
+
+	it("collects an issue updated between the response and the cursor write on the next run", async () => {
+		// GitHub builds the page at 12:00. The issue is updated at 12:00:30, i.e. after
+		// that page existed but before this process gets around to writing the cursor,
+		// which it does at 12:05 local time (a long body read, or the per-repo fan-out
+		// descheduling this task). The next run must still see the issue.
+		const PAGE_BUILT_AT = "Sat, 12 Sep 2026 12:00:00 GMT";
+		const LATE_UPDATE = "2026-09-12T12:00:30.000Z";
+		const CURSOR_WRITTEN_AT = new Date("2026-09-12T12:05:00Z");
+
+		const lateIssue = {
+			id: 200,
+			number: 7,
+			title: "Security hole",
+			body: "details",
+			html_url: "https://x/issues/7",
+			state: "open",
+			user: { login: "erin" },
+			created_at: "2026-09-12T11:00:00Z",
+			updated_at: LATE_UPDATE,
+			labels: ["security"],
+			reactions: { total_count: 0 },
+		};
+
+		const sinceParams: string[] = [];
+		const fetchImpl = vi.fn().mockImplementation(async (url: string) => {
+			if (url.includes("/releases")) return jsonResponse([], { "x-ratelimit-remaining": "100" });
+			if (url.includes("/tags")) return jsonResponse([], { "x-ratelimit-remaining": "100" });
+			if (url.includes("/issues")) {
+				const since = decodeURIComponent(new URL(url).searchParams.get("since") ?? "");
+				sinceParams.push(since);
+				// The server honours `since`: the late issue is only returned when the
+				// watermark did not already step over it.
+				const body = Date.parse(LATE_UPDATE) >= Date.parse(since) ? [lateIssue] : [];
+				return jsonResponse(body, { "x-ratelimit-remaining": "100", date: PAGE_BUILT_AT });
+			}
+			throw new Error(`unexpected url ${url}`);
+		});
+
+		const collector = new GitHubCollector({ repos: [REPO] });
+		const first = await collector.collect(
+			makeCtx({ hasSecret: async () => true, now: () => CURSOR_WRITTEN_AT }, fetchImpl as unknown as typeof fetch),
+		);
+
+		const cursor = JSON.parse(first.cursor as string) as Record<string, { issuesSince?: string }>;
+		const watermark = cursor[REPO]?.issuesSince as string;
+		// The watermark may never be ahead of the moment the server generated the page.
+		expect(Date.parse(watermark)).toBeLessThanOrEqual(Date.parse(PAGE_BUILT_AT));
+		expect(Date.parse(watermark)).toBeLessThanOrEqual(Date.parse(LATE_UPDATE));
+
+		const second = await collector.collect(
+			makeCtx(
+				{ hasSecret: async () => true, now: () => CURSOR_WRITTEN_AT, cursor: first.cursor },
+				fetchImpl as unknown as typeof fetch,
+			),
+		);
+		expect(second.items.map((i) => i.externalId)).toContain(`${REPO}#issue-7`);
+		expect(sinceParams[1]).toBe(watermark);
+	});
+
+	it("falls back to the time captured before the request when the response carries no usable clock", async () => {
+		const fetchImpl = vi.fn().mockImplementation(async (url: string) => {
+			if (url.includes("/releases")) return jsonResponse([], { "x-ratelimit-remaining": "100" });
+			if (url.includes("/tags")) return jsonResponse([], { "x-ratelimit-remaining": "100" });
+			// No usable Date header, and an empty page, so there is no updated_at either.
+			if (url.includes("/issues")) return jsonResponse([], { "x-ratelimit-remaining": "100", date: "not-a-date" });
+			throw new Error(`unexpected url ${url}`);
+		});
+
+		// now() advances on every call. A watermark taken after the body would land on a
+		// later tick than the one captured before the request went out.
+		const ticks = ["2026-09-13T00:00:00.000Z", "2026-09-13T00:10:00.000Z", "2026-09-13T00:20:00.000Z", "2026-09-13T00:30:00.000Z"];
+		let tick = 0;
+		const now = () => new Date(ticks[Math.min(tick++, ticks.length - 1)] as string);
+
+		const collector = new GitHubCollector({ repos: [REPO] });
+		const result = await collector.collect(makeCtx({ hasSecret: async () => true, now }, fetchImpl as unknown as typeof fetch));
+
+		const cursor = JSON.parse(result.cursor as string) as Record<string, { issuesSince?: string }>;
+		// startedAt consumes the first tick, so the pre-request capture is the second one.
+		// The old code took a tick after the body instead, landing on 00:20 or later.
+		expect(cursor[REPO]?.issuesSince).toBe("2026-09-13T00:10:00.000Z");
 	});
 });
 

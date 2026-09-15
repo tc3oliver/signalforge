@@ -232,6 +232,10 @@ export class GitHubCollector implements Collector {
 
 				const since = repoCursor.issuesSince ?? ctx.since.toISOString();
 				const issuesUrl = `${API_BASE}/repos/${repo}/issues?state=all&sort=updated&direction=desc&since=${encodeURIComponent(since)}&per_page=100`;
+				// Captured BEFORE the request goes out. Anything GitHub updates from this
+				// instant onwards cannot be in the response we are about to read, so this is
+				// the latest moment the watermark may ever fall back to.
+				const issuesRequestedAt = ctx.now().toISOString();
 				const issuesRes = await fetchWithRetry(issuesUrl, { headers }, {
 					fetchImpl: ctx.fetch,
 					signal: ctx.signal,
@@ -249,6 +253,9 @@ export class GitHubCollector implements Collector {
 				if (issuesRes) {
 					const remainingHeader = issuesRes.headers.get("x-ratelimit-remaining");
 					if (remainingHeader !== null && Number(remainingHeader) <= 1) outRateLimited = true;
+					// Read the response's own clock before the body, so the watermark cannot be
+					// contaminated by however long parsing and scheduling take.
+					const serverDate = issuesRes.headers.get("date");
 					const body = (await issuesRes.json()) as unknown;
 					if (Array.isArray(body)) {
 						for (const raw of body as GhIssue[]) {
@@ -257,7 +264,10 @@ export class GitHubCollector implements Collector {
 						}
 						// The watermark advances only when the window was actually read. Advancing it
 						// after a swallowed 429 silently skipped that window's issues forever.
-						outCursor = { ...outCursor, issuesSince: ctx.now().toISOString() };
+						outCursor = {
+							...outCursor,
+							issuesSince: nextIssuesSince(serverDate, body as GhIssue[], issuesRequestedAt),
+						};
 					} else {
 						outWarnings.push(`${repo}: unexpected issues payload shape (dropped)`);
 					}
@@ -308,6 +318,41 @@ export class GitHubCollector implements Collector {
 			latencyMs: Date.parse(finishedAt) - Date.parse(startedAt),
 		};
 	}
+}
+
+/**
+ * The `since` watermark the next run will use. It must never be ahead of what this
+ * run actually read: re-reading an issue costs nothing (ingest is idempotent on
+ * `(source_type, external_id)`), skipping one loses it forever.
+ *
+ * The old code stamped `ctx.now()` *after* awaiting the response body, so every
+ * issue GitHub updated between generating that page and that line was skipped on the
+ * next run. The gap is not theoretical: the per-repo fan-out can deschedule this task
+ * between the response and the cursor write, and skew between GitHub's clock and this
+ * machine's widens it in either direction.
+ *
+ * In preference order:
+ *  1. The response's `Date` header. That is GitHub's own clock at the moment it built
+ *     the page, so it is exact and immune to local skew.
+ *  2. The newest `updated_at` on the page. Every issue in the window is at or below
+ *     it, so nothing newer than what was read can be stepped over.
+ *  3. The time captured before the request was issued. Nothing GitHub changed from
+ *     then on can have been in the response, so it is always safe, only wasteful.
+ *
+ * Never a timestamp taken after the body was read.
+ */
+function nextIssuesSince(serverDate: string | null, page: readonly GhIssue[], requestedAt: string): string {
+	const fromHeader = serverDate === null ? Number.NaN : Date.parse(serverDate);
+	if (!Number.isNaN(fromHeader)) return new Date(fromHeader).toISOString();
+
+	let newest = Number.NaN;
+	for (const issue of page) {
+		const updated = Date.parse(issue?.updated_at ?? "");
+		if (!Number.isNaN(updated) && (Number.isNaN(newest) || updated > newest)) newest = updated;
+	}
+	if (!Number.isNaN(newest)) return new Date(newest).toISOString();
+
+	return requestedAt;
 }
 
 function dedupe(names: readonly string[]): string[] {

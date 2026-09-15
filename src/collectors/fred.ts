@@ -1,5 +1,5 @@
 import { scrubSecrets } from "../runtime/redact.ts";
-import { COLLECTOR_CONCURRENCY, HttpError, TokenBucket, fetchWithRetry, mapWithConcurrency } from "./http.ts";
+import { HttpError, TokenBucket, fetchWithRetry, mapWithConcurrency } from "./http.ts";
 import type { Collector, CollectorContext, CollectorResult, CollectedFact } from "./types.ts";
 
 const API_BASE = "https://api.stlouisfed.org/fred/series/observations";
@@ -72,6 +72,20 @@ export const fredCollector: Collector = {
 
 		const apiKey = await ctx.secret("FRED_API_KEY");
 		const bucket = new TokenBucket({ capacity: 2, refillPerSecond: 2 });
+		/*
+		 * Series fan-out runs two at a time, matching the bucket above rather than the
+		 * shared COLLECTOR_CONCURRENCY of 4.
+		 *
+		 * The bucket admits 2 requests/second sustained, so a fan-out of 4 bought nothing
+		 * past the opening burst: two workers would sit blocked in `bucket.take()` for the
+		 * whole run while the code read as though four series were in flight. Raising the
+		 * bucket instead would need a rate FRED actually permits, and no limit for this API
+		 * is documented anywhere in this repo, so a larger number would be a guess aimed at
+		 * the remote's throttle. Lowering the concurrency to what the bucket can feed keeps
+		 * throughput identical and stops the code implying parallelism it cannot deliver.
+		 * If a real documented limit turns up, raise both together.
+		 */
+		const FRED_CONCURRENCY = 2;
 		const series = (ctx.watchlists?.fred_series ?? []).map((s) => s.id);
 
 		const cursorIn = parseCursor(ctx.cursor);
@@ -82,7 +96,7 @@ export const fredCollector: Collector = {
 
 		// Series are independent observation fetches; run a few at once and fold the
 		// per-series output back in watchlist order so facts and messages stay deterministic.
-		const perSeries = await mapWithConcurrency(series, COLLECTOR_CONCURRENCY, async (seriesId) => {
+		const perSeries = await mapWithConcurrency(series, FRED_CONCURRENCY, async (seriesId) => {
 			const outFacts: CollectedFact[] = [];
 			const outProblems: string[] = [];
 			const outNotes: string[] = [];

@@ -244,7 +244,7 @@ describe("fredCollector concurrency", () => {
 		return url.match(/series_id=([^&]+)/)?.[1] ?? "";
 	}
 
-	it("polls several series at once, capped at the collector concurrency limit", async () => {
+	it("polls several series at once, capped at what this collector's rate bucket can feed", async () => {
 		let inFlight = 0;
 		let peak = 0;
 		const fetchImpl = vi.fn(async (input: unknown) => {
@@ -257,8 +257,11 @@ describe("fredCollector concurrency", () => {
 
 		const result = await runCollect(makeCtx({ secrets: { FRED_API_KEY: "key" }, fetch: fetchImpl as unknown as typeof fetch }));
 
+		// The bucket sustains 2 requests/second, so the fan-out is 2, not the shared
+		// COLLECTOR_CONCURRENCY of 4. A higher fan-out would only park extra workers in
+		// bucket.take() and advertise parallelism this collector cannot deliver.
 		expect(peak).toBeGreaterThan(1);
-		expect(peak).toBeLessThanOrEqual(4);
+		expect(peak).toBe(2);
 		expect(result.facts).toHaveLength(seriesIds.length);
 	});
 
