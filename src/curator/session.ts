@@ -93,7 +93,34 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 			: {}),
 	};
 
-	const tools = [...createCuratorTools(ctx), createSkillReferenceTool(bundle)];
+	// A submit_materials rejection reaches the model once, as a tool-error result.
+	// Capturing it here is what lets the next nudge — and the eventual failure —
+	// say what was actually wrong instead of "you have not submitted yet".
+	// `lastError` is cleared once fed back; `lastRejection` is kept for the error.
+	let lastError: string | undefined;
+	let lastRejection: string | undefined;
+	let rejectedSubmissions = 0;
+
+	const curatorTools = createCuratorTools(ctx).map((tool) => {
+		if (tool.name !== "submit_materials") return tool;
+		const inner = tool.execute.bind(tool);
+		return {
+			...tool,
+			execute: async (...args: Parameters<typeof inner>) => {
+				try {
+					return await inner(...args);
+				} catch (err) {
+					rejectedSubmissions += 1;
+					lastError = err instanceof Error ? err.message : String(err);
+					lastRejection = lastError;
+					opts.onEvent?.({ kind: "submit_rejected", stage: "CURATOR", error: lastError });
+					throw err;
+				}
+			},
+		};
+	});
+
+	const tools = [...curatorTools, createSkillReferenceTool(bundle)];
 
 	const systemPrompt = buildCuratorSystemPrompt({
 		date: opts.date,
@@ -152,11 +179,26 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 
 			// No new decisions since the last turn means the model is circling rather
 			// than working. Two of those is a tool loop, not a slow start.
+			//
+			// Only while coverage is incomplete, though: once every item has a
+			// decision this number is pinned at totalItems by definition, so a model
+			// iterating on a rejected payload would look stalled forever. That
+			// failure is a submission-shape failure, and the router has to be told
+			// so — a resume prompt would send it back to `list_unseen_items` when
+			// there is nothing unseen.
 			if (current.size === lastProgress) {
 				stalls += 1;
 				if (stalls >= 2) {
-					throw new ToolLoopError(
-						`Curator made no progress across ${stalls + 1} turns at ${current.size}/${opts.manifest.items.length} items decided`,
+					if (current.size < opts.manifest.items.length) {
+						throw new ToolLoopError(
+							`Curator made no progress across ${stalls + 1} turns at ${current.size}/${opts.manifest.items.length} items decided`,
+						);
+					}
+					throw new InvalidAgentOutputError(
+						`Curator scanned all ${opts.manifest.items.length} items but did not produce accepted materials across ${stalls + 1} turns (${rejectedSubmissions} rejected submissions)` +
+							(lastRejection
+								? `. Last rejection: ${lastRejection}`
+								: ". It never called submit_materials."),
 					);
 				}
 			} else {
@@ -173,12 +215,18 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 				total: opts.manifest.items.length,
 			});
 
+			// Consumed before the turn: the submit_materials wrapper sets `lastError`
+			// from inside it, so clearing afterwards would erase a rejection raised
+			// during this nudge before the next prompt could carry it.
+			const feedback = lastError;
+			lastError = undefined;
 			await withTurnTimeout(driver, "curator", opts.timeoutMs, () =>
 				driver.prompt(
 					buildCuratorNudgePrompt({
-					unseenItems: opts.manifest.items.length - current.size,
+						unseenItems: opts.manifest.items.length - current.size,
 						totalItems: opts.manifest.items.length,
 						storyCount: storyList.length,
+						lastError: feedback,
 					}),
 				),
 			);
@@ -188,7 +236,10 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 		if (!ctx.submitted) {
 			const current = await opts.repo.processedItemIds(opts.date);
 			throw new InvalidAgentOutputError(
-				`Curator did not call submit_materials after ${maxNudges} nudges (${current.size}/${opts.manifest.items.length} items decided)`,
+				`Curator did not produce accepted materials after ${maxNudges} nudges (${current.size}/${opts.manifest.items.length} items decided, ${rejectedSubmissions} rejected submissions)` +
+					(lastRejection
+						? `. Last rejection: ${lastRejection}`
+						: ". It never called submit_materials."),
 			);
 		}
 

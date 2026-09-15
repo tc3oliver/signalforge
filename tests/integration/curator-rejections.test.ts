@@ -226,7 +226,7 @@ describe("submit_materials rejections", () => {
 				mode: "FRESH",
 				maxNudges: 0,
 			}),
-		).rejects.toThrow(/did not call submit_materials after 0 nudges \(9\/10 items decided\)/);
+		).rejects.toThrow(/did not produce accepted materials after 0 nudges \(9\/10 items decided/);
 
 		expect((rejection as Error).message).toMatch(
 			/Scan coverage incomplete: 9 of 10 items processed, 1 still unseen/,

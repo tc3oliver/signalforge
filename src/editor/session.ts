@@ -136,10 +136,15 @@ export async function runEditorStage(opts: EditorStageOptions): Promise<EditorSt
 		while (!ctx.submitted && nudges < maxNudges) {
 			nudges += 1;
 			opts.onEvent?.({ kind: "nudge", stage: "EDITOR", attempt: nudges });
-			await withTurnTimeout(driver, "editor", opts.timeoutMs, () =>
-				driver.prompt(buildEditorNudgePrompt({ lastError })),
-			);
+			// Consume the feedback before the turn, never after: the submit_brief
+			// wrapper sets `lastError` from inside the turn, so clearing it afterwards
+			// would erase a rejection raised during this nudge and leave the next one
+			// telling a model that just failed validation nothing about why.
+			const feedback = lastError;
 			lastError = undefined;
+			await withTurnTimeout(driver, "editor", opts.timeoutMs, () =>
+				driver.prompt(buildEditorNudgePrompt({ lastError: feedback })),
+			);
 		}
 
 		if (!ctx.submitted) {
