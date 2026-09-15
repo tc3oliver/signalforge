@@ -263,7 +263,28 @@ async function loadKnownSignals(sql: Sql, lineage: string): Promise<KnownSignal[
  */
 export type { StageTuning };
 
+/**
+ * The pending-write queue is owned one level above the pipeline body, so that
+ * draining it is structural rather than a habit. `finish()` drains on every
+ * state a run can end in, but the body also throws outright — "No materials
+ * stored" and "No draft stored" — and those throws unwound straight past every
+ * drain. That left the invariant "no insert outlives the run" resting on the
+ * fact that nothing happens to have been queued yet on those two paths.
+ */
 export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyRunResult> {
+	const pendingWrites: Promise<void>[] = [];
+	try {
+		return await runPipelineBody(options, pendingWrites);
+	} finally {
+		await Promise.allSettled(pendingWrites.splice(0, pendingWrites.length));
+	}
+}
+
+/** `pendingWrites` is the fire-and-forget DB writes the body queues; the caller above drains it. */
+async function runPipelineBody(
+	options: DailyRunOptions,
+	pendingWrites: Promise<void>[],
+): Promise<DailyRunResult> {
 	const now = options.now ?? (() => new Date());
 	const lineage = options.lineage ?? process.env["DI_LINEAGE"] ?? "default";
 	const log = options.log ?? (() => {});
@@ -302,8 +323,6 @@ export async function runDailyPipeline(options: DailyRunOptions): Promise<DailyR
 	// a search_web fallback can both degrade the same day. Joined into the
 	// single `degraded_reason` column an operator reads on /admin/runs.
 	const degradedReasons: string[] = existing?.degradedReason ? [existing.degradedReason] : [];
-	/** Fire-and-forget DB writes that must still be finished before the run ends. */
-	const pendingWrites: Promise<void>[] = [];
 	const addDegradedReason = async (reason: string): Promise<void> => {
 		degraded = true;
 		degradedReasons.push(reason);

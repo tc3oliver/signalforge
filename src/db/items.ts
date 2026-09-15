@@ -27,6 +27,25 @@ function chunked<T>(items: readonly T[], size = CHUNK): T[][] {
 const refKey = (sourceType: string, externalId: string): string => `${sourceType}::${externalId}`;
 
 /**
+ * Lock order. A multi-row insert takes its speculative-insertion locks in the
+ * order the rows appear in the statement, so two writers whose batches overlap
+ * in different input orders can deadlock on each other — a risk the previous
+ * one-row-per-statement loop did not carry at this width. Sorting every batch by
+ * its conflict key before it is chunked makes any two writers acquire the same
+ * locks in the same order, so one simply waits.
+ *
+ * The caller's `RawItemRef[]` contract is unaffected: refs are rebuilt from the
+ * original `items` array, not from the sorted copy.
+ */
+function sortedByKey<T>(items: readonly T[], key: (item: T) => string): T[] {
+	return [...items].sort((a, b) => {
+		const ka = key(a);
+		const kb = key(b);
+		return ka < kb ? -1 : ka > kb ? 1 : 0;
+	});
+}
+
+/**
  * Append-only ingest. UNIQUE(source_type, external_id) makes a re-collection of
  * the same window a no-op, so a collector may be re-run without duplicating.
  *
@@ -42,7 +61,7 @@ export async function upsertRawItems(
 	if (items.length === 0) return [];
 	const resolved = new Map<string, { rawItemId: number; inserted: boolean }>();
 	await sql.begin(async (tx) => {
-		for (const chunk of chunked(items)) {
+		for (const chunk of chunked(sortedByKey(items, (i) => refKey(i.sourceType, i.raw.externalId)))) {
 			const inserted = await tx.unsafe<
 				{ raw_item_id: string; source_type: string; external_id: string }[]
 			>(
@@ -131,7 +150,7 @@ export async function upsertNormalizedItems(
 	if (items.length === 0) return;
 	const byId = new Map<string, NormalizedItemWrite>();
 	for (const item of items) byId.set(item.id, item);
-	const unique = [...byId.values()];
+	const unique = sortedByKey([...byId.values()], (i) => i.id);
 	await sql.begin(async (tx) => {
 		for (const chunk of chunked(unique)) {
 			await tx.unsafe(

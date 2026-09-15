@@ -32,15 +32,34 @@ export async function saveDraft(
 	];
 	const rows =
 		meta.draftNo === undefined
-			? await sql.unsafe<{ draft_no: number }[]>(
-					`insert into daily_brief_drafts (lineage, date, draft_no, run_id, body, produced_at,
-						validation_status, validation_errors)
-					 select $1, $2,
-						coalesce((select max(draft_no) from daily_brief_drafts where lineage = $1 and date = $2), 0) + 1,
-						$3, $4::jsonb, $5::timestamptz, $6, $7::jsonb
-					 returning draft_no`,
-					params,
-				)
+			? /*
+				 * The next draft number is read and written in one transaction under a
+				 * transaction-scoped advisory lock keyed on this lineage and date. The
+				 * read-then-insert is otherwise a plain race: two runs of the same day
+				 * both see max(draft_no) = N, both insert N+1, and one dies on the
+				 * (lineage, date, draft_no) primary key.
+				 *
+				 * An advisory lock rather than a retry loop on the unique violation:
+				 * the loser here should wait for its own number, not lose the draft it
+				 * spent a model run producing and have to re-send the whole body. The
+				 * lock is per day, so it serialises nothing except two writers racing
+				 * for the same day's next number, and it is released by the commit.
+				 */
+				await sql.begin(async (tx) => {
+					await tx.unsafe(`select pg_advisory_xact_lock(hashtextextended($1 || ':' || $2, 0))`, [
+						lineage,
+						date,
+					]);
+					return await tx.unsafe<{ draft_no: number }[]>(
+						`insert into daily_brief_drafts (lineage, date, draft_no, run_id, body, produced_at,
+							validation_status, validation_errors)
+						 select $1, $2,
+							coalesce((select max(draft_no) from daily_brief_drafts where lineage = $1 and date = $2), 0) + 1,
+							$3, $4::jsonb, $5::timestamptz, $6, $7::jsonb
+						 returning draft_no`,
+						params,
+					);
+				})
 			: /*
 				 * Only the verdict is written back. `run_id` and `produced_at` belong
 				 * to the attempt that authored this body: on a `--stage validate` of

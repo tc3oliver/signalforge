@@ -323,8 +323,67 @@ describe.skipIf(!probe.available)("daily pipeline", () => {
 				where lineage = ${validateLineage} and date = ${DATE}
 			`;
 			expect(drafts[0]?.n).toBe("0");
+
+			/*
+			 * That throw used to unwind straight out of the pipeline, past the
+			 * drain of the queued-write list -- so "no insert outlives the run"
+			 * held on this path only because nothing happens to be queued before
+			 * it. The drain is now a `finally` around the whole body. Measured
+			 * here as the run's write count being final the moment the caller sees
+			 * the rejection: a late insert would show up as a change.
+			 */
+			const attemptCount = async (): Promise<string | undefined> => {
+				const rows = await sql<{ n: string }[]>`
+					select count(*)::text as n from agent_attempts where run_id = ${curated.runId}
+				`;
+				return rows[0]?.n;
+			};
+			const atRejection = await attemptCount();
+			await new Promise((resolve) => setTimeout(resolve, 100));
+			expect(await attemptCount()).toBe(atRejection);
 		} finally {
 			await purgeLineage(sql, validateLineage);
+		}
+	});
+
+	it("refuses to write a day that has no stored materials, and ends cleanly", async () => {
+		// Sibling of the no-draft throw, and it left the run the same way: out of
+		// the function without draining the queued writes.
+		const writeLineage = testLineage("pipeline-write");
+		try {
+			await expect(
+				runDailyPipeline({
+					...baseOptions,
+					sql,
+					lineage: writeLineage,
+					stage: "write",
+					collection,
+					driverFactory: workingDriverFactory(),
+				}),
+			).rejects.toThrow(/No materials stored/);
+
+			const drafts = await sql<{ n: string }[]>`
+				select count(*)::text as n from daily_brief_drafts
+				where lineage = ${writeLineage} and date = ${DATE}
+			`;
+			expect(drafts[0]?.n).toBe("0");
+			const runs = await sql<{ run_id: string }[]>`
+				select run_id from daily_runs where lineage = ${writeLineage} and date = ${DATE}
+			`;
+			const runId = runs[0]?.run_id;
+			expect(runId).toBeDefined();
+			const attempts = await sql<{ n: string }[]>`
+				select count(*)::text as n from agent_attempts where run_id = ${runId ?? ""}
+			`;
+			await new Promise((resolve) => setTimeout(resolve, 100));
+			const later = await sql<{ n: string }[]>`
+				select count(*)::text as n from agent_attempts where run_id = ${runId ?? ""}
+			`;
+			// Nothing landed after the caller saw the error.
+			expect(later[0]?.n).toBe(attempts[0]?.n);
+		} finally {
+			await purgeLineage(sql, writeLineage);
+			await sql`delete from daily_runs where lineage = ${writeLineage}`;
 		}
 	});
 

@@ -44,7 +44,14 @@ export async function upsertFacts(
 	if (facts.length === 0) return;
 	const byId = new Map<string, StructuredFact>();
 	for (const f of facts) byId.set(f.factId, f);
-	const unique = [...byId.values()];
+	/*
+	 * Sorted by the conflict key before chunking. A multi-row upsert takes its
+	 * row locks in statement order, so two writers whose batches overlap in
+	 * different orders can deadlock on each other; one lock order removes that.
+	 */
+	const unique = [...byId.values()].sort((a, b) =>
+		a.factId < b.factId ? -1 : a.factId > b.factId ? 1 : 0,
+	);
 	await sql.begin(async (tx) => {
 		for (let i = 0; i < unique.length; i += CHUNK) {
 			const chunk = unique.slice(i, i + CHUNK);

@@ -147,6 +147,80 @@ describe.skipIf(!probe.available)("raw + normalized items", () => {
 		}
 	});
 
+	it("returns refs in input order for a chunk whose sorted order is the reverse", async () => {
+		// Each batch is sorted by its conflict key before it is written, so two
+		// writers overlapping in different input orders take their row locks in
+		// one order. The RawItemRef contract is unaffected by that: one ref per
+		// input item, in input order, with the right `inserted` flag.
+		const ids = Array.from({ length: 40 }, (_, i) => `${suffix}-r${String(i).padStart(3, "0")}`);
+		const reversed = ids.slice().reverse();
+
+		const refs = await upsertRawItems(
+			sql,
+			reversed.map((id) => collected(id)),
+		);
+		expect(refs.map((r) => r.externalId)).toEqual(reversed);
+		expect(refs.every((r) => r.inserted)).toBe(true);
+		expect(new Set(refs.map((r) => r.rawItemId)).size).toBe(40);
+
+		// raw_item_id is assigned in the order the rows reached the statement,
+		// which is sorted order and not input order — so the ids run downwards
+		// across the returned refs. That is the proof the sort took effect while
+		// the refs were still rebuilt from the caller's array.
+		const byInput = refs.map((r) => r.rawItemId);
+		expect(byInput.slice().reverse()).toEqual(byInput.slice().sort((x, y) => x - y));
+
+		// A second pass in the opposite (already sorted) order resolves the same
+		// rows, in its own input order, and claims none of them.
+		const again = await upsertRawItems(
+			sql,
+			ids.map((id) => collected(id)),
+		);
+		expect(again.map((r) => r.externalId)).toEqual(ids);
+		expect(again.some((r) => r.inserted)).toBe(false);
+		expect(again.map((r) => r.rawItemId)).toEqual(byInput.slice().reverse());
+	});
+
+	it("survives two writers upserting overlapping batches in opposite orders", async () => {
+		// Without a shared lock order these deadlock on speculative-insertion
+		// locks and Postgres kills one of them with "deadlock detected".
+		const other = createSql();
+		try {
+			const shared = Array.from({ length: 150 }, (_, i) =>
+				collected(`${suffix}-d${String(i).padStart(3, "0")}`),
+			);
+			const facts = Array.from({ length: 150 }, (_, i) => ({
+				factId: `${suffix}-cf${String(i).padStart(3, "0")}`,
+				kind: "crypto" as const,
+				label: `Series ${i}`,
+				value: i,
+				unit: "usd",
+				asOf: "2026-09-13T06:00:00.000Z",
+				sourceItemId: `${suffix}-src`,
+			}));
+
+			await Promise.all([
+				upsertRawItems(sql, shared),
+				upsertRawItems(other, shared.slice().reverse()),
+				upsertFacts(sql, lineage, facts),
+				upsertFacts(other, lineage, facts.slice().reverse()),
+			]);
+
+			const raw = await sql<{ n: string }[]>`
+				select count(*)::text as n from raw_items where external_id like ${`${suffix}-d%`}
+			`;
+			expect(raw[0]?.n).toBe("150");
+			const stored = await getFacts(
+				sql,
+				lineage,
+				facts.map((f) => f.factId),
+			);
+			expect(stored).toHaveLength(150);
+		} finally {
+			await other.end({ timeout: 5 });
+		}
+	});
+
 	it("stores the same record twice in one batch only once", async () => {
 		const duplicate = collected(`${suffix}-dup`);
 		const refs = await upsertRawItems(sql, [duplicate, duplicate]);
