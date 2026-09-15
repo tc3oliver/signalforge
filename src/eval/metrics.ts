@@ -4,6 +4,7 @@ import type { GoldTruth, MetricResult } from "../schemas/gold.ts";
 import type { DailyManifest } from "../schemas/manifest.ts";
 import type { DailyMaterials } from "../schemas/materials.ts";
 import type { StoryLedgerEntry } from "../schemas/story.ts";
+import { requiredMustKnowCount, requiredStoryCount } from "../validator/brief-validator.ts";
 import { matchStoriesToEvents, type MatchableStory, type StoryEventMatch } from "./matching.ts";
 
 export interface EvalInput {
@@ -29,7 +30,7 @@ function metric(
 	pass: boolean | null,
 	detail: string,
 ): MetricResult {
-	return { name, value, unit, threshold, comparator, pass, detail };
+	return { name, value, unit, threshold, thresholdMax: null, comparator, pass, detail };
 }
 
 function gte(name: string, value: number, threshold: number, unit: string, detail: string) {
@@ -42,8 +43,13 @@ function eq(name: string, value: number, threshold: number, detail: string) {
 	return metric(name, value, "flag", threshold, "eq", value === threshold, detail);
 }
 function range(name: string, value: number, min: number, max: number, detail: string) {
-	// `threshold` holds the lower bound; the bounds themselves live in `detail`.
-	return metric(name, value, "count", min, "range", value >= min && value <= max, detail);
+	// `threshold` holds the lower bound and `thresholdMax` the upper one. Both are
+	// carried on the result because the bounds are computed per day, so the report
+	// renderer has no way to reconstruct them from the metric name.
+	return {
+		...metric(name, value, "count", min, "range", value >= min && value <= max, detail),
+		thresholdMax: max,
+	};
 }
 
 function ratio(numerator: number, denominator: number): number | null {
@@ -206,12 +212,25 @@ interface ClusterCounts {
 	goldPairs: Set<string>;
 	predictedPairs: Set<string>;
 	truePositives: number;
+	/** The gold events the gold pairs were drawn from, named in every detail string. */
+	scoredEventIds: string[];
 }
 
+/**
+ * Both sides of the cluster score must be drawn from the same population.
+ *
+ * The prediction can only ever contain pairs from stories the curator promoted,
+ * and the curator is asked to leave `expectedImportant: false` events out. Gold
+ * pairs taken from every event therefore included pairs the run was correct to
+ * never form, so recall — and with it f1 — was capped below 1 for a flawless
+ * run: on the fixture days that ceiling was 0.918-0.959 against a 0.9 gate,
+ * which is a gate measuring the gold's shape rather than the model's.
+ */
 function clusterCounts(input: EvalInput, derived: EvalDerived): ClusterCounts {
 	const noise = new Set(input.gold.noiseItemIds);
+	const scoredEvents = input.gold.events.filter((e) => e.expectedImportant);
 	const goldPairs = new Set<string>();
-	for (const event of input.gold.events) {
+	for (const event of scoredEvents) {
 		for (const pair of pairsOf(event.itemIds, noise)) goldPairs.add(pair);
 	}
 	const predictedPairs = new Set<string>();
@@ -220,17 +239,17 @@ function clusterCounts(input: EvalInput, derived: EvalDerived): ClusterCounts {
 	}
 	let truePositives = 0;
 	for (const pair of predictedPairs) if (goldPairs.has(pair)) truePositives += 1;
-	return { goldPairs, predictedPairs, truePositives };
+	return { goldPairs, predictedPairs, truePositives, scoredEventIds: scoredEvents.map((e) => e.eventId) };
 }
 
 export function clusterMetrics(
 	input: EvalInput,
 	derived: EvalDerived = deriveEvalViews(input),
 ): MetricResult[] {
-	const { goldPairs, predictedPairs, truePositives } = clusterCounts(input, derived);
+	const { goldPairs, predictedPairs, truePositives, scoredEventIds } = clusterCounts(input, derived);
 	const precision = ratio(truePositives, predictedPairs.size);
 	const recall = ratio(truePositives, goldPairs.size);
-	const base = `TP=${truePositives}, predicted pairs=${predictedPairs.size}, gold pairs=${goldPairs.size} (noise items excluded)`;
+	const base = `TP=${truePositives}, predicted pairs=${predictedPairs.size}, gold pairs=${goldPairs.size} (noise items excluded; gold pairs counted over ${scoredEventIds.length}/${input.gold.events.length} expectedImportant events: ${scoredEventIds.join(", ") || "none"})`;
 
 	const precisionMetric = metric(
 		"cluster_precision",
@@ -432,14 +451,43 @@ export function finalDuplicateStories(input: EvalInput): MetricResult {
 	);
 }
 
+/**
+ * Both count gates defer to the validator's own bound functions rather than
+ * restating 8..15 and 3..5.
+ *
+ * The bounds are not constants: `requiredStoryCount` shrinks them to the
+ * material count on a quiet day. A day with five curated stories requires a
+ * five-story brief, the editor is rejected until it produces one, and a
+ * hardcoded 8..15 here then failed that brief for obeying the gate it was
+ * actually held to — the evaluator contradicting the validator about the same
+ * run. Calling the same functions makes the two unable to disagree.
+ */
 export function finalStoryCount(input: EvalInput): MetricResult {
 	const count = input.brief.stories.length;
-	return range("final_story_count", count, 8, 15, `${count} stories in the brief; allowed 8..15`);
+	const materialCount = input.materials.stories.length;
+	const { min, max } = requiredStoryCount(materialCount);
+	return range(
+		"final_story_count",
+		count,
+		min,
+		max,
+		`${count} stories in the brief; allowed ${min}..${max} for ${materialCount} curated stories`,
+	);
 }
 
 export function mustKnowCount(input: EvalInput): MetricResult {
 	const count = input.brief.stories.filter((s) => s.mustKnow).length;
-	return range("must_know_count", count, 3, 5, `${count} stories flagged mustKnow; allowed 3..5`);
+	const storyCount = input.brief.stories.length;
+	// The validator derives the Must Know bounds from the brief it is judging,
+	// not from the material count, so this reads brief.stories.length too.
+	const { min, max } = requiredMustKnowCount(storyCount);
+	return range(
+		"must_know_count",
+		count,
+		min,
+		max,
+		`${count} stories flagged mustKnow; allowed ${min}..${max} for a brief of ${storyCount} stories`,
+	);
 }
 
 export function schemaValidity(input: EvalInput): MetricResult {

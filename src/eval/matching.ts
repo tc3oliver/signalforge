@@ -39,10 +39,30 @@ function intersects(a: readonly string[], b: ReadonlySet<string>): boolean {
 	return false;
 }
 
+/** The one total ordering over candidate pairs: overlap first, then ids, so the
+ * same inputs always yield the same assignment and the same reported order. */
+function byPreference(a: StoryEventMatch, b: StoryEventMatch): number {
+	if (b.jaccard !== a.jaccard) return b.jaccard - a.jaccard;
+	if (a.eventId !== b.eventId) return a.eventId < b.eventId ? -1 : 1;
+	return a.storyId < b.storyId ? -1 : a.storyId > b.storyId ? 1 : 0;
+}
+
 /**
- * Greedy one-to-one assignment of produced stories to gold events by item-set
- * membership. Highest-overlap pairs win first; ties break on (eventId, storyId)
- * lexical order so the same inputs always produce the same assignment.
+ * Maximum one-to-one assignment of produced stories to gold events by item-set
+ * membership.
+ *
+ * This was greedy over candidates sorted by overlap, and greedy is not merely
+ * suboptimal here: a high-scoring pair could consume the only story an event was
+ * eligible for, leaving that event unmatched. `importantStoryRecall` and
+ * `selectedStoryPrecision` then charged the resulting miss to the model, which
+ * had in fact produced a story for every event. So the assignment now maximises
+ * the number of matched pairs (Kuhn's augmenting-path search -- the two sets are
+ * a day's worth of stories and events, so the cost is irrelevant).
+ *
+ * Determinism still matters more than which maximum is found, because the
+ * stability report compares assignments across lineages: events are processed
+ * best-overlap first and each event's candidates are tried in (jaccard desc,
+ * storyId) order, both derived from one total ordering of the candidate list.
  */
 export function matchStoriesToEvents(stories: MatchableStory[], gold: GoldTruth): MatchResult {
 	const storyItems = new Map<string, Set<string>>();
@@ -74,25 +94,61 @@ export function matchStoriesToEvents(stories: MatchableStory[], gold: GoldTruth)
 		}
 	}
 
-	candidates.sort((a, b) => {
-		if (b.jaccard !== a.jaccard) return b.jaccard - a.jaccard;
-		if (a.eventId !== b.eventId) return a.eventId < b.eventId ? -1 : 1;
-		return a.storyId < b.storyId ? -1 : a.storyId > b.storyId ? 1 : 0;
-	});
+	candidates.sort(byPreference);
 
-	const takenStories = new Set<string>();
-	const takenEvents = new Set<string>();
-	const matches: StoryEventMatch[] = [];
+	// Insertion order of this map is the event order the search uses: an event's
+	// first appearance in the sorted candidate list, i.e. best overlap first with
+	// eventId breaking ties. Each list is already (jaccard desc, storyId) sorted
+	// because the global comparator groups by eventId second.
+	const byEvent = new Map<string, StoryEventMatch[]>();
 	for (const candidate of candidates) {
-		if (takenStories.has(candidate.storyId) || takenEvents.has(candidate.eventId)) continue;
-		takenStories.add(candidate.storyId);
-		takenEvents.add(candidate.eventId);
-		matches.push(candidate);
+		const list = byEvent.get(candidate.eventId);
+		if (list) list.push(candidate);
+		else byEvent.set(candidate.eventId, [candidate]);
 	}
 
+	const matchByEvent = new Map<string, StoryEventMatch>();
+	const eventByStory = new Map<string, string>();
+
+	/**
+	 * Augmenting-path step, free stories first.
+	 *
+	 * The second loop is what makes the matching maximum, but running it alone
+	 * would let an event displace a holder that had no need to move, changing a
+	 * settled pairing for no gain in cardinality. Taking an unclaimed story when
+	 * one is available keeps the preferred pairing and leaves displacement as a
+	 * last resort.
+	 */
+	function augment(eventId: string, visited: Set<string>): boolean {
+		const list = byEvent.get(eventId) ?? [];
+		for (const candidate of list) {
+			if (visited.has(candidate.storyId)) continue;
+			if (eventByStory.has(candidate.storyId)) continue;
+			visited.add(candidate.storyId);
+			eventByStory.set(candidate.storyId, eventId);
+			matchByEvent.set(eventId, candidate);
+			return true;
+		}
+		for (const candidate of list) {
+			if (visited.has(candidate.storyId)) continue;
+			visited.add(candidate.storyId);
+			const holder = eventByStory.get(candidate.storyId);
+			if (holder !== undefined && augment(holder, visited)) {
+				eventByStory.set(candidate.storyId, eventId);
+				matchByEvent.set(eventId, candidate);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	for (const eventId of byEvent.keys()) augment(eventId, new Set<string>());
+
+	const matches = [...matchByEvent.values()].sort(byPreference);
+	const takenStories = new Set(eventByStory.keys());
 	return {
 		matches,
 		unmatchedStoryIds: stories.map((s) => s.storyId).filter((id) => !takenStories.has(id)),
-		unmatchedEventIds: gold.events.map((e) => e.eventId).filter((id) => !takenEvents.has(id)),
+		unmatchedEventIds: gold.events.map((e) => e.eventId).filter((id) => !matchByEvent.has(id)),
 	};
 }

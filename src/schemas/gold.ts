@@ -41,6 +41,14 @@ export const MetricResult = z
 		value: z.number().nullable(),
 		unit: z.string(),
 		threshold: z.number().nullable(),
+		/**
+		 * Upper bound of a "range" comparator, where `threshold` is the lower one.
+		 * The story/mustKnow bounds are computed per day from the material count
+		 * (see requiredStoryCount in the brief validator), so a report that wants
+		 * to print the range a gate actually applied has to be told it rather than
+		 * assuming the usual 8..15. Null for every other comparator.
+		 */
+		thresholdMax: z.number().nullable().default(null),
 		comparator: z.enum(["gte", "lte", "eq", "range", "none"]),
 		pass: z.boolean().nullable(),
 		detail: z.string().default(""),

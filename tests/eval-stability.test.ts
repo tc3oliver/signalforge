@@ -49,6 +49,7 @@ function ledgerEntry(partial: Partial<StoryLedgerEntry> & { storyId: string; sou
 		confidence: 0.9,
 		reason: "x",
 		factRefs: [],
+		topicIds: [],
 		...partial,
 	};
 }
@@ -168,6 +169,33 @@ describe("computeStability", () => {
 		const changeType = report.dates[0]!.metrics.find((m) => m.name === "change_type_stability");
 		expect(changeType?.mean).toBe(1);
 		expect(changeType?.pairs[0]?.detail).toContain("1/1");
+	});
+
+	it("reports must_know and emerging_signal stability as unmeasurable when neither run produced any", () => {
+		// Both runs agree on the story they published, but neither flagged a
+		// mustKnow story and neither cited an emerging signal. Scoring those 1.0
+		// was reporting agreement about a question no run answered, and the
+		// unweighted overall roll-up was carrying it.
+		const g = gold([goldEvent({ eventId: "e1", itemIds: ["i1", "i2"] })]);
+		const briefA = brief([briefStory({ storyId: "s1", sourceItemIds: ["i1", "i2"] })]);
+		const briefB = brief([briefStory({ storyId: "s1b", sourceItemIds: ["i1", "i2"] })]);
+		const ledgerA = [ledgerEntry({ storyId: "s1", sourceItemIds: ["i1", "i2"] })];
+		const ledgerB = [ledgerEntry({ storyId: "s1b", sourceItemIds: ["i1", "i2"] })];
+
+		const report = computeStability({
+			dates: [{ date: "2026-09-10", gold: g, runs: [run("a", briefA, ledgerA), run("b", briefB, ledgerB)] }],
+		});
+		const metrics = report.dates[0]!.metrics;
+		for (const name of ["must_know_stability", "emerging_signal_stability"]) {
+			const metric = metrics.find((m) => m.name === name);
+			expect(metric?.pairs[0]?.value, name).toBeNull();
+			expect(metric?.mean, name).toBeNull();
+			expect(metric?.pairs[0]?.detail, name).toContain("unmeasurable");
+			expect(report.overall.find((m) => m.name === name)?.mean, name).toBeNull();
+		}
+		// The metrics that were measurable are unaffected.
+		expect(metrics.find((m) => m.name === "core_story_selection_stability")?.mean).toBe(1);
+		expect(metrics.find((m) => m.name === "cluster_stability")?.mean).toBe(1);
 	});
 
 	it("computes the mean pairwise agreement over all pairs for three experiments", () => {

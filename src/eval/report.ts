@@ -15,7 +15,13 @@ function formatThreshold(metric: MetricResult): string {
 		case "eq":
 			return `== ${metric.threshold}`;
 		case "range":
-			return metric.name === "final_story_count" ? "8..15" : "3..5";
+			// The bounds are computed per day from the material count, so they can
+			// legitimately read 5..5 on a quiet day. Printing a fixed "8..15" here
+			// would put a range in evaluation.md that the gate above it never
+			// applied, which is the one thing a review document may not do.
+			return metric.thresholdMax === null
+				? `>= ${metric.threshold}`
+				: `${metric.threshold}..${metric.thresholdMax}`;
 		default:
 			return "—";
 	}

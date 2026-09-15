@@ -103,6 +103,27 @@ describe("matchStoriesToEvents", () => {
 		expect(reordered.matches).toEqual(first.matches);
 	});
 
+	it("does not let a strong pair strand an event whose only partner it took", () => {
+		// S1 overlaps E1 at 0.8 and E2 at 0.167 (rescued by carrying E2's primary
+		// item e); S2 overlaps E1 at 0.75 and E2 not at all. Taking the single best
+		// pair first consumed S1 and left E2 with nothing, and the evaluator then
+		// charged that miss to the model even though both events were covered.
+		const result = matchStoriesToEvents(
+			[story("S1", ["a", "b", "c", "d", "e"]), story("S2", ["a", "b", "c"])],
+			gold([
+				event({ eventId: "E1", itemIds: ["a", "b", "c", "d"], primaryItemIds: ["a"] }),
+				event({ eventId: "E2", itemIds: ["e", "f"], primaryItemIds: ["e"] }),
+			]),
+		);
+		expect(result.matches).toHaveLength(2);
+		expect(result.matches.map((m) => `${m.eventId}=${m.storyId}`).sort()).toEqual([
+			"E1=S2",
+			"E2=S1",
+		]);
+		expect(result.unmatchedEventIds).toEqual([]);
+		expect(result.unmatchedStoryIds).toEqual([]);
+	});
+
 	it("reports a story that matches nothing", () => {
 		const result = matchStoriesToEvents(
 			[story("s1", ["z1", "z2"]), story("s2", ["i1", "i2", "i3"])],

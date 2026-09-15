@@ -77,14 +77,39 @@ function briefStoryView(brief: DailyBrief, ledger: StoryLedgerEntry[]): Matchabl
 	}));
 }
 
-/** Jaccard that treats "both sides empty" as perfect agreement, not 0/0. */
-function jaccardOfSets(a: ReadonlySet<string>, b: ReadonlySet<string>): number {
-	if (a.size === 0 && b.size === 0) return 1;
+/**
+ * Jaccard over two sets, leaving the "both sides empty" case to the caller.
+ *
+ * Whether 0/0 is agreement depends on what the sets are. Two briefs that
+ * published the same zero stories really did agree; two briefs that both
+ * flagged zero mustKnow stories produced no evidence about mustKnow at all, and
+ * scoring that 1 was inflating `overall`, which is an unweighted mean over the
+ * per-metric means. Callers say which case they are in via {@link BothEmpty}.
+ */
+function jaccardOfSets(a: ReadonlySet<string>, b: ReadonlySet<string>): number | null {
+	if (a.size === 0 && b.size === 0) return null;
 	let intersection = 0;
 	for (const value of a) if (b.has(value)) intersection += 1;
 	const union = a.size + b.size - intersection;
-	return union === 0 ? 1 : intersection / union;
+	return union === 0 ? null : intersection / union;
 }
+
+/**
+ * What a pair where neither run produced anything means for this metric.
+ *
+ * `value: null` is the same answer `ratio()` in metrics.ts gives a zero
+ * denominator — excluded from `meanOf`, and so from the roll-up, instead of
+ * counted as a perfect score nothing was measured to earn.
+ */
+interface BothEmpty {
+	value: number | null;
+	detail: (a: PreparedRun, b: PreparedRun) => string;
+}
+
+const VACUOUS_AGREEMENT: BothEmpty = {
+	value: 1,
+	detail: (a, b) => `${a.experiment} and ${b.experiment} both published 0 identities; jaccard=1 (vacuous agreement)`,
+};
 
 function pairKey(a: string, b: string): string {
 	return a < b ? `${a}|${b}` : `${b}|${a}`;
@@ -164,15 +189,27 @@ function buildSetMetric(
 	runs: PreparedRun[],
 	setFor: (run: PreparedRun) => Set<string>,
 	detailFor: (a: PreparedRun, b: PreparedRun, value: number) => string,
+	bothEmpty: BothEmpty = VACUOUS_AGREEMENT,
 ): StabilityMetric {
 	const sets = new Map(runs.map((r) => [r.experiment, setFor(r)]));
 	const pairs: StabilityPair[] = pairsOfRuns(runs).map(([a, b]) => {
-		const value = jaccardOfSets(sets.get(a.experiment) as Set<string>, sets.get(b.experiment) as Set<string>);
+		const jaccard = jaccardOfSets(
+			sets.get(a.experiment) as Set<string>,
+			sets.get(b.experiment) as Set<string>,
+		);
+		if (jaccard === null) {
+			return {
+				experimentA: a.experiment,
+				experimentB: b.experiment,
+				value: bothEmpty.value,
+				detail: bothEmpty.detail(a, b),
+			};
+		}
 		return {
 			experimentA: a.experiment,
 			experimentB: b.experiment,
-			value,
-			detail: detailFor(a, b, value),
+			value: jaccard,
+			detail: detailFor(a, b, jaccard),
 		};
 	});
 	return { name, mean: meanOf(pairs.map((p) => p.value)), unit, pairs };
@@ -201,6 +238,14 @@ function mustKnowMetric(runs: PreparedRun[]): StabilityMetric {
 		mustKnowIds,
 		(a, b, value) =>
 			`${a.experiment} flagged ${mustKnowIds(a).size} mustKnow identities, ${b.experiment} flagged ${mustKnowIds(b).size}; jaccard=${value.toFixed(3)}`,
+		// Two runs that both flagged nothing tell us nothing about whether they
+		// pick the same Must Know stories, which is the only thing this metric
+		// exists to measure.
+		{
+			value: null,
+			detail: (a, b) =>
+				`neither ${a.experiment} nor ${b.experiment} flagged a mustKnow story; agreement is unmeasurable and this pair is excluded from the mean`,
+		},
 	);
 }
 
@@ -280,6 +325,14 @@ function emergingSignalMetric(runs: PreparedRun[]): StabilityMetric {
 		citedEvents,
 		(a, b, value) =>
 			`${a.experiment} cited ${citedEvents(a).size} identities in emergingSignals, ${b.experiment} cited ${citedEvents(b).size}; jaccard=${value.toFixed(3)}`,
+		// Same reason as must_know_stability: a run is allowed to emit no emerging
+		// signals, and two runs that both did have not agreed about which signals
+		// are emerging.
+		{
+			value: null,
+			detail: (a, b) =>
+				`neither ${a.experiment} nor ${b.experiment} cited a story in emergingSignals; agreement is unmeasurable and this pair is excluded from the mean`,
+		},
 	);
 }
 

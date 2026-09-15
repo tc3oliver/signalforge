@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { evaluate } from "../src/eval/evaluator.ts";
 import { computeMetrics, type EvalInput } from "../src/eval/metrics.ts";
+import { renderEvalMarkdown } from "../src/eval/report.ts";
 import type { DailyBrief, DailyBriefStory } from "../src/schemas/brief.ts";
 import type { ItemDecision } from "../src/schemas/decision.ts";
 import type { GoldEvent, GoldTruth, MetricResult } from "../src/schemas/gold.ts";
@@ -84,6 +85,7 @@ function ledger(): StoryLedgerEntry[] {
 		confidence: 0.9,
 		reason: "fixture",
 		factRefs: [],
+		topicIds: [],
 	}));
 }
 
@@ -103,6 +105,7 @@ function materials(): DailyMaterials {
 			sourceItemIds: items(n),
 			primarySourceIds: [`e${n}-a`],
 			factRefs: [],
+			topicIds: [],
 		})),
 		emergingSignals: [],
 		curatorNotes: "",
@@ -350,5 +353,84 @@ describe("metrics — null denominators", () => {
 		}
 		// A null-pass metric never contributes to failedGates.
 		expect(evaluate(input, "run-1").failedGates).not.toContain("cluster_f1");
+	});
+});
+
+/**
+ * A day on which the curator found only `n` genuine stories. The validator then
+ * requires exactly `n` stories and a Must Know floor scaled to them, and the
+ * editor is held to that, so the evaluator has to be measuring the same gate.
+ */
+function quietDayInput(n: number): EvalInput {
+	const input = perfectInput();
+	const keep = new Set(indices.slice(0, n).map((i) => `s${i}`));
+	input.materials.stories = input.materials.stories.filter((s) => keep.has(s.storyId));
+	input.ledger = input.ledger.filter((e) => keep.has(e.storyId));
+	input.brief.stories = input.brief.stories
+		.filter((s) => keep.has(s.storyId))
+		.map((s, idx) => ({ ...s, mustKnow: idx < 2 }));
+	input.gold.events = input.gold.events.filter((e) =>
+		keep.has(`s${e.eventId.replace("ev", "")}`),
+	);
+	return input;
+}
+
+describe("metrics — count gates track the validator's bounds", () => {
+	it("accepts a five-story brief on a day with five curated stories", () => {
+		const m = byName(computeMetrics(quietDayInput(5)));
+		const stories = m.get("final_story_count");
+		expect(stories?.value).toBe(5);
+		expect(stories?.threshold).toBe(5);
+		expect(stories?.thresholdMax).toBe(5);
+		expect(stories?.pass).toBe(true);
+
+		const mustKnow = m.get("must_know_count");
+		expect(mustKnow?.value).toBe(2);
+		expect(mustKnow?.threshold).toBe(2);
+		expect(mustKnow?.thresholdMax).toBe(5);
+		expect(mustKnow?.pass).toBe(true);
+	});
+
+	it("keeps the usual 8-story floor and 3..5 Must Know on a ten-story day", () => {
+		// Ten curated stories: the floor is the usual 8, and the ceiling is the ten
+		// that exist rather than the nominal 15.
+		const m = byName(computeMetrics(perfectInput()));
+		expect(m.get("final_story_count")?.threshold).toBe(8);
+		expect(m.get("final_story_count")?.thresholdMax).toBe(10);
+		expect(m.get("must_know_count")?.threshold).toBe(3);
+		expect(m.get("must_know_count")?.thresholdMax).toBe(5);
+	});
+
+	it("renders the bounds the gate actually applied, not a fixed string", () => {
+		const markdown = renderEvalMarkdown(evaluate(quietDayInput(5), "run-1"));
+		expect(markdown).toContain("| final_story_count | 5 | 5..5 | PASS |");
+		expect(markdown).toContain("| must_know_count | 2 | 2..5 | PASS |");
+		expect(markdown).not.toContain("8..15");
+	});
+});
+
+describe("metrics — cluster recall population", () => {
+	it("scores a flawless run at recall 1 despite an unimportant gold event", () => {
+		const input = perfectInput();
+		// The curator is asked to leave expectedImportant:false events out, so its
+		// pairs can never appear in the prediction; counting them in the gold
+		// denominator capped a perfect run below the 0.9 f1 gate.
+		input.gold.events = [
+			...input.gold.events,
+			{
+				eventId: "ev-minor",
+				canonicalTitle: "Minor event",
+				itemIds: ["m-a", "m-b", "m-c"],
+				primaryItemIds: ["m-a"],
+				expectedChangeType: "NEW" as const,
+				expectedImportant: false,
+				expectedSection: "AI_LLM" as const,
+			},
+		];
+		const m = byName(computeMetrics(input));
+		expect(m.get("cluster_recall")?.value).toBe(1);
+		expect(m.get("cluster_f1")?.value).toBe(1);
+		expect(m.get("cluster_recall")?.detail).toContain("10/11 expectedImportant events");
+		expect(m.get("cluster_recall")?.detail).not.toContain("ev-minor");
 	});
 });
