@@ -1,0 +1,90 @@
+/* story.css: page layout for story. Tokens, breakpoints and shared primitives are in ../globals.css. */
+
+/*
+ * One event, two kinds of content: the reading column (what happened, and how
+ * it changed day by day) and the reference column (where it came from, what it
+ * connects to). On a wide screen they sit side by side so the right half of the
+ * page is not empty; on a narrow one the reference column simply follows.
+ */
+
+.story-page > .story-main > h1 {
+	margin-top: 0;
+}
+
+.story-page .story-main > .meta {
+	margin-bottom: var(--space-1);
+}
+
+.story-page .story-main .field,
+.story-page .story-main > p {
+	max-width: var(--measure);
+}
+
+/* The timeline's per-day detail is quieter than the day's title. */
+.story-page .timeline .meta {
+	margin: var(--space-1) 0 0;
+}
+
+.story-internals {
+	margin-top: var(--space-2);
+	font-size: var(--fs-sm);
+}
+
+.story-internals > summary {
+	cursor: pointer;
+	color: var(--text-muted);
+	font-size: var(--fs-xs);
+}
+
+.story-internals > p {
+	margin: var(--space-1) 0 0;
+	max-width: var(--measure);
+}
+
+/* Aside sections: a heading with a hairline, then a hairline-separated list. */
+.story-aside h2 {
+	font-size: var(--fs-md);
+	margin: var(--space-6) 0 var(--space-3);
+	padding-bottom: var(--space-2);
+	border-bottom: 1px solid var(--border);
+}
+
+.story-aside > section:first-child h2 {
+	margin-top: 0;
+}
+
+.story-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.story-list > li {
+	padding: var(--space-3) 0;
+	border-bottom: 1px solid var(--border);
+	font-size: var(--fs-sm);
+}
+
+.story-list > li:last-child {
+	border-bottom: 0;
+}
+
+.story-list > li > .meta,
+.story-list > li > .host {
+	margin: var(--space-1) 0 0;
+}
+
+@media (min-width: 1024px) {
+	.story-page {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 18rem;
+		gap: var(--space-7);
+		align-items: start;
+	}
+
+	.story-aside {
+		position: sticky;
+		top: var(--space-5);
+		align-self: start;
+	}
+}

@@ -6,7 +6,7 @@ import { buildAnchors, buildBriefSections, type BriefSectionView } from "../lib/
 import { buildDashboard, type DashboardView, type StoryCardView } from "../lib/dashboard.ts";
 import { formatDateKey } from "../lib/format.ts";
 import type { BriefPageData } from "../lib/queries.ts";
-import { ChangeBadge, ConfidenceBadge, ImportanceBadge } from "./badges.tsx";
+import { ChangeBadge, ConfidenceBadge } from "./badges.tsx";
 import { MustKnowGrid } from "./dashboard/must-know.tsx";
 import { NewSinceMorning } from "./dashboard/new-since-morning.tsx";
 import { EmergingSignals } from "./dashboard/signal-card.tsx";
@@ -47,7 +47,6 @@ function StoryArticle({
 			</h3>
 			<p className="badges">
 				{story.mustKnow ? <span className="badge importance-high">必看</span> : null}
-				<ImportanceBadge level={card?.importance} />
 				<ChangeBadge type={card?.changeType} />
 				<ConfidenceBadge level={story.confidence} />
 			</p>

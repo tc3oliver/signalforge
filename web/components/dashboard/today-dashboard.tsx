@@ -28,7 +28,7 @@ export function TodayDashboard({ view }: { view: DashboardView }) {
 		<div className="dashboard">
 			<TodayHero view={view} />
 			<MustKnowGrid cards={view.mustKnow} />
-			<div className="two-up">
+			<div className="today-columns">
 				<WhatChanged rows={view.changes} />
 				<EmergingSignals signals={view.signals} />
 			</div>

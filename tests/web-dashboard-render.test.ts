@@ -132,7 +132,9 @@ describe("Today page markup", () => {
 	it("renders must-know as ranked cards with badges, one takeaway and a source count", () => {
 		expect(html).toContain(">01<");
 		expect(html).toContain(">02<");
-		expect(html).toContain("重要程度：</span>重要");
+		// Every card here is already one of the day's most important, so an
+		// importance chip on each one says nothing. The reader pages do not show it.
+		expect(html).not.toContain("重要程度");
 		expect(html).toContain(">新<");
 		expect(html).toContain(">更新<");
 		expect(html).toContain("External evaluation may become the norm.");

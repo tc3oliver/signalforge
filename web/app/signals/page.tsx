@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Tag } from "../../components/bits.tsx";
 import { loadSignals } from "../../lib/queries.ts";
 import {
 	confidenceLabel,
@@ -16,13 +15,6 @@ export const metadata = { title: "趨勢 — SignalForge" };
 
 /** Lifecycle order, strongest first; a fading signal belongs at the bottom. */
 const STATE_ORDER: readonly SignalState[] = ["confirmed", "strengthening", "emerging", "fading"];
-
-const STATE_TONE: Record<SignalState, "ok" | "accent" | "warn" | "neutral"> = {
-	confirmed: "ok",
-	strengthening: "accent",
-	emerging: "neutral",
-	fading: "warn",
-};
 
 export default async function SignalsPage() {
 	const { signals, storyTitles } = await loadSignals();
@@ -48,21 +40,23 @@ export default async function SignalsPage() {
 					<section key={state} aria-labelledby={`state-${state}`}>
 						<h2 id={`state-${state}`}>{signalStateLabel(state)}</h2>
 						{group.map((signal) => (
-							<article key={signal.signalId} className="panel">
-								<h3 style={{ marginTop: 0 }}>{signal.label}</h3>
+							<article key={signal.signalId} className="signal">
+								<h3>{signal.label}</h3>
 								<p className="meta">
-									<Tag tone={STATE_TONE[state]}>{signalStateLabel(signal.state)}</Tag>
+									<span className={`signal-state state-${signal.state}`}>
+										{signalStateLabel(signal.state)}
+									</span>
 									<span>{confidenceLabel(confidenceLevelFromScore(signal.confidence))}</span>
-									<span className="host">首次出現 {formatInstant(signal.firstSeenAt)}</span>
-									<span className="host">最近更新 {formatInstant(signal.lastSeenAt)}</span>
+									<span>首次出現 {formatInstant(signal.firstSeenAt)}</span>
+									<span>最近更新 {formatInstant(signal.lastSeenAt)}</span>
 								</p>
-								{signal.rationale ? <p>{signal.rationale}</p> : null}
+								{signal.rationale ? (
+									<p className="signal-rationale">{signal.rationale}</p>
+								) : null}
 								{signal.storyIds.length > 0 ? (
 									<>
-										<p className="field">
-											<span className="field-label">相關事件</span>
-										</p>
-										<ul className="plain tight">
+										<span className="signal-label">相關事件</span>
+										<ol className="timeline compact">
 											{signal.storyIds.map((storyId) => (
 												<li key={storyId}>
 													<Link href={`/story/${encodeURIComponent(storyId)}`}>
@@ -73,7 +67,7 @@ export default async function SignalsPage() {
 													)}
 												</li>
 											))}
-										</ul>
+										</ol>
 									</>
 								) : (
 									<p className="lede">這個趨勢目前還沒有連結到任何事件。</p>

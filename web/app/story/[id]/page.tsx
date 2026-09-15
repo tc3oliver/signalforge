@@ -2,13 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FactList } from "../../../components/facts.tsx";
 import { SourceList } from "../../../components/sources.tsx";
-import { Field, Tag } from "../../../components/bits.tsx";
-import { ChangeBadge, ConfidenceBadge, ImportanceBadge } from "../../../components/badges.tsx";
-import { importanceLevelFromScore } from "../../../lib/dashboard.ts";
+import { Field } from "../../../components/bits.tsx";
+import { ChangeBadge, ConfidenceBadge, changeClass } from "../../../components/badges.tsx";
+import { ADMIN_ENABLED } from "../../../lib/admin.ts";
 import type { ConfidenceLevel } from "../../../../src/schemas/brief.ts";
 import { loadStoryPage } from "../../../lib/queries.ts";
 import {
-	confidenceLabel,
 	confidenceLevelFromScore,
 	formatDateKey,
 	formatInstant,
@@ -43,150 +42,155 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 	const earlier = appearances.slice(1);
 
 	return (
-		<>
-			<h1>{latest.canonicalTitle}</h1>
-			<p className="dateline">
-				<span className="mono">{latest.storyId}</span> · 首次出現{" "}
-				{formatInstant(latest.firstSeenAt)} · 最近更新 {formatInstant(latest.lastSeenAt)}
-			</p>
-			<p className="meta">
-				<ImportanceBadge level={importanceLevelFromScore(latest.importance)} />
-				<ChangeBadge type={latest.changeType} />
-				<Tag>{storyStatusLabel(latest.status)}</Tag>
-				<ConfidenceBadge level={confidence} />
-				{published ? (
-					<Link href={`/brief/${published.date}`}>
-						收錄於 {formatDateKey(published.date)} · {sectionLabel(published.section)}
-					</Link>
-				) : (
-					<Tag tone="warn">尚未收錄到任何一天的重點</Tag>
-				)}
-			</p>
+		<article className="story-page">
+			<div className="story-main">
+				<h1>{latest.canonicalTitle}</h1>
+				<p className="meta">
+					<ChangeBadge type={latest.changeType} />
+					<span>{storyStatusLabel(latest.status)}</span>
+					<ConfidenceBadge level={confidence} />
+					{published ? (
+						<Link href={`/brief/${published.date}`}>
+							收錄於 {formatDateKey(published.date)} · {sectionLabel(published.section)}
+						</Link>
+					) : (
+						<span className="host">尚未收錄到任何一天的重點</span>
+					)}
+				</p>
+				<p className="dateline">
+					首次出現 {formatInstant(latest.firstSeenAt)} · 最近更新{" "}
+					{formatInstant(latest.lastSeenAt)}
+				</p>
 
-			<section aria-labelledby="story-summary">
-				<h2 id="story-summary">摘要</h2>
-				<Field label="發生了什麼">
-					{published ? published.whatHappened : latest.reason}
-				</Field>
-				{published ? (
-					<>
-						<Field label="為什麼值得注意">{published.whyItMatters}</Field>
-						<Field label="最新變化">{published.whatChanged}</Field>
-						<Field label="可能影響">{published.impact}</Field>
-					</>
-				) : (
-					<p className="lede">
-						這個事件有被追蹤，但沒有被選入任何一天的重點，所以沒有「為什麼值得注意」「最新變化」「可能影響」的內容。上面顯示的是篩選階段記錄的理由。
-					</p>
-				)}
-				<FactList factRefs={latest.factRefs} facts={facts} />
-			</section>
-
-			<section aria-labelledby="story-timeline">
-				<h2 id="story-timeline">時間線</h2>
-				<ol className="timeline">
-					{timeline.map((entry) => {
-						const appearance = appearances.find((a) => a.date === entry.date);
-						return (
-							<li key={entry.date}>
-								<strong>{formatDateKey(entry.date)}</strong>{" "}
-								<ChangeBadge type={entry.changeType} />{" "}
-								<Tag>{storyStatusLabel(entry.status)}</Tag>
-								<div>{entry.canonicalTitle}</div>
-								<div className="host">{entry.reason}</div>
-								<div className="meta">
-									<span className="host">重要性 {formatScore(entry.importance)}</span>
-									<span className="host">新穎度 {formatScore(entry.novelty)}</span>
-									<span className="host">可信度 {formatScore(entry.confidence)}</span>
-									<span>{entry.sourceItemIds.length} 個來源</span>
-									{appearance ? (
-										<Link href={`/brief/${entry.date}`}>
-											收錄於 {sectionLabel(appearance.section)}
-										</Link>
-									) : (
-										<span>當天未選入</span>
-									)}
-								</div>
-							</li>
-						);
-					})}
-				</ol>
-			</section>
-
-			{primarySources.length > 0 ? (
-				<section aria-labelledby="story-primary">
-					<h2 id="story-primary">主要來源</h2>
-					<SourceList items={primarySources} />
+				<section aria-labelledby="story-summary">
+					<h2 id="story-summary">摘要</h2>
+					<Field label="發生了什麼">
+						{published ? published.whatHappened : latest.reason}
+					</Field>
+					{published ? (
+						<>
+							<Field label="為什麼值得注意">{published.whyItMatters}</Field>
+							<Field label="最新變化">{published.whatChanged}</Field>
+							<Field label="可能影響">{published.impact}</Field>
+						</>
+					) : (
+						<p className="lede">
+							這個事件有被追蹤，但沒有被選入任何一天的重點，所以沒有「為什麼值得注意」「最新變化」「可能影響」的內容。上面顯示的是篩選階段記錄的理由。
+						</p>
+					)}
+					<FactList factRefs={latest.factRefs} facts={facts} />
 				</section>
-			) : null}
 
-			<section aria-labelledby="story-sources">
-				<h2 id="story-sources">全部來源</h2>
-				<SourceList items={allSources} unresolvedIds={data.unresolvedSourceIds} />
-			</section>
-
-			{signals.length > 0 ? (
-				<section aria-labelledby="story-signals">
-					<h2 id="story-signals">相關趨勢</h2>
-					<ul className="plain tight">
-						{signals.map((signal) => (
-							<li key={signal.signalId}>
-								<Link href="/signals">{signal.label}</Link>{" "}
-								<Tag>{signalStateLabel(signal.state)}</Tag>{" "}
-								<span className="host">{confidenceLabel(confidenceLevelFromScore(signal.confidence))}</span>
-							</li>
-						))}
-					</ul>
+				<section aria-labelledby="story-timeline">
+					<h2 id="story-timeline">時間線</h2>
+					<ol className="timeline">
+						{timeline.map((entry) => {
+							const appearance = appearances.find((a) => a.date === entry.date);
+							return (
+								<li key={entry.date} className={changeClass(entry.changeType)}>
+									<strong>{formatDateKey(entry.date)}</strong>{" "}
+									<ChangeBadge type={entry.changeType} />{" "}
+									<span className="host">{storyStatusLabel(entry.status)}</span>
+									<div>{entry.canonicalTitle}</div>
+									<div className="meta">
+										<span>{entry.sourceItemIds.length} 個來源</span>
+										{appearance ? (
+											<Link href={`/brief/${entry.date}`}>
+												收錄於 {sectionLabel(appearance.section)}
+											</Link>
+										) : (
+											<span>當天未選入</span>
+										)}
+									</div>
+									{ADMIN_ENABLED ? (
+										<details className="story-internals">
+											<summary>策展內部資料</summary>
+											<p className="host">{entry.reason}</p>
+											<p className="meta">
+												<span className="host">重要性 {formatScore(entry.importance)}</span>
+												<span className="host">新穎度 {formatScore(entry.novelty)}</span>
+												<span className="host">可信度 {formatScore(entry.confidence)}</span>
+											</p>
+										</details>
+									) : null}
+								</li>
+							);
+						})}
+					</ol>
 				</section>
-			) : null}
+			</div>
 
-			{related.length > 0 ? (
-				<section aria-labelledby="story-related">
-					<h2 id="story-related">相關事件</h2>
-					<div className="cards">
-						{related.map(({ entry, sharedItemCount, tokenOverlap }) => (
-							<div key={entry.storyId} className="card">
-								<h3>
+			<aside className="story-aside">
+				{primarySources.length > 0 ? (
+					<section aria-labelledby="story-primary">
+						<h2 id="story-primary">主要來源</h2>
+						<SourceList items={primarySources} />
+					</section>
+				) : null}
+
+				<section aria-labelledby="story-sources">
+					<h2 id="story-sources">全部來源</h2>
+					<SourceList items={allSources} unresolvedIds={data.unresolvedSourceIds} />
+				</section>
+
+				{signals.length > 0 ? (
+					<section aria-labelledby="story-signals">
+						<h2 id="story-signals">相關趨勢</h2>
+						<ul className="story-list">
+							{signals.map((signal) => (
+								<li key={signal.signalId}>
+									<Link href="/signals">{signal.label}</Link>{" "}
+									<span className="host">{signalStateLabel(signal.state)}</span>
+								</li>
+							))}
+						</ul>
+					</section>
+				) : null}
+
+				{related.length > 0 ? (
+					<section aria-labelledby="story-related">
+						<h2 id="story-related">相關事件</h2>
+						<ul className="story-list">
+							{related.map(({ entry, sharedItemCount }) => (
+								<li key={entry.storyId}>
 									<Link href={`/story/${encodeURIComponent(entry.storyId)}`}>
 										{entry.canonicalTitle}
 									</Link>
-								</h3>
-								<p className="meta">
-									<ChangeBadge type={entry.changeType} />
-									<span>{formatDateKey(entry.date)}</span>
-								</p>
-								<p className="host">
-									{sharedItemCount > 0
-										? `共用 ${sharedItemCount} 個來源項目`
-										: `標題與理由的詞彙重疊 ${formatScore(tokenOverlap)}`}
-								</p>
-							</div>
-						))}
-					</div>
-				</section>
-			) : null}
+									<p className="meta">
+										<ChangeBadge type={entry.changeType} />
+										<span>{formatDateKey(entry.date)}</span>
+									</p>
+									{sharedItemCount > 0 ? (
+										<p className="host">共用 {sharedItemCount} 個來源項目</p>
+									) : null}
+								</li>
+							))}
+						</ul>
+					</section>
+				) : null}
 
-			<section aria-labelledby="story-history">
-				<h2 id="story-history">歷史脈絡</h2>
-				<p>
-					自 {formatInstant(latest.firstSeenAt)} 起追蹤 {timeline.length} 天，收錄於{" "}
-					{appearances.length} 天的重點。
-				</p>
-				{earlier.length > 0 ? (
-					<ul className="plain tight">
-						{earlier.map((appearance) => (
-							<li key={appearance.date}>
-								<Link href={`/brief/${appearance.date}`}>{formatDateKey(appearance.date)}</Link>{" "}
-								<span className="host">
-									{sectionLabel(appearance.section)} — {appearance.title}
-								</span>
-							</li>
-						))}
-					</ul>
-				) : (
-					<p className="lede">這個事件之前沒有被收錄過。</p>
-				)}
-			</section>
-		</>
+				<section aria-labelledby="story-history">
+					<h2 id="story-history">歷史脈絡</h2>
+					<p>
+						自 {formatInstant(latest.firstSeenAt)} 起追蹤 {timeline.length} 天，收錄於{" "}
+						{appearances.length} 天的重點。
+					</p>
+					{earlier.length > 0 ? (
+						<ol className="timeline compact">
+							{earlier.map((appearance) => (
+								<li key={appearance.date}>
+									<Link href={`/brief/${appearance.date}`}>{formatDateKey(appearance.date)}</Link>{" "}
+									<span className="host">
+										{sectionLabel(appearance.section)} — {appearance.title}
+									</span>
+								</li>
+							))}
+						</ol>
+					) : (
+						<p className="lede">這個事件之前沒有被收錄過。</p>
+					)}
+				</section>
+			</aside>
+		</article>
 	);
 }

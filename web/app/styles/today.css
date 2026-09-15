@@ -1,0 +1,563 @@
+/* today.css: page layout for today. Tokens, breakpoints and shared primitives are in ../globals.css.
+
+   The Today page is a scanning page, so it is built almost entirely out of
+   hairlines: a rule under a section heading, a rule between rows. Exactly one
+   thing on the page is a box -- must-know card 01 -- because exactly one thing
+   is the most important. Everything else earns its place by size, weight and
+   colour.
+
+   Every selector here is under .dashboard or a Today-only class, so this file
+   cannot reach the story or reference pages. */
+
+.dashboard {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-7);
+}
+
+/* The section headings already carry their own hairline and spacing, so the
+   default h2 top margin would double the gap the flex column sets. */
+.dashboard > * {
+	margin: 0;
+}
+
+.dashboard .block-label,
+.dashboard h2.block-label {
+	margin-top: 0;
+}
+
+/* ------------------------------------------------------------------ hero -- */
+
+.dashboard .hero {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+
+.dashboard .hero-date {
+	margin: 0;
+	font-size: var(--fs-sm);
+	color: var(--text-muted);
+}
+
+.dashboard .hero-label {
+	margin: 0;
+	font-size: var(--fs-2xl);
+}
+
+.dashboard .hero-summary {
+	margin: 0;
+	font-size: var(--fs-xl);
+	line-height: 1.5;
+	font-weight: 500;
+	max-width: var(--measure);
+	text-wrap: pretty;
+}
+
+/* The counts read as one row of figures, so the numerals are tabular and the
+   timestamp is pushed to the far end rather than sitting in the sequence. */
+.dashboard .hero-stats {
+	list-style: none;
+	margin: var(--space-2) 0 0;
+	padding: var(--space-3) 0 0;
+	border-top: 1px solid var(--border);
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: var(--space-2) var(--space-5);
+	font-size: var(--fs-sm);
+	color: var(--text-muted);
+	font-variant-numeric: tabular-nums;
+}
+
+.dashboard .hero-stats strong {
+	font-size: var(--fs-md);
+	font-weight: 600;
+	color: var(--text);
+	margin-right: 2px;
+}
+
+.dashboard .hero-stats .stat-produced {
+	margin-left: auto;
+	font-size: var(--fs-xs);
+}
+
+@media (max-width: 639px) {
+	.dashboard {
+		gap: var(--space-6);
+	}
+
+	.dashboard .hero-label {
+		font-size: var(--fs-xl);
+	}
+
+	.dashboard .hero-summary {
+		font-size: var(--fs-lg);
+	}
+
+	/* No room to right-align on a phone: the timestamp takes its own line. */
+	.dashboard .hero-stats .stat-produced {
+		margin-left: 0;
+		flex-basis: 100%;
+	}
+}
+
+/* ------------------------------------------------------------- must know -- */
+
+/* Explicit column counts, never auto-fit: five cards have to land on a tidy
+   number of rows at every width. Card 01 spans, so 1+4 fills three rows on a
+   tablet and 1(x2)+4 fills exactly two rows on the desktop. */
+.dashboard .must-know {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: var(--space-4);
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+	.dashboard .must-know {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.dashboard .must-know > li:first-child {
+		grid-column: span 2;
+	}
+}
+
+@media (min-width: 1024px) {
+	.dashboard .must-know {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: var(--space-5) var(--space-5);
+	}
+
+	.dashboard .must-know > li:first-child {
+		grid-column: span 2;
+	}
+}
+
+.dashboard .priority-card {
+	display: flex;
+	gap: var(--space-3);
+	align-items: baseline;
+	padding-top: var(--space-3);
+	border-top: 1px solid var(--border);
+}
+
+/* The one lifted thing on the page. */
+.dashboard .must-know > li:first-child {
+	background: var(--bg-raised);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-lg);
+	padding: var(--space-4) var(--space-5);
+}
+
+.dashboard .priority-card .rank {
+	font-family: var(--mono);
+	font-size: var(--fs-sm);
+	font-weight: 600;
+	color: var(--text-muted);
+	font-variant-numeric: tabular-nums;
+	flex: none;
+}
+
+.dashboard .must-know > li:first-child .rank {
+	color: var(--accent);
+}
+
+.dashboard .priority-body {
+	min-width: 0;
+	flex: 1;
+}
+
+.dashboard .priority-title {
+	margin: 0;
+	font-size: var(--fs-md);
+	font-weight: 600;
+	line-height: 1.4;
+}
+
+.dashboard .must-know > li:first-child .priority-title {
+	font-size: var(--fs-lg);
+}
+
+.dashboard .priority-title a {
+	color: var(--text);
+}
+
+.dashboard .priority-title a:hover {
+	color: var(--accent);
+}
+
+.dashboard .priority-card .badges {
+	margin: var(--space-1) 0 0;
+}
+
+.dashboard .priority-card .takeaway {
+	margin: var(--space-2) 0 var(--space-2);
+	color: var(--text-2);
+	font-size: var(--fs-sm);
+	line-height: 1.65;
+	max-width: var(--measure);
+}
+
+.dashboard .source-count {
+	font-size: var(--fs-sm);
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+
+.dashboard .source-count:hover {
+	color: var(--accent);
+}
+
+/* --------------------------------------------------------- two columns ---- */
+
+/* One column until there is genuinely room for two. The change list is the
+   wider of the pair because its rows are story titles. */
+.dashboard .today-columns {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: var(--space-6);
+}
+
+@media (min-width: 1024px) {
+	.dashboard .today-columns {
+		grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+		gap: var(--space-7);
+	}
+}
+
+/* ---------------------------------------------------------- what changed -- */
+
+/* The change list is a sequence, so it rides the site's timeline rail and each
+   dot takes the colour of its change type (rules live in globals.css). */
+.dashboard #what-changed + .timeline,
+.dashboard .timeline.compact {
+	margin-top: var(--space-3);
+}
+
+.dashboard .timeline.compact > li {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: var(--space-1) var(--space-3);
+	font-size: var(--fs-sm);
+	line-height: 1.5;
+}
+
+.dashboard .timeline.compact > li > a {
+	color: var(--text);
+	min-width: 0;
+}
+
+.dashboard .timeline.compact > li > a:hover {
+	color: var(--accent);
+}
+
+/* ----------------------------------------------------------------- signals - */
+
+.dashboard .signal-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+/* A list, not a stack of cards: hairlines only, and none above the first. */
+.dashboard .signal-card {
+	padding: var(--space-4) 0;
+	border-bottom: 1px solid var(--border);
+}
+
+.dashboard .signal-card:first-child {
+	padding-top: var(--space-2);
+}
+
+.dashboard .signal-card:last-child {
+	border-bottom: none;
+	padding-bottom: 0;
+}
+
+.dashboard .signal-title {
+	margin: 0;
+	font-size: var(--fs-md);
+	font-weight: 600;
+	line-height: 1.4;
+}
+
+.dashboard .signal-title a {
+	color: var(--text);
+}
+
+.dashboard .signal-title a:hover {
+	color: var(--accent);
+}
+
+/* The lifecycle state is a coloured word with its arrow, matching how change
+   type reads elsewhere on the page. Not a chip. */
+.dashboard .signal-state {
+	margin: 2px 0 0;
+	font-size: var(--fs-sm);
+	font-weight: 600;
+	color: var(--text-muted);
+}
+
+.dashboard .signal-state.state-emerging,
+.dashboard .signal-state.state-strengthening {
+	color: var(--accent);
+}
+
+.dashboard .signal-state.state-confirmed {
+	color: var(--ok);
+}
+
+.dashboard .signal-state.state-fading {
+	color: var(--text-muted);
+}
+
+.dashboard .signal-summary {
+	margin: var(--space-2) 0 0;
+	font-size: var(--fs-sm);
+	line-height: 1.65;
+	color: var(--text-2);
+	max-width: var(--measure);
+}
+
+/* Confidence and what it rests on, on one quiet line. */
+.dashboard .signal-evidence {
+	margin: var(--space-2) 0 0;
+	font-size: var(--fs-xs);
+	color: var(--text-muted);
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-1) var(--space-3);
+}
+
+/* ------------------------------------------------------- topical sections -- */
+
+.dashboard .story-rows {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.dashboard .story-row {
+	padding: var(--space-4) 0;
+	border-bottom: 1px solid var(--border);
+}
+
+.dashboard .story-row:first-child {
+	padding-top: var(--space-2);
+}
+
+.dashboard .story-row:last-child {
+	border-bottom: none;
+}
+
+/* Title and the change word share a line, and wrap onto two on a phone rather
+   than squeezing the title into a column. */
+.dashboard .story-row-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: var(--space-1) var(--space-3);
+}
+
+.dashboard .story-row-title {
+	margin: 0;
+	font-size: var(--fs-md);
+	font-weight: 600;
+	line-height: 1.45;
+	min-width: 0;
+}
+
+.dashboard .story-row-title a {
+	color: var(--text);
+}
+
+.dashboard .story-row-title a:hover {
+	color: var(--accent);
+}
+
+.dashboard .story-row .takeaway {
+	margin: var(--space-1) 0 0;
+	font-size: var(--fs-sm);
+	line-height: 1.65;
+	color: var(--text-2);
+	max-width: var(--measure);
+}
+
+.dashboard .story-row-foot {
+	margin: var(--space-2) 0 0;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: var(--space-1) var(--space-3);
+}
+
+/* -------------------------------------------------- analysis and watch next - */
+
+.dashboard .analysis-preview {
+	margin: 0 0 var(--space-3);
+	max-width: var(--measure);
+	font-size: var(--fs-md);
+	line-height: 1.8;
+	color: var(--text-2);
+}
+
+.dashboard .watch-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	max-width: var(--measure);
+}
+
+.dashboard .watch-list li {
+	display: flex;
+	gap: var(--space-3);
+	align-items: baseline;
+	padding: var(--space-2) 0;
+	font-size: var(--fs-sm);
+	line-height: 1.6;
+	color: var(--text-2);
+	border-bottom: 1px solid var(--border);
+}
+
+.dashboard .watch-list li:last-child {
+	border-bottom: none;
+}
+
+.dashboard .watch-list .arrow {
+	color: var(--text-muted);
+	flex: none;
+}
+
+/* ----------------------------------------------------------------- inbox --- */
+
+.dashboard .inbox-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	font-size: var(--fs-sm);
+}
+
+.dashboard .inbox-list li {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: var(--space-1) var(--space-3);
+	padding: var(--space-2) 0;
+	border-bottom: 1px solid var(--border);
+	line-height: 1.6;
+}
+
+.dashboard .inbox-list li:last-child {
+	border-bottom: none;
+}
+
+.dashboard .inbox-time {
+	font-family: var(--mono);
+	font-size: var(--fs-xs);
+	font-variant-numeric: tabular-nums;
+	color: var(--text-muted);
+	flex: none;
+}
+
+.dashboard .inbox-list a {
+	color: var(--text);
+	min-width: 0;
+}
+
+.dashboard .inbox-list a:hover {
+	color: var(--accent);
+}
+
+.dashboard .inbox-source,
+.dashboard .inbox-story {
+	font-size: var(--fs-xs);
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+
+.dashboard .inbox-story {
+	margin-left: auto;
+}
+
+/* ---------------------------------------------------------- day in review -- */
+
+/* Not a card and not a section heading with a rule: the closing paragraph of
+   the page, set apart by a hairline above it and a little more air. */
+.dashboard .day-in-review {
+	padding-top: var(--space-5);
+	border-top: 1px solid var(--border);
+}
+
+.dashboard .day-in-review .block-label {
+	border-bottom: none;
+	padding-bottom: 0;
+	margin-bottom: var(--space-2);
+	font-size: var(--fs-sm);
+	color: var(--text-muted);
+}
+
+.dashboard .day-in-review p {
+	margin: 0;
+	max-width: var(--measure);
+	font-size: var(--fs-sm);
+	line-height: 1.8;
+	color: var(--text-2);
+}
+
+.dashboard .day-in-review strong {
+	color: var(--text);
+	font-variant-numeric: tabular-nums;
+}
+
+.dashboard .full-brief {
+	margin: 0;
+	font-size: var(--fs-sm);
+}
+
+/* ------------------------------------------------------------ full brief --- */
+
+/* The full brief reuses the dashboard shell, so it inherits the hero, the
+   must-know grid and the inbox above. Its own content is long-form: one
+   article per story, separated by hairlines, everything measure-limited. */
+.dashboard .story {
+	padding: var(--space-5) 0;
+	border-bottom: 1px solid var(--border);
+}
+
+.dashboard .story:last-child {
+	border-bottom: none;
+}
+
+.dashboard .story > h3 {
+	margin: 0 0 var(--space-2);
+	font-size: var(--fs-lg);
+	line-height: 1.4;
+}
+
+.dashboard .story > h3 a {
+	color: var(--text);
+}
+
+.dashboard .story > h3 a:hover {
+	color: var(--accent);
+}
+
+.dashboard .story .badges {
+	margin: 0 0 var(--space-3);
+}
+
+.dashboard .brief-analysis {
+	max-width: var(--measure);
+	font-family: var(--serif);
+	font-size: var(--fs-md);
+	line-height: 1.9;
+}
+
+.dashboard .brief-analysis p {
+	margin: 0 0 var(--space-4);
+}

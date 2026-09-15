@@ -1,11 +1,13 @@
 import Link from "next/link";
 import type { MustKnowCardView } from "../../lib/dashboard.ts";
-import { ChangeBadge, ImportanceBadge, SourceCount } from "../badges.tsx";
+import { ChangeBadge, SourceCount } from "../badges.tsx";
 
 /**
- * Priority cards: rank, title, importance, change type, one sentence of why it
- * matters, and a source count. Everything else about the story lives on its
- * own page; the card's job is to be scanned, not read.
+ * Priority cards: rank, title, change type, one sentence of why it matters,
+ * and a source count. Importance is not shown -- every card here is already
+ * among the day's most important, so the chip said nothing. Everything else
+ * about the story lives on its own page; the card's job is to be scanned, not
+ * read.
  */
 export function MustKnowGrid({ cards }: { cards: readonly MustKnowCardView[] }) {
 	if (cards.length === 0) return null;
@@ -35,7 +37,6 @@ export function MustKnowCard({ card }: { card: MustKnowCardView }) {
 					<Link href={href}>{card.title}</Link>
 				</h3>
 				<p className="badges">
-					<ImportanceBadge level={card.importance} />
 					<ChangeBadge type={card.changeType} />
 				</p>
 				<p className="takeaway">{card.takeaway}</p>

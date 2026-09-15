@@ -13,8 +13,12 @@ const STATE_ARROW: Record<string, string> = {
  * Rendered only when the brief carries at least one signal; never a placeholder.
  *
  * The heading says "值得觀察" rather than anything that sounds settled: most of
- * these rest on a day or two of evidence, and the card states that evidence
+ * these rest on a day or two of evidence, and each entry states that evidence
  * (events, sources, days) next to the confidence so a reader can weigh it.
+ *
+ * Not boxes: a signal is one of several in a list, and hairlines separate them.
+ * The state is the coloured line under the title, the evidence a quiet line
+ * under the summary.
  */
 export function EmergingSignals({ signals }: { signals: readonly SignalCardView[] }) {
 	if (signals.length === 0) return null;
@@ -50,18 +54,14 @@ export function EmergingSignalCard({ signal }: { signal: SignalCardView }) {
 				</p>
 			) : null}
 			<p className="signal-summary">{signal.summary}</p>
-			<dl className="signal-facts">
+			<p className="signal-evidence">
 				{signal.confidence ? (
-					<div>
-						<dt>可信度</dt>
-						<dd>{confidenceLabel(signal.confidence).replace(/^可信度/, "")}</dd>
-					</div>
+					<span className="signal-evidence-part">
+						可信度{confidenceLabel(signal.confidence).replace(/^可信度/, "")}
+					</span>
 				) : null}
-				<div>
-					<dt>目前依據</dt>
-					<dd>{evidence.join(" · ")}</dd>
-				</div>
-			</dl>
+				<span className="signal-evidence-part">目前依據 {evidence.join(" · ")}</span>
+			</p>
 		</li>
 	);
 }

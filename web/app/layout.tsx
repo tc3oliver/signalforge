@@ -3,6 +3,9 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ADMIN_ENABLED } from "../lib/admin.ts";
 import "./globals.css";
+import "./styles/today.css";
+import "./styles/story.css";
+import "./styles/reference.css";
 
 /*
  * What a shared link says about this site. The old description was the

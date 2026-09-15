@@ -1,11 +1,12 @@
 import Link from "next/link";
 import type { SectionView, StoryCardView } from "../../lib/dashboard.ts";
-import { ChangeBadge, ConfidenceBadge, ImportanceBadge, SourceCount } from "../badges.tsx";
+import { ChangeBadge, ConfidenceBadge, SourceCount } from "../badges.tsx";
 
 /**
- * A topical section as a compact feed: title, the two badges that matter on a
- * scan, one takeaway sentence, and a source count. The full story text is one
- * click away and is deliberately not here.
+ * A topical section as a compact feed: the title and the kind of change on one
+ * line, one takeaway sentence, then a source count and how well it is stood
+ * up. Importance is not shown -- the ordering already ranks the day. The full
+ * story text is one click away and is deliberately not here.
  */
 export function StorySection({ section, date }: { section: SectionView; date: string }) {
 	const id = `section-${section.key}`;
@@ -38,10 +39,7 @@ export function CompactStoryRow({ story }: { story: StoryCardView }) {
 				<h3 className="story-row-title">
 					<Link href={href}>{story.title}</Link>
 				</h3>
-				<p className="badges">
-					<ImportanceBadge level={story.importance} />
-					<ChangeBadge type={story.changeType} />
-				</p>
+				<ChangeBadge type={story.changeType} />
 			</div>
 			<p className="takeaway">{story.takeaway}</p>
 			<p className="story-row-foot">

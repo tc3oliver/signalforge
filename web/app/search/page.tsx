@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Tag } from "../../components/bits.tsx";
 import { ConfidenceBadge } from "../../components/badges.tsx";
 import type { ConfidenceLevel } from "../../../src/schemas/brief.ts";
 import { SourceLink } from "../../components/sources.tsx";
@@ -29,7 +28,7 @@ export default async function SearchPage({
 			<p className="lede">
 				全文搜尋已發布的事件與收集到的項目。結果由 Postgres 直接排序，可重現、可檢查，沒有模型參與。
 			</p>
-			<form action="/search" method="get" role="search">
+			<form action="/search" method="get" role="search" className="ref-search-form">
 				<input
 					type="search"
 					name="q"
@@ -53,7 +52,7 @@ export default async function SearchPage({
 							<h2 id="hits-briefs">事件</h2>
 							{briefHits.map((hit) => {
 								return (
-									<article key={`${hit.date}:${hit.storyId}`} className="story">
+									<article key={`${hit.date}:${hit.storyId}`} className="search-hit">
 										<h3>
 											<Link href={`/story/${encodeURIComponent(hit.storyId)}`}>
 												{hit.title}
@@ -61,11 +60,11 @@ export default async function SearchPage({
 										</h3>
 										<p className="meta">
 											<Link href={`/brief/${hit.date}`}>{formatDateKey(hit.date)}</Link>
-											<Tag>{sectionLabel(hit.section)}</Tag>
-											{hit.mustKnow ? <Tag tone="accent">必看</Tag> : null}
+											<span>{sectionLabel(hit.section)}</span>
+											{hit.mustKnow ? <span className="must-know-flag">必看</span> : null}
 											<ConfidenceBadge level={hit.confidence as ConfidenceLevel} />
 										</p>
-										<p>{preview(hit.whatHappened, 260)}</p>
+										<p className="search-hit-preview">{preview(hit.whatHappened, 260)}</p>
 									</article>
 								);
 							})}

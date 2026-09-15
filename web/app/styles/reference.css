@@ -1,0 +1,168 @@
+/* reference.css: the reference pages — /history, /signals, /search, not-found.
+   Tokens, breakpoints and shared primitives live in ../globals.css; this file
+   only positions what those pages add.
+
+   These pages are lists, not documents. So none of them is a grid of cards:
+   history and the signals' story lists ride the timeline rail, and a signal or
+   a search hit is separated from the next by a hairline alone. Hierarchy is
+   size, weight and colour. Every selector here is prefixed .ref- or scoped
+   under one, except the two element classes (.signal, .search-hit) that are
+   only ever rendered by these pages. */
+
+/* ------------------------------------------------------------- history ---- */
+
+.ref-history .timeline > li > strong {
+	font-size: var(--fs-md);
+}
+
+.ref-history .ref-headline {
+	font-size: var(--fs-md);
+	max-width: var(--measure);
+	margin: 2px 0 var(--space-1);
+}
+
+/* One muted line under each date, then one more for the sections. Plain text
+   with a middle dot between the counts: three chips said no more than this. */
+.ref-line {
+	font-size: var(--fs-sm);
+	color: var(--text-muted);
+	margin: 0;
+	max-width: var(--measure);
+}
+
+.ref-line + .ref-line {
+	margin-top: 2px;
+}
+
+@media (min-width: 1024px) {
+	/* The rail reads badly across 64rem of empty page: a date, a headline and
+	   two short lines do not need the width, and the eye loses the dots. */
+	.ref-history .timeline {
+		width: min(100%, 44rem);
+	}
+}
+
+/* ------------------------------------------------------------- signals ---- */
+
+.signal {
+	border-top: 1px solid var(--border);
+	padding-top: var(--space-4);
+	margin: 0 0 var(--space-6);
+}
+
+.signal:first-of-type {
+	border-top: none;
+	padding-top: 0;
+}
+
+.signal > h3 {
+	font-size: var(--fs-lg);
+	margin: 0 0 var(--space-1);
+}
+
+.signal > .meta {
+	margin-top: 0;
+}
+
+.signal .signal-rationale {
+	max-width: var(--measure);
+	margin: 0 0 var(--space-3);
+}
+
+/* Lifecycle state is a coloured word, like a change type, not a chip. */
+.signal .signal-state {
+	font-weight: 600;
+	color: var(--text-2);
+}
+
+.signal .signal-state.state-confirmed {
+	color: var(--ok);
+}
+
+.signal .signal-state.state-strengthening {
+	color: var(--accent);
+}
+
+.signal .signal-state.state-emerging {
+	color: var(--text-muted);
+}
+
+.signal .signal-state.state-fading {
+	color: var(--warn);
+}
+
+/* The related stories accumulate over the days a signal stays alive, so they
+   are a sequence and take the rail. */
+.signal .timeline {
+	margin-top: var(--space-2);
+}
+
+.signal .signal-label {
+	font-size: var(--fs-sm);
+	font-weight: 600;
+	color: var(--text-muted);
+	display: block;
+	margin-bottom: var(--space-1);
+}
+
+/* -------------------------------------------------------------- search ---- */
+
+.ref-search-form {
+	display: flex;
+	gap: var(--space-2);
+	align-items: center;
+	margin: 0 0 var(--space-5);
+	max-width: var(--measure);
+}
+
+.ref-search-form input[type="search"] {
+	flex: 1;
+	min-width: 0;
+}
+
+.ref-search-form button {
+	flex: none;
+}
+
+@media (max-width: 639px) {
+	/* The field takes the whole row and the button sits under it: a 12rem input
+	   beside a button leaves no room for a real query on a phone. */
+	.ref-search-form {
+		flex-wrap: wrap;
+	}
+
+	.ref-search-form input[type="search"] {
+		flex-basis: 100%;
+	}
+}
+
+.search-hit {
+	border-top: 1px solid var(--border);
+	padding-top: var(--space-3);
+	margin-bottom: var(--space-5);
+}
+
+.search-hit:first-of-type {
+	border-top: none;
+	padding-top: 0;
+}
+
+.search-hit > h3 {
+	margin: 0 0 var(--space-1);
+}
+
+.search-hit > .meta {
+	margin-top: 0;
+}
+
+.search-hit-preview {
+	max-width: var(--measure);
+	margin: 0;
+}
+
+/* "必看" earns colour, not a border: it is the one flag worth seeing in a row
+   of results, and a chip here would make five boxes out of five hits. */
+.must-know-flag {
+	color: var(--accent);
+	font-weight: 600;
+}
