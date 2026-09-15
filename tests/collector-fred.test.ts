@@ -236,3 +236,44 @@ describe("fredCollector identity is stable across repeated collection", () => {
 		expect(first.facts[0]?.asOf).toBe("2026-09-11");
 	});
 });
+
+describe("fredCollector concurrency", () => {
+	const seriesIds = ["FEDFUNDS", "DGS2", "DGS10", "T10Y2Y", "CPIAUCSL", "UNRATE", "M2SL", "WALCL"];
+
+	function seriesOf(url: string): string {
+		return url.match(/series_id=([^&]+)/)?.[1] ?? "";
+	}
+
+	it("polls several series at once, capped at the collector concurrency limit", async () => {
+		let inFlight = 0;
+		let peak = 0;
+		const fetchImpl = vi.fn(async (input: unknown) => {
+			inFlight++;
+			peak = Math.max(peak, inFlight);
+			await new Promise((resolve) => setTimeout(resolve, 5_000));
+			inFlight--;
+			return jsonResponse({ observations: [{ date: "2026-01-01", value: "1.5" }] });
+		});
+
+		const result = await runCollect(makeCtx({ secrets: { FRED_API_KEY: "key" }, fetch: fetchImpl as unknown as typeof fetch }));
+
+		expect(peak).toBeGreaterThan(1);
+		expect(peak).toBeLessThanOrEqual(4);
+		expect(result.facts).toHaveLength(seriesIds.length);
+	});
+
+	it("keeps facts and the cursor in watchlist order when series answer out of order", async () => {
+		const fetchImpl = vi.fn(async (input: unknown) => {
+			const id = seriesOf(String(input));
+			const index = seriesIds.indexOf(id);
+			// Later series answer sooner, so completion order is the reverse of input order.
+			await new Promise((resolve) => setTimeout(resolve, (seriesIds.length - index) * 1_000));
+			return jsonResponse({ observations: [{ date: "2026-01-01", value: "1.5" }] });
+		});
+
+		const result = await runCollect(makeCtx({ secrets: { FRED_API_KEY: "key" }, fetch: fetchImpl as unknown as typeof fetch }));
+
+		expect(result.facts.map((f) => f.label)).toEqual(seriesIds);
+		expect(Object.keys(JSON.parse(result.cursor ?? "{}"))).toEqual(seriesIds);
+	});
+});

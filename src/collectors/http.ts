@@ -217,3 +217,11 @@ export async function mapWithConcurrency<T, R>(
 	await Promise.all(workers);
 	return results;
 }
+
+/**
+ * How many independent per-entry fetches a collector runs at once (one repo,
+ * subreddit, channel, company or series each). Kept small: every collector still
+ * has its own TokenBucket, so this only decides how much of a bucket's allowance
+ * can be spent in parallel, never how fast the remote is hit.
+ */
+export const COLLECTOR_CONCURRENCY = 4;

@@ -1,4 +1,5 @@
-import { HttpError, TokenBucket, fetchWithRetry } from "./http.ts";
+import { scrubSecrets } from "../runtime/redact.ts";
+import { COLLECTOR_CONCURRENCY, HttpError, TokenBucket, fetchWithRetry, mapWithConcurrency } from "./http.ts";
 import type { Collector, CollectorContext, CollectorResult, CollectedItem } from "./types.ts";
 import { UNTRUSTED_EXTERNAL_CONTENT } from "./types.ts";
 
@@ -10,10 +11,11 @@ import { UNTRUSTED_EXTERNAL_CONTENT } from "./types.ts";
  */
 const DISCOVERY_QUERIES = ["claude code", "local llm inference"];
 
-/** YouTube Data API takes the key as a query param; never let it reach a log or raw payload. */
-function redactUrl(url: string): string {
-	return url.replace(/([?&]key=)[^&]+/i, "$1REDACTED");
-}
+/**
+ * YouTube Data API takes the key as a query param; never let it reach a log or
+ * raw payload. Shared so a new keyed collector inherits redaction by default.
+ */
+const redactUrl = scrubSecrets;
 
 /** Minimal, dependency-free Atom feed parser for the fields we need. */
 function parseAtomFeed(xml: string): { id: string; title: string; link?: string; published?: string; author?: string }[] {
@@ -68,15 +70,12 @@ export const youtubeCollector: Collector = {
 		 * they cannot be (no key), skipped with a reason rather than requested
 		 * anyway.
 		 */
-		const channelIds: string[] = [];
-		for (const entry of configured) {
-			if (!entry.startsWith("@")) {
-				channelIds.push(entry);
-				continue;
-			}
+		const resolved = await mapWithConcurrency(configured, COLLECTOR_CONCURRENCY, async (entry) => {
+			const outWarnings: string[] = [];
+			if (!entry.startsWith("@")) return { id: entry as string | undefined, outWarnings };
 			if (apiKey === undefined) {
-				warnings.push(`${entry}: a handle cannot be resolved to a channel id without YOUTUBE_API_KEY; skipped`);
-				continue;
+				outWarnings.push(`${entry}: a handle cannot be resolved to a channel id without YOUTUBE_API_KEY; skipped`);
+				return { id: undefined, outWarnings };
 			}
 			const url = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${encodeURIComponent(entry)}&key=${apiKey}`;
 			try {
@@ -84,35 +83,42 @@ export const youtubeCollector: Collector = {
 				const body = (await res.json()) as { items?: { id?: string }[] };
 				const id = body.items?.[0]?.id;
 				if (id === undefined) {
-					warnings.push(`${entry}: no channel matched this handle`);
-					continue;
+					outWarnings.push(`${entry}: no channel matched this handle`);
+					return { id: undefined, outWarnings };
 				}
-				channelIds.push(id);
+				return { id, outWarnings };
 			} catch (err) {
-				warnings.push(
+				outWarnings.push(
 					err instanceof HttpError
 						? `${entry}: handle lookup returned ${err.status} for ${redactUrl(url)}`
 						: `${entry}: handle lookup failed: ${(err as Error).message}`,
 				);
+				return { id: undefined, outWarnings };
 			}
+		});
+		const channelIds: string[] = [];
+		for (const result of resolved) {
+			warnings.push(...result.outWarnings);
+			if (result.id !== undefined) channelIds.push(result.id);
 		}
 
 		// --- RSS per channel: no key required, always attempted ---
-		for (const channelId of channelIds) {
+		const perChannel = await mapWithConcurrency(channelIds, COLLECTOR_CONCURRENCY, async (channelId) => {
+			const outItems: CollectedItem[] = [];
+			const outWarnings: string[] = [];
 			const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
 			try {
 				const res = await get(url);
 				const xml = await res.text();
 				const entries = parseAtomFeed(xml);
 				if (entries.length === 0) {
-					warnings.push(`RSS for ${channelId}: no parsable entries (possibly malformed feed)`);
-					continue;
+					outWarnings.push(`RSS for ${channelId}: no parsable entries (possibly malformed feed)`);
+					return { outItems, outWarnings };
 				}
 				const fetchedAt = ctx.now().toISOString();
 				for (const entry of entries) {
-					itemsFetched++;
 					const externalId = `youtube-${entry.id}`;
-					items.push({
+					outItems.push({
 						sourceType: "youtube",
 						sourceName: `YouTube: ${entry.author ?? channelId}`,
 						externalId,
@@ -127,15 +133,23 @@ export const youtubeCollector: Collector = {
 					});
 				}
 			} catch (err) {
-				warnings.push(
+				outWarnings.push(
 					err instanceof HttpError ? `RSS for ${channelId} returned ${err.status}` : `RSS for ${channelId} request failed: ${(err as Error).message}`,
 				);
 			}
+			return { outItems, outWarnings };
+		});
+		for (const result of perChannel) {
+			items.push(...result.outItems);
+			itemsFetched += result.outItems.length;
+			warnings.push(...result.outWarnings);
 		}
 
 		// --- Data API discovery: only when a key is configured; cleanly skipped otherwise ---
 		if (apiKey !== undefined) {
-			for (const query of DISCOVERY_QUERIES) {
+			const perQuery = await mapWithConcurrency(DISCOVERY_QUERIES, COLLECTOR_CONCURRENCY, async (query) => {
+				const outItems: CollectedItem[] = [];
+				const outWarnings: string[] = [];
 				const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&order=date&q=${encodeURIComponent(
 					query,
 				)}&key=${apiKey}`;
@@ -146,20 +160,19 @@ export const youtubeCollector: Collector = {
 					};
 					const results = body.items ?? [];
 					if (!Array.isArray(results)) {
-						warnings.push(`Data API search "${query}": malformed payload`);
-						continue;
+						outWarnings.push(`Data API search "${query}": malformed payload`);
+						return { outItems, outWarnings };
 					}
 					const fetchedAt = ctx.now().toISOString();
 					for (const result of results) {
 						const videoId = result.id?.videoId;
 						const title = result.snippet?.title;
 						if (!videoId || !title) {
-							warnings.push(`Data API search "${query}": malformed result entry, skipped`);
+							outWarnings.push(`Data API search "${query}": malformed result entry, skipped`);
 							continue;
 						}
-						itemsFetched++;
 						const externalId = `youtube-${videoId}`;
-						items.push({
+						outItems.push({
 							sourceType: "youtube",
 							sourceName: `YouTube search: ${query}`,
 							externalId,
@@ -174,14 +187,21 @@ export const youtubeCollector: Collector = {
 						});
 					}
 				} catch (err) {
-					warnings.push(
+					outWarnings.push(
 						err instanceof HttpError
 							? `Data API search "${query}" returned ${err.status} for ${redactUrl(url)}`
 							: `Data API search "${query}" request failed: ${(err as Error).message}`,
 					);
 				}
+				return { outItems, outWarnings };
+			});
+			for (const result of perQuery) {
+				items.push(...result.outItems);
+				itemsFetched += result.outItems.length;
+				warnings.push(...result.outWarnings);
 			}
 		}
+
 
 		// De-duplicate: a video can surface via both its channel's RSS feed and a discovery query.
 		const seen = new Set<string>();

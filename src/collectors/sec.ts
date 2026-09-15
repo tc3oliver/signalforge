@@ -1,4 +1,4 @@
-import { HttpError, TokenBucket, fetchWithRetry } from "./http.ts";
+import { COLLECTOR_CONCURRENCY, HttpError, TokenBucket, fetchWithRetry, mapWithConcurrency } from "./http.ts";
 import type { Collector, CollectorContext, CollectorResult, CollectedItem, CollectedFact } from "./types.ts";
 import { UNTRUSTED_EXTERNAL_CONTENT } from "./types.ts";
 
@@ -78,15 +78,21 @@ export const secCollector: Collector = {
 		if (skipped > 0) warnings.push(`${skipped} watchlisted compan${skipped === 1 ? "y has" : "ies have"} no CIK on file, skipped`);
 		if (secCompanies.length === 0) warnings.push("no SEC companies configured");
 
-		for (const company of companies) {
+		// Each company is an independent submissions fetch. Run a few at once and fold the
+		// per-company output back in watchlist order so items and warnings stay deterministic.
+		const perCompany = await mapWithConcurrency(companies, COLLECTOR_CONCURRENCY, async (company) => {
+			const outItems: CollectedItem[] = [];
+			const outFacts: CollectedFact[] = [];
+			const outWarnings: string[] = [];
+			let outFetched = 0;
 			const url = `https://data.sec.gov/submissions/CIK${company.cik}.json`;
 			try {
 				const res = await fetchWithRetry(url, { headers }, { fetchImpl: ctx.fetch, timeoutMs: 15_000, maxAttempts: 3, signal: ctx.signal, bucket });
 				const body = (await res.json()) as SubmissionsResponse;
 				const recent = body.filings?.recent;
 				if (!recent || !Array.isArray(recent.form) || !Array.isArray(recent.filingDate)) {
-					warnings.push(`${company.name} (${company.cik}): malformed submissions payload`);
-					continue;
+					outWarnings.push(`${company.name} (${company.cik}): malformed submissions payload`);
+					return { outItems, outFacts, outWarnings, outFetched };
 				}
 				const count = recent.form.length;
 				for (let i = 0; i < count; i++) {
@@ -94,13 +100,13 @@ export const secCollector: Collector = {
 					const filingDate = recent.filingDate[i];
 					const accession = recent.accessionNumber?.[i];
 					if (!form || !filingDate || !accession) {
-						warnings.push(`${company.name}: malformed filing entry at index ${i}`);
+						outWarnings.push(`${company.name}: malformed filing entry at index ${i}`);
 						continue;
 					}
 					if (!isTrackedForm(form)) continue;
 					if (filingDate < sinceIso) continue;
 
-					itemsFetched++;
+					outFetched++;
 					const accessionNoDashes = accession.replace(/-/g, "");
 					const primaryDoc = recent.primaryDocument?.[i];
 					const filingUrl = primaryDoc
@@ -109,7 +115,7 @@ export const secCollector: Collector = {
 					const externalId = `sec-${company.cik}-${accession}`;
 					const fetchedAt = ctx.now().toISOString();
 
-					items.push({
+					outItems.push({
 						sourceType: "sec",
 						sourceName: `SEC EDGAR: ${company.name}`,
 						externalId,
@@ -123,7 +129,7 @@ export const secCollector: Collector = {
 						raw: { externalId, body: { form, filingDate, accession, primaryDoc }, fetchedAt },
 					});
 
-					facts.push({
+					outFacts.push({
 						kind: "filing",
 						label: `${company.name} ${form} filing`,
 						value: 1,
@@ -136,11 +142,19 @@ export const secCollector: Collector = {
 				}
 			} catch (err) {
 				if (err instanceof HttpError) {
-					warnings.push(`${company.name} (${company.cik}) returned ${err.status}`);
+					outWarnings.push(`${company.name} (${company.cik}) returned ${err.status}`);
 				} else {
-					warnings.push(`${company.name} (${company.cik}) request failed: ${(err as Error).message}`);
+					outWarnings.push(`${company.name} (${company.cik}) request failed: ${(err as Error).message}`);
 				}
 			}
+			return { outItems, outFacts, outWarnings, outFetched };
+		});
+
+		for (const result of perCompany) {
+			items.push(...result.outItems);
+			facts.push(...result.outFacts);
+			warnings.push(...result.outWarnings);
+			itemsFetched += result.outFetched;
 		}
 
 		if (warnings.length > 0) health = items.length > 0 ? "DEGRADED" : "FAILED";

@@ -1,4 +1,4 @@
-import { HttpError, TokenBucket, fetchWithRetry } from "./http.ts";
+import { COLLECTOR_CONCURRENCY, HttpError, TokenBucket, fetchWithRetry, mapWithConcurrency } from "./http.ts";
 import type { Collector, CollectorContext, CollectorResult, CollectedItem } from "./types.ts";
 import { UNTRUSTED_EXTERNAL_CONTENT } from "./types.ts";
 
@@ -121,55 +121,53 @@ export const redditCollector: Collector = {
 
 		if (subreddits.length === 0) warnings.push("no subreddits configured");
 
-		for (const subreddit of subreddits) {
-			const url = `${base}/r/${subreddit}/new.json?limit=25`;
+		// One listing fetch per subreddit or query, independent of the others. They run a
+		// few at a time and are folded back in list order, so item order is unchanged.
+		type ListingTask = { url: string; sourceName: string; label: string };
+		const readListing = async (task: ListingTask) => {
+			const outItems: CollectedItem[] = [];
+			const outWarnings: string[] = [];
 			try {
-				const res = await get(url, { ...authHeaders, "User-Agent": DEFAULT_USER_AGENT });
+				const res = await get(task.url, { ...authHeaders, "User-Agent": DEFAULT_USER_AGENT });
 				const body = (await res.json()) as RedditListing;
 				const children = body.data?.children;
 				if (!Array.isArray(children)) {
-					warnings.push(`r/${subreddit}: malformed listing payload`);
-					continue;
+					outWarnings.push(`${task.label}: malformed listing payload`);
+					return { outItems, outWarnings };
 				}
 				for (const post of children) {
-					const item = toItem(post, `r/${subreddit}`);
+					const item = toItem(post, task.sourceName);
 					if (!item) {
-						warnings.push(`r/${subreddit}: malformed post entry, skipped`);
+						outWarnings.push(`${task.label}: malformed post entry, skipped`);
 						continue;
 					}
-					itemsFetched++;
-					items.push(item);
+					outItems.push(item);
 				}
 			} catch (err) {
-				warnings.push(
-					err instanceof HttpError ? `r/${subreddit} returned ${err.status}` : `r/${subreddit} request failed: ${(err as Error).message}`,
+				outWarnings.push(
+					err instanceof HttpError ? `${task.label} returned ${err.status}` : `${task.label} request failed: ${(err as Error).message}`,
 				);
 			}
-		}
+			return { outItems, outWarnings };
+		};
 
-		for (const query of SEARCH_QUERIES) {
-			const url = `${base}/search.json?q=${encodeURIComponent(query)}&sort=new&limit=25`;
-			try {
-				const res = await get(url, { ...authHeaders, "User-Agent": DEFAULT_USER_AGENT });
-				const body = (await res.json()) as RedditListing;
-				const children = body.data?.children;
-				if (!Array.isArray(children)) {
-					warnings.push(`search "${query}": malformed listing payload`);
-					continue;
-				}
-				for (const post of children) {
-					const item = toItem(post, `Reddit search: ${query}`);
-					if (!item) {
-						warnings.push(`search "${query}": malformed post entry, skipped`);
-						continue;
-					}
-					itemsFetched++;
-					items.push(item);
-				}
-			} catch (err) {
-				warnings.push(
-					err instanceof HttpError ? `search "${query}" returned ${err.status}` : `search "${query}" request failed: ${(err as Error).message}`,
-				);
+		const subredditTasks: ListingTask[] = subreddits.map((subreddit) => ({
+			url: `${base}/r/${subreddit}/new.json?limit=25`,
+			sourceName: `r/${subreddit}`,
+			label: `r/${subreddit}`,
+		}));
+		const searchTasks: ListingTask[] = SEARCH_QUERIES.map((query) => ({
+			url: `${base}/search.json?q=${encodeURIComponent(query)}&sort=new&limit=25`,
+			sourceName: `Reddit search: ${query}`,
+			label: `search "${query}"`,
+		}));
+
+		for (const tasks of [subredditTasks, searchTasks]) {
+			const results = await mapWithConcurrency(tasks, COLLECTOR_CONCURRENCY, readListing);
+			for (const result of results) {
+				items.push(...result.outItems);
+				itemsFetched += result.outItems.length;
+				warnings.push(...result.outWarnings);
 			}
 		}
 

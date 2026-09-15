@@ -1,6 +1,6 @@
 import type { Collector, CollectorContext, CollectorResult } from "./types.ts";
 import { CollectedItem } from "./types.ts";
-import { HttpError, RequestBudget, TokenBucket, fetchWithRetry } from "./http.ts";
+import { COLLECTOR_CONCURRENCY, HttpError, RequestBudget, TokenBucket, fetchWithRetry, mapWithConcurrency } from "./http.ts";
 
 const API_BASE = "https://api.github.com";
 
@@ -154,13 +154,21 @@ export class GitHubCollector implements Collector {
 			warnings.push("no watched repos configured");
 		}
 
-		for (const repo of repos) {
+		// Each repo is an independent set of requests (releases, tags, issues). A few run at
+		// once; their output is folded back in watchlist order, so items, warnings and the
+		// cursor are identical to the sequential version.
+		const perRepo = await mapWithConcurrency(repos, COLLECTOR_CONCURRENCY, async (repo) => {
 			const repoCursor: RepoCursor = cursor[repo] ?? {};
+			const outItems: CollectedItem[] = [];
+			const outWarnings: string[] = [];
+			let outCursor: RepoCursor | undefined = cursor[repo];
+			let outRateLimited = false;
+			let outFailed = false;
 			try {
 				// --- Releases: the primary signal. A release carries notes, a url and a real
 				// publication date, so it is the one endpoint whose payload the curator can read.
 				const releases = await fetchConditional(ctx, `${API_BASE}/repos/${repo}/releases`, headers, repoCursor.releasesEtag, budget, bucket);
-				if (releases.status === 429 || releases.rateLimited) sawRateLimit = true;
+				if (releases.status === 429 || releases.rateLimited) outRateLimited = true;
 				// An ETag change returns the whole page, history included. Only publications newer
 				// than the high-water mark are new; the rest is the same backfill re-read, which is
 				// what previously made a same-day release indistinguishable from tag-history noise.
@@ -173,22 +181,22 @@ export class GitHubCollector implements Collector {
 						// A draft or otherwise unpublished release has no publication event yet.
 						if (!r.published_at) continue;
 						if (Date.parse(r.published_at) <= Date.parse(releaseWatermark)) continue;
-						items.push(releaseToItem(repo, r, startedAt));
+						outItems.push(releaseToItem(repo, r, startedAt));
 					}
 					for (const r of releases.body as GhRelease[]) {
 						if (!r.published_at || r.draft) continue;
 						if (Date.parse(r.published_at) > Date.parse(releaseWatermark)) releaseWatermark = r.published_at;
 					}
 				}
-				nextCursor[repo] = { ...nextCursor[repo], releasesLatestPublishedAt: releaseWatermark };
-				if (releases.etag) nextCursor[repo] = { ...nextCursor[repo], releasesEtag: releases.etag };
+				outCursor = { ...outCursor, releasesLatestPublishedAt: releaseWatermark };
+				if (releases.etag) outCursor = { ...outCursor, releasesEtag: releases.etag };
 
 				// --- Tags: a fallback for repos that tag without cutting a GitHub release.
 				// /tags carries no date at all, so the old code stamped every tag with the fetch
 				// time; combined with `published_at = excluded.published_at` on upsert that made
 				// every ancient tag re-float to the top of recency views on every single run.
 				const tags = await fetchConditional(ctx, `${API_BASE}/repos/${repo}/tags`, headers, repoCursor.tagsEtag, budget, bucket);
-				if (tags.status === 429 || tags.rateLimited) sawRateLimit = true;
+				if (tags.status === 429 || tags.rateLimited) outRateLimited = true;
 				if (tags.body) {
 					const page = (tags.body as GhTag[]).filter((t) => typeof t?.name === "string");
 					const known = repoCursor.knownTags;
@@ -206,7 +214,7 @@ export class GitHubCollector implements Collector {
 								// Leave it out of knownTags so the next run retries it, rather than
 								// emitting it with a fabricated date or losing it permanently.
 								unresolved.add(t.name);
-								warnings.push(`${repo}: could not resolve commit date for tag ${t.name} (deferred)`);
+								outWarnings.push(`${repo}: could not resolve commit date for tag ${t.name} (deferred)`);
 								continue;
 							}
 							if (Date.parse(publishedAt) < Date.parse(ctx.since.toISOString())) {
@@ -214,13 +222,13 @@ export class GitHubCollector implements Collector {
 								// a cursor reset): seen, remembered, but not reported as news.
 								continue;
 							}
-							items.push(tagToItem(repo, t, publishedAt, startedAt));
+							outItems.push(tagToItem(repo, t, publishedAt, startedAt));
 						}
 					}
 					const remembered = [...page.map((t) => t.name).filter((n) => !unresolved.has(n)), ...(known ?? [])];
-					nextCursor[repo] = { ...nextCursor[repo], knownTags: dedupe(remembered).slice(0, MAX_REMEMBERED_TAGS) };
+					outCursor = { ...outCursor, knownTags: dedupe(remembered).slice(0, MAX_REMEMBERED_TAGS) };
 				}
-				if (tags.etag) nextCursor[repo] = { ...nextCursor[repo], tagsEtag: tags.etag };
+				if (tags.etag) outCursor = { ...outCursor, tagsEtag: tags.etag };
 
 				const since = repoCursor.issuesSince ?? ctx.since.toISOString();
 				const issuesUrl = `${API_BASE}/repos/${repo}/issues?state=all&sort=updated&direction=desc&since=${encodeURIComponent(since)}&per_page=100`;
@@ -232,32 +240,41 @@ export class GitHubCollector implements Collector {
 					timeoutMs: 10_000,
 				}).catch((err) => {
 					if (err instanceof HttpError && err.status === 429) {
-						sawRateLimit = true;
-						warnings.push(`${repo}: rate limited fetching issues`);
+						outRateLimited = true;
+						outWarnings.push(`${repo}: rate limited fetching issues`);
 						return undefined;
 					}
 					throw err;
 				});
 				if (issuesRes) {
 					const remainingHeader = issuesRes.headers.get("x-ratelimit-remaining");
-					if (remainingHeader !== null && Number(remainingHeader) <= 1) sawRateLimit = true;
+					if (remainingHeader !== null && Number(remainingHeader) <= 1) outRateLimited = true;
 					const body = (await issuesRes.json()) as unknown;
 					if (Array.isArray(body)) {
 						for (const raw of body as GhIssue[]) {
 							if (!isMechanicallyImportant(raw)) continue;
-							items.push(issueToItem(repo, raw, startedAt));
+							outItems.push(issueToItem(repo, raw, startedAt));
 						}
 						// The watermark advances only when the window was actually read. Advancing it
 						// after a swallowed 429 silently skipped that window's issues forever.
-						nextCursor[repo] = { ...nextCursor[repo], issuesSince: ctx.now().toISOString() };
+						outCursor = { ...outCursor, issuesSince: ctx.now().toISOString() };
 					} else {
-						warnings.push(`${repo}: unexpected issues payload shape (dropped)`);
+						outWarnings.push(`${repo}: unexpected issues payload shape (dropped)`);
 					}
 				}
 			} catch (err) {
-				repoFailures += 1;
-				warnings.push(`${repo}: ${(err as Error).message}`);
+				outFailed = true;
+				outWarnings.push(`${repo}: ${(err as Error).message}`);
 			}
+			return { repo, outItems, outWarnings, outCursor, outRateLimited, outFailed };
+		});
+
+		for (const result of perRepo) {
+			items.push(...result.outItems);
+			warnings.push(...result.outWarnings);
+			if (result.outCursor !== undefined) nextCursor[result.repo] = result.outCursor;
+			if (result.outRateLimited) sawRateLimit = true;
+			if (result.outFailed) repoFailures += 1;
 		}
 
 		if (sawRateLimit) health = "DEGRADED";

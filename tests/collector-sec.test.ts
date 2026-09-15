@@ -156,3 +156,86 @@ describe("secCollector", () => {
 		expect(r1.items.map((i) => i.externalId)).toEqual(r2.items.map((i) => i.externalId));
 	});
 });
+
+describe("secCollector concurrency", () => {
+	const companies = Array.from({ length: 8 }, (_, i) => ({
+		ticker: `T${i}`,
+		name: `Company ${i}`,
+		cik: String(1_000_000 + i).padStart(10, "0"),
+	}));
+
+	function watchlistsFor(list: typeof companies) {
+		return {
+			github_repos: [],
+			sec_companies: list,
+			crypto_assets: [],
+			fred_series: [],
+			subreddits: [],
+			youtube_channels: [],
+			arxiv_categories: [],
+		};
+	}
+
+	it("polls several companies at once, capped at the collector concurrency limit", async () => {
+		let inFlight = 0;
+		let peak = 0;
+		const fetchImpl = vi.fn(async (input: unknown) => {
+			inFlight++;
+			peak = Math.max(peak, inFlight);
+			await new Promise((resolve) => setTimeout(resolve, 5_000));
+			inFlight--;
+			const cik = String(input).match(/CIK(\d+)\.json/)?.[1] ?? "";
+			return jsonResponse({
+				name: cik,
+				filings: {
+					recent: {
+						form: ["8-K"],
+						filingDate: ["2026-01-01"],
+						accessionNumber: [`${cik}-26-000001`],
+						primaryDocument: ["a8k.htm"],
+					},
+				},
+			});
+		});
+		const ctx = makeCtx({
+			secrets: UA_SECRET,
+			watchlists: watchlistsFor(companies),
+			fetch: fetchImpl as unknown as typeof fetch,
+		});
+
+		const result = await runCollect(ctx);
+
+		expect(peak).toBeGreaterThan(1);
+		expect(peak).toBeLessThanOrEqual(4);
+		expect(result.items).toHaveLength(companies.length);
+	});
+
+	it("keeps items in watchlist order regardless of which company answers first", async () => {
+		const fetchImpl = vi.fn(async (input: unknown) => {
+			const cik = String(input).match(/CIK(\d+)\.json/)?.[1] ?? "";
+			// Later companies answer sooner, so completion order is the reverse of input order.
+			const index = companies.findIndex((c) => c.cik === cik);
+			await new Promise((resolve) => setTimeout(resolve, (companies.length - index) * 1_000));
+			return jsonResponse({
+				name: cik,
+				filings: {
+					recent: {
+						form: ["8-K"],
+						filingDate: ["2026-01-01"],
+						accessionNumber: [`${cik}-26-000001`],
+						primaryDocument: ["a8k.htm"],
+					},
+				},
+			});
+		});
+		const ctx = makeCtx({
+			secrets: UA_SECRET,
+			watchlists: watchlistsFor(companies),
+			fetch: fetchImpl as unknown as typeof fetch,
+		});
+
+		const result = await runCollect(ctx);
+
+		expect(result.items.map((i) => i.metadata?.["cik"])).toEqual(companies.map((c) => c.cik));
+	});
+});

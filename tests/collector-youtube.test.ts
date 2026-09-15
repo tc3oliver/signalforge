@@ -237,3 +237,60 @@ describe("youtubeCollector handles", () => {
 		expect(result.warnings.some((w) => w.includes("@someone") && w.includes("YOUTUBE_API_KEY"))).toBe(true);
 	});
 });
+
+describe("youtubeCollector concurrency", () => {
+	const channels = Array.from({ length: 8 }, (_, i) => `UCchannel${i}`);
+
+	function watchlistsFor() {
+		return {
+			github_repos: [],
+			sec_companies: [],
+			crypto_assets: [],
+			fred_series: [],
+			subreddits: [],
+			youtube_channels: channels,
+			arxiv_categories: [],
+		};
+	}
+
+	function channelOf(url: string): string {
+		return url.match(/channel_id=([^&]+)/)?.[1] ?? "";
+	}
+
+	it("reads several channel feeds at once, capped at the collector concurrency limit", async () => {
+		let inFlight = 0;
+		let peak = 0;
+		const fetchImpl = vi.fn(async (input: unknown) => {
+			inFlight++;
+			peak = Math.max(peak, inFlight);
+			await new Promise((resolve) => setTimeout(resolve, 5_000));
+			inFlight--;
+			const channel = channelOf(String(input));
+			return new Response(atomFeed([{ id: `v-${channel}`, title: `video from ${channel}` }]), {
+				headers: { "content-type": "application/atom+xml" },
+			});
+		});
+
+		const result = await runCollect(makeCtx({ watchlists: watchlistsFor(), fetch: fetchImpl as unknown as typeof fetch }));
+
+		expect(peak).toBeGreaterThan(1);
+		expect(peak).toBeLessThanOrEqual(4);
+		expect(result.items).toHaveLength(channels.length);
+	});
+
+	it("keeps channel items in watchlist order when feeds answer out of order", async () => {
+		const fetchImpl = vi.fn(async (input: unknown) => {
+			const channel = channelOf(String(input));
+			const index = channels.indexOf(channel);
+			// Later channels answer sooner, so completion order is the reverse of input order.
+			await new Promise((resolve) => setTimeout(resolve, (channels.length - index) * 1_000));
+			return new Response(atomFeed([{ id: `v-${channel}`, title: `video from ${channel}` }]), {
+				headers: { "content-type": "application/atom+xml" },
+			});
+		});
+
+		const result = await runCollect(makeCtx({ watchlists: watchlistsFor(), fetch: fetchImpl as unknown as typeof fetch }));
+
+		expect(result.items.map((i) => i.metadata?.["channelId"])).toEqual(channels);
+	});
+});

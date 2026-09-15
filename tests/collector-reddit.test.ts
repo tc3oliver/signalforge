@@ -175,3 +175,57 @@ describe("redditCollector", () => {
 		expect(result.warnings.some((w) => w.includes("duplicate"))).toBe(true);
 	});
 });
+
+describe("redditCollector concurrency", () => {
+	const subreddits = Array.from({ length: 8 }, (_, i) => `sub${i}`);
+
+	function watchlistsFor() {
+		return {
+			github_repos: [],
+			sec_companies: [],
+			crypto_assets: [],
+			fred_series: [],
+			subreddits,
+			youtube_channels: [],
+			arxiv_categories: [],
+		};
+	}
+
+	function nameOf(url: string): string {
+		return url.match(/\/r\/([^/]+)\//)?.[1] ?? "search";
+	}
+
+	it("reads several subreddit listings at once, capped at the collector concurrency limit", async () => {
+		let inFlight = 0;
+		let peak = 0;
+		const fetchImpl = vi.fn(async (input: unknown) => {
+			inFlight++;
+			peak = Math.max(peak, inFlight);
+			await new Promise((resolve) => setTimeout(resolve, 5_000));
+			inFlight--;
+			const name = nameOf(String(input));
+			return jsonResponse(listing([{ id: `p-${name}`, title: `post from ${name}` }]));
+		});
+
+		const result = await runCollect(makeCtx({ watchlists: watchlistsFor(), fetch: fetchImpl as unknown as typeof fetch }));
+
+		expect(peak).toBeGreaterThan(1);
+		expect(peak).toBeLessThanOrEqual(4);
+		expect(result.items.length).toBeGreaterThanOrEqual(subreddits.length);
+	});
+
+	it("keeps subreddit items in watchlist order when listings answer out of order", async () => {
+		const fetchImpl = vi.fn(async (input: unknown) => {
+			const name = nameOf(String(input));
+			const index = subreddits.indexOf(name);
+			// Later subreddits answer sooner, so completion order is the reverse of input order.
+			await new Promise((resolve) => setTimeout(resolve, (subreddits.length - index) * 1_000));
+			return jsonResponse(listing([{ id: `p-${name}`, title: `post from ${name}` }]));
+		});
+
+		const result = await runCollect(makeCtx({ watchlists: watchlistsFor(), fetch: fetchImpl as unknown as typeof fetch }));
+
+		const fromSubreddits = result.items.filter((i) => i.sourceName.startsWith("r/"));
+		expect(fromSubreddits.map((i) => i.sourceName)).toEqual(subreddits.map((s) => `r/${s}`));
+	});
+});

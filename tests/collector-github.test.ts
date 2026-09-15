@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GitHubCollector } from "../src/collectors/github.ts";
 import type { CollectorContext } from "../src/collectors/types.ts";
 
@@ -373,5 +373,73 @@ describe("GitHubCollector narrowing", () => {
 		const result = await collector.collect(makeCtx({ hasSecret: async () => true }, baseHandlers() as unknown as typeof fetch));
 		const cursor = JSON.parse(result.cursor as string) as Record<string, { issuesSince?: string }>;
 		expect(cursor[REPO]?.issuesSince).toBe("2026-09-13T00:00:00.000Z");
+	});
+});
+
+describe("GitHubCollector concurrency", () => {
+	beforeEach(() => vi.useFakeTimers());
+	afterEach(() => vi.useRealTimers());
+
+	const repos = Array.from({ length: 8 }, (_, i) => `acme/repo-${i}`);
+
+	function repoOf(url: string): string {
+		return url.match(/\/repos\/([^/]+\/[^/?]+)/)?.[1] ?? "";
+	}
+
+	function slowHandlers(delayFor: (repo: string) => number) {
+		let inFlight = 0;
+		let peak = 0;
+		const fetchImpl = vi.fn(async (url: string) => {
+			inFlight++;
+			peak = Math.max(peak, inFlight);
+			const repo = repoOf(url);
+			await new Promise((resolve) => setTimeout(resolve, delayFor(repo)));
+			inFlight--;
+			if (url.includes("/releases")) {
+				return jsonResponse(
+					[
+						{
+							id: 1,
+							tag_name: "v1.0.0",
+							name: `${repo} v1.0.0`,
+							html_url: `https://x/${repo}/release/1`,
+							body: "notes",
+							published_at: "2026-09-10T00:00:00Z",
+							author: { login: "alice" },
+						},
+					],
+					{ "x-ratelimit-remaining": "100" },
+				);
+			}
+			if (url.includes("/tags")) return jsonResponse([], { "x-ratelimit-remaining": "100" });
+			return jsonResponse([], { "x-ratelimit-remaining": "100" });
+		});
+		return { fetchImpl, peak: () => peak };
+	}
+
+	it("polls several repos at once, capped at the collector concurrency limit", async () => {
+		const { fetchImpl, peak } = slowHandlers(() => 20);
+		const collector = new GitHubCollector({ repos });
+
+		const promise = collector.collect(makeCtx({}, fetchImpl as unknown as typeof fetch));
+		await vi.runAllTimersAsync();
+		const result = await promise;
+
+		expect(peak()).toBeGreaterThan(1);
+		expect(peak()).toBeLessThanOrEqual(4);
+		expect(result.items).toHaveLength(repos.length);
+	});
+
+	it("keeps items and the cursor in watchlist order when repos answer out of order", async () => {
+		// Later repos answer sooner, so completion order is the reverse of input order.
+		const { fetchImpl } = slowHandlers((repo) => (repos.length - repos.indexOf(repo)) * 5);
+		const collector = new GitHubCollector({ repos });
+
+		const promise = collector.collect(makeCtx({}, fetchImpl as unknown as typeof fetch));
+		await vi.runAllTimersAsync();
+		const result = await promise;
+
+		expect(result.items.map((i) => i.metadata?.["repo"])).toEqual(repos);
+		expect(Object.keys(JSON.parse(result.cursor ?? "{}"))).toEqual(repos);
 	});
 });

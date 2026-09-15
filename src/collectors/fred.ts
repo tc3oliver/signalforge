@@ -1,12 +1,15 @@
-import { HttpError, TokenBucket, fetchWithRetry } from "./http.ts";
+import { scrubSecrets } from "../runtime/redact.ts";
+import { COLLECTOR_CONCURRENCY, HttpError, TokenBucket, fetchWithRetry, mapWithConcurrency } from "./http.ts";
 import type { Collector, CollectorContext, CollectorResult, CollectedFact } from "./types.ts";
 
 const API_BASE = "https://api.stlouisfed.org/fred/series/observations";
 
-/** FRED takes the key as a query param; never let it reach a log or stored raw payload. */
-function redactUrl(url: string): string {
-	return url.replace(/([?&]api_key=)[^&]+/i, "$1REDACTED");
-}
+/**
+ * FRED takes the key as a query param; never let it reach a log or stored raw
+ * payload. Redaction lives in one shared module rather than here, so a fourth
+ * keyed collector inherits it instead of needing its own copy.
+ */
+const redactUrl = scrubSecrets;
 
 interface Observation {
 	date: string;
@@ -77,7 +80,14 @@ export const fredCollector: Collector = {
 
 		if (series.length === 0) problems.push("no FRED series configured");
 
-		for (const seriesId of series) {
+		// Series are independent observation fetches; run a few at once and fold the
+		// per-series output back in watchlist order so facts and messages stay deterministic.
+		const perSeries = await mapWithConcurrency(series, COLLECTOR_CONCURRENCY, async (seriesId) => {
+			const outFacts: CollectedFact[] = [];
+			const outProblems: string[] = [];
+			const outNotes: string[] = [];
+			let outFetched = 0;
+			let outCursor: string | undefined;
 			const observationStart = cursorIn[seriesId] ?? ctx.since.toISOString().slice(0, 10);
 			const url = `${API_BASE}?series_id=${seriesId}&observation_start=${observationStart}&file_type=json&api_key=${apiKey}`;
 			try {
@@ -88,8 +98,8 @@ export const fredCollector: Collector = {
 				// simply has nothing new -- and under the health rule below, that would
 				// turn a real fault into a silent OK.
 				if (!Array.isArray(body.observations)) {
-					problems.push(`${seriesId}: malformed payload, missing observations array`);
-					continue;
+					outProblems.push(`${seriesId}: malformed payload, missing observations array`);
+					return { outFacts, outProblems, outNotes, outFetched, outCursor };
 				}
 				const observations = body.observations;
 
@@ -98,8 +108,8 @@ export const fredCollector: Collector = {
 					const value = Number(obs.value);
 					// FRED uses "." for a missing reading on that date; skip without treating it as a parse failure.
 					if (obs.value === "." || Number.isNaN(value)) continue;
-					itemsFetched++;
-					facts.push({
+					outFetched++;
+					outFacts.push({
 						kind: "macro",
 						label: seriesId,
 						value,
@@ -119,21 +129,31 @@ export const fredCollector: Collector = {
 					// the fact's real asOf — stays where it was, which is how staleness is detected.
 					const next = new Date(latestDate);
 					next.setUTCDate(next.getUTCDate() + 1);
-					cursorOut[seriesId] = next.toISOString().slice(0, 10);
+					outCursor = next.toISOString().slice(0, 10);
 				} else if (observations.length === 0) {
 					// Not a problem: an economic series that has not printed since the
 					// last run is the normal state of most series on most days. It is
 					// recorded so an operator can see the series was asked, but it must
 					// not be mistaken for a fault -- see the health rule below.
-					notes.push(`${seriesId}: no new observations since ${observationStart}`);
+					outNotes.push(`${seriesId}: no new observations since ${observationStart}`);
 				}
 			} catch (err) {
 				if (err instanceof HttpError) {
-					problems.push(`${seriesId} returned ${err.status} for ${redactUrl(url)}`);
+					outProblems.push(`${seriesId} returned ${err.status} for ${redactUrl(url)}`);
 				} else {
-					problems.push(`${seriesId} request failed: ${(err as Error).message}`);
+					outProblems.push(`${seriesId} request failed: ${(err as Error).message}`);
 				}
 			}
+			return { outFacts, outProblems, outNotes, outFetched, outCursor };
+		});
+
+		for (const [index, result] of perSeries.entries()) {
+			facts.push(...result.outFacts);
+			problems.push(...result.outProblems);
+			notes.push(...result.outNotes);
+			itemsFetched += result.outFetched;
+			const seriesId = series[index] as string;
+			if (result.outCursor !== undefined) cursorOut[seriesId] = result.outCursor;
 		}
 
 		/*
