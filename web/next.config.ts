@@ -12,7 +12,23 @@ import type { NextConfig } from "next";
 // not at web/ — otherwise Next guesses from whichever lockfile it finds first.
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
+/*
+ * Where the build lands.
+ *
+ * `pnpm verify` runs a web build, and the LaunchAgent serves `.next` with
+ * `next start` -- so verifying the repo overwrote, chunk by chunk, the artifact
+ * a live server was reading. Nothing had broken yet, but "the reader survived
+ * the last verification" was luck, not a property: a request landing between
+ * the old chunks being deleted and the new ones being written gets a 500, and
+ * the window is the length of a build.
+ *
+ * So verification builds somewhere else (NEXT_DIST_DIR=.next-verify, set by the
+ * root `build` script) and only `pnpm web:deploy` writes the directory being
+ * served. Deploying is now something you do on purpose rather than a side
+ * effect of running the tests.
+ */
 const config: NextConfig = {
+	distDir: process.env["NEXT_DIST_DIR"]?.trim() || ".next",
 	experimental: { externalDir: true },
 	outputFileTracingRoot: repoRoot,
 	// The reader publishes nothing and embeds nothing third-party.

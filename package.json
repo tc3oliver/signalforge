@@ -20,7 +20,7 @@
     "test:integration": "DI_REQUIRE_INTEGRATION=1 vitest --run",
     "verify": "pnpm run typecheck && pnpm run phase1:generate && pnpm run test:integration && pnpm run build",
     "typecheck": "tsc --noEmit",
-    "build": "pnpm run typecheck && pnpm --dir web run build",
+    "build": "pnpm run typecheck && NEXT_DIST_DIR=.next-verify pnpm --dir web run build",
     "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
     "db:reset": "tsx --env-file-if-exists=.env src/db/migrate.ts --reset",
     "db:prune-test": "tsx --env-file-if-exists=.env src/cli/prune-test-lineages.ts",
@@ -38,6 +38,7 @@
     "benchmark:models": "tsx src/cli/benchmark.ts",
     "web:dev": "pnpm --dir web run dev",
     "web:build": "pnpm --dir web run build",
+    "web:deploy": "pnpm --dir web run build && launchctl kickstart -k gui/$(id -u)/com.dailyintelligence.web",
     "web:start": "pnpm --dir web run start",
     "web:seed": "tsx --env-file-if-exists=.env web/scripts/seed-dev.ts"
   },

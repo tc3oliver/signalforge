@@ -22,6 +22,17 @@
 	// Files under ../src are typechecked transitively, through what the app
 	// actually imports. Globbing the whole tree would make this build fail on
 	// unrelated pipeline code that the reader never loads.
-	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+	//
+	// Both build directories are listed because `next build` appends whichever
+	// one it just wrote and rewrites this file to do it. `pnpm verify` builds to
+	// .next-verify and `pnpm web:deploy` builds to .next, so naming both up front
+	// is what stops the two from taking turns reformatting the file.
+	"include": [
+		"next-env.d.ts",
+		"**/*.ts",
+		"**/*.tsx",
+		".next/types/**/*.ts",
+		".next-verify/types/**/*.ts"
+	],
 	"exclude": ["node_modules"]
 }

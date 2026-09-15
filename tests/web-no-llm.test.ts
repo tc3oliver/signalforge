@@ -15,7 +15,22 @@ import { describe, expect, it } from "vitest";
 
 const WEB_ROOT = fileURLToPath(new URL("../web", import.meta.url));
 
-const SKIP_DIRS = new Set(["node_modules", ".next", "dist", "out", ".turbo"]);
+const SKIP_DIRS = new Set(["node_modules", "dist", "out", ".turbo"]);
+/**
+ * Build output, by prefix rather than by exact name.
+ *
+ * This was the literal string ".next", and adding a second build directory --
+ * `.next-verify`, so that verifying the repo stops overwriting the artifact the
+ * LaunchAgent is serving -- walked the scanner straight into compiled bundles
+ * and failed the whole suite on minified framework code. A build directory is
+ * generated output whatever it is called; scanning it tells us nothing about
+ * what the reader's source imports, which is the only question here.
+ */
+const SKIP_DIR_PREFIXES = [".next"];
+
+function isBuildOutput(name: string): boolean {
+	return SKIP_DIR_PREFIXES.some((prefix) => name === prefix || name.startsWith(`${prefix}-`));
+}
 const SOURCE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 
 /** Anything that would put an agent runtime on the request path. */
@@ -30,10 +45,7 @@ async function walk(dir: string): Promise<string[]> {
 	const entries = await readdir(dir, { withFileTypes: true });
 	const files: string[] = [];
 	for (const entry of entries) {
-		if (entry.name.startsWith(".") && entry.name !== ".") {
-			if (SKIP_DIRS.has(entry.name)) continue;
-		}
-		if (SKIP_DIRS.has(entry.name)) continue;
+		if (SKIP_DIRS.has(entry.name) || isBuildOutput(entry.name)) continue;
 		const full = join(dir, entry.name);
 		if (entry.isDirectory()) {
 			files.push(...(await walk(full)));

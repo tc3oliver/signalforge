@@ -178,6 +178,19 @@ infrastructure fails instead:
 `pnpm test:integration` is the same suite alone, without the typecheck and build, for
 when you want the strict contract but not the whole pipeline.
 
+**`pnpm verify` does not deploy the reader.** Its web build goes to
+`web/.next-verify`; the running LaunchAgent serves `web/.next` and is never
+touched. That separation exists because the two used to be the same directory, so
+verifying the repo overwrote, chunk by chunk, the artifact a live server was
+reading — a request landing mid-build gets a 500, and the window is the length of
+a build. Nothing had broken yet, which is the point: it was luck, not a property.
+
+After changing anything under `web/`, publish it deliberately:
+
+```bash
+pnpm web:deploy    # builds into web/.next, then kickstarts com.dailyintelligence.web
+```
+
 ## Database down
 
 **Symptom:** any stage error mentioning connection refused/timeout to
