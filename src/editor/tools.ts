@@ -1,14 +1,16 @@
 import { Type } from "typebox";
 import { defineTool, type ToolDefinition } from "@earendil-works/pi-coding-agent";
-import type { DailyManifest, DailyMaterials, StructuredFact } from "../schemas/index.ts";
+import type { DailyManifest, DailyMaterials } from "../schemas/index.ts";
 import { DailyBriefInput, type DailyBrief } from "../schemas/index.ts";
 import type { StoryRepository } from "../stories/repository.ts";
 import { requiredMustKnowCount, requiredStoryCount, validateBrief } from "../validator/brief-validator.ts";
 import { ToolRejection } from "../curator/tools.ts";
-
-function ok(payload: unknown) {
-	return { content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }], details: {} };
-}
+import {
+	defineFindHistoryTool,
+	defineStructuredFactsTool,
+	ok,
+	rejectFromZod,
+} from "../agent-tools/shared.ts";
 
 export interface EditorContext {
 	date: string;
@@ -118,54 +120,22 @@ export function createEditorTools(ctx: EditorContext): ToolDefinition[] {
 		},
 	});
 
-	const findHistory = defineTool({
-		name: "find_history",
-		label: "Find history",
+	const findHistory = defineFindHistoryTool({
+		repo: ctx.repo,
+		date: ctx.date,
 		description:
 			"Look up a story's entries on previous days so 'what changed' describes an actual delta rather than repeating today's facts.",
 		promptSnippet: "find_history: what this story looked like on earlier days",
-		parameters: Type.Object({
-			text: Type.Optional(Type.String()),
-			storyId: Type.Optional(Type.String()),
-			limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 25 })),
-		}),
-		execute: async (_id, params) => {
-			if (!params.text && !params.storyId) {
-				throw new ToolRejection("Provide either text or storyId.");
-			}
-			const entries = await ctx.repo.findHistory({
-				text: params.text,
-				storyId: params.storyId,
-				beforeDate: ctx.date,
-				limit: params.limit ?? 10,
-			});
-			return ok({ entries });
-		},
 	});
 
-	const getStructuredFacts = defineTool({
-		name: "get_structured_facts",
-		label: "Structured facts",
+	const getStructuredFacts = defineStructuredFactsTool({
+		facts: ctx.manifest.facts,
+		idField: "factId",
+		paramName: "factIds",
+		allow: allowedItemIds,
 		description:
 			"Return verified numeric facts. Cite these by factId in factRefs. Never write a market, macro or benchmark number that does not come from here — the renderer prints the stored value, so an invented number cannot reach the brief anyway.",
 		promptSnippet: "get_structured_facts: verified numbers, cite by factId",
-		parameters: Type.Object({
-			kind: Type.Optional(
-				Type.Union([Type.Literal("crypto"), Type.Literal("macro"), Type.Literal("filing")]),
-			),
-			factIds: Type.Optional(Type.Array(Type.String())),
-		}),
-		execute: async (_id, params) => {
-			let facts: StructuredFact[] = ctx.manifest.facts.filter((f) =>
-				allowedItemIds.has(f.sourceItemId),
-			);
-			if (params.kind) facts = facts.filter((f) => f.kind === params.kind);
-			if (params.factIds && params.factIds.length > 0) {
-				const wanted = new Set(params.factIds);
-				facts = facts.filter((f) => wanted.has(f.factId));
-			}
-			return ok({ facts });
-		},
 	});
 
 	const submitBrief = defineTool({
@@ -229,11 +199,7 @@ export function createEditorTools(ctx: EditorContext): ToolDefinition[] {
 			};
 			const parsed = DailyBriefInput.safeParse(normalized);
 			if (!parsed.success) {
-				throw new ToolRejection(
-					`submit_brief payload rejected: ${parsed.error.issues
-						.map((i) => `${i.path.join(".")}: ${i.message}`)
-						.join("; ")}`,
-				);
+				throw rejectFromZod("submit_brief payload rejected", parsed.error);
 			}
 
 			const result = validateBrief(parsed.data, {

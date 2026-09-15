@@ -1,6 +1,6 @@
 import { Type } from "typebox";
 import { defineTool, type ToolDefinition } from "@earendil-works/pi-coding-agent";
-import type { DailyManifest, NormalizedItem, StructuredFact } from "../schemas/index.ts";
+import type { DailyManifest, NormalizedItem } from "../schemas/index.ts";
 import {
 	DailyMaterialsInput,
 	ItemDecisionInput,
@@ -12,19 +12,18 @@ import type { ResearchRouter } from "../research/router.ts";
 import { toCollectedItem } from "../research/types.ts";
 import type { StoryRepository } from "../stories/repository.ts";
 import { validateMaterials } from "../validator/materials-validator.ts";
+import {
+	defineFindHistoryTool,
+	defineStructuredFactsTool,
+	ok,
+	rejectFromZod,
+	ToolRejection,
+} from "../agent-tools/shared.ts";
 
-/**
- * Tools reject by throwing. Pi turns a thrown error into a tool-error result the
- * model sees and can correct, which is exactly the behaviour we want: a rejected
- * submit_materials must teach the model what is missing, not end the run.
- */
-export class ToolRejection extends Error {
-	override name = "ToolRejection";
-}
-
-function ok(payload: unknown) {
-	return { content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }], details: {} };
-}
+// Re-exported: `ToolRejection` has always been imported from here by the editor
+// tools and by tests, and moving where it is declared should not move where it
+// is imported from.
+export { ToolRejection };
 
 /** Only the fields a broad scan needs. Full content costs a get_item_detail. */
 function toSummaryView(item: NormalizedItem) {
@@ -102,10 +101,6 @@ let researchConfig: CuratorResearchConfig | undefined;
 /** Enables `search_web` for sessions created while the config is set. Pass undefined to disable. */
 export function configureCuratorResearch(config?: CuratorResearchConfig): void {
 	researchConfig = config;
-}
-
-export function curatorResearchEnabled(): boolean {
-	return researchConfig !== undefined;
 }
 
 export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
@@ -236,30 +231,13 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		},
 	});
 
-	const findHistory = defineTool({
-		name: "find_history",
-		label: "Find history",
+	const findHistory = defineFindHistoryTool({
+		repo: ctx.repo,
+		date: ctx.date,
 		description:
 			"Search story ledger entries from PREVIOUS days. Call this before you decide a changeType — it is the only way to know whether today adds anything to what was already known.",
 		promptSnippet: "find_history: look up this story on earlier days",
-		parameters: Type.Object({
-			text: Type.Optional(Type.String()),
-			storyId: Type.Optional(Type.String()),
-			limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 25 })),
-		}),
-		execute: async (_id, params) => {
-			if (!params.text && !params.storyId) {
-				throw new ToolRejection("Provide either text or storyId.");
-			}
-			const results = await ctx.repo.findHistory({
-				text: params.text,
-				storyId: params.storyId,
-				beforeDate: ctx.date,
-				limit: params.limit ?? 10,
-			});
-			note("find_history", { storyId: params.storyId, text: params.text, hits: results.length });
-			return ok({ entries: results });
-		},
+		note,
 	});
 
 	const getStory = defineTool({
@@ -337,11 +315,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		execute: async (_id, params) => {
 			const parsed = StoryUpsertInput.safeParse({ ...params, factRefs: params.factRefs ?? [] });
 			if (!parsed.success) {
-				throw new ToolRejection(
-					`upsert_story payload rejected: ${parsed.error.issues
-						.map((i) => `${i.path.join(".")}: ${i.message}`)
-						.join("; ")}`,
-				);
+				throw rejectFromZod("upsert_story payload rejected", parsed.error);
 			}
 			const input = parsed.data;
 
@@ -397,11 +371,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			for (const raw of params.decisions) {
 				const parsed = ItemDecisionInput.safeParse(raw);
 				if (!parsed.success) {
-					throw new ToolRejection(
-						`decision for "${raw.itemId}" rejected: ${parsed.error.issues
-							.map((i) => `${i.path.join(".")}: ${i.message}`)
-							.join("; ")}`,
-					);
+					throw rejectFromZod(`decision for "${raw.itemId}" rejected`, parsed.error);
 				}
 				if (!itemsById.has(parsed.data.itemId)) {
 					throw new ToolRejection(
@@ -420,11 +390,22 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 
 			// A CANDIDATE or DUPLICATE that names a storyId must name one that exists,
 			// otherwise the clustering recorded here is a dangling reference.
-			for (const d of parsedList) {
-				if (d.storyId && !(await ctx.repo.getStory(d.storyId))) {
-					throw new ToolRejection(
-						`storyId "${d.storyId}" does not exist yet. Call upsert_story for it first, then resend this batch.`,
-					);
+			//
+			// Resolved against today's stories once for the whole batch. getStory
+			// searches every date, so it stays the authority for the rare id created
+			// on an earlier day; it just no longer runs fifty times for the fifty
+			// ids the curator almost always created minutes ago. Rejection order and
+			// wording are unchanged.
+			const namedStoryIds = parsedList.map((d) => d.storyId).filter((id): id is string => !!id);
+			if (namedStoryIds.length > 0) {
+				const today = new Set((await ctx.repo.listStories(ctx.date)).map((s) => s.storyId));
+				for (const d of parsedList) {
+					if (!d.storyId || today.has(d.storyId)) continue;
+					if (!(await ctx.repo.getStory(d.storyId))) {
+						throw new ToolRejection(
+							`storyId "${d.storyId}" does not exist yet. Call upsert_story for it first, then resend this batch.`,
+						);
+					}
 				}
 			}
 
@@ -441,27 +422,13 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		},
 	});
 
-	const getStructuredFacts = defineTool({
-		name: "get_structured_facts",
-		label: "Structured facts",
+	const getStructuredFacts = defineStructuredFactsTool({
+		facts: ctx.manifest.facts,
+		idField: "sourceItemId",
+		paramName: "itemIds",
 		description:
 			"Return today's verified numeric facts (crypto, macro, company filings). Reference these by factId instead of writing numbers yourself — a number you type is not verifiable, a factId is.",
 		promptSnippet: "get_structured_facts: verified numbers you may cite by factId",
-		parameters: Type.Object({
-			kind: Type.Optional(
-				Type.Union([Type.Literal("crypto"), Type.Literal("macro"), Type.Literal("filing")]),
-			),
-			itemIds: Type.Optional(Type.Array(Type.String())),
-		}),
-		execute: async (_id, params) => {
-			let facts: StructuredFact[] = ctx.manifest.facts;
-			if (params.kind) facts = facts.filter((f) => f.kind === params.kind);
-			if (params.itemIds && params.itemIds.length > 0) {
-				const wanted = new Set(params.itemIds);
-				facts = facts.filter((f) => wanted.has(f.sourceItemId));
-			}
-			return ok({ facts });
-		},
 	});
 
 	const submitMaterials = defineTool({
@@ -515,11 +482,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			};
 			const parsed = DailyMaterialsInput.safeParse(normalized);
 			if (!parsed.success) {
-				throw new ToolRejection(
-					`submit_materials payload rejected: ${parsed.error.issues
-						.map((i) => `${i.path.join(".")}: ${i.message}`)
-						.join("; ")}`,
-				);
+				throw rejectFromZod("submit_materials payload rejected", parsed.error);
 			}
 
 			const processed = await ctx.repo.processedItemIds(ctx.date);

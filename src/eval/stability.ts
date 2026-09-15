@@ -343,15 +343,24 @@ export interface LoadStabilityOptions {
 	dates: string[];
 }
 
-/** Newest run directory under `dateDir` by mtime, ties broken lexically. */
+/**
+ * Newest run directory under `dateDir` by mtime, ties broken lexically.
+ *
+ * Each entry is stat'ed exactly once. Calling statSync from inside the sort
+ * comparator re-stats the same directory O(n log n) times, and a comparator
+ * whose inputs can change under it is not a stable ordering either.
+ */
 function latestRunId(dateDir: string): string {
-	const entries = readdirSync(dateDir).filter((name) => statSync(join(dateDir, name)).isDirectory());
+	const entries = readdirSync(dateDir)
+		.map((name) => ({ name, stat: statSync(join(dateDir, name)) }))
+		.filter((e) => e.stat.isDirectory())
+		.map((e) => ({ name: e.name, mtimeMs: e.stat.mtimeMs }));
 	if (entries.length === 0) throw new Error(`no run directories under ${dateDir}`);
 	entries.sort((a, b) => {
-		const delta = statSync(join(dateDir, b)).mtimeMs - statSync(join(dateDir, a)).mtimeMs;
-		return delta !== 0 ? delta : a < b ? -1 : 1;
+		const delta = b.mtimeMs - a.mtimeMs;
+		return delta !== 0 ? delta : a.name < b.name ? -1 : 1;
 	});
-	return entries[0] as string;
+	return (entries[0] as { name: string }).name;
 }
 
 function readModelsFromAttempts(runDir: string): string[] {

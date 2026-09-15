@@ -48,12 +48,18 @@ export function matchStoriesToEvents(stories: MatchableStory[], gold: GoldTruth)
 	const storyItems = new Map<string, Set<string>>();
 	for (const story of stories) storyItems.set(story.storyId, new Set(story.sourceItemIds));
 
+	// Hoisted above the story loop: these depend only on the event, so building
+	// them per (story, event) pair rebuilt the same sets |stories| times.
+	const eventSets = gold.events.map((event) => ({
+		event,
+		items: new Set(event.itemIds),
+		primary: new Set(event.primaryItemIds),
+	}));
+
 	const candidates: StoryEventMatch[] = [];
 	for (const story of stories) {
 		const items = storyItems.get(story.storyId) ?? new Set<string>();
-		for (const event of gold.events) {
-			const eventItems = new Set(event.itemIds);
-			const eventPrimary = new Set(event.primaryItemIds);
+		for (const { event, items: eventItems, primary: eventPrimary } of eventSets) {
 			const score = jaccard(items, eventItems);
 			const storyTouchesPrimary = intersects(story.sourceItemIds, eventPrimary);
 			const eligible =

@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
 import type { z } from "zod";
@@ -69,16 +69,26 @@ function loadYamlFile<Schema extends z.ZodType>(root: string, file: string, sche
 	return result.data;
 }
 
-let cached: AppConfig | undefined;
+/*
+ * Keyed by resolved root, not a single slot. The old cache ignored `root`
+ * entirely, so the first caller's configuration was handed to every later one:
+ * a test loading a fixture root, or any tool reading a second checkout, got
+ * whichever files happened to be read first. Resolving the key means "." and an
+ * absolute path to the same directory share one entry.
+ */
+const cached = new Map<string, AppConfig>();
 
 /**
  * Loads and validates all config files under `<root>/config/`, caching the
- * result. `root` defaults to the project root (not cwd) so a shell alias or
- * an invocation from a subdirectory can't silently pick up the wrong files.
+ * result per root. `root` defaults to the project root (not cwd) so a shell
+ * alias or an invocation from a subdirectory can't silently pick up the wrong
+ * files.
  */
 export function loadConfig(root: string = PROJECT_ROOT): AppConfig {
-	if (cached) return cached;
-	cached = {
+	const key = resolve(root);
+	const hit = cached.get(key);
+	if (hit) return hit;
+	const config: AppConfig = {
 		// Order matters only for which file an invalid-config error names first;
 		// keep it the on-disk reading order.
 		interests: loadYamlFile(root, "interests.yaml", InterestsConfig),
@@ -87,7 +97,8 @@ export function loadConfig(root: string = PROJECT_ROOT): AppConfig {
 		discovery: loadYamlFile(root, "discovery.yaml", DiscoveryConfig),
 		agent: loadYamlFile(root, "agent.yaml", AgentConfig),
 	};
-	return cached;
+	cached.set(key, config);
+	return config;
 }
 
 /**
@@ -115,9 +126,9 @@ export function applyEnvOverrides(
 	};
 }
 
-/** Test-only: clears the cache so a fresh {@link loadConfig} call re-reads disk. */
+/** Test-only: clears every cached root so a fresh {@link loadConfig} call re-reads disk. */
 export function reloadConfig(): void {
-	cached = undefined;
+	cached.clear();
 }
 
 /** Returns the source types whose collector is enabled in `config/sources.yaml`. */

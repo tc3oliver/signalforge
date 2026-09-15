@@ -109,6 +109,17 @@ export type RunStageOptions<T> = {
 		attemptIndex: number;
 		mode: AttemptMode;
 		/**
+		 * Why the previous attempt failed, sanitized the same way the persisted
+		 * attempt record is. Undefined on the first attempt against the stage.
+		 *
+		 * `CORRECTIVE_RETRY_SAME` exists to hand a model its own rejection and
+		 * ask it to fix it, and both stages already accept a `lastError` for
+		 * exactly that — but the router never told the caller what the error was,
+		 * so the corrective prompt was never built and a CORRECTIVE attempt was
+		 * indistinguishable from a plain retry.
+		 */
+		lastError?: string;
+		/**
 		 * Test-only fault injection checkpoint. The stage callback reports its own
 		 * progress (items decided, tool calls made, ...) at whatever points make
 		 * sense for it; this throws a classifier-real synthetic error, at most once
@@ -142,6 +153,10 @@ export async function runStageWithFallback<T>(opts: RunStageOptions<T>): Promise
 
 	let attemptIndex = 0;
 	let lastError: unknown;
+	// The sanitized message, carried into the next attempt's context. Kept
+	// separately from `lastError`, which stays the raw error so the stage that
+	// finally gives up rethrows what actually happened.
+	let lastErrorMessage: string | undefined;
 	let sawCandidate = false;
 
 	for (let i = 0; i < chain.length; i++) {
@@ -170,7 +185,13 @@ export async function runStageWithFallback<T>(opts: RunStageOptions<T>): Promise
 					const err = faultInjector.check({ stage, spec, chainIndex, processedItems });
 					if (err) throw err;
 				};
-				const result = await onAttempt({ spec, attemptIndex, mode, checkFault });
+				const result = await onAttempt({
+					spec,
+					attemptIndex,
+					mode,
+					checkFault,
+					...(lastErrorMessage === undefined ? {} : { lastError: lastErrorMessage }),
+				});
 				const finishedAt = now();
 				recordAttempt({
 					...base,
@@ -182,6 +203,9 @@ export async function runStageWithFallback<T>(opts: RunStageOptions<T>): Promise
 			} catch (err) {
 				lastError = err;
 				const { failureClass, errorMeta } = classifyError(err);
+				const metaMessage = errorMeta["message"];
+				lastErrorMessage =
+					typeof metaMessage === "string" && metaMessage.length > 0 ? metaMessage : undefined;
 				const action = decideAction(failureClass, sameModelAttempts);
 
 				if (failureClass === "AUTH") {

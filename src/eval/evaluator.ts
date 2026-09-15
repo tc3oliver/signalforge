@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { readJson } from "../runtime/atomic-json.ts";
+import { readJson, readJsonIfExists } from "../runtime/atomic-json.ts";
 import { DailyBrief } from "../schemas/brief.ts";
 import { ItemDecision } from "../schemas/decision.ts";
 import { GoldTruth, type EvalReport } from "../schemas/gold.ts";
@@ -62,15 +62,21 @@ export function loadEvalInput(
 	};
 }
 
-/** run-state.json is optional; a missing attempt log means "no retries observed". */
+/**
+ * Failed editor attempts, which is what `structured_output_after_retry` reports.
+ *
+ * They live in `attempts.json` — a bare array appended to by
+ * `RunStateStore.appendAttempt` — and never in `run-state.json`, which is a
+ * strict object with no `attempts` key. Reading the wrong file pinned this
+ * metric at 0 for every run, so a model that needed three tries to produce a
+ * valid brief scored the same as one that got it right first time.
+ *
+ * The file is optional: a run that never recorded an attempt has no retries.
+ */
 function readRetryCount(runDir: string): number {
-	try {
-		const state = readJson<{ attempts?: { stage?: string; status?: string }[] }>(
-			join(runDir, "run-state.json"),
-		);
-		const attempts = state.attempts ?? [];
-		return attempts.filter((a) => a.stage === "EDITOR" && a.status === "FAILED").length;
-	} catch {
-		return 0;
-	}
+	const attempts = readJsonIfExists<{ stage?: string; status?: string }[]>(
+		join(runDir, "attempts.json"),
+	);
+	if (!Array.isArray(attempts)) return 0;
+	return attempts.filter((a) => a.stage === "EDITOR" && a.status === "FAILED").length;
 }

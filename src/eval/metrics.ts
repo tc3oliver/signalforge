@@ -4,7 +4,7 @@ import type { GoldTruth, MetricResult } from "../schemas/gold.ts";
 import type { DailyManifest } from "../schemas/manifest.ts";
 import type { DailyMaterials } from "../schemas/materials.ts";
 import type { StoryLedgerEntry } from "../schemas/story.ts";
-import { matchStoriesToEvents, type MatchableStory } from "./matching.ts";
+import { matchStoriesToEvents, type MatchableStory, type StoryEventMatch } from "./matching.ts";
 
 export interface EvalInput {
 	date: string;
@@ -51,7 +51,7 @@ function ratio(numerator: number, denominator: number): number | null {
 }
 
 /** Ledger entries the curator actually promoted into the materials, keyed by storyId. */
-export function selectedLedgerEntries(input: EvalInput): StoryLedgerEntry[] {
+function selectedLedgerEntries(input: EvalInput): StoryLedgerEntry[] {
 	const byId = new Map(input.ledger.map((entry) => [entry.storyId, entry]));
 	const out: StoryLedgerEntry[] = [];
 	for (const story of input.materials.stories) {
@@ -62,13 +62,42 @@ export function selectedLedgerEntries(input: EvalInput): StoryLedgerEntry[] {
 }
 
 /** Brief stories lifted to matchable shape; primary ids come from the ledger. */
-export function briefStoryViews(input: EvalInput): MatchableStory[] {
+function briefStoryViews(input: EvalInput): MatchableStory[] {
 	const byId = new Map(input.ledger.map((entry) => [entry.storyId, entry]));
 	return input.brief.stories.map((story) => ({
 		storyId: story.storyId,
-		sourceItemIds: story.sourceItemIds,
+		sourceItemIds: story.sourceItemIds ?? [],
 		primarySourceIds: byId.get(story.storyId)?.primarySourceIds ?? [],
 	}));
+}
+
+/**
+ * The two views and the two greedy assignments every metric is built from.
+ *
+ * These used to be recomputed inside each metric: `matchStoriesToEvents` ran
+ * three times and `briefStoryViews` three times over identical inputs, on the
+ * quadratic path. Computing them once in {@link computeMetrics} also guarantees
+ * the metrics agree with each other about which story matched which event.
+ *
+ * Each metric still accepts the input alone and derives its own when called
+ * standalone, so a test can exercise one gate in isolation.
+ */
+export interface EvalDerived {
+	briefViews: MatchableStory[];
+	briefMatches: StoryEventMatch[];
+	selectedEntries: StoryLedgerEntry[];
+	selectedMatches: StoryEventMatch[];
+}
+
+export function deriveEvalViews(input: EvalInput): EvalDerived {
+	const briefViews = briefStoryViews(input);
+	const selectedEntries = selectedLedgerEntries(input);
+	return {
+		briefViews,
+		briefMatches: matchStoriesToEvents(briefViews, input.gold).matches,
+		selectedEntries,
+		selectedMatches: matchStoriesToEvents(selectedEntries, input.gold).matches,
+	};
 }
 
 export function scanCoverage(input: EvalInput): MetricResult {
@@ -92,7 +121,10 @@ export function scanCoverage(input: EvalInput): MetricResult {
 	);
 }
 
-export function importantStoryRecall(input: EvalInput): MetricResult {
+export function importantStoryRecall(
+	input: EvalInput,
+	derived: EvalDerived = deriveEvalViews(input),
+): MetricResult {
 	const important = input.gold.events.filter((e) => e.expectedImportant);
 	if (important.length === 0) {
 		return metric(
@@ -105,8 +137,7 @@ export function importantStoryRecall(input: EvalInput): MetricResult {
 			"gold has no expectedImportant events",
 		);
 	}
-	const { matches } = matchStoriesToEvents(briefStoryViews(input), input.gold);
-	const matchedEvents = new Set(matches.map((m) => m.eventId));
+	const matchedEvents = new Set(derived.briefMatches.map((m) => m.eventId));
 	const hit = important.filter((e) => matchedEvents.has(e.eventId));
 	const missed = important.filter((e) => !matchedEvents.has(e.eventId));
 	return gte(
@@ -120,8 +151,11 @@ export function importantStoryRecall(input: EvalInput): MetricResult {
 	);
 }
 
-export function selectedStoryPrecision(input: EvalInput): MetricResult {
-	const views = briefStoryViews(input);
+export function selectedStoryPrecision(
+	input: EvalInput,
+	derived: EvalDerived = deriveEvalViews(input),
+): MetricResult {
+	const views = derived.briefViews;
 	if (views.length === 0) {
 		return metric(
 			"selected_story_precision",
@@ -133,7 +167,7 @@ export function selectedStoryPrecision(input: EvalInput): MetricResult {
 			"brief has 0 stories",
 		);
 	}
-	const { matches } = matchStoriesToEvents(views, input.gold);
+	const matches = derived.briefMatches;
 	const importantIds = new Set(
 		input.gold.events.filter((e) => e.expectedImportant).map((e) => e.eventId),
 	);
@@ -174,14 +208,14 @@ interface ClusterCounts {
 	truePositives: number;
 }
 
-function clusterCounts(input: EvalInput): ClusterCounts {
+function clusterCounts(input: EvalInput, derived: EvalDerived): ClusterCounts {
 	const noise = new Set(input.gold.noiseItemIds);
 	const goldPairs = new Set<string>();
 	for (const event of input.gold.events) {
 		for (const pair of pairsOf(event.itemIds, noise)) goldPairs.add(pair);
 	}
 	const predictedPairs = new Set<string>();
-	for (const entry of selectedLedgerEntries(input)) {
+	for (const entry of derived.selectedEntries) {
 		for (const pair of pairsOf(entry.sourceItemIds, noise)) predictedPairs.add(pair);
 	}
 	let truePositives = 0;
@@ -189,8 +223,11 @@ function clusterCounts(input: EvalInput): ClusterCounts {
 	return { goldPairs, predictedPairs, truePositives };
 }
 
-export function clusterMetrics(input: EvalInput): MetricResult[] {
-	const { goldPairs, predictedPairs, truePositives } = clusterCounts(input);
+export function clusterMetrics(
+	input: EvalInput,
+	derived: EvalDerived = deriveEvalViews(input),
+): MetricResult[] {
+	const { goldPairs, predictedPairs, truePositives } = clusterCounts(input, derived);
 	const precision = ratio(truePositives, predictedPairs.size);
 	const recall = ratio(truePositives, goldPairs.size);
 	const base = `TP=${truePositives}, predicted pairs=${predictedPairs.size}, gold pairs=${goldPairs.size} (noise items excluded)`;
@@ -253,9 +290,12 @@ export function clusterMetrics(input: EvalInput): MetricResult[] {
 	];
 }
 
-export function changeTypeAccuracy(input: EvalInput): MetricResult {
-	const entries = selectedLedgerEntries(input);
-	const { matches } = matchStoriesToEvents(entries, input.gold);
+export function changeTypeAccuracy(
+	input: EvalInput,
+	derived: EvalDerived = deriveEvalViews(input),
+): MetricResult {
+	const entries = derived.selectedEntries;
+	const matches = derived.selectedMatches;
 	if (matches.length === 0) {
 		return metric(
 			"change_type_accuracy",
@@ -303,7 +343,7 @@ export function noiseRejectionRate(input: EvalInput): MetricResult {
 			"gold declares no noise items",
 		);
 	}
-	const inBrief = new Set(input.brief.stories.flatMap((s) => s.sourceItemIds));
+	const inBrief = new Set(input.brief.stories.flatMap((s) => s.sourceItemIds ?? []));
 	const leaked = noise.filter((id) => inBrief.has(id));
 	return gte(
 		"noise_rejection_rate",
@@ -320,7 +360,7 @@ export function fabricatedSourceIds(input: EvalInput): MetricResult {
 	const known = new Set(input.manifest.items.map((i) => i.id));
 	const fabricated: string[] = [];
 	for (const story of input.brief.stories) {
-		for (const id of story.sourceItemIds) if (!known.has(id)) fabricated.push(`${story.storyId}:${id}`);
+		for (const id of story.sourceItemIds ?? []) if (!known.has(id)) fabricated.push(`${story.storyId}:${id}`);
 	}
 	return lte(
 		"fabricated_source_ids",
@@ -337,7 +377,7 @@ export function invalidFactRefs(input: EvalInput): MetricResult {
 	const known = new Set(input.manifest.facts.map((f) => f.factId));
 	const invalid: string[] = [];
 	for (const story of input.brief.stories) {
-		for (const ref of story.factRefs) if (!known.has(ref)) invalid.push(`${story.storyId}:${ref}`);
+		for (const ref of story.factRefs ?? []) if (!known.has(ref)) invalid.push(`${story.storyId}:${ref}`);
 	}
 	return lte(
 		"invalid_fact_refs",
@@ -360,7 +400,7 @@ export function finalDuplicateStories(input: EvalInput): MetricResult {
 		if (seen.has(story.storyId)) repeatedIds.push(story.storyId);
 		else seen.add(story.storyId);
 	}
-	const sets = stories.map((s) => new Set(s.sourceItemIds));
+	const sets = stories.map((s) => new Set(s.sourceItemIds ?? []));
 	const overlapping: string[] = [];
 	for (let i = 0; i < stories.length; i += 1) {
 		for (let j = i + 1; j < stories.length; j += 1) {
@@ -426,12 +466,13 @@ export function structuredOutputAfterRetry(input: EvalInput): MetricResult {
 
 /** Every metric, in report order. */
 export function computeMetrics(input: EvalInput): MetricResult[] {
+	const derived = deriveEvalViews(input);
 	return [
 		scanCoverage(input),
-		importantStoryRecall(input),
-		selectedStoryPrecision(input),
-		...clusterMetrics(input),
-		changeTypeAccuracy(input),
+		importantStoryRecall(input, derived),
+		selectedStoryPrecision(input, derived),
+		...clusterMetrics(input, derived),
+		changeTypeAccuracy(input, derived),
 		noiseRejectionRate(input),
 		fabricatedSourceIds(input),
 		invalidFactRefs(input),

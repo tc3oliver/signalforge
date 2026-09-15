@@ -13,6 +13,7 @@ import { RunStateStore } from "./run-state.ts";
 import { readJson, readJsonIfExists, writeJsonAtomic, writeTextAtomic } from "./atomic-json.ts";
 import { createPiAgentDriver, type AgentDriverFactory } from "./agent-driver.ts";
 import { createLogger } from "./logger.ts";
+import { loadStageTuning, type StageTuning } from "../config/stage-tuning.ts";
 
 export interface Phase1Paths {
 	root: string;
@@ -62,6 +63,13 @@ export interface Phase1RunOptions {
 	curateOnly?: boolean;
 	/** Reuse an existing run directory instead of creating one (resume). */
 	runId?: string;
+	/**
+	 * Per-stage timeouts and attempt ceilings. Defaults to `config/agent.yaml`,
+	 * the same source the production pipeline reads, so a fixture or eval run is
+	 * bounded by the same numbers a real day is. Without this nothing passed
+	 * `timeoutMs` to either stage and a stuck model hung the run indefinitely.
+	 */
+	stages?: StageTuning;
 }
 
 export interface Phase1RunResult {
@@ -83,6 +91,7 @@ export async function runPhase1Day(opts: Phase1RunOptions): Promise<Phase1RunRes
 	const now = opts.now ?? (() => new Date());
 	const chain = opts.chain ?? MODEL_CHAIN;
 	const driverFactory = opts.driverFactory ?? createPiAgentDriver;
+	const stages = opts.stages ?? loadStageTuning();
 	const log = createLogger("phase1");
 
 	const manifest = loadManifest(opts.paths, opts.date);
@@ -117,6 +126,7 @@ export async function runPhase1Day(opts: Phase1RunOptions): Promise<Phase1RunRes
 	const curatorResult = await runStageWithFallback({
 		stage: "CURATOR",
 		chain,
+		...(stages ? { maxAttemptsPerModel: stages.CURATOR.maxAttemptsPerModel } : {}),
 		routerState,
 		recordAttempt: (a) => {
 			attempts += 1;
@@ -124,9 +134,11 @@ export async function runPhase1Day(opts: Phase1RunOptions): Promise<Phase1RunRes
 			store.appendAttempt(a);
 		},
 		now,
-		onAttempt: async ({ spec, mode, checkFault }) => {
+		onAttempt: async ({ spec, mode, checkFault, lastError }) => {
 			log.info("curator attempt", { model: modelKey(spec), mode });
 			return runCuratorStage({
+				...(stages ? { maxNudges: stages.CURATOR.maxNudges, timeoutMs: stages.CURATOR.timeoutMs } : {}),
+				...(lastError === undefined ? {} : { lastError }),
 				date: opts.date,
 				manifest,
 				repo,
@@ -178,6 +190,7 @@ export async function runPhase1Day(opts: Phase1RunOptions): Promise<Phase1RunRes
 	const editorResult = await runStageWithFallback({
 		stage: "EDITOR",
 		chain,
+		...(stages ? { maxAttemptsPerModel: stages.EDITOR.maxAttemptsPerModel } : {}),
 		routerState,
 		recordAttempt: (a) => {
 			attempts += 1;
@@ -185,9 +198,11 @@ export async function runPhase1Day(opts: Phase1RunOptions): Promise<Phase1RunRes
 			store.appendAttempt(a);
 		},
 		now,
-		onAttempt: async ({ spec, mode, checkFault }) => {
+		onAttempt: async ({ spec, mode, checkFault, lastError }) => {
 			log.info("editor attempt", { model: modelKey(spec), mode });
 			return runEditorStage({
+				...(stages ? { maxNudges: stages.EDITOR.maxNudges, timeoutMs: stages.EDITOR.timeoutMs } : {}),
+				...(lastError === undefined ? {} : { lastError }),
 				date: opts.date,
 				manifest,
 				materials,

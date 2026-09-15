@@ -80,4 +80,31 @@ describe("config resolution", () => {
 		const root = makeRoot({ "interests.yaml": SHIPPED, "interests.local.yaml": "topics: []\n", ...OTHERS });
 		expect(() => loadConfig(root)).toThrow(/interests\.local\.yaml/);
 	});
+
+	/*
+	 * The cache used to be a single slot that ignored `root`, so the second root
+	 * here silently received the first root's configuration. Note there is no
+	 * reloadConfig() between the two calls: needing one is the bug.
+	 */
+	it("caches per root, so a second root is not served the first root's config", () => {
+		reloadConfig();
+		const first = makeRoot({ "interests.yaml": SHIPPED, ...OTHERS });
+		const second = makeRoot({ "interests.yaml": LOCAL, ...OTHERS });
+		expect(loadConfig(first).interests.topics[0]!.id).toBe("shipped");
+		expect(loadConfig(second).interests.topics[0]!.id).toBe("mine");
+	});
+
+	it("still returns the same object for repeated calls on one root", () => {
+		reloadConfig();
+		const root = makeRoot({ "interests.yaml": SHIPPED, ...OTHERS });
+		expect(loadConfig(root)).toBe(loadConfig(root));
+	});
+
+	it("reloadConfig clears every root, not just the last one", () => {
+		reloadConfig();
+		const root = makeRoot({ "interests.yaml": SHIPPED, ...OTHERS });
+		const before = loadConfig(root);
+		reloadConfig();
+		expect(loadConfig(root)).not.toBe(before);
+	});
 });

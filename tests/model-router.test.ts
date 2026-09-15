@@ -209,6 +209,50 @@ describe("runStageWithFallback", () => {
 		expect(modes).toEqual(["FRESH", "CORRECTIVE"]);
 	});
 
+	/*
+	 * CORRECTIVE_RETRY_SAME exists to hand a model its own rejection back. Both
+	 * stages take a `lastError` and build a corrective prompt from it, but the
+	 * router never told them what the error was, so the mode was CORRECTIVE and
+	 * the prompt was the ordinary one.
+	 */
+	it("carries the previous failure into the corrective attempt", async () => {
+		const seen: Array<string | undefined> = [];
+		await runStageWithFallback<string>({
+			stage: "EDITOR",
+			chain: MODEL_CHAIN,
+			routerState: new RouterState(),
+			onAttempt: async ({ lastError }) => {
+				seen.push(lastError);
+				if (seen.length === 1) throw new InvalidAgentOutputError("story s3 has no sourceItemIds");
+				return "fixed";
+			},
+			recordAttempt: () => {},
+			now: fakeClock(),
+		});
+		expect(seen).toEqual([undefined, "story s3 has no sourceItemIds"]);
+	});
+
+	it("hands the corrective attempt a message with credentials already stripped", async () => {
+		const seen: Array<string | undefined> = [];
+		await runStageWithFallback<string>({
+			stage: "EDITOR",
+			chain: MODEL_CHAIN,
+			routerState: new RouterState(),
+			onAttempt: async ({ lastError }) => {
+				seen.push(lastError);
+				if (seen.length === 1) {
+					throw new InvalidAgentOutputError("rejected by sk-live-ABCDEF123456");
+				}
+				return "fixed";
+			},
+			recordAttempt: () => {},
+			now: fakeClock(),
+		});
+		// The prompt is model-visible, so it gets the sanitized copy the attempt
+		// record gets, never the raw provider message.
+		expect(seen[1]).toBe("rejected by [REDACTED]");
+	});
+
 	it("passes mode RESUME on the retry after TOOL_LOOP", async () => {
 		const modes: string[] = [];
 		await runStageWithFallback<string>({
