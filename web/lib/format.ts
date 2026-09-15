@@ -2,12 +2,35 @@ import type { ConfidenceLevel } from "../../src/schemas/brief.ts";
 import type { ChangeType, StoryStatus } from "../../src/schemas/story.ts";
 import type { Disposition } from "../../src/schemas/decision.ts";
 import type { SignalState } from "../../src/db/signals.ts";
+import { reportingZone, zoneOffsetMs } from "../../src/runtime/local-day.ts";
 
 /*
  * Every formatter here is pure and locale-independent. `toLocaleString` would
  * resolve differently on the server and in the browser and produce a hydration
- * mismatch, so dates are assembled by hand in UTC instead.
+ * mismatch, so dates are assembled by hand instead.
+ *
+ * Instants are shown in the reporting zone — the one the pipeline keys its
+ * days on (`DI_TIMEZONE`, see `src/runtime/local-day.ts`) — because the
+ * person reading "整理於 05:52" is standing in that zone, not in UTC. The zone
+ * is an explicit argument with the configured default, so a test can pin it
+ * and a page never depends on the machine's TZ.
  */
+
+/** How a zone is named next to a time. Anything unlisted shows its IANA name. */
+const ZONE_LABELS: Record<string, string> = {
+	"Asia/Taipei": "台北",
+	UTC: "UTC",
+};
+
+/** The label the pages print after a wall-clock time, e.g. "台北". */
+export function zoneLabel(zone: string = reportingZone()): string {
+	return ZONE_LABELS[zone] ?? zone;
+}
+
+/** `at` shifted so that its UTC getters read as wall-clock time in `zone`. */
+function wallClock(at: Date, zone: string): Date {
+	return new Date(at.getTime() + zoneOffsetMs(at, zone));
+}
 
 export interface ConfidenceDisplay {
 	/** The renderer's label, kept identical so the page and the markdown agree. */
@@ -87,29 +110,32 @@ export function formatDateBanner(date: string): string {
 	return `${Number(m)} 月 ${Number(d)} 日 · 星期${WEEKDAYS[parsed.getUTCDay()]}`;
 }
 
-/** ISO instant -> "12:29", for a feed that states its timezone once in its heading. */
-export function formatClock(iso: string | undefined): string {
+/** ISO instant -> "20:29", for a feed that states its zone once in its heading. */
+export function formatClock(iso: string | undefined, zone: string = reportingZone()): string {
 	if (!iso) return "—";
 	const parsed = new Date(iso);
 	if (Number.isNaN(parsed.getTime())) return iso;
-	return `${pad(parsed.getUTCHours())}:${pad(parsed.getUTCMinutes())}`;
+	const local = wallClock(parsed, zone);
+	return `${pad(local.getUTCHours())}:${pad(local.getUTCMinutes())}`;
 }
 
-/** ISO instant -> "2026-09-13 06:00 UTC". Invalid input is returned unchanged. */
-export function formatInstant(iso: string | undefined): string {
+/** ISO instant -> "2026-09-13 14:00 台北". Invalid input is returned unchanged. */
+export function formatInstant(iso: string | undefined, zone: string = reportingZone()): string {
 	if (!iso) return "—";
 	const parsed = new Date(iso);
 	if (Number.isNaN(parsed.getTime())) return iso;
-	return `${parsed.getUTCFullYear()}-${pad(parsed.getUTCMonth() + 1)}-${pad(parsed.getUTCDate())} ` +
-		`${pad(parsed.getUTCHours())}:${pad(parsed.getUTCMinutes())} UTC`;
+	const local = wallClock(parsed, zone);
+	return `${local.getUTCFullYear()}-${pad(local.getUTCMonth() + 1)}-${pad(local.getUTCDate())} ` +
+		`${pad(local.getUTCHours())}:${pad(local.getUTCMinutes())} ${zoneLabel(zone)}`;
 }
 
-/** ISO instant -> "06:00 UTC", for timestamps inside an already-dated context. */
-export function formatTimeOfDay(iso: string | undefined): string {
+/** ISO instant -> "14:00 台北", for timestamps inside an already-dated context. */
+export function formatTimeOfDay(iso: string | undefined, zone: string = reportingZone()): string {
 	if (!iso) return "—";
 	const parsed = new Date(iso);
 	if (Number.isNaN(parsed.getTime())) return iso;
-	return `${pad(parsed.getUTCHours())}:${pad(parsed.getUTCMinutes())} UTC`;
+	const local = wallClock(parsed, zone);
+	return `${pad(local.getUTCHours())}:${pad(local.getUTCMinutes())} ${zoneLabel(zone)}`;
 }
 
 /** 0.732 -> "73%". Scores in this schema are always 0..1. */

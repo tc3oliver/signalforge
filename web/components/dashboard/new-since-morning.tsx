@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { DashboardView } from "../../lib/dashboard.ts";
-import { formatClock } from "../../lib/format.ts";
+import { formatClock, zoneLabel } from "../../lib/format.ts";
 import { safeExternalUrl } from "../../lib/untrusted.ts";
 
 /**
@@ -17,7 +17,7 @@ export function NewSinceMorning({ feed }: { feed: DashboardView["newSinceMorning
 	return (
 		<section className="block inbox" aria-labelledby="new-since-morning">
 			<h2 id="new-since-morning" className="block-label">
-				今日新增 <span className="block-note">UTC</span>
+				今日新增 <span className="block-note">{zoneLabel()}</span>
 			</h2>
 			<ul className="inbox-list">
 				{feed.items.map((item) => {

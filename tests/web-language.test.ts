@@ -246,7 +246,7 @@ describe("presentation mappings", () => {
 
 	it("formats dates the way a Taiwanese reader writes them", () => {
 		expect(formatDateKey("2026-09-13")).toBe("2026 年 9 月 13 日（日）");
-		expect(formatInstant("2026-09-13T06:05:00.000Z")).toBe("2026-09-13 06:05 UTC");
+		expect(formatInstant("2026-09-13T06:05:00.000Z", "Asia/Taipei")).toBe("2026-09-13 14:05 台北");
 	});
 
 	it("keeps the feed summary in Chinese", () => {

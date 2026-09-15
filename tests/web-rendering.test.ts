@@ -197,10 +197,14 @@ describe("display mappings", () => {
 		expect(confidenceLevelFromScore(0.1)).toBe("LOW");
 	});
 
-	it("formats dates and instants deterministically in UTC", () => {
+	it("formats dates and instants deterministically, in the zone it is given", () => {
 		expect(formatDateKey("2026-09-13")).toBe("2026 年 9 月 13 日（日）");
 		expect(formatDateKey("not-a-date")).toBe("not-a-date");
-		expect(formatInstant("2026-09-13T06:10:30.000Z")).toBe("2026-09-13 06:10 UTC");
+		expect(formatInstant("2026-09-13T06:10:30.000Z", "UTC")).toBe("2026-09-13 06:10 UTC");
+		// The reader lives in the reporting zone: 06:10Z is 14:10 in Taipei.
+		expect(formatInstant("2026-09-13T06:10:30.000Z", "Asia/Taipei")).toBe("2026-09-13 14:10 台北");
+		// 21:52Z the evening before is already the next morning there.
+		expect(formatInstant("2026-09-14T21:52:00.000Z", "Asia/Taipei")).toBe("2026-09-15 05:52 台北");
 		expect(formatInstant(undefined)).toBe("—");
 		expect(shiftDateKey("2026-09-01", -1)).toBe("2026-08-31");
 		expect(shiftDateKey("bad", 1)).toBeUndefined();

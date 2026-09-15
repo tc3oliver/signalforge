@@ -185,10 +185,11 @@ describe("hero", () => {
 		expect(isUpdateChange("CONFIRMATION")).toBe(true);
 	});
 
-	it("formats the banner date and the feed clock in UTC", () => {
+	it("formats the banner date, and the feed clock in the given zone", () => {
 		expect(formatDateBanner("2026-09-13")).toBe("9 月 13 日 · 星期日");
 		expect(formatDateBanner("nonsense")).toBe("nonsense");
-		expect(formatClock("2026-09-13T12:29:41.000Z")).toBe("12:29");
+		expect(formatClock("2026-09-13T12:29:41.000Z", "UTC")).toBe("12:29");
+		expect(formatClock("2026-09-13T12:29:41.000Z", "Asia/Taipei")).toBe("20:29");
 	});
 });
 
