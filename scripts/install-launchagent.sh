@@ -108,8 +108,27 @@ install_job() {
 	# which is fine and expected on a first install.
 	launchctl bootout "gui/${UID_NUM}/${label}" >/dev/null 2>&1 || true
 
+	# bootout returns before launchd has finished retiring the job, and
+	# bootstrapping a label that is still going down fails with "Input/output
+	# error" -- which on a KeepAlive job means the reader stays down rather than
+	# being restarted. Wait for the name to actually disappear.
+	local waited=0
+	while launchctl print "gui/${UID_NUM}/${label}" >/dev/null 2>&1; do
+		if ((waited >= 100)); then
+			fail "${label} did not finish unloading after 10s; not bootstrapping over it"
+		fi
+		sleep 0.1
+		((waited += 1))
+	done
+
 	echo "install-launchagent: bootstrapping ${label}..."
-	launchctl bootstrap "gui/${UID_NUM}" "${rendered}"
+	# One retry: the domain can still be settling even once the label is gone,
+	# and a second attempt a moment later succeeds where the first did not.
+	if ! launchctl bootstrap "gui/${UID_NUM}" "${rendered}" 2>/dev/null; then
+		echo "install-launchagent: first bootstrap of ${label} failed, retrying..."
+		sleep 1
+		launchctl bootstrap "gui/${UID_NUM}" "${rendered}"
+	fi
 
 	echo "install-launchagent: verifying ${label} is loaded..."
 	if ! launchctl print "gui/${UID_NUM}/${label}" >/dev/null 2>&1; then
