@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
+import { lstatSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import { Type } from "typebox";
 import { defineTool, type ToolDefinition } from "@earendil-works/pi-coding-agent";
@@ -45,31 +45,56 @@ export interface SkillBundle {
 	referenceNames: string[];
 }
 
+/**
+ * The one directory reference documents may live in. Everything discovered here
+ * is advertised to the model in the system prompt and is readable through
+ * `read_skill_reference`, so discovery is deliberately narrow.
+ */
+const REFERENCE_DIR = "references";
+
 export function loadSkillBundle(skill: Skill): SkillBundle {
 	const body = stripFrontmatter(readFileSync(skill.filePath, "utf8")).trim();
 	const referenceNames: string[] = [];
 
-	const walk = (dir: string, prefix: string): void => {
-		let entries: string[];
-		try {
-			entries = readdirSync(dir);
-		} catch {
-			return;
-		}
-		for (const entry of entries.sort()) {
-			const full = resolve(dir, entry);
-			const rel = prefix ? `${prefix}/${entry}` : entry;
-			if (statSync(full).isDirectory()) {
-				walk(full, rel);
-			} else if (entry.endsWith(".md") && full !== resolve(skill.filePath)) {
-				referenceNames.push(rel);
-			}
-		}
-	};
-	walk(skill.baseDir, "");
+	/*
+	 * One flat directory, no recursion, no dotfiles, no symlinks.
+	 *
+	 * This used to walk the whole skill tree for any *.md. That treats the
+	 * directory's contents as the allowlist, which makes any tool that writes
+	 * markdown into the tree an author of agent-visible policy: a harness
+	 * dropping a `.omc/notepad.md` or a `plans/*.md` beside the references got
+	 * its own session notes advertised in the system prompt and served by the
+	 * read tool. `agent/skills/daily-intelligence/references/.omc/` already
+	 * exists for exactly that reason and was non-markdown only by luck, and the
+	 * content such a file carries -- plans, evaluation notes, gold fixtures --
+	 * is precisely what must never reach the agent.
+	 *
+	 * `resolveWithin` is not the defence against this: such a file is genuinely
+	 * inside the root, so it would be served legitimately. The allowlist has to
+	 * be narrow at discovery time.
+	 */
+	const referenceRoot = resolve(skill.baseDir, REFERENCE_DIR);
+	let entries: string[];
+	try {
+		entries = readdirSync(referenceRoot);
+	} catch {
+		entries = [];
+	}
+	for (const entry of entries.sort()) {
+		if (entry.startsWith(".")) continue;
+		if (!entry.endsWith(".md")) continue;
+		const full = resolve(referenceRoot, entry);
+		// lstat, not stat: a symlink must not be followed into the tree even if
+		// its target happens to resolve back inside the skill directory.
+		if (!lstatSync(full).isFile()) continue;
+		if (full === resolve(skill.filePath)) continue;
+		referenceNames.push(`${REFERENCE_DIR}/${entry}`);
+	}
 
 	if (referenceNames.length === 0) {
-		throw new SkillAccessError(`Skill "${skill.name}" has no reference files under ${skill.baseDir}`);
+		throw new SkillAccessError(
+			`Skill "${skill.name}" has no reference files under ${referenceRoot}`,
+		);
 	}
 	return { skill, body, referenceNames };
 }
