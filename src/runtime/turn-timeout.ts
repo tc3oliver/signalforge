@@ -23,25 +23,49 @@ export class TurnTimeoutError extends Error {
 }
 
 /**
+ * How long to wait for an aborted turn to actually stop before giving up on it.
+ *
+ * Short, because this is pure delay on a run that has already failed; long
+ * enough that a tool call in flight when the abort landed gets to finish.
+ */
+const ABORT_GRACE_MS = 5_000;
+
+/**
  * Runs one turn under `timeoutMs`, aborting the session if it overruns.
  *
- * The abort is best effort: it asks the agent session to stop and is not
- * awaited past its own failure, because the caller is already unwinding toward
- * the router, which will retry or fall back. Leaving the turn running while
- * reporting a timeout would be worse than a noisy abort.
+ * After the abort, the turn is awaited rather than discarded. `Promise.race`
+ * abandons the losing promise but does not stop it, so the timed-out turn kept
+ * running while the router opened its replacement: a `record_item_decisions`
+ * still in flight could land after the new session had already read the decided
+ * set, and the replacement would work from a snapshot that was stale the moment
+ * it was taken. Both repositories upsert by item id, so the cost was a stale row
+ * rather than corruption -- but "probably harmless" is not the same as knowing
+ * the previous turn is done.
+ *
+ * The wait is bounded. If the session does not stop within the grace period the
+ * caller still unwinds to the router, which is the old behaviour; the difference
+ * is that it is now a deadline rather than an assumption.
  */
 export async function withTurnTimeout(
 	driver: AgentDriver,
 	stage: string,
 	timeoutMs: number | undefined,
 	run: () => Promise<void>,
+	/** Overridable so a test need not spend the real grace period waiting. */
+	abortGraceMs: number = ABORT_GRACE_MS,
 ): Promise<void> {
 	if (timeoutMs === undefined || timeoutMs <= 0) return await run();
 
 	let timer: ReturnType<typeof setTimeout> | undefined;
+	let graceTimer: ReturnType<typeof setTimeout> | undefined;
+	// Held so the losing side of the race can still be awaited on timeout.
+	const running = run();
+	// The turn's own rejection is handled below; this keeps an overrun from
+	// surfacing as an unhandled rejection while the timeout path unwinds.
+	running.catch(() => {});
 	try {
 		await Promise.race([
-			run(),
+			running,
 			new Promise<never>((_resolve, reject) => {
 				timer = setTimeout(() => reject(new TurnTimeoutError(stage, timeoutMs)), timeoutMs);
 			}),
@@ -49,9 +73,16 @@ export async function withTurnTimeout(
 	} catch (err) {
 		if (err instanceof TurnTimeoutError) {
 			await driver.abort?.().catch(() => {});
+			await Promise.race([
+				running.catch(() => {}),
+				new Promise<void>((resolve) => {
+					graceTimer = setTimeout(resolve, abortGraceMs);
+				}),
+			]);
 		}
 		throw err;
 	} finally {
 		if (timer !== undefined) clearTimeout(timer);
+		if (graceTimer !== undefined) clearTimeout(graceTimer);
 	}
 }
