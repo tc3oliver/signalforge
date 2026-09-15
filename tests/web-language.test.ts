@@ -68,6 +68,7 @@ function ledger(over: Partial<StoryLedgerEntry> = {}): StoryLedgerEntry {
 		confidence: 0.9,
 		reason: "reason",
 		factRefs: [],
+		topicIds: [],
 		...over,
 	};
 }

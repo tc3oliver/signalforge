@@ -23,6 +23,13 @@ export type InterestTopic = z.infer<typeof InterestTopic>;
 export const InterestsConfig = z
 	.object({
 		topics: z.array(InterestTopic).min(1),
+		/*
+		 * Who the brief is written for, in one sentence. Optional because the
+		 * Editor has always had a reader -- it was a sentence compiled into the
+		 * prompt -- and a profile that declines to describe one must not leave it
+		 * with none. See DEFAULT_PERSONA in src/profile/reader-profile.ts.
+		 */
+		persona: z.string().min(1).optional(),
 	})
 	.strict();
 export type InterestsConfig = z.infer<typeof InterestsConfig>;

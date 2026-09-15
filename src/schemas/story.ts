@@ -39,6 +39,14 @@ export const StoryLedgerEntry = z
 
 		reason: z.string().min(1),
 		factRefs: z.array(z.string()).default([]),
+		/**
+		 * Which of the reader's interest topics this story matched, from
+		 * `config/interests.yaml`. Empty is a normal answer, not a gap: an
+		 * important story that no listed topic names still belongs in the brief,
+		 * and recording that honestly is what keeps the weights priors rather than
+		 * a whitelist.
+		 */
+		topicIds: z.array(z.string().min(1)).default([]),
 	})
 	.strict();
 export type StoryLedgerEntry = z.infer<typeof StoryLedgerEntry>;
@@ -58,6 +66,19 @@ export const StoryUpsertInput = z
 		confidence: Score,
 		reason: z.string().min(1),
 		factRefs: z.array(z.string()).default([]),
+		/** See StoryLedgerEntry.topicIds. Validated against the run's profile. */
+		topicIds: z.array(z.string().min(1)).default([]),
 	})
 	.strict();
+/**
+ * The OUTPUT type: every defaulted field is present. What a repository stores.
+ */
 export type StoryUpsertInput = z.infer<typeof StoryUpsertInput>;
+/**
+ * The INPUT type: defaulted fields may be omitted. What a caller constructs.
+ *
+ * Repository signatures take this one. Typing a parameter as the output type
+ * makes every optional field mandatory at the call site, which is how adding
+ * `topicIds` to the schema broke fifteen files that had no opinion about it.
+ */
+export type StoryUpsertPayload = z.input<typeof StoryUpsertInput>;

@@ -20,6 +20,7 @@ function upsertInput(over: Partial<StoryUpsertInput> = {}): StoryUpsertInput {
 		confidence: 0.5,
 		reason: "initial",
 		factRefs: [],
+		topicIds: [],
 		...over,
 	};
 }
@@ -66,6 +67,7 @@ describe("upsertStory", () => {
 				sourceItemIds: ["item-1", "item-2"],
 				primarySourceIds: ["item-2"],
 				factRefs: ["fact-2"],
+				topicIds: [],
 				canonicalTitle: "OpenAI ships a new model (updated)",
 				changeType: "UPDATE",
 				status: "RESOLVED",

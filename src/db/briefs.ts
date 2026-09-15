@@ -95,19 +95,28 @@ export async function saveBrief(
 	lineage: string,
 	brief: DailyBrief,
 	runId?: string,
+	/**
+	 * Hash of the reader profile that shaped this brief. Recorded because a change
+	 * to `config/interests.yaml` changes what both agents read, and without it the
+	 * run history cannot tell "the model behaved differently" from "the reader
+	 * changed their mind". Undefined for a run with no profile, which is the
+	 * honest answer rather than back-dating today's file onto an older brief.
+	 */
+	profileVersion?: string,
 ): Promise<void> {
 	await sql.begin(async (tx) => {
 		await tx.unsafe(
 			`insert into daily_briefs (lineage, date, run_id, produced_at, daily_analysis,
-				watch_next, emerging_signals)
-			 values ($1,$2,$3,$4::timestamptz,$5,$6::text[],$7::jsonb)
+				watch_next, emerging_signals, profile_version)
+			 values ($1,$2,$3,$4::timestamptz,$5,$6::text[],$7::jsonb,$8)
 			 on conflict (lineage, date) do update set
 				run_id = excluded.run_id, produced_at = excluded.produced_at,
 				daily_analysis = excluded.daily_analysis, watch_next = excluded.watch_next,
-				emerging_signals = excluded.emerging_signals, updated_at = now()`,
+				emerging_signals = excluded.emerging_signals,
+				profile_version = excluded.profile_version, updated_at = now()`,
 			[
 				lineage, brief.date, runId ?? null, brief.producedAt, brief.dailyAnalysis,
-				brief.watchNext, jsonParam(sql, brief.emergingSignals),
+				brief.watchNext, jsonParam(sql, brief.emergingSignals), profileVersion ?? null,
 			],
 		);
 		await tx`delete from daily_brief_stories where lineage = ${lineage} and date = ${brief.date}`;

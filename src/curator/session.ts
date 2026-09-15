@@ -11,6 +11,7 @@ import {
 	renderSkillSection,
 } from "../runtime/skill-access.ts";
 import { createCuratorTools, type CuratorContext } from "./tools.ts";
+import { renderReaderProfile, type ReaderProfile } from "../profile/reader-profile.ts";
 import {
 	buildCuratorNudgePrompt,
 	buildCuratorResumePrompt,
@@ -26,6 +27,12 @@ export interface CuratorStageOptions {
 	skillsRoot: string;
 	cwd: string;
 	driverFactory: AgentDriverFactory;
+	/**
+	 * The reader's standing interests, as priors on relevance. Optional: a run
+	 * without a config gets the prompt it always got, rather than a profile block
+	 * asserting the reader cares about nothing.
+	 */
+	readerProfile?: ReaderProfile;
 	/** "FRESH" starts the task from the top; the others carry context into a new session. */
 	mode: "FRESH" | "CORRECTIVE" | "RESUME";
 	/** Rejection text from a previous attempt, fed back so the retry is informed. */
@@ -74,6 +81,9 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 		manifest: opts.manifest,
 		repo: opts.repo,
 		now,
+		...(opts.readerProfile
+			? { topicIds: new Set(opts.readerProfile.topics.map((t) => t.id)) }
+			: {}),
 		onToolCall: (name, summary) => {
 			toolCalls += 1;
 			opts.onEvent?.({ kind: "tool_call", stage: "CURATOR", tool: name, ...summary });
@@ -126,6 +136,7 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 		date: opts.date,
 		totalItems: opts.manifest.items.length,
 		skillSection: renderSkillSection(bundle),
+		...(opts.readerProfile ? { readerProfile: renderReaderProfile(opts.readerProfile) } : {}),
 	});
 
 	const driver = await opts.driverFactory({

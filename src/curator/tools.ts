@@ -50,6 +50,13 @@ export interface CuratorContext {
 	manifest: DailyManifest;
 	repo: StoryRepository;
 	now: () => Date;
+	/**
+	 * The reader's interest topic ids, for validating `upsert_story.topicIds`.
+	 * Absent when the run has no profile, in which case the field is accepted as
+	 * given rather than rejected -- a run without a profile should behave as it
+	 * always did, not refuse work.
+	 */
+	topicIds?: ReadonlySet<string>;
 	/** Set by submit_materials on success; the session driver reads it afterwards. */
 	submitted?: DailyMaterials;
 	onToolCall?: (name: string, summary: Record<string, unknown>) => void;
@@ -316,9 +323,14 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			confidence: Type.Number({ minimum: 0, maximum: 1 }),
 			reason: Type.String({ minLength: 1 }),
 			factRefs: Type.Optional(Type.Array(Type.String())),
+			topicIds: Type.Optional(Type.Array(Type.String())),
 		}),
 		execute: async (_id, params) => {
-			const parsed = StoryUpsertInput.safeParse({ ...params, factRefs: params.factRefs ?? [] });
+			const parsed = StoryUpsertInput.safeParse({
+				...params,
+				factRefs: params.factRefs ?? [],
+				topicIds: params.topicIds ?? [],
+			});
 			if (!parsed.success) {
 				throw rejectFromZod("upsert_story payload rejected", parsed.error);
 			}
@@ -341,6 +353,22 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 				throw new ToolRejection(
 					`factRefs contains unknown fact id(s): ${unknownFacts.join(", ")}. Call get_structured_facts to see the valid ids.`,
 				);
+			}
+
+			/*
+			 * Same shape as the factRefs check above, and for the same reason: a
+			 * topic id the model invented would record a prior that never existed,
+			 * and the whole point of storing them is that the prior can be audited
+			 * afterwards. Named ids only, from the profile in the system prompt.
+			 */
+			if (ctx.topicIds) {
+				const unknownTopics = input.topicIds.filter((t) => !ctx.topicIds!.has(t));
+				if (unknownTopics.length > 0) {
+					throw new ToolRejection(
+						`topicIds contains id(s) that are not in the reader profile: ${unknownTopics.join(", ")}. ` +
+							`Valid ids: ${[...ctx.topicIds].sort().join(", ")}. An empty list is fine — a story that matches no listed topic still belongs in the ledger.`,
+					);
+				}
 			}
 
 			const entry = await ctx.repo.upsertStory(ctx.date, input, ctx.now());

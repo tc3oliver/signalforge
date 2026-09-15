@@ -4,6 +4,7 @@ import type { AgentDriverFactory } from "../runtime/agent-driver.ts";
 import type { ModelSpec } from "../runtime/model-config.ts";
 import { InvalidAgentOutputError } from "../runtime/error-classifier.ts";
 import { loadProjectSkills } from "../runtime/pi-runtime.ts";
+import { renderReaderProfile, type ReaderProfile } from "../profile/reader-profile.ts";
 import { withTurnTimeout } from "../runtime/turn-timeout.ts";
 import {
 	createSkillReferenceTool,
@@ -27,6 +28,8 @@ export interface EditorStageOptions {
 	skillsRoot: string;
 	cwd: string;
 	driverFactory: AgentDriverFactory;
+	/** See CuratorStageOptions.readerProfile; same contract, same reason. */
+	readerProfile?: ReaderProfile;
 	mode: "FRESH" | "CORRECTIVE" | "RESUME";
 	lastError?: string;
 	now?: () => Date;
@@ -113,6 +116,12 @@ export async function runEditorStage(opts: EditorStageOptions): Promise<EditorSt
 		tierACount: opts.materials.stories.filter((s) => s.tier === "A").length,
 		skillSection: renderSkillSection(bundle),
 		hasPreviousBrief: Boolean(opts.previousBrief),
+		...(opts.readerProfile
+			? {
+					readerProfile: renderReaderProfile(opts.readerProfile),
+					persona: opts.readerProfile.persona,
+				}
+			: {}),
 	};
 
 	const driver = await opts.driverFactory({

@@ -4,14 +4,18 @@
 # (gitignored, and it wins outright when present) and replace every topic with
 # your own before the brief means anything to you.
 #
-# Honest status: this file is loaded and validated (`pnpm setup:check` reports
-# its topic count), but as of the current release its topics and weights are
-# NOT yet passed to the Curator or Editor sessions. What reaches the brief is
-# decided by the shipped editorial policy in agent/skills/daily-intelligence/
-# and by which sources you enable in watchlists.yaml / sources.yaml. Wiring this
-# profile into both agents -- weights as priors, never as filters -- is the
-# first item in docs/INTELLIGENCE_BACKLOG.md. Filling it in now is still the
-# right move: the shape will not change, and it is what that work consumes.
+# This file reaches both agents. Its topics and weights are rendered into the
+# Curator's and the Editor's system prompts as PRIORS: a weight raises or lowers
+# a story's relevance and can move it earlier in the brief. A weight never
+# excuses an item from being decided, never turns "off-topic" into IRRELEVANT,
+# and never drops a high-importance story that no topic happens to name. A major
+# outage or a serious vulnerability reaches this reader whichever topics they
+# listed. The prompt says so in those words; see src/profile/reader-profile.ts.
+#
+#   persona  optional. One sentence describing who the brief is for, used by the
+#            Editor. Omitted, it falls back to the reader this project shipped
+#            with: a technically sophisticated engineer working in AI and
+#            software.
 #
 #   id       stable key; referenced by discovery.yaml topicIds
 #   label    human name, used in prompts and in the web reader

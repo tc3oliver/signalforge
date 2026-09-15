@@ -29,6 +29,7 @@ const story: StoryLedgerEntry = {
 	sourceItemIds: ["it-1"],
 	primarySourceIds: ["it-1"],
 	factRefs: [],
+	topicIds: [],
 	firstSeenAt: "2026-09-13T06:03:00.000Z",
 	lastSeenAt: "2026-09-13T06:03:00.000Z",
 	status: "OPEN",

@@ -80,6 +80,7 @@ function fillerLedger(): StoryLedgerEntry[] {
 			confidence: 0.9,
 			reason: "filler",
 			factRefs: [],
+			topicIds: [],
 		};
 	});
 }
@@ -267,6 +268,7 @@ function signalLedger(): StoryLedgerEntry[] {
 		confidence: 0.6,
 		reason: "constituent",
 		factRefs: [],
+		topicIds: [],
 	}));
 }
 
@@ -410,6 +412,7 @@ function macroStory(
 			confidence: 0.9,
 			reason: "macro",
 			factRefs: [],
+			topicIds: [],
 		},
 		material: {
 			storyId,
@@ -532,6 +535,7 @@ function mergeStoryParts(
 			confidence: 0.9,
 			reason: "merge",
 			factRefs: [],
+			topicIds: [],
 		},
 		material: {
 			storyId,
@@ -647,6 +651,7 @@ function bgStoryParts(): { ledger: StoryLedgerEntry; material: DailyMaterialStor
 			confidence: 0.9,
 			reason: "bg",
 			factRefs: [],
+			topicIds: [],
 		},
 		material: {
 			storyId: "bg-story-1",
@@ -722,6 +727,7 @@ describe("background context must not create a new event", () => {
 			confidence: 0.6,
 			reason: "background analysis treated as its own story (regression)",
 			factRefs: [],
+			topicIds: [],
 		};
 		const analysisMaterial: DailyMaterialStory = {
 			storyId: "bg-story-analysis",

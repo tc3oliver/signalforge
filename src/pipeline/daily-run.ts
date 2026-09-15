@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { loadStageTuning, type StageTuning } from "../config/stage-tuning.ts";
+import { loadConfig } from "../config/loader.ts";
+import { buildReaderProfile, type ReaderProfile } from "../profile/reader-profile.ts";
 import { runCuratorStage } from "../curator/session.ts";
 import { configureCuratorResearch, type CuratorResearchConfig } from "../curator/tools.ts";
 import { runEditorStage } from "../editor/session.ts";
@@ -26,6 +28,26 @@ import {
 	runCollectionForDay,
 } from "./collection.ts";
 import { type KnownSignal, reconcileSignals } from "./signals.ts";
+
+/**
+ * The reader profile for this run, or none.
+ *
+ * Mirrors `loadStageTuning`: an unreadable config must not stop a run, because
+ * a missing preference is not a reason to publish nothing -- it is a reason to
+ * publish without a prior. The failure is logged rather than swallowed, since a
+ * profile that silently stopped being applied would look exactly like a model
+ * that had stopped respecting it.
+ */
+function loadReaderProfile(log: (msg: string, fields?: Record<string, unknown>) => void): ReaderProfile | undefined {
+	try {
+		return buildReaderProfile(loadConfig().interests);
+	} catch (err) {
+		log("reader profile unreadable; running without interest priors", {
+			error: (err as Error).message,
+		});
+		return undefined;
+	}
+}
 
 /* -------------------------------------------------------------------------- */
 /* State machine                                                               */
@@ -114,6 +136,13 @@ export interface DailyRunOptions {
 	stage?: PipelineStage;
 	/** Per-stage tuning; read from config/agent.yaml when omitted. */
 	stages?: StageTuning;
+	/**
+	 * The reader's standing interests, as priors on relevance and ordering.
+	 * Loaded from config when absent, like `stages`; a run whose config is
+	 * unreadable proceeds without a profile rather than failing, because a
+	 * missing preference is not a reason to publish nothing.
+	 */
+	readerProfile?: ReaderProfile;
 	/** Skip collection entirely (a resumed run whose collection already finished). */
 	skipCollection?: boolean;
 	now?: () => Date;
@@ -297,6 +326,7 @@ async function runPipelineBody(
 	 * failed. Read here so one file governs both stages.
 	 */
 	const stages = options.stages ?? loadStageTuning();
+	const readerProfile = options.readerProfile ?? loadReaderProfile(log);
 	const driverFactory = options.driverFactory ?? createPiAgentDriver;
 	const stage = options.stage;
 
@@ -502,6 +532,7 @@ async function runPipelineBody(
 				onAttempt: async ({ spec, mode, checkFault, lastError }) => {
 					log("curator attempt", { model: modelKey(spec), mode });
 					return runCuratorStage({
+						...(readerProfile ? { readerProfile } : {}),
 						// A corrective retry is only corrective if the stage is told what
 						// went wrong; without this it re-sends the prompt that just failed.
 						...(lastError === undefined ? {} : { lastError }),
@@ -593,6 +624,7 @@ async function runPipelineBody(
 				onAttempt: async ({ spec, mode, checkFault, lastError }) => {
 					log("editor attempt", { model: modelKey(spec), mode });
 					return runEditorStage({
+						...(readerProfile ? { readerProfile } : {}),
 						// See the curator stage: the corrective prompt needs the failure.
 						...(lastError === undefined ? {} : { lastError }),
 						maxNudges: stages.EDITOR.maxNudges,
@@ -680,7 +712,7 @@ async function runPipelineBody(
 	// ---- Publish ----------------------------------------------------------
 	// Only reached with a validated brief: publishing is what makes the brief
 	// visible, so an unvalidated draft must never get here.
-	await saveBrief(options.sql, lineage, brief, seed.runId);
+	await saveBrief(options.sql, lineage, brief, seed.runId, readerProfile?.version);
 
 	const known = await loadKnownSignals(options.sql, lineage);
 	const observedAt = now().toISOString();
