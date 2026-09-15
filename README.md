@@ -300,6 +300,20 @@ review and the P0 fixes — lives under
 [`docs/reports/`](docs/README.md#reports--point-in-time-not-maintained) and is
 deliberately never updated after the fact.
 
+## Design notes
+
+The decisions behind the pipeline, written up one per post (Traditional
+Chinese) on [study.meowcoder.com](https://study.meowcoder.com):
+
+1. [文章是錯的單位——事件 ledger 與八種變化類型](https://study.meowcoder.com/posts/260915-signalforge-01-event-ledger/)
+   — why the unit is the event, not the article, and what `NO_MATERIAL_CHANGE` buys.
+2. [讓模型無法捏造數字——fact store by reference 與三層驗證](https://study.meowcoder.com/posts/260915-signalforge-02-facts-by-reference/)
+   — numbers travel as fact ids, and why validation is code rather than a second model.
+3. [兩個 session、一個只讀的閱讀層——把信任邊界畫在結構上](https://study.meowcoder.com/posts/260915-signalforge-03-two-sessions-no-model-on-request/)
+   — Curator/Editor separation, the restricted runtime, and the reader that never calls a model.
+
+The English overview is the [case study](https://meowcoder.com/work/signalforge/).
+
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
