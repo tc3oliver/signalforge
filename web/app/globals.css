@@ -57,10 +57,11 @@
 	--radius: 4px;
 	--radius-lg: 10px;
 
-	/* Page width and reading measure. The measure is in em, not ch: a Chinese
-	   character is one em wide, so 40em is forty characters per line. */
+	/* Page width and reading measure. The measure is 100% below 1024px and a
+	   rem value on a desktop (see the responsive block), so prose fills a
+	   narrow column and is capped only where a line would otherwise run long. */
 	--maxw: 64rem;
-	--measure: 40em;
+	--measure: 100%; /* 46rem from 1024px up, see the responsive block */
 	--gutter: 24px;
 
 	--space-1: 4px;
@@ -749,6 +750,15 @@ footer.site a {
 }
 
 /* ------------------------------------------------------------ responsive -- */
+
+/* The reading measure only bites on a desktop. Below 1024px every column is
+   already narrower than a comfortable line, so text simply fills its column;
+   capping it there leaves a ragged right half for nothing. */
+@media (min-width: 1024px) {
+	:root {
+		--measure: 46rem;
+	}
+}
 
 @media (max-width: 639px) {
 	:root {

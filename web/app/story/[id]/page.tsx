@@ -118,35 +118,6 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 						})}
 					</ol>
 				</section>
-			</div>
-
-			<aside className="story-aside">
-				{primarySources.length > 0 ? (
-					<section aria-labelledby="story-primary">
-						<h2 id="story-primary">主要來源</h2>
-						<SourceList items={primarySources} />
-					</section>
-				) : null}
-
-				<section aria-labelledby="story-sources">
-					<h2 id="story-sources">全部來源</h2>
-					<SourceList items={allSources} unresolvedIds={data.unresolvedSourceIds} />
-				</section>
-
-				{signals.length > 0 ? (
-					<section aria-labelledby="story-signals">
-						<h2 id="story-signals">相關趨勢</h2>
-						<ul className="story-list">
-							{signals.map((signal) => (
-								<li key={signal.signalId}>
-									<Link href="/signals">{signal.label}</Link>{" "}
-									<span className="host">{signalStateLabel(signal.state)}</span>
-								</li>
-							))}
-						</ul>
-					</section>
-				) : null}
-
 				{related.length > 0 ? (
 					<section aria-labelledby="story-related">
 						<h2 id="story-related">相關事件</h2>
@@ -190,6 +161,35 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 						<p className="lede">這個事件之前沒有被收錄過。</p>
 					)}
 				</section>
+			</div>
+
+			<aside className="story-aside">
+				{primarySources.length > 0 ? (
+					<section aria-labelledby="story-primary">
+						<h2 id="story-primary">主要來源</h2>
+						<SourceList items={primarySources} />
+					</section>
+				) : null}
+
+				<section aria-labelledby="story-sources">
+					<h2 id="story-sources">全部來源</h2>
+					<SourceList items={allSources} unresolvedIds={data.unresolvedSourceIds} />
+				</section>
+
+				{signals.length > 0 ? (
+					<section aria-labelledby="story-signals">
+						<h2 id="story-signals">相關趨勢</h2>
+						<ul className="story-list">
+							{signals.map((signal) => (
+								<li key={signal.signalId}>
+									<Link href="/signals">{signal.label}</Link>{" "}
+									<span className="host">{signalStateLabel(signal.state)}</span>
+								</li>
+							))}
+						</ul>
+					</section>
+				) : null}
+
 			</aside>
 		</article>
 	);

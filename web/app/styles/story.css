@@ -82,9 +82,4 @@
 		align-items: start;
 	}
 
-	.story-aside {
-		position: sticky;
-		top: var(--space-5);
-		align-self: start;
-	}
 }
