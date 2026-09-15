@@ -63,16 +63,16 @@ describe.skipIf(!probe.available)("raw + normalized items", () => {
 
 	it("re-collecting the same provider record does not duplicate it", async () => {
 		const items = [collected(`${suffix}-1`), collected(`${suffix}-2`)];
-		const before = await countRawItems(sql);
+		const before = await countRawItems(sql, suffix);
 
 		const first = await upsertRawItems(sql, items);
 		expect(first.map((r) => r.inserted)).toEqual([true, true]);
-		expect(await countRawItems(sql)).toBe(before + 2);
+		expect(await countRawItems(sql, suffix)).toBe(before + 2);
 
 		const second = await upsertRawItems(sql, items);
 		expect(second.map((r) => r.inserted)).toEqual([false, false]);
 		expect(second.map((r) => r.rawItemId)).toEqual(first.map((r) => r.rawItemId));
-		expect(await countRawItems(sql)).toBe(before + 2);
+		expect(await countRawItems(sql, suffix)).toBe(before + 2);
 	});
 
 	it("keeps the provider payload verbatim and links the normalized row to it", async () => {
@@ -106,20 +106,20 @@ describe.skipIf(!probe.available)("raw + normalized items", () => {
 		// Each item used to be its own round trip inside the transaction; the
 		// batched write has to produce the same refs, in input order.
 		const items = Array.from({ length: 1200 }, (_, i) => collected(`${suffix}-b${i}`));
-		const before = await countRawItems(sql);
+		const before = await countRawItems(sql, suffix);
 
 		const refs = await upsertRawItems(sql, items);
 		expect(refs).toHaveLength(1200);
 		expect(refs.every((r) => r.inserted)).toBe(true);
 		expect(refs.map((r) => r.externalId)).toEqual(items.map((i) => i.raw.externalId));
 		expect(new Set(refs.map((r) => r.rawItemId)).size).toBe(1200);
-		expect(await countRawItems(sql)).toBe(before + 1200);
+		expect(await countRawItems(sql, suffix)).toBe(before + 1200);
 
 		// A second pass over a batch that spans chunks conflicts on every row.
 		const again = await upsertRawItems(sql, items);
 		expect(again.some((r) => r.inserted)).toBe(false);
 		expect(again.map((r) => r.rawItemId)).toEqual(refs.map((r) => r.rawItemId));
-		expect(await countRawItems(sql)).toBe(before + 1200);
+		expect(await countRawItems(sql, suffix)).toBe(before + 1200);
 	});
 
 	it("links a batch to its collection run, whose id is text and not a uuid", async () => {

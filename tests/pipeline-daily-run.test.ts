@@ -3,7 +3,6 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { CollectedItem, Collector, CollectorResult } from "../src/collectors/types.ts";
 import { getBrief } from "../src/db/briefs.ts";
 import { createSql, type Sql } from "../src/db/client.ts";
-import { countRawItems } from "../src/db/items.ts";
 import { getMaterials } from "../src/db/materials.ts";
 import { migrate } from "../src/db/migrate.ts";
 import { getRun } from "../src/db/runs.ts";
@@ -141,6 +140,17 @@ describe.skipIf(!probe.available)("daily pipeline", () => {
 	async function collectionRunsFor(runId: string): Promise<number> {
 		const rows = await sql<{ n: string }[]>`
 			select count(*)::text as n from collection_runs where run_id = ${runId}
+		`;
+		return Number(rows[0]?.n ?? "0");
+	}
+
+	/** Raw rows this run collected. Scoped to the run for the same reason as
+	 * above: a global count reads shared state, and these suites run in
+	 * parallel against one database. */
+	async function rawItemsFor(runId: string): Promise<number> {
+		const rows = await sql<{ n: string }[]>`
+			select count(*)::text as n from raw_items
+			where collection_run_id in (select collection_run_id from collection_runs where run_id = ${runId})
 		`;
 		return Number(rows[0]?.n ?? "0");
 	}
@@ -431,7 +441,7 @@ describe.skipIf(!probe.available)("daily pipeline", () => {
 			});
 			expect(crashed.state).toBe("CURATION_FAILED");
 
-			const rawAfterCollection = await countRawItems(sql);
+			const rawAfterCollection = await rawItemsFor(crashed.runId);
 			const collectionRunsAfter = await collectionRunsFor(crashed.runId);
 			expect(collectionRunsAfter).toBe(2);
 
@@ -449,7 +459,7 @@ describe.skipIf(!probe.available)("daily pipeline", () => {
 			expect(await getMaterials(sql, retryLineage, DATE)).toBeDefined();
 
 			// Nothing was collected again: no new raw rows, no new collection runs.
-			expect(await countRawItems(sql)).toBe(rawAfterCollection);
+			expect(await rawItemsFor(crashed.runId)).toBe(rawAfterCollection);
 			expect(await collectionRunsFor(crashed.runId)).toBe(collectionRunsAfter);
 
 			// 3. Retry the writing stage; validation and publishing follow.
@@ -463,7 +473,7 @@ describe.skipIf(!probe.available)("daily pipeline", () => {
 				driverFactory: workingDriverFactory(),
 			});
 			expect(published.state).toBe("PUBLISHED");
-			expect(await countRawItems(sql)).toBe(rawAfterCollection);
+			expect(await rawItemsFor(crashed.runId)).toBe(rawAfterCollection);
 			expect((await getBrief(sql, retryLineage, DATE))?.stories.length).toBeGreaterThanOrEqual(8);
 		} finally {
 			await purgeLineage(sql, retryLineage);

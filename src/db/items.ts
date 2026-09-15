@@ -125,8 +125,21 @@ export async function upsertRawItems(
 	return out;
 }
 
-export async function countRawItems(sql: Sql): Promise<number> {
-	const rows = await sql<{ n: string }[]>`select count(*)::text as n from raw_items`;
+/**
+ * Count raw items, optionally only those whose external id starts with `prefix`.
+ *
+ * The prefix is not optional in practice. This is used by the integration
+ * suites, which run in parallel against one database, and an unscoped count is
+ * a reading of shared state: a suite that inserts 1200 rows and asserts
+ * `before + 1200` is asserting that no other suite wrote or deleted a raw item
+ * in between. That held only for as long as nothing deleted raw items, and it
+ * stopped holding the moment the lineage purge started cleaning them up.
+ */
+export async function countRawItems(sql: Sql, prefix?: string): Promise<number> {
+	const rows =
+		prefix === undefined
+			? await sql<{ n: string }[]>`select count(*)::text as n from raw_items`
+			: await sql<{ n: string }[]>`select count(*)::text as n from raw_items where external_id like ${`${prefix}%`}`;
 	return Number(rows[0]?.n ?? 0);
 }
 
