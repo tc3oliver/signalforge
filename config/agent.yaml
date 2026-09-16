@@ -48,13 +48,16 @@ stages:
     # six times while making steady progress, and the router read each timeout as
     # a provider fault and burned all three models in 28 minutes.
     #
-    # Sized to 60-70% of timeoutMs at most, not to "as much as fits". Measured on
-    # that run: 50 decisions per ~75s, so one 50-item page costs ~75s. Two pages
-    # is 150s, half the clock, with the rest as margin for the story work that
-    # happens alongside paging and for a page that runs slow. Three pages (225s)
-    # is already 75% and makes every turn a race between a clean yield and an
-    # abort; the timeout must never be what normally ends a turn.
-    maxDecisionsPerTurn: 100
+    # Sized from the SLOW end of measured throughput, not the middle. Over the
+    # six bounded turns of that day's recovery: p50 2.40 s/decision, p90 3.45,
+    # max 6.00 -- a threefold spread, with three of six turns ending on the clock
+    # instead of on the ceiling. 50 x 3.45s = 172s, 57% of the clock, and it
+    # still fits at the observed maximum. It also leaves room for the model to
+    # wind down: one turn exhausted its budget and still ran to the clock, so the
+    # ceiling is not instantaneous.
+    #
+    # Raise it only with telemetry showing p90 well under 3s/decision.
+    maxDecisionsPerTurn: 50
   EDITOR:
     timeoutMs: 300000
     maxAttemptsPerModel: 4

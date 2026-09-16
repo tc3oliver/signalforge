@@ -247,12 +247,20 @@ describe("the continuation ceiling", () => {
 	});
 
 	it("does not bind before the manifest cap on any manifest the pipeline builds", async () => {
-		// The shipped bound must be a runaway guard, not a budget: 40 continuations
-		// at the 100-decision work unit is 4000 items against a 2000-item cap.
+		/*
+		 * The shipped bound is a runaway guard, not a budget, and it scales with
+		 * the work unit rather than standing on its own. Halving the unit from 100
+		 * to 50 left the old ceiling at exactly 2000 -- the manifest cap -- so a
+		 * full-sized day would have failed the stage for being large rather than
+		 * stuck, especially since a turn can decide fewer than its full budget.
+		 *
+		 * Two times the cap, so retuning either number keeps the headroom.
+		 */
+		const MANIFEST_CAP = 2000;
 		const { DEFAULT_CONTINUATION_BOUNDS } = await import("../src/runtime/model-router.ts");
 		const { DEFAULT_STAGE_TUNING } = await import("../src/config/stage-tuning.ts");
 		const unit = DEFAULT_STAGE_TUNING.CURATOR.maxDecisionsPerTurn ?? 0;
-		expect(DEFAULT_CONTINUATION_BOUNDS.maxContinuations * unit).toBeGreaterThan(2000);
+		expect(DEFAULT_CONTINUATION_BOUNDS.maxContinuations * unit).toBeGreaterThanOrEqual(2 * MANIFEST_CAP);
 	});
 });
 

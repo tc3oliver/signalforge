@@ -39,6 +39,37 @@ new epoch automatically and no date here has to be kept up to date.
 Read Epoch A for what the pipeline did before it knew who it was writing for.
 Do not read it as evidence about the system running today.
 
+### 2026-09-16 is a transition day, not Epoch B Day 1
+
+It carries a `profile_version` and it published, so `pnpm observe` will group it
+with Epoch B. **Do not count it as a clean day.** What happened to it:
+
+- its scheduled 05:30 run never produced a brief — the host had suspended the
+  container VM overnight, and the day's items accumulated into a 1626-item
+  backlog;
+- the catch-up run failed (`CURATION_FAILED`, 1050 of 1626 decided) because the
+  curator still tried to scan a day inside one model turn;
+- it published only after three execution fixes landed **during** the day, and
+  after four runs, two of which were stopped by hand mid-flight.
+
+So the runtime changed underneath it, the workload was three times a normal
+day's, and a human intervened repeatedly. Every one of those disqualifies it as
+a baseline day even though the brief itself is sound.
+
+**Epoch B Day 1 is the first daily run that is all of:**
+
+| | |
+|---|---|
+| unattended | fired by the LaunchAgent, no hand-started run |
+| fixed runtime | no execution change shipped that day |
+| personalized | `profile_version` present |
+| uninterrupted | no recovery, no `--resume`, no `--resume-from` |
+| published | reaches `PUBLISHED` |
+
+Count the five consecutive clean days from there, not from 09-16. Record
+2026-09-16 in the daily sheet as `TRANSITION` with a one-line reason, so the
+gap in the run of dates is explained rather than looking like a missing day.
+
 **The tool will not merge them.** Asking for a range that spans a profile change
 prints an explicit refusal instead of an average, because a five-day figure that
 silently blends two systems does not look like an error — it looks like evidence.
@@ -56,6 +87,7 @@ Run id:
 Health:
 Epoch (from `pnpm observe`):
 Profile version:
+Day type (CLEAN / TRANSITION — and why, if not clean):
 
 Must Know as published (title · section · change type):
 1.

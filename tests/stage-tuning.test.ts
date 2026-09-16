@@ -97,4 +97,39 @@ describe("loadStageTuning", () => {
 
 		expect(shipped.stages).toEqual(DEFAULT_STAGE_TUNING);
 	});
+	/*
+	 * The work unit has to finish inside the turn clock at the SLOW end of
+	 * measured throughput, not the middle.
+	 *
+	 * It was 100, sized from the p50 of one run. Over the six bounded turns of
+	 * the 2026-09-16 recovery the rate spread was threefold -- p50 2.40
+	 * s/decision, p90 3.45, max 6.00 -- and three of those six turns ended on the
+	 * clock rather than on the ceiling. A turn that ends on the clock pays the
+	 * abort grace period and rebuilds context in a fresh session, so the timeout
+	 * path costs more per decision than the yield path, not less.
+	 *
+	 * This pins the arithmetic rather than the number, so raising the work unit
+	 * is only possible alongside an explicit claim about throughput.
+	 */
+	it("sizes the curator work unit to fit the turn clock at p90 throughput", () => {
+		const { CURATOR } = DEFAULT_STAGE_TUNING;
+		const unit = CURATOR.maxDecisionsPerTurn;
+		expect(unit, "the curator must stay bounded").toBeDefined();
+
+		// Measured on 2026-09-16; the slow end, not the average.
+		const P90_SECONDS_PER_DECISION = 3.45;
+		const expectedMs = (unit as number) * P90_SECONDS_PER_DECISION * 1000;
+
+		// 65% of the clock, leaving room for the model to wind down after
+		// list_unseen_items reports the turn complete -- one turn on that day
+		// exhausted its budget and still ran to the clock.
+		expect(expectedMs).toBeLessThanOrEqual(CURATOR.timeoutMs * 0.65);
+	});
+
+	it("still fits the clock at the worst rate observed", () => {
+		const { CURATOR } = DEFAULT_STAGE_TUNING;
+		const WORST_SECONDS_PER_DECISION = 6.0;
+		const worstMs = (CURATOR.maxDecisionsPerTurn as number) * WORST_SECONDS_PER_DECISION * 1000;
+		expect(worstMs).toBeLessThanOrEqual(CURATOR.timeoutMs);
+	});
 });

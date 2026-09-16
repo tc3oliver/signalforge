@@ -19,6 +19,9 @@ section has been overtaken by an implementation, it is marked
 | [story_items audit](#story_items-audit) | **SHIPPED** |
 | [Emerging Signals audit](#emerging-signals-audit) | PLANNED |
 | [Manifest overflow guarantee](#manifest-overflow-guarantee) | DEFERRED |
+| [Manifest identity is not persisted](#manifest-identity-is-not-persisted) | PLANNED (P1) |
+| [Historical dangling story ids](#historical-dangling-story-ids) | PLANNED |
+| [Time-aware curator work budget](#time-aware-curator-work-budget) | PLANNED |
 | [pgvector / embeddings](#pgvector--embeddings) | DEFERRED |
 | [Chinese editorial style integration](#post-freeze-chinese-editorial-style-integration) | PLANNED |
 | [Signal state wording versus evidence](#post-freeze-signal-state-wording-versus-evidence) | PLANNED |
@@ -585,6 +588,102 @@ model instead of consuming the chain, and `timeoutMs` is back to meaning only
 
 The item cap above is untouched by that change and still composes badly with the
 48-hour catch-up window. Do not read the execution fix as having addressed it.
+
+---
+
+## Manifest identity is not persisted
+
+**Status: PLANNED — P1 correctness follow-up.**
+
+### What was checked
+
+Nothing stores the manifest. There is no manifest table, no writer, and no
+artifact: `buildManifestFromDb` recomputes it from `normalized_items` on every
+call, and `daily_runs.total_items` keeps only the count. Confirmed by reading
+the query and grepping the migrations and `src/`.
+
+### Why it matters
+
+A recovery run cannot know which item ids the run it is recovering actually
+saw. Auditing the 2026-09-16 recovery required reconstructing the original set
+from the failed run's own predicate wound back to its `CURATING` timestamp;
+that produced **1630 against a recorded 1626**, stable across a 20-second
+window, so the 4-item gap is structural and remains unexplained. Coverage had
+to be argued as a superset — every one of the reconstructed 1630 carries a
+decision, therefore so does each of the original 1626 — rather than proved by
+matching ids.
+
+That argument holds, and it is weaker than the question deserves. "Did the
+recovery finish the work the failed run was given?" should be answerable by
+set difference, not by inference.
+
+### What the 2026-09-16 fix did and did not do
+
+`ab0b26a` made the manifest **monotonic within a day**: deciding an item today
+keeps it in today's manifest, so the citable set no longer shrinks underneath
+stories already written against it. That is what made the recovery publishable.
+
+It is not identity. The day-window branch has no `created_at` bound, so items
+collected later still join, and the manifest still grows during a day. Stable
+enough to cite against; not fixed enough to compare against.
+
+### Candidate
+
+Persist the item id list per run at the moment the manifest is built — a
+`daily_run_manifests (lineage, run_id, item_ids)` row, written once, never
+updated. Cheap, immutable by construction, and it turns the audit above into a
+single query. Not done here because the recovery was the priority and this
+changes a write path.
+
+---
+
+## Historical dangling story ids
+
+**Status: PLANNED — correctness follow-up. Do not repair by hand.**
+
+Three `item_decisions` rows on 2026-09-16 name a `story_id` with no
+`story_ledger` row for that date:
+
+| item | disposition | story id | ledger dates |
+|---|---|---|---|
+| `rss-ac1002e53cff4a36` | CANDIDATE | `openai-project-lily-human-moderation-chatgpt-chats` | 09-14, 09-15 |
+| `hackernews-9b3a0ca43db2d42d` | DUPLICATE | `openai-agents-rubygems-attack` | 09-13, 09-14, 09-15 |
+| `hackernews-4f3113472eccfd4b` | CANDIDATE | `idscan-breach-150-million-drivers-license-records` | 09-14 |
+
+Every one points at a story that exists on an **earlier** date. The Curator
+attached an item to a continuing story without re-opening that story today.
+
+Not caused by the recovery: the `openai-agents-rubygems-attack` row was written
+at `00:05:05`, by the original failed run, before any of the execution changes
+existed. `item_decisions.story_id` has no foreign key, so the schema permits it.
+
+Impact on the published brief: **none**. Zero of the three reached
+`daily_brief_stories`.
+
+The open question is which behaviour is correct — either the Curator should
+upsert the continuing story into today's ledger (making it a real cross-day
+continuation), or a decision may legitimately cite a story from another day and
+the invariant should say so. That is a judgement about history semantics and
+belongs with P1-2, not with a `UPDATE` statement against production.
+
+---
+
+## Time-aware curator work budget
+
+**Status: PLANNED.**
+
+`maxDecisionsPerTurn` is a fixed count, and no fixed count can hold a time
+budget across the spread actually observed. Over the six bounded turns of the
+2026-09-16 recovery: p50 2.40 s/decision, p90 3.45, max 6.00 — threefold — and
+three of six turns ended on the clock rather than on the ceiling.
+
+The count has been sized down from 100 to 50 against p90 so that the ceiling
+normally wins, which is a mitigation rather than a fix. The fix is to yield on
+elapsed time — at roughly 60% of `timeoutMs` — and keep the count only as a
+backstop for a turn that somehow decides nothing while burning the clock.
+
+Worth doing when there is a second day of per-unit telemetry to size it
+against; one recovery is one sample of one model on one unusual workload.
 
 ---
 

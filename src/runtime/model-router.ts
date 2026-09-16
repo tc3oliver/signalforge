@@ -130,11 +130,20 @@ export interface ContinuationBounds {
 
 export const DEFAULT_CONTINUATION_BOUNDS: ContinuationBounds = {
 	/*
-	 * 40 continuations at the shipped 100-decision work unit is 4000 items, twice
-	 * the manifest cap, so the ceiling cannot bind before the cap does on any
-	 * manifest the pipeline will build. It is a runaway guard, not a budget.
+	 * A runaway guard, not a budget, so it has to stay clear of the largest
+	 * manifest the pipeline can build -- and it scales with the work unit rather
+	 * than standing on its own. At the shipped 50-decision unit, 80 continuations
+	 * is 4000 items, twice the 2000-item manifest cap.
+	 *
+	 * It was 40, sized when the unit was 100. Halving the unit to 50 left 40 x 50
+	 * = exactly 2000: the ceiling would have bound at precisely the cap, and any
+	 * turn that decided fewer than its full budget -- which happens, one turn on
+	 * 2026-09-16 committed 50 against a budget of 100 -- would have pushed a
+	 * full-sized manifest past it and failed the stage for being large rather than
+	 * for being stuck. Keep `maxContinuations * maxDecisionsPerTurn >= 2 x the
+	 * manifest cap` whenever either is retuned; a test pins it.
 	 */
-	maxContinuations: 40,
+	maxContinuations: 80,
 	/* Comfortably past the ~41 minutes the 1626-item backlog needed. */
 	maxStageWallClockMs: 90 * 60 * 1000,
 };

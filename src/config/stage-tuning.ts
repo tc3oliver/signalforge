@@ -35,22 +35,35 @@ export interface StageTuning {
 /**
  * The curator's work unit, in decisions per attempt.
  *
- * Sized against the turn clock rather than against "how much can we fit". The
- * 2026-09-16 run measured 50 decisions per ~75s (21 pages, median 75s), so a
- * page costs about 75s of a 300s turn. The rule this follows is that a work
- * unit should target 60-70% of `timeoutMs`, leaving the rest as margin for the
- * story work that happens alongside the paging -- upsert_story, find_history,
- * search_items -- and for a page that runs slow.
+ * Sized against the turn clock, and against the SLOW end of it rather than the
+ * middle. Measured over the six bounded turns of the 2026-09-16 recovery:
  *
- * Two pages: 2 x 75s = 150s, 50% of the clock. Three pages would be 225s, or
- * 75%, which is over the target and makes every turn a race between a clean
- * yield and an abort; four pages is the whole clock, which is how the run
- * failed in the first place. The aim is not maximum throughput per session --
- * it is a turn that ends predictably, on a page boundary, without the timeout
- * ever being the thing that ends it. Raise it only if telemetry shows pages
- * completing well under 75s.
+ *   unit  decisions  duration  s/decision  ended by
+ *   1     100        233s      2.33        work unit
+ *   2     100        300s      3.00        the clock
+ *   3     100        195s      1.95        work unit
+ *   4      50        300s      6.00        the clock
+ *   5     100        240s      2.40        work unit
+ *   6      87        300s      3.45        the clock
+ *
+ * p50 2.40 s/decision, p90 3.45, max 6.00 -- a threefold spread, and three of
+ * the six turns ended on the clock rather than on the ceiling. 100 was sized
+ * from the p50 of an earlier run, and sizing from the middle of a distribution
+ * this wide is exactly what produced those three timeouts.
+ *
+ * So: 50, from p90. 50 x 3.45s = 172s, 57% of the 300s clock, and it still
+ * fits at the observed maximum. Two further reasons not to round it up. Unit 2
+ * exhausted its budget and *still* ran to the clock, so the ceiling is not
+ * instantaneous -- the model needs room to wind down after `list_unseen_items`
+ * reports the turn complete. And a turn that ends on the clock costs the abort
+ * grace period and re-establishes context in a fresh session, so the timeout
+ * path is more expensive per decision than the yield path, not less.
+ *
+ * The real fix is a time-aware budget -- yield at elapsed >= 60% of timeoutMs,
+ * with the count as a backstop -- because no fixed count can hold a time budget
+ * across a 3x rate spread. That is a backlog item, not this change.
  */
-const CURATOR_WORK_UNIT = 100;
+const CURATOR_WORK_UNIT = 50;
 
 export const DEFAULT_STAGE_TUNING: StageTuning = Object.freeze({
 	CURATOR: {
@@ -64,18 +77,6 @@ export const DEFAULT_STAGE_TUNING: StageTuning = Object.freeze({
 
 const log = createLogger("stage-tuning");
 
-/**
- * Reads the stage block, falling back to {@link DEFAULT_STAGE_TUNING} if the
- * config cannot be read.
- *
- * It never returns undefined, and that is the whole point. `loadConfig()`
- * eagerly parses five files, including gitignored `*.local.yaml` overrides, so
- * a typo in any one of them used to leave every call site spreading nothing and
- * `timeoutMs` unset — which is exactly the unbounded turn that produced the
- * 114-minute editor attempt. `maxNudges` is tuning; `timeoutMs` is correctness,
- * and correctness does not get to be absent. The swallowed error is logged so
- * the degradation is visible rather than silent.
- */
 /**
  * Fills the optional bounds from the built-in defaults.
  *
@@ -94,6 +95,18 @@ function withDefaults(stages: StageTuning): StageTuning {
 	return { CURATOR: merge("CURATOR"), EDITOR: merge("EDITOR") };
 }
 
+/**
+ * Reads the stage block, falling back to {@link DEFAULT_STAGE_TUNING} if the
+ * config cannot be read.
+ *
+ * It never returns undefined, and that is the whole point. `loadConfig()`
+ * eagerly parses five files, including gitignored `*.local.yaml` overrides, so
+ * a typo in any one of them used to leave every call site spreading nothing and
+ * `timeoutMs` unset — which is exactly the unbounded turn that produced the
+ * 114-minute editor attempt. `maxNudges` is tuning; `timeoutMs` is correctness,
+ * and correctness does not get to be absent. The swallowed error is logged so
+ * the degradation is visible rather than silent.
+ */
 export function loadStageTuning(root?: string): StageTuning {
 	try {
 		return withDefaults((root === undefined ? loadConfig() : loadConfig(root)).agent.stages);
