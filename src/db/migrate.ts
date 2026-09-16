@@ -56,7 +56,22 @@ export interface MigrateResult {
  * its ledger insert, so a half-applied migration cannot be recorded as done.
  */
 export async function migrate(sql: Sql, dir: string = MIGRATIONS_DIR): Promise<MigrateResult> {
-	await assertReachable(sql);
+	await assertReachable(sql, {
+		onRetry: ({ attempt, elapsedMs, error }) => {
+			// Printed rather than swallowed: a scheduled run that sits here for ten
+			// minutes must not look like a hang in the log, and the reason a host is
+			// mid-resume is exactly what an operator needs to see afterwards.
+			console.error(
+				JSON.stringify({
+					scope: "db",
+					msg: "database not answering yet; waiting",
+					attempt,
+					elapsedMs,
+					error,
+				}),
+			);
+		},
+	});
 	await ensureLedger(sql);
 	/*
 	 * One migrator at a time, cluster-wide. Nothing serialises callers otherwise:

@@ -110,19 +110,73 @@ export function createSql(config: DbConfig = dbConfigFromEnv()): Sql {
 }
 
 /**
+ * How long to keep trying before calling the database unreachable.
+ *
+ * Zero was the old value, in effect, and it cost the 2026-09-16 brief. The host
+ * had suspended the OrbStack VM overnight; launchd fired the 05:30 job on time,
+ * the first `select 1` failed with `write CONNECT_TIMEOUT 127.0.0.1:55432`, and
+ * the run ended there. The VM came back at 05:59 on its own, twenty-nine
+ * minutes later, and by then nothing was left to use it.
+ *
+ * Fifteen minutes is chosen against that: long enough to cover a VM that is
+ * resuming, short enough that a genuinely misconfigured DATABASE_URL still
+ * fails inside the window a 05:30 job has before it is useless. The machine
+ * setting that stops the suspension in the first place lives in
+ * ~/Developer/setup/scripts/power-settings.sh; this is the second line, not the
+ * first.
+ */
+const REACHABLE_WAIT_MS = 15 * 60 * 1000;
+const REACHABLE_POLL_MS = 10_000;
+
+/**
  * An unreachable database is a deployment/configuration bug, not a transient provider
  * failure: it is raised as ProgrammerError so the classifier maps it to
  * PROGRAMMER_ERROR and no retry or fallback path can swallow it.
+ *
+ * "Unreachable" now means "did not answer within `waitMs`", not "did not answer
+ * the first time". The distinction matters because the two look identical at the
+ * first attempt and are not the same thing at all: one is a typo in a
+ * connection string, the other is a container host that is mid-resume.
  */
-export async function assertReachable(sql: Sql): Promise<void> {
-	try {
-		await sql`select 1`;
-	} catch (cause) {
-		throw new ProgrammerError(
-			"PostgreSQL is unreachable; check that compose is up and DATABASE_URL points at it",
-			{ cause },
-		);
+export async function assertReachable(
+	sql: Sql,
+	opts: {
+		/** Overridable so a test need not spend the real window waiting. */
+		waitMs?: number;
+		pollMs?: number;
+		/** Called before each retry, so a wait is visible in the run log rather than looking like a hang. */
+		onRetry?: (info: { attempt: number; elapsedMs: number; error: string }) => void;
+	} = {},
+): Promise<void> {
+	const waitMs = opts.waitMs ?? REACHABLE_WAIT_MS;
+	const pollMs = opts.pollMs ?? REACHABLE_POLL_MS;
+	const startedAt = Date.now();
+	let attempt = 0;
+	let lastError: unknown;
+
+	for (;;) {
+		attempt += 1;
+		try {
+			await sql`select 1`;
+			return;
+		} catch (cause) {
+			lastError = cause;
+			const elapsedMs = Date.now() - startedAt;
+			if (elapsedMs + pollMs >= waitMs) break;
+			opts.onRetry?.({
+				attempt,
+				elapsedMs,
+				error: cause instanceof Error ? cause.message : String(cause),
+			});
+			await new Promise((resolve) => setTimeout(resolve, pollMs));
+		}
 	}
+
+	throw new ProgrammerError(
+		`PostgreSQL did not answer within ${Math.round(waitMs / 1000)}s (${attempt} attempt(s)); ` +
+			"check that compose is up, that the container host is not suspended, and that DATABASE_URL points at it",
+		{ cause: lastError },
+	);
 }
 
 /**
