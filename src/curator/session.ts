@@ -170,17 +170,41 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 	});
 
 	try {
-		const processed = await opts.repo.processedItemIds(opts.date);
+		const totalItems = opts.manifest.items.length;
+		/*
+		 * Decisions for items IN THIS MANIFEST, not decisions for this date.
+		 *
+		 * The repository is keyed by date and answers with everything decided that
+		 * day, which is a larger set than the manifest whenever a run is continuing
+		 * a previous one: the 2026-09-16 recovery inherited 1050 decisions and was
+		 * handed a 637-item manifest of what was left, so the date-scoped count
+		 * read 1150 against a total of 637. Every comparison downstream then went
+		 * the wrong way -- `decidedAfter < totalItems` was false from the first
+		 * turn, so the work unit never yielded, and the stall check concluded the
+		 * scan was complete while items were still unseen.
+		 *
+		 * It only looks correct on a fresh day, where the manifest is a superset of
+		 * the day's decisions. That is exactly the case the tests covered.
+		 */
+		const manifestIds = new Set(opts.manifest.items.map((i) => i.id));
+		const decidedCount = async () => {
+			const processed = await opts.repo.processedItemIds(opts.date);
+			let n = 0;
+			for (const id of manifestIds) if (processed.has(id)) n++;
+			return n;
+		};
+
+		const decidedAtStart = await decidedCount();
 		const stories = await opts.repo.listStories(opts.date);
 
 		// A resume picks up durable state rather than replaying the day; a half-dead
 		// conversation is never migrated to another model.
 		const opening =
-			opts.mode === "RESUME" && processed.size > 0
+			opts.mode === "RESUME" && decidedAtStart > 0
 				? buildCuratorResumePrompt({
 						date: opts.date,
-						unseenItems: opts.manifest.items.length - processed.size,
-						totalItems: opts.manifest.items.length,
+						unseenItems: totalItems - decidedAtStart,
+						totalItems,
 						storyCount: stories.length,
 					})
 				: opts.mode === "CORRECTIVE" && opts.lastError
@@ -195,8 +219,6 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 							skillSection: "",
 						});
 
-		const totalItems = opts.manifest.items.length;
-		const decidedCount = async () => (await opts.repo.processedItemIds(opts.date)).size;
 
 		/*
 		 * One turn, under the turn clock, with the two endings that are not
@@ -255,10 +277,10 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 		let stalls = 0;
 
 		while (!ctx.submitted && nudges < maxNudges) {
-			const current = await opts.repo.processedItemIds(opts.date);
+			const current = await decidedCount();
 			const storyList = await opts.repo.listStories(opts.date);
 			if (faultError) throw faultError;
-			opts.checkFault?.(current.size);
+			opts.checkFault?.(current);
 
 			// No new decisions since the last turn means the model is circling rather
 			// than working. Two of those is a tool loop, not a slow start.
@@ -269,16 +291,16 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 			// failure is a submission-shape failure, and the router has to be told
 			// so — a resume prompt would send it back to `list_unseen_items` when
 			// there is nothing unseen.
-			if (current.size === lastProgress) {
+			if (current === lastProgress) {
 				stalls += 1;
 				if (stalls >= 2) {
-					if (current.size < opts.manifest.items.length) {
+					if (current < totalItems) {
 						throw new ToolLoopError(
-							`Curator made no progress across ${stalls + 1} turns at ${current.size}/${opts.manifest.items.length} items decided`,
+							`Curator made no progress across ${stalls + 1} turns at ${current}/${totalItems} items decided`,
 						);
 					}
 					throw new InvalidAgentOutputError(
-						`Curator scanned all ${opts.manifest.items.length} items but did not produce accepted materials across ${stalls + 1} turns (${rejectedSubmissions} rejected submissions)` +
+						`Curator scanned all ${totalItems} items but did not produce accepted materials across ${stalls + 1} turns (${rejectedSubmissions} rejected submissions)` +
 							(lastRejection
 								? `. Last rejection: ${lastRejection}`
 								: ". It never called submit_materials."),
@@ -287,15 +309,15 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 			} else {
 				stalls = 0;
 			}
-			lastProgress = current.size;
+			lastProgress = current;
 
 			nudges += 1;
 			opts.onEvent?.({
 				kind: "nudge",
 				stage: "CURATOR",
 				attempt: nudges,
-				processed: current.size,
-				total: opts.manifest.items.length,
+				processed: current,
+				total: totalItems,
 			});
 
 			// Consumed before the turn: the submit_materials wrapper sets `lastError`
@@ -306,8 +328,8 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 			await runTurn(() =>
 				driver.prompt(
 					buildCuratorNudgePrompt({
-						unseenItems: opts.manifest.items.length - current.size,
-						totalItems: opts.manifest.items.length,
+						unseenItems: totalItems - current,
+						totalItems,
 						storyCount: storyList.length,
 						lastError: feedback,
 					}),
@@ -316,9 +338,9 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 		}
 
 		if (!ctx.submitted) {
-			const current = await opts.repo.processedItemIds(opts.date);
+			const current = await decidedCount();
 			throw new InvalidAgentOutputError(
-				`Curator did not produce accepted materials after ${maxNudges} nudges (${current.size}/${opts.manifest.items.length} items decided, ${rejectedSubmissions} rejected submissions)` +
+				`Curator did not produce accepted materials after ${maxNudges} nudges (${current}/${totalItems} items decided, ${rejectedSubmissions} rejected submissions)` +
 					(lastRejection
 						? `. Last rejection: ${lastRejection}`
 						: ". It never called submit_materials."),

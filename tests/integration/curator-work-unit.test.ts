@@ -305,4 +305,65 @@ describe("bounded curator work units", () => {
 		expect(rejection).toBeDefined();
 		expect(rejection).toMatch(/unseen|coverage|decision/i);
 	});
+	it("counts progress against the manifest, not the day, when recovering", async () => {
+		/*
+		 * The 2026-09-16 recovery regression.
+		 *
+		 * A recovery run inherits the failed run's decisions and is handed a
+		 * manifest of only what is left, so the day's decision count is LARGER than
+		 * the manifest. The count used to come from the repository keyed by date,
+		 * which made `decided` read 1150 against a `total` of 637: the work unit
+		 * never yielded because `decidedAfter < totalItems` was false from the
+		 * first turn, and the stall check concluded the scan was finished while
+		 * items were still unseen. It looked correct on a fresh day, where the
+		 * manifest is a superset of the day's decisions -- which is every other
+		 * test here.
+		 */
+		const repo = new JsonStoryRepository(join(root, "ledger"));
+		const full = makeManifest({ date: DATE, groups: 70, perGroup: 5 }); // 350 items
+
+		// What the run being recovered already decided: the first 200, none of
+		// which appear in the manifest this run is handed.
+		const alreadyDecided = full.items.slice(0, 200);
+		await repo.recordDecisions(
+			DATE,
+			alreadyDecided.map((i) => ({
+				itemId: i.id,
+				disposition: "IRRELEVANT" as const,
+				reason: "decided by the run being recovered",
+				decidedAt: `${DATE}T00:00:00.000Z`,
+			})),
+		);
+		expect((await repo.processedItemIds(DATE)).size).toBe(200);
+
+		// The recovery manifest: only what is left, and disjoint from the above.
+		const remaining = { ...full, items: full.items.slice(200) }; // 150 items
+		expect(remaining.items.length).toBe(150);
+
+		const err = await runCuratorStage({
+			date: DATE,
+			manifest: remaining,
+			repo,
+			spec: MODEL_CHAIN[0]!,
+			skillsRoot: SKILLS_ROOT,
+			cwd: root,
+			driverFactory: createFakeDriverFactory(pagingScript),
+			mode: "RESUME",
+			maxNudges: 0,
+			maxDecisionsPerTurn: 100,
+		}).catch((e: unknown) => e);
+
+		// It must yield on the work unit, not conclude the scan is already done.
+		expect(err).toBeInstanceOf(ProgressYieldError);
+		const yielded = err as ProgressYieldError;
+		expect(yielded.info.reason).toBe("WORK_UNIT_COMPLETE");
+		expect(yielded.info.totalItems).toBe(150);
+		// Manifest-scoped: the 200 inherited decisions are not progress on THIS
+		// manifest, so decidedAfter can never exceed totalItems.
+		expect(yielded.info.decidedBefore).toBe(0);
+		expect(yielded.info.decidedAfter).toBeGreaterThanOrEqual(100);
+		expect(yielded.info.decidedAfter).toBeLessThanOrEqual(150);
+		// And the inherited decisions are untouched.
+		expect((await repo.processedItemIds(DATE)).size).toBe(200 + yielded.info.decidedAfter);
+	});
 });
