@@ -1,10 +1,40 @@
 # Intelligence Backlog (post-freeze)
 
 Produced from a read-only audit of the code at commit `ed4f859` on 2026-09-13. Every "current state" claim
-below cites the file and line that was actually read. Nothing in this document is
-implemented; it is design and audit material for after the observation freeze.
+below cites the file and line that was actually read.
+
+**Every "Current state" section in this document describes the code as it stood
+on 2026-09-13.** Those sections are kept as the audit record that justified each
+design, and they are not updated as items ship — read the `Status:` line under
+each heading for where an item actually stands today. Where a "Current state"
+section has been overtaken by an implementation, it is marked
+*Historical pre-implementation state* in place.
+
+| Item | Status |
+|---|---|
+| [P1-1 Personalization](#p1-1-personalization) | **SHIPPED** (v1) |
+| [P1-2 Historical Intelligence Invariant](#p1-2-historical-intelligence-invariant) | PLANNED |
+| [P1-3 Claim-level Grounding](#p1-3-claim-level-grounding) | PLANNED |
+| [P1-4 Feedback Loop](#p1-4-feedback-loop) | PLANNED |
+| [story_items audit](#story_items-audit) | **SHIPPED** |
+| [Emerging Signals audit](#emerging-signals-audit) | PLANNED |
+| [Manifest overflow guarantee](#manifest-overflow-guarantee) | DEFERRED |
+| [pgvector / embeddings](#pgvector--embeddings) | DEFERRED |
+| [Chinese editorial style integration](#post-freeze-chinese-editorial-style-integration) | PLANNED |
+| [Signal state wording versus evidence](#post-freeze-signal-state-wording-versus-evidence) | PLANNED |
+| [Reader prior for AI engineering versus AI industry](#post-freeze-reader-prior-for-ai-engineering-versus-ai-industry) | PLANNED |
+| [Crypto / Web3 coverage audit](#post-freeze-crypto--web3-coverage-audit) | PLANNED |
 
 ## 0. Scope and freeze rule
+
+**The 2026-09-13 → 2026-09-18 freeze ended early and did not produce a baseline.**
+It was broken deliberately on 2026-09-15 by shipping P1-1, which changes relevance
+scoring and ordering — exactly what the window was measuring. Do not read the
+09-13..09-15 days as evidence about the current system; they are a closed epoch.
+The replacement baseline and the rule that keeps epochs apart are in
+[`OBSERVATION_REVIEW.md`](OBSERVATION_REVIEW.md), which is now the authority on
+what is being observed and when. What follows is the original rule, retained
+because the two principles it states still bind every item below.
 
 The observation freeze runs 2026-09-13 through 2026-09-18. During that window no
 change described here is implemented, no prompt or skill text is edited, no
@@ -21,7 +51,44 @@ first.
 
 ## P1-1 Personalization
 
+**Status: SHIPPED (v1)** — `e27bf39` (profile reaches both agents),
+`02b8566` and migration `007_reader-profile-provenance.sql` (`story_ledger.topic_ids`,
+`daily_briefs.profile_version`).
+
+### What shipped
+
+- `src/profile/reader-profile.ts` projects `loadConfig().interests` into a
+  `ReaderProfile` and renders the block both system prompts embed, including the
+  "**These weights are priors, not filters**" paragraph and the three clauses a
+  weight may never justify.
+- The block reaches the Curator and the Editor. Neither agent gets a new tool;
+  the profile arrives as prompt context only.
+- `version` is a hash of the sorted topics plus the persona, so a profile edit
+  is detectable after the fact.
+- `story_ledger.topic_ids` records which topics the Curator attributed a story
+  to. `daily_briefs.profile_version` records which profile shaped a brief.
+- `pnpm observe` reads both and reports a per-topic funnel and the epoch split.
+
+### Remaining gaps
+
+- **No behavioral feedback.** Nothing observes what the reader opens, skips or
+  returns to. P1-4 is still PLANNED.
+- **No topic funnel validation.** The funnel is now measured, but the first
+  five-day post-personalization epoch has not completed, so there is no evidence
+  yet that the attributions are accurate rather than merely present.
+- **No profile effectiveness measurement.** Nothing compares what the brief
+  chose against what the weights asked for. Before/after comparison across the
+  epoch boundary is the only available method and it is confounded by everything
+  else that changed that week.
+- **No automatic learning or tuning.** Weights are hand-edited and stay that way.
+- **Weights are instructions to a model, not arithmetic.** Relative ordering may
+  not be respected; there is no deterministic guarantee about story order.
+
 ### Current state
+
+*Historical pre-implementation state — the audit of 2026-09-13 that justified
+the design below. Superseded by "What shipped" above; retained as the record of
+what was actually read at the time.*
 
 - `config/interests.yaml` and `config/interests.local.yaml` exist (`config/` listing).
   The local file wins outright when present, not merged: `src/config/loader.ts:38-47`.
@@ -104,6 +171,8 @@ Acceptance criteria:
 ---
 
 ## P1-2 Historical Intelligence Invariant
+
+**Status: PLANNED.** Deliberately not started until the first five-day post-personalization epoch closes; see the non-NEW continuity rate in `pnpm observe`.
 
 ### Current state
 
@@ -208,6 +277,8 @@ Acceptance criteria:
 
 ## P1-3 Claim-level Grounding
 
+**Status: PLANNED.**
+
 ### Current state: what the validator can prove
 
 - Source id exists in today's manifest: `createSourceValidator.unknownItemIds`
@@ -276,6 +347,8 @@ behind a fixture-backed eval run.
 
 ## P1-4 Feedback Loop
 
+**Status: PLANNED.**
+
 ### Current state
 
 - The web reader is server-rendered, reads Postgres only and has one route
@@ -326,6 +399,8 @@ tests still pass.
 
 ## story_items audit
 
+**Status: SHIPPED.** `02b8566` gave `story_items` a production writer; migration `006_backfill-story-items.sql` rebuilt the rows for every story already in the ledger.
+
 - Table: `db/migrations/001_init.sql:130-140`, keyed `(lineage, story_id, date,
   item_id)` with `role in ('PRIMARY','SUPPORTING')` and a cascade to
   `story_ledger`.
@@ -360,6 +435,8 @@ the freeze; the backfill is a one-off migration script post-freeze.
 ---
 
 ## Emerging Signals audit
+
+**Status: PLANNED.** The lifecycle question (whether `WATCHING` needs splitting out of `EMERGING`) stays open until `pnpm observe` has five days of signal age, day span and evidence counts behind it.
 
 - Identity: the label is model prose and deliberately not the identity; the
   evidence story set is (`src/pipeline/signals.ts:4-11`). A new signal id is
@@ -414,6 +491,8 @@ The rest stays editorial text in `emerging-signals.md`.
 
 ## pgvector / embeddings
 
+**Status: DEFERRED.**
+
 - Extension and column exist: `create extension if not exists vector`
   (`db/migrations/001_init.sql:7`), `normalized_items.embedding vector(1536)`
   (`:81`) with an HNSW cosine index (`:91`) and a column comment restricting it
@@ -438,7 +517,64 @@ any P1 item above.
 
 ---
 
+## Manifest overflow guarantee
+
+**Status: DEFERRED until volume requires it.** Recorded now because the failure
+is silent, not because it is currently firing.
+
+### Current state, confirmed in code
+
+- The cap is `DEFAULT_MAX_ITEMS = 2000` (`src/pipeline/manifest.ts:74`),
+  overridable per call via `options.maxItems`.
+- Selection is newest-first, so when the cap bites it drops the **oldest**
+  candidates (`src/pipeline/manifest.ts:105-127`).
+- Truncation is reported: `onTruncated` fires when `items.length >= limit`
+  (`manifest.ts:138-161`) and `daily-run.ts:470-480` turns it into a
+  `degraded_reason` naming how many items were dropped. The comment there states
+  the reason this cannot be left to scan coverage: coverage is measured against
+  the manifest, so a truncated manifest is still 100% covered.
+- The catch-up sweep re-offers items from the previous `DEFAULT_CATCH_UP_HOURS = 48`
+  hours that have no `item_decisions` row (`manifest.ts:83, 112-125`), and is
+  idempotent — once an item has a decision it is never offered again.
+
+### The problem
+
+The two mechanisms do not compose. An item dropped by the cap is eligible for
+catch-up only while it stays inside the 48-hour window. On a day that overflows,
+the dropped items are by construction the oldest ones — the closest to falling
+out of that window. Two or three consecutive days above 2000 items push them
+past it, and at that point nothing will ever offer them to the Curator again.
+They are not rejected, not marked irrelevant and not counted anywhere: they are
+simply never judged, while the run reports degraded for that day only and then
+goes green. The 100% scan-coverage guarantee remains technically true and stops
+meaning what it is read as meaning.
+
+Not currently firing: the largest real manifest observed is 1790 items
+(2026-09-13), below the cap, and the arXiv narrowing on 2026-09-15 cut roughly
+250 items/day out of the intake.
+
+### Candidate solutions, neither chosen
+
+- **A. Paged manifest / no logical cap.** Remove the count limit and let the
+  Curator page through candidates until `unseen = 0`. Correct by construction;
+  changes the cost ceiling of a run from bounded to input-dependent, which is
+  the reason the cap exists.
+- **B. Multiple Curator batches until unseen = 0.** Keep the per-batch cap and
+  loop, each batch getting a fresh context. Bounded per batch, still terminates.
+  Needs a decision on how batch boundaries interact with cross-story
+  deduplication, since two halves of one event can land in different batches.
+
+### What would move this off DEFERRED
+
+Any day whose `degraded_reason` names a manifest truncation. That is the trigger
+to pick A or B; until one fires, the cap is doing its job and this is speculation
+with a cost.
+
+---
+
 ## Post-freeze: Chinese editorial style integration
+
+**Status: PLANNED.**
 
 Added 2026-09-14 from the language audit. Specification: `LANGUAGE_STYLE.md`.
 Nothing here is applied to the Editor during the freeze.
@@ -481,6 +617,8 @@ editorial behaviour and both would confound the observation window.
 
 ## Post-freeze: signal state wording versus evidence
 
+**Status: PLANNED.**
+
 The reader now labels every signal 「值得觀察的趨勢」 and shows its evidence
 (events, sources, days) next to a 可信度 word. That is presentation. The
 underlying state machine still advances `emerging → strengthening` on any
@@ -499,6 +637,8 @@ This is an Intelligence change (it alters when a signal is published as more
 than a watch item) and is not made during the freeze.
 
 ## Post-freeze: reader prior for AI engineering versus AI industry
+
+**Status: PLANNED.** Measurement landed ahead of the change: `pnpm observe` reports the engineering/research/business split from `config/observation-audit.yaml`. The ranking change itself is untouched.
 
 The owner's coverage goal, recorded 2026-09-14: **AI 技術濃度高**, and
 **Crypto/Web3 不漏重要事件**.
@@ -540,6 +680,8 @@ metric falling; funding rounds appear in Must Know only with an action-bearing
 takeaway.
 
 ## Post-freeze: Crypto / Web3 coverage audit
+
+**Status: PLANNED.** Attribution landed ahead of the change: `pnpm observe --missing` returns SOURCE_MISS / CURATOR_MISS / MATERIAL_MISS / EDITOR_MISS / UNKNOWN. No weight, quota, source or prompt has been changed.
 
 No source is added and no ranking is changed during the freeze. The freeze
 review template (`OBSERVATION_REVIEW.md`) now records, every day, the

@@ -130,10 +130,16 @@ actually runs is `*.local.yaml`, gitignored, and it wins outright when present.
 
 One thing to know before you spend an evening on it: the **watchlists** decide
 what the collectors fetch and are used on every run. The **interest profile**
-is loaded and validated, but in the current release its topics and weights are
-not yet passed to the Curator or Editor — what reaches the brief is decided by
-the shipped editorial policy. Wiring the profile into both agents is the first
-item in [`docs/INTELLIGENCE_BACKLOG.md`](docs/INTELLIGENCE_BACKLOG.md).
+reaches both agents — its topics and weights are rendered into the Curator's and
+the Editor's system prompts as **priors, not filters**. A weight raises or lowers
+a story's relevance and can move it earlier in the brief. It never excuses an
+item from being decided, never turns "off-topic" into `IRRELEVANT`, and never
+drops a high-importance story that no topic happens to name: a serious outage or
+vulnerability reaches you whichever topics you listed.
+
+What the model does with those priors is judgement, not arithmetic. See the
+personalization entry under [Limitations](#limitations) for what that does and does not
+guarantee.
 
 Then point `config/agent.yaml` at a model provider the installed Pi agent can
 authenticate as (`pi models`, `pi auth check`), add whatever collector
@@ -235,9 +241,15 @@ Stated plainly, because they determine whether this is worth your time.
 - **The curator is expensive by design.** Scanning every item is the product
   requirement that makes historical comparison possible, and it is also the
   single largest cost.
-- **Personalization is not there yet.** The interest profile is validated but
-  not yet consumed by the agents, nothing learns from what you actually read,
-  and there is no feedback loop. Both are specified in the backlog below.
+- **Personalization is v1: priors, not learning.** The interest profile does
+  reach both agents, topic attributions are persisted on each story, and each
+  brief records the profile version that shaped it. What that does *not* give
+  you: nothing learns from what you actually read, there is no feedback loop,
+  no automatic tuning of your weights, and no measurement yet of whether the
+  profile is working. The weights are instructions to a model, so it may not
+  respect their relative ordering — they influence ranking and relevance, they
+  do not deterministically guarantee the order stories appear in. Tuning them
+  is manual and stays manual.
 - **Historical value requires an accumulated ledger.** A fresh install has no
   history, so everything is `NEW` for the first few days and change tracking
   only becomes useful once days accumulate.
@@ -250,10 +262,12 @@ Stated plainly, because they determine whether this is worth your time.
 - **Not supported.** Published because the design may be useful to read and
   adapt, not because anyone is on call. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-What comes next for the intelligence layer — personalization that actually
-reaches the prompts, a deterministic history invariant, claim-level grounding,
-a feedback loop — is specified with evidence and acceptance criteria in
-[`docs/INTELLIGENCE_BACKLOG.md`](docs/INTELLIGENCE_BACKLOG.md).
+What comes next for the intelligence layer — a deterministic history invariant,
+claim-level grounding, a feedback loop, and measuring whether the shipped
+personalization actually changed what you read — is specified with evidence and
+acceptance criteria in
+[`docs/INTELLIGENCE_BACKLOG.md`](docs/INTELLIGENCE_BACKLOG.md), each item
+carrying a `PLANNED` / `SHIPPED` / `DEFERRED` status.
 
 ## Where it stands
 
