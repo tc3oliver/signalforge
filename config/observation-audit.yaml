@@ -1,0 +1,72 @@
+# Audit grouping for the observation report -- MEASUREMENT ONLY.
+#
+# This file is read by `pnpm observe` and by nothing else. No collector, no
+# Curator tool, no Editor prompt and no ranking rule loads it. That isolation is
+# the point: it exists to answer "how much of today's AI coverage was
+# engineering, and how much was business?", and a grouping that fed back into
+# selection would start producing the answer it was built to measure.
+#
+# It maps topic ids from interests.yaml (or interests.local.yaml) onto audit
+# buckets. Topic ids are used because the Curator writes them into
+# story_ledger.topic_ids as durable evidence; matching keywords against
+# headlines instead would give a precise-looking number nobody could defend.
+#
+# A story whose topics land in two different groups is reported as
+# UNCLASSIFIED rather than assigned to whichever matched first, and so is a
+# story with no topics at all. Those counts are meant to be read, not ignored:
+# a high UNCLASSIFIED share is the finding, and the manual fields in
+# docs/OBSERVATION_REVIEW.md are where it gets resolved.
+#
+# Copy to observation-audit.local.yaml to map your own topic ids; that file
+# wins outright when present, exactly as every other local config does.
+#
+#   id        one of AI_ENGINEERING, AI_RESEARCH, AI_BUSINESS, NON_AI
+#   label     shown in the report
+#   topicIds  ids from your interest profile
+
+groups:
+  # How the thing is built, served and run: model releases and the stack under
+  # them. This is the bucket the owner reports as too thin.
+  - id: AI_ENGINEERING
+    label: AI Engineering (models, inference, serving, agents, infra)
+    topicIds:
+      - inference
+      - coding-agents
+      - claude-code
+      - opencode
+      - vllm
+      - rocm
+      - aiter
+      - local-llm
+      - mcp
+      - developer-tools
+
+  # Findings and open-weight releases, as distinct from the tooling around them.
+  - id: AI_RESEARCH
+    label: AI Research (papers, open-weight releases, methods)
+    topicIds:
+      - research
+      - qwen
+      - deepseek
+      - hermes
+      - ai-llm
+
+  # Deliberately empty in the shipped default, and that is a finding rather than
+  # an oversight: the shipped interest profile has no topic for funding, IPOs,
+  # valuations or executive commentary, which is precisely why those stories
+  # arrive carrying either no topic or only a broad one. Until a topic names
+  # them, they land in UNCLASSIFIED and the report says so instead of guessing.
+  - id: AI_BUSINESS
+    label: AI Business (funding, IPO, valuation, executive commentary)
+    topicIds: []
+
+  - id: NON_AI
+    label: Non-AI (crypto, macro, security, open source, infrastructure)
+    topicIds:
+      - btc
+      - eth
+      - sol
+      - macro
+      - security
+      - open-source
+      - infrastructure
