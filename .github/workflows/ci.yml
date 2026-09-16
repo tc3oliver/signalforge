@@ -45,9 +45,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No `version:` here on purpose. The action reads `packageManager` from
+      # package.json, and naming a version here too is not a redundancy the
+      # action tolerates -- it fails with "Multiple versions of pnpm specified"
+      # before installing anything, which is what made every CI run since the
+      # field was added red. package.json is the single version authority,
+      # because it is also what every local `pnpm` invocation obeys via corepack.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - uses: actions/setup-node@v4
         with:
