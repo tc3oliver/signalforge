@@ -4,6 +4,7 @@ import { daySpan, type SignalObservation } from "./continuity.ts";
 import type { BriefEpochRow } from "./epoch.ts";
 import type { FunnelStoryInput } from "./funnel.ts";
 import type { StageHits } from "./attribution.ts";
+import type { TriageOutcomeRow } from "./triage-funnel.ts";
 
 /*
  * Every read the observation report makes. All of them are selects against rows
@@ -212,4 +213,56 @@ export async function fetchStageHits(
 			title: f.title,
 		})),
 	};
+}
+
+/**
+ * Triage predictions joined to what actually happened to each item.
+ *
+ * The join is deliberately left-outer from `item_triage`: an item that was
+ * predicted and never decided (an incomplete scan) has to show up as undecided
+ * rather than silently vanish, because a filter evaluated only against items
+ * the Curator got to would flatter itself on exactly the days it mattered most.
+ */
+export async function fetchTriageOutcomes(
+	sql: Sql,
+	lineage: string,
+	date: string,
+): Promise<TriageOutcomeRow[]> {
+	const rows = await sql<
+		{
+			item_id: string;
+			category: string;
+			disposition: string | null;
+			story_id: string | null;
+			reached_material: boolean;
+			reached_final: boolean;
+			reached_must_know: boolean;
+		}[]
+	>`
+		select
+			t.item_id,
+			t.category,
+			d.disposition,
+			d.story_id,
+			(m.story_id is not null) as reached_material,
+			(b.story_id is not null) as reached_final,
+			coalesce(b.must_know, false) as reached_must_know
+		from item_triage t
+		left join item_decisions d
+			on d.lineage = t.lineage and d.date = t.date and d.item_id = t.item_id
+		left join daily_material_stories m
+			on m.lineage = t.lineage and m.date = t.date and m.story_id = d.story_id
+		left join daily_brief_stories b
+			on b.lineage = t.lineage and b.date = t.date and b.story_id = d.story_id
+		where t.lineage = ${lineage} and t.date = ${date}
+	`;
+	return rows.map((r) => ({
+		itemId: r.item_id,
+		category: r.category,
+		disposition: r.disposition,
+		storyId: r.story_id,
+		reachedMaterial: r.reached_material,
+		reachedFinal: r.reached_final,
+		reachedMustKnow: r.reached_must_know,
+	}));
 }

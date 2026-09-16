@@ -8,6 +8,9 @@ import { runEditorStage } from "../editor/session.ts";
 import type { Sql } from "../db/client.ts";
 import { getBrief, latestBriefDate, saveBrief, saveDraft } from "../db/briefs.ts";
 import { getMaterials, saveMaterials } from "../db/materials.ts";
+import { saveTriage } from "../db/triage.ts";
+import { buildTriageRules } from "../triage/rules.ts";
+import { triageManifest, triageTally } from "../triage/run.ts";
 import { finishAgentRun, getRun, recordAttempt, startAgentRun, upsertRun } from "../db/runs.ts";
 import { listSignals, observeSignal } from "../db/signals.ts";
 import { renderBriefMarkdown } from "../renderer/markdown.ts";
@@ -132,6 +135,17 @@ export interface DailyRunOptions {
 	lineage?: string;
 	/** Resume an existing run instead of creating one. */
 	runId?: string;
+	/**
+	 * Continue a previous run's durable state under a NEW run id.
+	 *
+	 * The difference from `runId` is what happens to the old run. `runId` re-runs
+	 * that run, so a CURATION_FAILED day walked back to PUBLISHED leaves no trace
+	 * that it ever failed. This creates a fresh run that reuses the same
+	 * (lineage, date) decisions, ledger and topic attributions -- nothing is
+	 * redone and nothing is deleted -- while the named run keeps its own final
+	 * status as the record of what happened.
+	 */
+	resumeFromRunId?: string;
 	/** Run exactly one stage of an existing run, reading everything else from the store. */
 	stage?: PipelineStage;
 	/** Per-stage tuning; read from config/agent.yaml when omitted. */
@@ -333,6 +347,26 @@ async function runPipelineBody(
 	const existing = options.runId ? await getRun(options.sql, options.runId) : undefined;
 	if (options.runId && !existing) throw new Error(`Run "${options.runId}" not found`);
 
+	if (options.resumeFromRunId) {
+		if (options.runId) {
+			throw new Error("--resume and --resume-from are mutually exclusive: one re-runs a run, the other replaces it");
+		}
+		const source = await getRun(options.sql, options.resumeFromRunId);
+		if (!source) throw new Error(`Run "${options.resumeFromRunId}" not found`);
+		if (source.date !== options.date) {
+			// The durable state a recovery reuses is keyed by (lineage, date), so a
+			// recovery of a different day would silently adopt the wrong decisions.
+			throw new Error(
+				`Run "${options.resumeFromRunId}" is for ${source.date}, not ${options.date}; a recovery run must cover the same day`,
+			);
+		}
+		log("recovering a previous run", {
+			resumedFrom: source.runId,
+			itsStatus: source.status,
+			itsProcessedItems: source.processedItems,
+		});
+	}
+
 	const createdAt = existing?.createdAt ?? now().toISOString();
 	const seed: RunState = existing ?? {
 		runId: randomUUID(),
@@ -343,6 +377,7 @@ async function runPipelineBody(
 		totalItems: 0,
 		processedItems: 0,
 		storyCount: 0,
+		...(options.resumeFromRunId ? { resumedFromRunId: options.resumeFromRunId } : {}),
 	};
 	const recorder = createRecorder(options.sql, lineage, seed, "CREATED", now, options.onEvent);
 	if (!existing) await recorder.patch({});
@@ -480,6 +515,43 @@ async function runPipelineBody(
 	}
 	await recorder.patch({ totalItems: manifest.items.length });
 
+	/*
+	 * ---- Stage 0 triage, in shadow mode -----------------------------------
+	 *
+	 * Records what a cheap deterministic pass would have said about each item,
+	 * and then does nothing with it. The manifest handed to the Curator below is
+	 * the same object either way -- no item is dropped, reordered or annotated,
+	 * and no tool can see this. It exists so that "how much would we lose by
+	 * filtering on titles?" is answered by `pnpm observe` against real Curator
+	 * and Editor outcomes rather than by argument.
+	 *
+	 * Failure here is deliberately swallowed. A measurement that has never
+	 * influenced a run must not be able to fail one; the cost of losing a day of
+	 * shadow data is a day of shadow data.
+	 */
+	try {
+		const triageRules = buildTriageRules({
+			interests: loadConfig().interests,
+			watchlists: loadConfig().watchlists,
+		});
+		const triaged = triageManifest(
+			manifest.items.map((i) => ({
+				itemId: i.id,
+				sourceType: i.sourceType,
+				sourceName: i.sourceName,
+				title: i.title,
+				summary: i.summary,
+				publishedAt: i.publishedAt,
+				metadata: i.metadata,
+			})),
+			triageRules,
+		);
+		await saveTriage(options.sql, lineage, options.date, triaged);
+		log("triage recorded (shadow mode; routing unaffected)", triageTally(triaged));
+	} catch (err) {
+		log("triage skipped", { error: err instanceof Error ? err.message : String(err) });
+	}
+
 	// ---- Curation ---------------------------------------------------------
 	const wantsCuration = stage === undefined || stage === "curate";
 	const storedMaterials = await getMaterials(options.sql, lineage, options.date);
@@ -526,6 +598,31 @@ async function runPipelineBody(
 				stage: "CURATOR",
 				chain,
 				maxAttemptsPerModel: stages.CURATOR.maxAttemptsPerModel,
+				continuationBounds: {
+					...(stages.CURATOR.maxContinuations === undefined
+						? {}
+						: { maxContinuations: stages.CURATOR.maxContinuations }),
+					...(stages.CURATOR.maxStageWallClockMs === undefined
+						? {}
+						: { maxStageWallClockMs: stages.CURATOR.maxStageWallClockMs }),
+				},
+				// Per-turn throughput, which is the only way to tell a healthy bounded
+				// run from one that is yielding without getting anywhere.
+				onContinue: (info) =>
+					log("curator continuation", {
+						model: modelKey(info.spec),
+						continuation: info.continuation,
+						decidedThisTurn: info.decidedThisTurn,
+						decided: `${info.decidedAfter}/${info.totalItems}`,
+						reason: info.reason,
+						durationMs: info.durationMs,
+						secondsPerDecision: info.secondsPerDecision,
+						// The Pi SDK reports only estimated context-window occupancy, not
+						// per-turn input/output/cached tokens, so there is nothing
+						// authoritative to record. Said out loud rather than omitted, so a
+						// reader knows it is absent by decision and not by oversight.
+						tokenUsage: "unavailable",
+					}),
 				routerState,
 				recordAttempt: recordStageAttempt,
 				now,
@@ -538,6 +635,9 @@ async function runPipelineBody(
 						...(lastError === undefined ? {} : { lastError }),
 						maxNudges: stages.CURATOR.maxNudges,
 						timeoutMs: stages.CURATOR.timeoutMs,
+						...(stages.CURATOR.maxDecisionsPerTurn === undefined
+							? {}
+							: { maxDecisionsPerTurn: stages.CURATOR.maxDecisionsPerTurn }),
 						date: options.date,
 						manifest,
 						repo,

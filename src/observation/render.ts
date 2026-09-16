@@ -4,6 +4,7 @@ import type { ContinuityMetrics, ContinuityVerdict, SignalObservation } from "./
 import type { Epoch, EpochAggregationCheck } from "./epoch.ts";
 import { REQUIRED_CLEAN_DAYS } from "./epoch.ts";
 import type { TopicFunnel } from "./funnel.ts";
+import type { RoutingReadiness, TriageFunnel } from "./triage-funnel.ts";
 
 /*
  * Plain text, not Markdown or JSON: this is read in a terminal next to the
@@ -137,5 +138,70 @@ export function renderAttribution(pattern: string, result: AttributionResult): s
 	lines.push("");
 	lines.push("evidence, in the order the stages were checked:");
 	for (const line of result.evidence) lines.push(`  ${line}`);
+	return lines.join("\n");
+}
+
+export function renderTriage(funnels: readonly TriageFunnel[], readiness: RoutingReadiness): string {
+	const lines = ["## Stage 0 triage (SHADOW MODE — routing unaffected)", ""];
+	if (funnels.length === 0) {
+		lines.push("No triage rows for these days. Nothing to measure yet.");
+		return lines.join("\n");
+	}
+	lines.push("Every item still reached the Curator. These numbers are the counterfactual:");
+	lines.push("what a filter that dropped LOW would have cost, measured against real outcomes.");
+	lines.push("");
+
+	const total = funnels.reduce((n, f) => n + f.total, 0);
+	const merged: Record<string, number> = {};
+	for (const f of funnels) {
+		for (const [k, v] of Object.entries(f.byCategory)) merged[k] = (merged[k] ?? 0) + v;
+	}
+	lines.push(bar("items triaged", total));
+	for (const category of ["PRIORITY", "NORMAL", "UNCERTAIN", "LOW", "DUPLICATE_HINT"]) {
+		const n = merged[category] ?? 0;
+		const share = total === 0 ? "n/a" : `${((n / total) * 100).toFixed(1)}%`;
+		lines.push(`  ${bar(category, `${n}  (${share})`, 20)}`);
+	}
+	const undecided = funnels.reduce((n, f) => n + f.undecided, 0);
+	if (undecided > 0) {
+		lines.push("");
+		lines.push(
+			bar("predicted, never decided", `${undecided}  (incomplete scan — not a triage result)`),
+		);
+	}
+
+	lines.push("");
+	lines.push("LOW bucket leakage — what a drop would have taken with it:");
+	const leak = (pick: (f: TriageFunnel) => number) => funnels.reduce((n, f) => n + pick(f), 0);
+	lines.push(`  ${bar("LOW -> CANDIDATE", leak((f) => f.lowLeakage.candidate), 26)}`);
+	lines.push(`  ${bar("LOW -> MATERIAL story", leak((f) => f.lowLeakage.materialStories), 26)}`);
+	lines.push(`  ${bar("LOW -> FINAL story", leak((f) => f.lowLeakage.finalStories), 26)}`);
+	lines.push(`  ${bar("LOW -> MUST KNOW story", leak((f) => f.lowLeakage.mustKnowStories), 26)}`);
+
+	lines.push("");
+	lines.push("Recall a LOW-dropping filter would have achieved (story-level except candidate):");
+	const showRecall = (label: string, pick: (f: TriageFunnel) => number | null) => {
+		const measured = funnels.map(pick).filter((v): v is number => v !== null);
+		const value = measured.length === 0 ? "n/a" : `${(Math.min(...measured) * 100).toFixed(1)}% (worst day)`;
+		lines.push(`  ${bar(label, value, 26)}`);
+	};
+	showRecall("candidate recall", (f) => f.recall.candidate);
+	showRecall("material recall", (f) => f.recall.material);
+	showRecall("final-story recall", (f) => f.recall.final);
+	showRecall("must-know recall", (f) => f.recall.mustKnow);
+
+	const lostMustKnow = funnels.flatMap((f) => f.lostMustKnowStoryIds);
+	if (lostMustKnow.length > 0) {
+		lines.push("");
+		lines.push("Must Know stories that would have been lost entirely:");
+		for (const id of lostMustKnow) lines.push(`  ${id}`);
+	}
+
+	lines.push("");
+	lines.push(`Routing readiness: ${readiness.ready ? "GATE MET" : "NOT READY"}`);
+	for (const reason of readiness.reasons) lines.push(`  - ${reason}`);
+	if (readiness.ready) {
+		lines.push("  Evidence supports enabling routing. Enabling it is still a manual decision.");
+	}
 	return lines.join("\n");
 }

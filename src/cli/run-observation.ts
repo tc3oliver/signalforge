@@ -11,6 +11,7 @@ import {
 	fetchFunnelStories,
 	fetchSignals,
 	fetchStageHits,
+	fetchTriageOutcomes,
 } from "../observation/queries.ts";
 import {
 	renderAttribution,
@@ -19,7 +20,13 @@ import {
 	renderEpochs,
 	renderFunnel,
 	renderSignals,
+	renderTriage,
 } from "../observation/render.ts";
+import {
+	assessRoutingReadiness,
+	buildTriageFunnel,
+	type TriageFunnel,
+} from "../observation/triage-funnel.ts";
 import { parseFlags } from "./_args.ts";
 
 /*
@@ -132,6 +139,17 @@ async function main(): Promise<void> {
 			);
 			console.log("");
 			console.log(renderContinuity(continuity, assessContinuity(continuity)));
+
+			// Shadow-mode triage, reported per epoch for the same reason everything
+			// else is: a rule change and a profile change both move these numbers,
+			// and averaging across either produces a figure describing no system.
+			const triageFunnels: TriageFunnel[] = [];
+			for (const date of epochDates) {
+				const outcomes = await fetchTriageOutcomes(sql, lineage, date);
+				if (outcomes.length > 0) triageFunnels.push(buildTriageFunnel(outcomes));
+			}
+			console.log("");
+			console.log(renderTriage(triageFunnels, assessRoutingReadiness(triageFunnels)));
 		}
 
 		console.log("");
