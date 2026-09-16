@@ -10,8 +10,17 @@
 		brief — that is the daily job's job. Fires at 09:00, 12:00, 15:00,
 		18:00 and 21:00, expressed as five StartCalendarInterval entries.
 	-->
+	<!--
+		Run through the preflight, not directly. macOS suspends the OrbStack VM
+		when the host sleeps and OrbStack resumes it only on a real user wake, so
+		a job that starts on time can find its database gone while the host-side
+		port forwarder still accepts TCP. That took the whole 2026-09-16 brief.
+		The wrapper asserts user activity until the container host answers, then
+		execs this command unchanged.
+	-->
 	<key>ProgramArguments</key>
 	<array>
+		<string>{{PROJECT_ROOT}}/scripts/with-container-host.sh</string>
 		<string>{{PNPM_BIN}}</string>
 		<string>run</string>
 		<string>collect</string>

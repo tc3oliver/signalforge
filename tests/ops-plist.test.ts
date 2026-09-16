@@ -156,3 +156,47 @@ describe("validatePlist", () => {
 		expect(rendered).not.toMatch(/token/i);
 	});
 });
+
+/*
+ * The scheduled jobs go through a preflight rather than straight to pnpm.
+ *
+ * macOS suspends the OrbStack VM when the host sleeps and OrbStack resumes it
+ * only on a real user wake, so a job that fires on time can find its database
+ * gone while the host-side port forwarder still accepts TCP -- the failure
+ * arrives as a connect timeout, not a refusal. On 2026-09-16 that took the whole
+ * brief: launchd fired at 05:30, the first query timed out, the run ended, and
+ * the VM came back at 05:59 because a network packet happened to arrive.
+ */
+describe("scheduled jobs wait for their container host", () => {
+	const PREFLIGHT = "scripts/with-container-host.sh";
+
+	/** The rendered ProgramArguments of one template, in order. */
+	function programArguments(job: "daily" | "incremental" | "web"): string[] {
+		const template = readFileSync(
+			new URL(`../launchd/${job}.plist.template`, import.meta.url),
+			"utf8",
+		);
+		const block = renderPlist(template, TOKENS).match(
+			/<key>ProgramArguments<\/key>\s*<array>([\s\S]*?)<\/array>/,
+		);
+		return Array.from(block?.[1]?.matchAll(/<string>([\s\S]*?)<\/string>/g) ?? []).map((m) => m[1] ?? "");
+	}
+
+	for (const job of ["daily", "incremental"] as const) {
+		it(`${job} runs through the preflight, with its command unchanged after it`, () => {
+			const args = programArguments(job);
+			expect(args[0], `${job} does not start with the preflight`).toContain(PREFLIGHT);
+			// The preflight execs what follows, so the original invocation has to
+			// survive intact -- a wrapper that rewrote the command would be a second
+			// place for the job definition to drift.
+			expect(args.slice(1, 3)).toEqual([TOKENS.PNPM_BIN, "run"]);
+			expect(args[3]).toBe(job === "daily" ? "daily" : "collect");
+		});
+	}
+
+	it("leaves the always-on reader alone", () => {
+		// The reader is not scheduled; it is restarted by launchd when it exits, and
+		// it has to come up and report its own failure rather than block on a host.
+		expect(programArguments("web")[0]).not.toContain(PREFLIGHT);
+	});
+});

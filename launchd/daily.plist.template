@@ -9,8 +9,17 @@
 		Full pipeline: collect -> curate -> edit -> validate -> publish.
 		Fires at 05:30 so a normal run finishes well before 07:00.
 	-->
+	<!--
+		Run through the preflight, not directly. macOS suspends the OrbStack VM
+		when the host sleeps and OrbStack resumes it only on a real user wake, so
+		a job that starts on time can find its database gone while the host-side
+		port forwarder still accepts TCP. That took the whole 2026-09-16 brief.
+		The wrapper asserts user activity until the container host answers, then
+		execs this command unchanged.
+	-->
 	<key>ProgramArguments</key>
 	<array>
+		<string>{{PROJECT_ROOT}}/scripts/with-container-host.sh</string>
 		<string>{{PNPM_BIN}}</string>
 		<string>run</string>
 		<string>daily</string>
