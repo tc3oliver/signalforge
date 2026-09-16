@@ -570,6 +570,22 @@ Any day whose `degraded_reason` names a manifest truncation. That is the trigger
 to pick A or B; until one fires, the cap is doing its job and this is speculation
 with a cost.
 
+### Not the same thing as the turn budget (fixed 2026-09-16)
+
+A related limit hit first, from the other direction. The cap never bit — 1626
+items passed under it — but the *curator turn* did: the scan happened inside one
+model turn, so `timeoutMs` silently doubled as "the most items a run can ever
+decide". Six turns that were each making progress were each classified as a
+provider timeout, and the three-model chain was exhausted in 28 minutes.
+
+That is fixed: the curator is a bounded resumable worker
+(`maxDecisionsPerTurn`), a turn that yields with progress continues on the same
+model instead of consuming the chain, and `timeoutMs` is back to meaning only
+"this turn is hung". See `src/runtime/progress-yield.ts`.
+
+The item cap above is untouched by that change and still composes badly with the
+48-hour catch-up window. Do not read the execution fix as having addressed it.
+
 ---
 
 ## Post-freeze: Chinese editorial style integration
