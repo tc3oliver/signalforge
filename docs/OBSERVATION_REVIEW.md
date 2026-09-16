@@ -1,19 +1,61 @@
 # Observation review
 
-The daily manual review during an observation freeze (currently 2026-09-13 to
-2026-09-18), and the queries that back it. One copy of the template per day,
-filled in by the owner, kept under `observations/` (git-ignored) and summarised
-in the post-freeze report.
+The daily manual review during an observation window, and the tooling that backs
+it. One copy of the template per day, filled in by the owner, kept under
+`observations/` (git-ignored) and summarised in the post-window report.
 
-The point of the freeze is to learn where stories are lost, not to fix
-anything while measuring. Nothing in this file changes the pipeline.
+The point of the window is to learn where stories are lost, not to fix anything
+while measuring. Nothing in this file changes the pipeline.
+
+Run `pnpm observe` alongside filling in the sheet. It reads and prints; it
+writes no row and contacts no network, which is what makes it safe to run inside
+a window.
+
+## Epochs: which days are the same experiment
+
+A window is only a baseline if the thing being observed did not change during it.
+
+**The 2026-09-13 → 2026-09-18 window did not produce one.** It was broken on
+2026-09-15 by shipping personalization: the reader's interest profile now reaches
+the Curator and the Editor as priors, which moves relevance, ordering and what
+reaches Must Know — the exact quantities the window was measuring. That is a
+deliberate break, not an accident, and the days are not thrown away; they are
+reclassified.
+
+The boundary is recorded in the data, not in this document.
+`daily_briefs.profile_version` is the hash of the profile that shaped a brief:
+null before personalization, and a distinct hash for every profile afterwards.
+`pnpm observe` derives the epochs from that column, so editing a weight opens a
+new epoch automatically and no date here has to be kept up to date.
+
+| | Epoch A | Epoch B |
+|---|---|---|
+| id | `pre-personalization` | `profile-<hash>` |
+| `profile_version` | null | the hash `pnpm observe` prints |
+| Purpose | **historical reference only** | the clean observation baseline |
+| Dates | whatever `pnpm observe` reports | from the first run that stamps a version |
+| Required before conclusions | — | 5 consecutive complete daily runs |
+
+Read Epoch A for what the pipeline did before it knew who it was writing for.
+Do not read it as evidence about the system running today.
+
+**The tool will not merge them.** Asking for a range that spans a profile change
+prints an explicit refusal instead of an average, because a five-day figure that
+silently blends two systems does not look like an error — it looks like evidence.
+If a weight is edited mid-window, the epoch closes and the five-day count starts
+again. That is the cost of tuning during a window, and it is the reason not to.
 
 ## Daily template
+
+Fill the "expected but did not see" fields in *before* running `pnpm observe`,
+so the tool's answer does not become the memory.
 
 ```
 Date:
 Run id:
 Health:
+Epoch (from `pnpm observe`):
+Profile version:
 
 Must Know as published (title · section · change type):
 1.
@@ -31,9 +73,22 @@ Technical story I expected but did not see:
 -
   Trace (Raw → Decision → Candidate → Material → Final):
 
+AI Engineering story I expected but did not see:
+  (model release, inference, serving, agent runtime, coding agent, MCP, ROCm,
+   MLX, vLLM, SGLang, quantization, GPU infra, open-weight model)
+- title:
+  source/url if known:
+  Attribution (`pnpm observe --date <date> --missing "<word from title>"`):
+
+AI Business story that felt over-prioritized:
+  (funding, IPO, valuation, executive commentary, corporate news)
+- title:
+  why it should have ranked lower:
+
 Crypto/Web3 story I expected but did not see:
--
-  Trace (Raw → Decision → Candidate → Material → Final):
+- title:
+  source/url if known:
+  Attribution (`pnpm observe --date <date> --missing "<word from title>"`):
 
 Story that should not have been Must Know, and why:
 -
@@ -51,9 +106,42 @@ them in before reading the trace so the trace does not anchor the answer.
 
 ## Tracing a missed story
 
-Every stage writes a row, so a missed story can be located exactly. Run these
-against the production lineage (`default`) with the day's date; replace the
-`ILIKE` pattern with a distinctive word from the expected story's title.
+Write down what you expected first. Then:
+
+```bash
+pnpm observe --date 2026-09-16 --missing "liquid network"
+```
+
+It walks the five stages **forwards** and reports the first one with no row.
+Forwards matters: checking down from the brief reports "the Editor dropped it"
+for a story that was never collected, because absence is true at every stage of
+a total miss. The verdict is one of:
+
+| Verdict | Means | The fix is *not* |
+|---|---|---|
+| `SOURCE_MISS` | No raw or normalized item matched. The data plane never saw it. | weights, prompts, ranking |
+| `CURATOR_MISS` | Collected and scanned, but no story was promoted. | adding sources — that makes it worse |
+| `MATERIAL_MISS` | A story existed; the Curator did not hand it to the Editor. | the Editor |
+| `EDITOR_MISS` | It was in the materials and was not published. | the Curator, or coverage |
+| `UNKNOWN` | Not enough evidence. Record the exact title or URL and re-run. | acting on it at all |
+| `PUBLISHED` | It did reach the brief. Expectation and output agree. | — |
+
+The distinction that matters most is `SOURCE_MISS` versus `CURATOR_MISS`, because
+they need opposite actions. The first crypto trace run against 2026-09-15
+returned `CURATOR_MISS`: 25 items matched across CoinDesk, Decrypt, The Block,
+Unchained, PANews and The Defiant, and every decision was `IRRELEVANT` or
+`DUPLICATE`. Adding a crypto source would have added items to the same
+judgement. Record it; do not act on it during a window.
+
+The tool searches titles and URLs. It performs no web search: the question is
+what this pipeline did with what it had.
+
+### The same thing by hand
+
+Useful when the pattern needs tuning or a stage needs fields the tool does not
+print. Run against the production lineage (`default`) with the day's date;
+replace the `ILIKE` pattern with a distinctive word from the expected story's
+title.
 
 ```sql
 -- 1. Raw: was it collected at all?
@@ -102,6 +190,45 @@ is the diagnosis:
 The `/admin/item/[id]` page (with `SIGNALFORGE_ADMIN=1`) shows the same chain
 for one item id when that is quicker than the SQL.
 
+## What `pnpm observe` reports
+
+**Topic funnel.** Per topic: configured weight, then candidate → material →
+final → must-know story counts. A story counts towards every topic it carries,
+so rows do not sum to the total. The funnel starts at *candidate*, because
+`story_ledger.topic_ids` is the only topic attribution that exists — a raw item
+is not attributed to a topic anywhere, so "how many Crypto items were collected"
+is reported as unavailable rather than estimated. Stories carrying no topic are
+counted separately rather than dropped.
+
+**AI Engineering vs AI Business.** Groups published stories using
+`config/observation-audit.yaml`, which maps topic ids onto `AI_ENGINEERING`,
+`AI_RESEARCH`, `AI_BUSINESS` and `NON_AI`. That file is read by this report and
+by nothing else — no collector, no Curator tool, no Editor prompt, no ranking
+rule — so the measurement cannot steer what it measures.
+
+Two honest limits, both of which show up as `UNCLASSIFIED` rather than a guess:
+a story whose topics span two groups is not assigned to whichever matched first,
+and the shipped interest profile has **no topic for funding, IPOs, valuations or
+executive commentary**, so those stories arrive carrying either no topic or only
+a broad one. That is why `AI_BUSINESS` is empty in the shipped config and why the
+ratio is not yet fully derivable from data. When `UNCLASSIFIED` is above 30% the
+report says so and points here. Until a topic names business news, the two manual
+fields in the daily template are the measurement, not the table.
+
+**Historical intelligence.** Change-type counts per day and the **non-NEW
+continuity rate** — the share of stories that are something other than `NEW`.
+A pipeline marking everything `NEW` every day would pass every other check while
+being a feed reader with extra steps, and each day's brief would still read fine
+on its own. If five consecutive days sit at or below 10%, the report says a
+deterministic history invariant is the next thing to build. It enforces nothing;
+P1-2 is designed against this measurement, not against an intuition.
+
+**Emerging signals.** State, confidence, day span, and evidence counted as
+stories *and* distinct sources — "three stories from one feed" and "three
+stories from three feeds" are different amounts of confidence and the stored
+`confidence` does not distinguish them. Recorded only: whether `WATCHING` needs
+splitting out of `EMERGING` is deferred until five days of this exist.
+
 ## What the review must not do
 
 - Do not edit gold, thresholds, prompts, the interest profile or sources
@@ -112,11 +239,30 @@ for one item id when that is quicker than the SQL.
 - Do not let the language findings (meta-phrases, hype) leak into the
   selection review; they are tracked separately in `LANGUAGE_STYLE.md` and the
   backlog's style-integration item.
+- Do not edit an interest weight to correct a ratio the audit reports. It closes
+  the epoch, restarts the five-day count, and discards the evidence that would
+  have told you whether the edit was the right one.
+- Do not compare a day in Epoch A against a day in Epoch B and call the
+  difference an effect. Everything else about that week changed too — the arXiv
+  source moved to the announcement feeds and was narrowed to two categories on
+  the same day personalization shipped.
 
 ## After the window
 
 The five daily sheets feed `reports/QUALITY_REVIEW.md` and the production
-evidence section of the README. The counts that matter: expected technical
-stories missed per stage, expected Crypto/Web3 stories missed per stage, Must
-Know entries the owner would remove, and days on which the opening paragraph
-answered all four questions.
+evidence section of the README, **within one epoch**. A report covering days
+from two epochs is not a five-day review; it is two shorter ones.
+
+The counts that matter: expected technical stories missed per stage, expected
+Crypto/Web3 stories missed per stage, AI Engineering stories missed against AI
+Business stories over-prioritized, Must Know entries the owner would remove, the
+non-NEW continuity rate, and days on which the opening paragraph answered all
+four questions.
+
+Three questions this is meant to answer, and what would count as an answer:
+
+| Question | Answered by | Answer looks like |
+|---|---|---|
+| AI Engineering vs AI Business ratio | the audit table, plus the two manual fields while `UNCLASSIFIED` stays high | a split with a defensible denominator, not a percentage of unclassified stories |
+| Why Crypto/Web3 is thin | `--missing` attribution across five days | a stage, repeated: mostly `SOURCE_MISS` is a sources problem, mostly `CURATOR_MISS` is a profile problem |
+| Whether Historical Intelligence works | the non-NEW continuity rate across five days | a rate that is not near zero, on days that had enough stories to mean something |
