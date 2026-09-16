@@ -153,6 +153,39 @@ describe("hero", () => {
 		expect(view.hero.summary.length).toBeLessThanOrEqual(DASHBOARD_LIMITS.heroChars);
 	});
 
+	/*
+	 * The hero carries two sentences, at the lengths the Editor actually writes.
+	 *
+	 * heroChars was 200, and Chinese briefs open with 40-151 characters and
+	 * follow with 100-180, so the second sentence did not fit on three of the
+	 * first four published days and was dropped in silence. What reached the
+	 * reader on 2026-09-16 was "前沿 AI 系統正從純模型提示對齊轉向外部作業系統級審計
+	 * 與硬隔離，這是今日最具結構性的技術變化。" -- the claim that something shifted,
+	 * with every word saying what shifted cut away. One sentence is a headline;
+	 * the section is called 60 秒掌握今天.
+	 *
+	 * The numbers below are the real measured lengths, so shrinking heroChars
+	 * back under ~260 fails here instead of quietly truncating the brief again.
+	 */
+	it("keeps both sentences at the lengths real briefs are written at", () => {
+		const opener = `${"前沿 AI 系統正從純模型提示對齊轉向外部作業系統級審計與硬隔離".repeat(1)}，這是今日最具結構性的技術變化。`;
+		const second = `${"模型內部對齊在多輪工具調用下無法阻斷能力洗錢與隱私外洩".repeat(6)}。`;
+		expect(opener.length).toBeGreaterThanOrEqual(40);
+		expect(second.length).toBeGreaterThanOrEqual(150);
+
+		const view = build({ brief: brief({ dailyAnalysis: `${opener}${second}短句三。` }) });
+		expect(splitSentences(view.hero.summary)).toHaveLength(2);
+		expect(view.hero.summary).toBe(`${opener}${second}`);
+		expect(view.hero.summary.endsWith("…")).toBe(false);
+	});
+
+	it("is bounded by sentence count, not by the character budget", () => {
+		// heroChars is deliberately far above any real analysis; the cap that
+		// actually binds is maxSentences, so a third sentence never appears.
+		const view = build({ brief: brief({ dailyAnalysis: "一。二。三。四。" }) });
+		expect(splitSentences(view.hero.summary)).toHaveLength(2);
+	});
+
 	it("counts stories, must-know, updates, signals and late items", () => {
 		const view = build({
 			brief: brief({

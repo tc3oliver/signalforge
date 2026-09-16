@@ -232,7 +232,24 @@ export interface DashboardInput {
 }
 
 export const DASHBOARD_LIMITS = Object.freeze({
-	heroChars: 200,
+	/*
+	 * Effectively "two whole sentences", not a character budget.
+	 *
+	 * This was 200, which is narrower than the briefs actually are. Measured
+	 * across every published day, the opening sentences run 40-151 characters
+	 * and the second 100-180, so two of them need up to 251 -- and on three of
+	 * the first four days the second sentence did not fit and was dropped. The
+	 * hero then showed a single sentence, which is a headline, not "60 秒掌握
+	 * 今天": on 2026-09-16 it said the shift was structural and cut away every
+	 * word saying what shifted.
+	 *
+	 * `leadSentences` caps at `maxSentences` (2 here) before it ever consults
+	 * this number, so a large value does not make the hero unbounded -- it makes
+	 * the sentence count the bound and stops a long second sentence from being
+	 * silently thrown away. The clip path survives for a single sentence longer
+	 * than this, which no brief has produced.
+	 */
+	heroChars: 1000,
 	takeawayChars: 96,
 	changes: 6,
 	sectionRows: 4,
