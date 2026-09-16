@@ -72,6 +72,9 @@ async function main(): Promise<number> {
 		typeof flags["date"] === "string" ? flags["date"] : localDateKey(new Date(), zone);
 	const lineage = typeof flags["lineage"] === "string" ? flags["lineage"] : process.env["DI_LINEAGE"] ?? "default";
 	const resume = typeof flags["resume"] === "string" ? flags["resume"] : undefined;
+	// `--resume` re-runs a run; `--resume-from` starts a new one that continues a
+	// previous run's durable state and leaves that run's final status intact.
+	const resumeFrom = typeof flags["resume-from"] === "string" ? flags["resume-from"] : undefined;
 	const stageFlag = typeof flags["stage"] === "string" ? flags["stage"] : undefined;
 	if (stageFlag && !STAGES.includes(stageFlag as PipelineStage)) {
 		throw new Error(`Unknown --stage "${stageFlag}". Expected one of: ${STAGES.join(", ")}`);
@@ -97,6 +100,10 @@ async function main(): Promise<number> {
 			date,
 			lineage,
 			...(resume ? { runId: resume, skipCollection: stage !== "collect" && stage !== undefined } : {}),
+			// A recovery skips collection: the day's items are already normalized,
+			// and re-collecting would only widen the manifest the failed run was
+			// measured against.
+			...(resumeFrom ? { resumeFromRunId: resumeFrom, skipCollection: true } : {}),
 			...(stage ? { stage } : {}),
 			skillsRoot: join(root, "agent", "skills"),
 			cwd: join(root, "runs"),

@@ -9,8 +9,8 @@ export async function upsertRun(
 ): Promise<void> {
 	await sql.unsafe(
 		`insert into daily_runs (run_id, lineage, date, status, total_items, processed_items,
-			story_count, failure_reason, degraded_reason, created_at, updated_at)
-		 values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::timestamptz,$11::timestamptz)
+			story_count, failure_reason, degraded_reason, resumed_from_run_id, created_at, updated_at)
+		 values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::timestamptz,$12::timestamptz)
 		 on conflict (run_id) do update set
 			status = excluded.status,
 			total_items = excluded.total_items,
@@ -18,10 +18,14 @@ export async function upsertRun(
 			story_count = excluded.story_count,
 			failure_reason = excluded.failure_reason,
 			degraded_reason = excluded.degraded_reason,
+			-- Provenance is set once, when the recovery run is created. A later
+			-- patch of the same row must not be able to erase what it recovered.
+			resumed_from_run_id = coalesce(daily_runs.resumed_from_run_id, excluded.resumed_from_run_id),
 			updated_at = excluded.updated_at`,
 		[
 			run.runId, lineage, run.date, run.status, run.totalItems, run.processedItems,
 			run.storyCount, run.failureReason ?? null, run.degradedReason ?? null,
+			run.resumedFromRunId ?? null,
 			run.createdAt, run.updatedAt,
 		],
 	);
