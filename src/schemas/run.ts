@@ -40,7 +40,17 @@ export type FailureClass = z.infer<typeof FailureClass>;
 export const Stage = z.enum(["CURATOR", "EDITOR"]);
 export type Stage = z.infer<typeof Stage>;
 
-export const AttemptStatus = z.enum(["SUCCESS", "FAILED"]);
+/*
+ * YIELDED is not a failure and must never be counted as one.
+ *
+ * It records a turn that stopped because it reached its work-unit ceiling with
+ * items still undecided, having committed real decisions along the way. Before
+ * it existed those turns were written down as FAILED/TIMEOUT, which is how the
+ * 2026-09-16 run burned three models in 28 minutes while every one of them was
+ * working correctly. A reader counting failures, or a report counting
+ * fallbacks, has to be able to tell the two apart from the row alone.
+ */
+export const AttemptStatus = z.enum(["SUCCESS", "FAILED", "YIELDED"]);
 
 export const AgentAttempt = z
 	.object({
@@ -93,6 +103,16 @@ export const RunState = z
 		 * reached PUBLISHED. Null/absent means healthy.
 		 */
 		degradedReason: z.string().optional(),
+		/**
+		 * The run whose durable state this one continues, when it continues one.
+		 *
+		 * A recovery run reuses the decisions, ledger and topic attributions the
+		 * named run already committed for the same (lineage, date), and leaves that
+		 * run's own final status alone. The alternative -- re-running the failed id
+		 * back to PUBLISHED -- is allowed by the state machine and silently deletes
+		 * the record that the day ever failed.
+		 */
+		resumedFromRunId: z.string().optional(),
 	})
 	.strict();
 export type RunState = z.infer<typeof RunState>;

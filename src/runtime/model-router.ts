@@ -3,6 +3,8 @@ import type { AgentAttempt, FailureClass, Stage } from "../schemas/run.ts";
 import { classifyError } from "./error-classifier.ts";
 import { FaultInjector, getFaultInjectionRecord } from "./fault-injection.ts";
 import { type ModelSpec, modelKey } from "./model-config.ts";
+import { isProgressYield } from "./progress-yield.ts";
+import { isTurnAbandoned } from "./turn-timeout.ts";
 
 /** What the router wants the driver to do after a failed attempt. */
 export type Action =
@@ -10,6 +12,14 @@ export type Action =
 	| { kind: "CORRECTIVE_RETRY_SAME" }
 	| { kind: "RESUME_SAME" }
 	| { kind: "FRESH_SESSION_SAME" }
+	/**
+	 * Not a failure response. The turn reached its work-unit ceiling with
+	 * progress committed; carry on with the same model in a fresh session. It is
+	 * the only action that does not count against `maxAttemptsPerModel`, because
+	 * a bounded worker doing its job must not look like a model running out of
+	 * retries. See runtime/progress-yield.ts.
+	 */
+	| { kind: "CONTINUE_SAME" }
 	| { kind: "FALLBACK" }
 	| { kind: "FAIL" };
 
@@ -96,8 +106,54 @@ const SAME_MODEL_ACTIONS = new Set<Action["kind"]>([
 
 function modeForAction(kind: Action["kind"]): AttemptMode {
 	if (kind === "CORRECTIVE_RETRY_SAME") return "CORRECTIVE";
-	if (kind === "RESUME_SAME") return "RESUME";
+	// A continuation is a resume by definition: the next session must pick up the
+	// durable decisions rather than re-read a day it has already half-scanned.
+	if (kind === "RESUME_SAME" || kind === "CONTINUE_SAME") return "RESUME";
 	return "FRESH";
+}
+
+/**
+ * Stage-level bound on continuations.
+ *
+ * This exists so a model that yields without ever finishing cannot loop
+ * forever. It is deliberately not the provider failure counter: exhausting it
+ * means "this stage took too long", not "these models are broken", so it ends
+ * the stage rather than falling through the chain trying the same oversized
+ * workload on every model in turn.
+ */
+export interface ContinuationBounds {
+	/** Hard cap on continuations for the whole stage, across all models. */
+	maxContinuations: number;
+	/** Wall-clock ceiling for the whole stage, measured from the first attempt. */
+	maxStageWallClockMs: number;
+}
+
+export const DEFAULT_CONTINUATION_BOUNDS: ContinuationBounds = {
+	/*
+	 * 40 continuations at the shipped 100-decision work unit is 4000 items, twice
+	 * the manifest cap, so the ceiling cannot bind before the cap does on any
+	 * manifest the pipeline will build. It is a runaway guard, not a budget.
+	 */
+	maxContinuations: 40,
+	/* Comfortably past the ~41 minutes the 1626-item backlog needed. */
+	maxStageWallClockMs: 90 * 60 * 1000,
+};
+
+/**
+ * Wall-clock cost of one decision, to 2dp. Measured, not estimated: both
+ * operands come from the clock and from durable decision counts.
+ */
+function secondsPerDecision(durationMs: number, decided: number): number | null {
+	if (decided <= 0) return null;
+	return Math.round((durationMs / decided / 1000) * 100) / 100;
+}
+
+/** Thrown when a stage keeps yielding past its ceiling. Distinct from any model failure. */
+export class ContinuationLimitError extends Error {
+	override name = "ContinuationLimitError";
+	constructor(stage: string, reason: string) {
+		super(`${stage} stopped after exceeding its continuation ceiling: ${reason}`);
+	}
 }
 
 export type RunStageOptions<T> = {
@@ -136,6 +192,24 @@ export type RunStageOptions<T> = {
 	 * stay on the same model forever; this keeps that from becoming a hang.
 	 */
 	maxAttemptsPerModel?: number;
+	/** Stage-level runaway guard for progress yields. See {@link ContinuationBounds}. */
+	continuationBounds?: Partial<ContinuationBounds>;
+	/**
+	 * Called once per continuation, before the next session starts. Production
+	 * uses it to log per-turn throughput, which is the only way to tell a healthy
+	 * bounded run from one that is yielding without getting anywhere.
+	 */
+	onContinue?: (info: {
+		spec: ModelSpec;
+		continuation: number;
+		decidedThisTurn: number;
+		decidedAfter: number;
+		totalItems: number;
+		reason: string;
+		durationMs: number;
+		/** Measured, not estimated. Null when the turn decided nothing. */
+		secondsPerDecision: number | null;
+	}) => void;
 	/** Test-only; defaults to reading `DAILY_INTELLIGENCE_FAULT_INJECTION` from the environment. */
 	faultInjector?: FaultInjector;
 };
@@ -150,6 +224,10 @@ export async function runStageWithFallback<T>(opts: RunStageOptions<T>): Promise
 	const now = opts.now ?? (() => new Date());
 	const maxAttemptsPerModel = opts.maxAttemptsPerModel ?? 4;
 	const faultInjector = opts.faultInjector ?? FaultInjector.fromEnv();
+
+	const bounds = { ...DEFAULT_CONTINUATION_BOUNDS, ...opts.continuationBounds };
+	const stageStartedAt = now().getTime();
+	let continuations = 0;
 
 	let attemptIndex = 0;
 	let lastError: unknown;
@@ -201,6 +279,105 @@ export async function runStageWithFallback<T>(opts: RunStageOptions<T>): Promise
 				});
 				return result;
 			} catch (err) {
+				/*
+				 * Terminal, before anything else is considered. The previous turn is
+				 * still running, so every available response -- retry, continue, fall
+				 * back -- would start a second session writing the same day's durable
+				 * state. Failing the stage is the only answer that does not.
+				 *
+				 * Note this outranks the progress yield below: a turn that made
+				 * progress and then would not stop is still a runtime failure. "It was
+				 * working" is not a reason to run two of it.
+				 */
+				if (isTurnAbandoned(err)) {
+					const finishedAt = now();
+					const { failureClass, errorMeta } = classifyError(err);
+					recordAttempt({
+						...base,
+						finishedAt: finishedAt.toISOString(),
+						durationMs: finishedAt.getTime() - startedAt.getTime(),
+						status: "FAILED",
+						failureClass,
+						errorMeta: { ...errorMeta, terminal: "session did not stop; no replacement started" },
+					});
+					throw err;
+				}
+
+				/*
+				 * Handled before classifyError ever sees it. A progress yield is not a
+				 * provider error and must not be routed like one: it consumes no
+				 * same-model attempt, records no failureClass, and never sets
+				 * fallbackReason. Matching on the class rather than on the message is
+				 * what keeps a real provider error that happens to say "yield" from
+				 * taking this branch.
+				 */
+				if (isProgressYield(err)) {
+					const finishedAt = now();
+					const durationMs = finishedAt.getTime() - startedAt.getTime();
+					continuations++;
+
+					recordAttempt({
+						...base,
+						finishedAt: finishedAt.toISOString(),
+						durationMs,
+						status: "YIELDED",
+						errorMeta: {
+							reason: err.info.reason,
+							decidedThisTurn: err.decidedThisTurn,
+							decidedAfter: err.info.decidedAfter,
+							totalItems: err.info.totalItems,
+							secondsPerDecision: secondsPerDecision(durationMs, err.decidedThisTurn),
+							/*
+							 * The Pi SDK exposes only `ContextUsage`, whose `tokens` field is
+							 * documented as an ESTIMATE of context-window occupancy -- not
+							 * per-turn input, output or cached token counts. There is no
+							 * authoritative usage to record, so none is recorded. Deriving a
+							 * tokensPerDecision from an estimate and storing it next to
+							 * measured values would make a guess indistinguishable from a
+							 * measurement in every report that reads this row.
+							 */
+							tokenUsage: "unavailable",
+						},
+					});
+					opts.onContinue?.({
+						spec,
+						continuation: continuations,
+						decidedThisTurn: err.decidedThisTurn,
+						decidedAfter: err.info.decidedAfter,
+						totalItems: err.info.totalItems,
+						reason: err.info.reason,
+						durationMs,
+						secondsPerDecision: secondsPerDecision(durationMs, err.decidedThisTurn),
+					});
+
+					// The ceiling ends the stage rather than falling through the chain:
+					// the same oversized workload would yield on every other model too,
+					// so trying them would burn the chain to learn nothing.
+					const elapsed = finishedAt.getTime() - stageStartedAt;
+					if (continuations >= bounds.maxContinuations) {
+						throw new ContinuationLimitError(
+							stage,
+							`${continuations} continuations (limit ${bounds.maxContinuations}), ` +
+								`${err.info.decidedAfter}/${err.info.totalItems} items decided`,
+						);
+					}
+					if (elapsed >= bounds.maxStageWallClockMs) {
+						throw new ContinuationLimitError(
+							stage,
+							`${Math.round(elapsed / 1000)}s elapsed (limit ${Math.round(bounds.maxStageWallClockMs / 1000)}s), ` +
+								`${err.info.decidedAfter}/${err.info.totalItems} items decided`,
+						);
+					}
+
+					// Same model, fresh session, resumed from durable state. Note that
+					// `sameModelAttempts` is decremented back out: the increment at the
+					// top of the loop counts attempts against the retry budget, and a
+					// continuation is not one.
+					sameModelAttempts--;
+					mode = modeForAction("CONTINUE_SAME");
+					continue;
+				}
+
 				lastError = err;
 				const { failureClass, errorMeta } = classifyError(err);
 				const metaMessage = errorMeta["message"];

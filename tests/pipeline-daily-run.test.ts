@@ -402,6 +402,13 @@ describe.skipIf(!probe.available)("daily pipeline", () => {
 		 * that each produced nothing, and because the stage never failed, the
 		 * router never fell back. A turn that stops returning must end the
 		 * attempt.
+		 *
+		 * It must also end the STAGE. This driver never settles, so the turn is
+		 * still running after the abort grace period expires -- and every response
+		 * other than failing (retry, continue, fall back) would start a second
+		 * curator session writing the same day's decisions while the first one is
+		 * still able to write them. So the assertion here is the absence of a
+		 * fallback: one attempt, no replacement. See TurnAbandonedError.
 		 */
 		const stalledLineage = testLineage("pipeline-stalled");
 		const hangingFactory = createResolvedDriverFactory(() => () => new Promise<void>(() => {}));
@@ -418,11 +425,20 @@ describe.skipIf(!probe.available)("daily pipeline", () => {
 				},
 			});
 			expect(result.state).toBe("CURATION_FAILED");
-			const attempts = await sql<{ fallback_reason: string | null }[]>`
-				select fallback_reason from agent_attempts where run_id = ${result.runId}
+			const attempts = await sql<
+				{ fallback_reason: string | null; failure_class: string | null; status: string }[]
+			>`
+				select fallback_reason, failure_class, status
+				from agent_attempts where run_id = ${result.runId}
 			`;
 			expect(attempts.length).toBeGreaterThan(0);
-			expect(attempts.map((a) => a.fallback_reason ?? "").join(" ")).toMatch(/TIMEOUT/);
+			expect(attempts.every((a) => a.status === "FAILED")).toBe(true);
+			expect(attempts.map((a) => a.failure_class ?? "").join(" ")).toMatch(/TIMEOUT/);
+			// No fallback: a replacement session would overlap the one still running.
+			expect(attempts.every((a) => a.fallback_reason === null)).toBe(true);
+			// And no continuation either -- "it was making progress" is not a reason
+			// to run two sessions over one day.
+			expect(attempts.every((a) => a.status !== "YIELDED")).toBe(true);
 		} finally {
 			await purgeLineage(sql, stalledLineage);
 		}

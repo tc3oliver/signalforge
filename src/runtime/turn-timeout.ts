@@ -23,6 +23,50 @@ export class TurnTimeoutError extends Error {
 }
 
 /**
+ * Thrown when a turn outran its bound AND did not stop when aborted.
+ *
+ * This is a different fact from a timeout and needs a different answer. A turn
+ * that timed out and then stopped is safe to replace: whatever it wrote, it
+ * wrote before the replacement read anything. A turn that is still running is
+ * not, because the two sessions would share one durable state -- the old one's
+ * in-flight `record_item_decisions` landing after the new one has already taken
+ * its unseen snapshot, so the replacement works from a set that was stale the
+ * moment it was read.
+ *
+ * Both repositories upsert by item id, so the visible cost is a stale row
+ * rather than corruption. That is not the standard: two curator sessions
+ * writing the same day concurrently is not an acceptable execution semantic
+ * whatever the write layer happens to tolerate. So this is terminal -- no
+ * retry, no continuation, no fallback, because every one of those would start
+ * the overlapping session this exists to prevent.
+ *
+ * Extends {@link TurnTimeoutError} because it *is* a timeout, plus one further
+ * fact. Anything that only wants to know "did this turn overrun" keeps working,
+ * and the classifier still reads it as TIMEOUT; the callers that must treat it
+ * differently test for this class first, which is a narrowing rather than a
+ * separate path they could forget to handle.
+ */
+export class TurnAbandonedError extends TurnTimeoutError {
+	/*
+	 * `name` is deliberately NOT overridden. The classifier reads `TimeoutError`
+	 * and maps it to the TIMEOUT failure class, and an abandoned turn is a
+	 * timeout for classification purposes -- renaming it sent it to the UNKNOWN
+	 * path and it came back out as NETWORK. Everything that needs to treat this
+	 * case differently matches on the class, not on the name or the message.
+	 */
+	constructor(stage: string, timeoutMs: number, graceMs: number) {
+		super(stage, timeoutMs);
+		this.message =
+			`${stage} turn exceeded ${Math.round(timeoutMs / 1000)}s and did not stop within ` +
+			`${Math.round(graceMs / 1000)}s of being aborted; refusing to start an overlapping session`;
+	}
+}
+
+export function isTurnAbandoned(err: unknown): err is TurnAbandonedError {
+	return err instanceof TurnAbandonedError;
+}
+
+/**
  * How long to wait for an aborted turn to actually stop before giving up on it.
  *
  * Short, because this is pure delay on a run that has already failed; long
@@ -58,8 +102,20 @@ export async function withTurnTimeout(
 
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	let graceTimer: ReturnType<typeof setTimeout> | undefined;
+	// Whether the turn has actually finished, either way. This is the difference
+	// between "timed out" and "still running", and the caller must be able to
+	// tell them apart before it starts a replacement session.
+	let settled = false;
 	// Held so the losing side of the race can still be awaited on timeout.
-	const running = run();
+	const running = run().then(
+		() => {
+			settled = true;
+		},
+		(err: unknown) => {
+			settled = true;
+			throw err;
+		},
+	);
 	// The turn's own rejection is handled below; this keeps an overrun from
 	// surfacing as an unhandled rejection while the timeout path unwinds.
 	running.catch(() => {});
@@ -79,6 +135,9 @@ export async function withTurnTimeout(
 					graceTimer = setTimeout(resolve, abortGraceMs);
 				}),
 			]);
+			// The grace period expired and the turn is still going. Escalate: the
+			// caller must not replace a session that has not stopped.
+			if (!settled) throw new TurnAbandonedError(stage, timeoutMs, abortGraceMs);
 		}
 		throw err;
 	} finally {
