@@ -92,8 +92,23 @@ const DEFAULT_CATCH_UP_HOURS = 48;
  * clocks disagree: `published_at` belongs to the source, collection happens on
  * our schedule, and an item that falls between them was previously invisible to
  * the curator on every day — not rejected, never seen. The `not exists` guard
- * keeps the sweep idempotent: once an item has a decision it is never offered
- * again.
+ * keeps the sweep idempotent: once an item has been judged ON ANOTHER DAY it is
+ * never offered again.
+ *
+ * "On another day" and not "at all", because the manifest is two things at once:
+ * the work to be done, and the set of item ids a story may cite. Excluding
+ * everything already decided conflated them and made the manifest shrink as the
+ * day progressed. The 2026-09-16 recovery is what exposed it -- the manifest fell
+ * from 1626 to 537 to 263 while it ran, and `submit_materials` then rejected the
+ * day's own stories for citing item ids that had silently left the manifest: 122
+ * of 157 stories had no citable source item left. Any second run of a day whose
+ * work came from the catch-up window hits this, so it is not specific to
+ * recovery.
+ *
+ * Deciding an item today therefore keeps it in today's manifest. The sweep stays
+ * idempotent where it matters -- `list_unseen_items` filters by recorded
+ * decisions, so a decided item is never offered as work again -- while the
+ * citable set stays fixed for the whole day.
  */
 export async function buildManifestFromDb(options: BuildManifestOptions): Promise<DailyManifest> {
 	const now = options.now ?? (() => new Date());
@@ -121,6 +136,7 @@ export async function buildManifestFromDb(options: BuildManifestOptions): Promis
 						and not exists (
 							select 1 from item_decisions d
 							where d.lineage = n.lineage and d.item_id = n.item_id
+								and d.date <> ${options.date}
 						)
 					)
 				)
@@ -152,6 +168,7 @@ export async function buildManifestFromDb(options: BuildManifestOptions): Promis
 						and not exists (
 							select 1 from item_decisions d
 							where d.lineage = n.lineage and d.item_id = n.item_id
+								and d.date <> ${options.date}
 						)
 					)
 				)

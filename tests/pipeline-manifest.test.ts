@@ -81,8 +81,44 @@ describe.skipIf(!probe.available)("daily manifest item window", () => {
 		expect(await ids()).toContain("yesterday-unjudged");
 	});
 
-	it("never offers an item that already has a decision on any date", async () => {
+	it("never offers an item that was judged on an earlier day", async () => {
 		expect(await ids()).not.toContain("yesterday-judged");
+	});
+
+	it("keeps an item in the manifest once TODAY has decided it", async () => {
+		/*
+		 * The manifest is two things at once: the work to be done, and the set of
+		 * item ids a story may cite. Excluding everything already decided conflated
+		 * them, and the catch-up half of the manifest then shrank as the day
+		 * progressed.
+		 *
+		 * The 2026-09-16 recovery is what exposed it: the manifest fell from 1626
+		 * to 537 to 263 while the run was working, and `submit_materials` rejected
+		 * the day's own stories for citing ids that had silently left it -- 122 of
+		 * 157 stories had no citable source item remaining. Any second run of a day
+		 * whose work came from the catch-up window hits this.
+		 *
+		 * Deciding an item today must therefore leave it in today's manifest. The
+		 * sweep stays idempotent where that matters: `list_unseen_items` filters by
+		 * recorded decisions, so a decided item is never handed out as work again.
+		 */
+		const before = await ids();
+		expect(before).toContain("yesterday-unjudged");
+
+		await upsertDecisions(sql, lineage, DATE, [
+			{
+				itemId: "yesterday-unjudged",
+				disposition: "CANDIDATE",
+				reason: "decided by this very day",
+				decidedAt: `${DATE}T09:00:00.000Z`,
+			},
+		]);
+
+		const after = await ids();
+		expect(after).toContain("yesterday-unjudged");
+		// Stable, not merely non-empty: the citable set must not move under a
+		// story that has already been written against it.
+		expect(after).toEqual(before);
 	});
 
 	it("does not reach past the catch-up horizon", async () => {
