@@ -175,6 +175,15 @@ export const StageConfig = z
 		timeoutMs: z.number().int().positive(),
 		maxAttemptsPerModel: z.number().int().positive(),
 		maxNudges: z.number().int().min(0),
+		/**
+		 * Decisions one attempt may record before it yields to a fresh session on
+		 * the same model. Optional; omitted means unbounded, which is the correct
+		 * reading for the editor (it has no per-item work unit to bound).
+		 */
+		maxDecisionsPerTurn: z.number().int().positive().optional(),
+		/** Stage-level runaway guards for those yields. Optional; see model-router.ts. */
+		maxContinuations: z.number().int().positive().optional(),
+		maxStageWallClockMs: z.number().int().positive().optional(),
 	})
 	.strict();
 export type StageConfig = z.infer<typeof StageConfig>;

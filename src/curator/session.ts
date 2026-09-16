@@ -4,7 +4,8 @@ import type { AgentDriverFactory } from "../runtime/agent-driver.ts";
 import type { ModelSpec } from "../runtime/model-config.ts";
 import { InvalidAgentOutputError, ToolLoopError } from "../runtime/error-classifier.ts";
 import { loadProjectSkills } from "../runtime/pi-runtime.ts";
-import { withTurnTimeout } from "../runtime/turn-timeout.ts";
+import { isTurnAbandoned, TurnTimeoutError, withTurnTimeout } from "../runtime/turn-timeout.ts";
+import { ProgressYieldError, TurnBudget } from "../runtime/progress-yield.ts";
 import {
 	createSkillReferenceTool,
 	loadSkillBundle,
@@ -41,6 +42,21 @@ export interface CuratorStageOptions {
 	maxNudges?: number;
 	/** Bound on a single model turn; see runtime/turn-timeout.ts. */
 	timeoutMs?: number;
+	/**
+	 * Decisions one attempt may record before it yields to a fresh session.
+	 *
+	 * This is what makes the curator a bounded resumable worker rather than one
+	 * turn trying to finish a whole day. Undefined means unbounded, which is what
+	 * every eval, gold and fixture run wants: their manifests are small, they
+	 * finish in one turn, and a yield would change the shape of their output.
+	 *
+	 * The budget spans the whole attempt rather than resetting per turn. An
+	 * attempt is normally exactly one turn -- the nudge loop only runs when a
+	 * model stopped early without spending its budget -- and a budget that reset
+	 * on each nudge would let one session record `maxNudges` times the intended
+	 * work unit, which is the ceiling it exists to prevent.
+	 */
+	maxDecisionsPerTurn?: number;
 	onEvent?: (event: Record<string, unknown>) => void;
 	onText?: (delta: string) => void;
 	/**
@@ -76,11 +92,16 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 	// can then make no further progress, the turn ends, and the attempt fails with
 	// the injected error -- exactly as a real provider outage would end it.
 	let faultError: Error | undefined;
+	const turnBudget =
+		opts.maxDecisionsPerTurn !== undefined && opts.maxDecisionsPerTurn > 0
+			? new TurnBudget(opts.maxDecisionsPerTurn)
+			: undefined;
 	const ctx: CuratorContext = {
 		date: opts.date,
 		manifest: opts.manifest,
 		repo: opts.repo,
 		now,
+		...(turnBudget ? { turnBudget } : {}),
 		...(opts.readerProfile
 			? { topicIds: new Set(opts.readerProfile.topics.map((t) => t.id)) }
 			: {}),
@@ -174,9 +195,60 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 							skillSection: "",
 						});
 
-		await withTurnTimeout(driver, "curator", opts.timeoutMs, () => driver.prompt(opening));
-		if (faultError) throw faultError;
-		opts.checkFault?.((await opts.repo.processedItemIds(opts.date)).size);
+		const totalItems = opts.manifest.items.length;
+		const decidedCount = async () => (await opts.repo.processedItemIds(opts.date)).size;
+
+		/*
+		 * One turn, under the turn clock, with the two endings that are not
+		 * failures folded in.
+		 *
+		 * A timeout that committed decisions is reported as a yield rather than a
+		 * TIMEOUT. That is the safety net rather than the mechanism: the work-unit
+		 * ceiling below is what normally ends a turn, cleanly, at a tool boundary.
+		 * But a model can spend its whole turn on one very slow page and be killed
+		 * by the clock while still having made real progress, and calling that a
+		 * provider fault is precisely the misclassification that burned three
+		 * models on 2026-09-16.
+		 */
+		const runTurn = async (prompt: () => Promise<void>): Promise<void> => {
+			const decidedBefore = await decidedCount();
+			try {
+				await withTurnTimeout(driver, "curator", opts.timeoutMs, prompt);
+			} catch (err) {
+				// Checked first, and never converted to a yield. A turn that made
+				// progress and then would not stop is still a runtime failure: the
+				// continuation would be a second session writing this same day.
+				if (isTurnAbandoned(err)) throw err;
+				if (!(err instanceof TurnTimeoutError)) throw err;
+				const decidedAfter = await decidedCount();
+				if (decidedAfter <= decidedBefore) throw err;
+				throw new ProgressYieldError({
+					decidedBefore,
+					decidedAfter,
+					totalItems,
+					reason: "TURN_TIMEOUT_WITH_PROGRESS",
+				});
+			}
+			if (faultError) throw faultError;
+
+			// The clean ending: the turn stopped because the tools stopped offering
+			// it work. Only a turn that both spent its budget and left items
+			// undecided yields -- a turn that finished the day must fall through to
+			// submit_materials, and a turn that stopped early without spending its
+			// budget is a stall for the nudge loop to deal with.
+			const decidedAfter = await decidedCount();
+			if (!ctx.submitted && turnBudget?.exhausted && decidedAfter < totalItems) {
+				throw new ProgressYieldError({
+					decidedBefore,
+					decidedAfter,
+					totalItems,
+					reason: "WORK_UNIT_COMPLETE",
+				});
+			}
+		};
+
+		await runTurn(() => driver.prompt(opening));
+		opts.checkFault?.(await decidedCount());
 
 		let nudges = 0;
 		let lastProgress = -1;
@@ -231,7 +303,7 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 			// during this nudge before the next prompt could carry it.
 			const feedback = lastError;
 			lastError = undefined;
-			await withTurnTimeout(driver, "curator", opts.timeoutMs, () =>
+			await runTurn(() =>
 				driver.prompt(
 					buildCuratorNudgePrompt({
 						unseenItems: opts.manifest.items.length - current.size,
@@ -241,7 +313,6 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 					}),
 				),
 			);
-			if (faultError) throw faultError;
 		}
 
 		if (!ctx.submitted) {

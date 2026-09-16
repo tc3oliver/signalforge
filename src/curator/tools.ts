@@ -11,6 +11,7 @@ import {
 import type { ResearchRouter } from "../research/router.ts";
 import { toCollectedItem } from "../research/types.ts";
 import type { StoryRepository } from "../stories/repository.ts";
+import type { TurnBudget } from "../runtime/progress-yield.ts";
 import { scanCoverage, validateMaterials } from "../validator/materials-validator.ts";
 import {
 	defineFindHistoryTool,
@@ -57,6 +58,20 @@ export interface CuratorContext {
 	 * always did, not refuse work.
 	 */
 	topicIds?: ReadonlySet<string>;
+	/**
+	 * How many decisions this turn may still record before it should stop.
+	 *
+	 * The ceiling is enforced by `list_unseen_items` refusing to hand out more
+	 * work, not by `record_item_decisions` refusing to accept it: a model that
+	 * has already read a page must always be able to commit its judgement of it.
+	 * Refusing the write would throw away work the model has already paid for and
+	 * leave the page to be re-read by the next turn.
+	 *
+	 * Absent for any caller that does not want bounded turns -- eval, gold and
+	 * fixture runs, which scan small manifests in one turn and whose output must
+	 * not change shape because a budget was introduced.
+	 */
+	turnBudget?: TurnBudget;
 	/** Set by submit_materials on success; the session driver reads it afterwards. */
 	submitted?: DailyMaterials;
 	onToolCall?: (name: string, summary: Record<string, unknown>) => void;
@@ -165,6 +180,32 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			cursor: Type.Optional(Type.String()),
 		}),
 		execute: async (_id, params) => {
+			/*
+			 * The work-unit ceiling. Returning an empty page rather than throwing is
+			 * deliberate: a ToolRejection reads to the model as "you did something
+			 * wrong, try differently", and it would try differently -- calling
+			 * search_items, or re-listing with a cursor -- burning the rest of the
+			 * turn. An empty page with `turnComplete` says the opposite, and the
+			 * session yields on it whether or not the model takes the hint.
+			 */
+			if (ctx.turnBudget?.exhausted) {
+				const unseenNow = await unseenIds();
+				const payload = {
+					items: [],
+					returned: 0,
+					remainingAfterPage: unseenNow.length,
+					nextCursor: null,
+					turnComplete: true,
+					note:
+						`This turn's work unit is complete (${ctx.turnBudget.spent} decisions recorded). ` +
+						`${unseenNow.length} item(s) remain and will be offered to the next turn, which ` +
+						`resumes from this exact state. Stop now: do not call submit_materials, and do ` +
+						`not look for other work. Simply end your reply.`,
+				};
+				note("list_unseen_items", { returned: 0, remaining: unseenNow.length, turnComplete: true });
+				return ok(payload);
+			}
+
 			const limit = Math.min(params.limit ?? MAX_PAGE, MAX_PAGE);
 			const unseen = await unseenIds();
 			let start = 0;
@@ -443,6 +484,8 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			}
 
 			await ctx.repo.recordDecisions(ctx.date, parsedList);
+			// Spent after the write, so a rejected batch never costs the turn budget.
+			ctx.turnBudget?.spend(parsedList.length);
 			const processed = await ctx.repo.processedItemIds(ctx.date);
 			const coverage = scanCoverage({
 				manifest: ctx.manifest,

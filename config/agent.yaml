@@ -38,6 +38,23 @@ stages:
     timeoutMs: 300000
     maxAttemptsPerModel: 4
     maxNudges: 3
+    # Decisions one attempt records before it yields to a fresh session on the
+    # SAME model, resuming from durable state. This is what makes the curator a
+    # bounded resumable worker instead of one turn trying to finish a whole day.
+    #
+    # timeoutMs above is now only what its name says: a bound on a hung turn. It
+    # used to double as "the most items a run can ever decide", because the scan
+    # happened inside one turn -- so a 1626-item backlog on 2026-09-16 timed out
+    # six times while making steady progress, and the router read each timeout as
+    # a provider fault and burned all three models in 28 minutes.
+    #
+    # Sized to 60-70% of timeoutMs at most, not to "as much as fits". Measured on
+    # that run: 50 decisions per ~75s, so one 50-item page costs ~75s. Two pages
+    # is 150s, half the clock, with the rest as margin for the story work that
+    # happens alongside paging and for a page that runs slow. Three pages (225s)
+    # is already 75% and makes every turn a race between a clean yield and an
+    # abort; the timeout must never be what normally ends a turn.
+    maxDecisionsPerTurn: 100
   EDITOR:
     timeoutMs: 300000
     maxAttemptsPerModel: 4
