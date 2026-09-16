@@ -18,6 +18,7 @@ section has been overtaken by an implementation, it is marked
 | [P1-4 Feedback Loop](#p1-4-feedback-loop) | PLANNED |
 | [story_items audit](#story_items-audit) | **SHIPPED** |
 | [Emerging Signals audit](#emerging-signals-audit) | PLANNED |
+| [The catch-up window is keyed on the wrong clock](#the-catch-up-window-is-keyed-on-the-wrong-clock) | PLANNED |
 | [Manifest overflow guarantee](#manifest-overflow-guarantee) | DEFERRED |
 | [Manifest identity is not persisted](#manifest-identity-is-not-persisted) | PLANNED (P1) |
 | [Historical dangling story ids](#historical-dangling-story-ids) | PLANNED |
@@ -517,6 +518,82 @@ auto-merges stories, never decides two items are the same event, never assigns a
 producer means a new model dependency on the collection path; that is a
 post-freeze decision with its own cost and privacy review, not a prerequisite for
 any P1 item above.
+
+---
+
+## The catch-up window is keyed on the wrong clock
+
+**Status: PLANNED.** Not a volume problem and not the cap; a class of item is
+invisible from the moment it is collected. Found 2026-09-16 while checking
+whether the failed run had stranded anything.
+
+### Evidence
+
+Undecided items in `default`, excluding everything tomorrow's 48-hour catch-up
+still reaches:
+
+| Age of `published_at` | Undecided |
+|---|---|
+| under 7 days | 550 |
+| 7-30 days | 237 |
+| 1-12 months | 605 |
+| over a year | 1376 |
+| **total** | **2768**, oldest `2020-02-14` |
+
+By source type: `rss` 1720, `github` 498, `hackernews` 314,
+`semantic-scholar` 191, `youtube` 45. Within the under-7-days band the
+concentration is sharper: Hacker News 244, Semantic Scholar 165, then GitHub
+repository activity (`anthropic-sdk-typescript` 24, `ROCm/aiter` 18,
+`QwenLM/Qwen` 17, `DeepSeek-R1` 17, `llama.cpp` 14).
+
+### Why it happens
+
+`buildManifestFromDb` selects on `published_at` for both halves of its window —
+the day window and the catch-up sweep (`src/pipeline/manifest.ts:112-125`). That
+is the right clock for a news feed, where an item is published and collected
+within minutes of each other. It is the wrong clock for every source whose
+`published_at` describes when the *content* originated rather than when it
+entered this system:
+
+- a Semantic Scholar paper published weeks ago and surfaced by a query today;
+- a GitHub release or commit on a watched repository with an older tag date;
+- a Hacker News submission that reaches the front page days after posting;
+- a YouTube back-catalogue video appearing in a channel feed;
+- an RSS feed backfilling, which is visible directly in the data: 210 items with
+  `published_at` on 09-11 were collected on 09-13.
+
+For those, the item is already outside the 48-hour window on the day it is
+collected. It is never offered to the Curator, on that day or any other, and
+nothing reports it: scan coverage is measured against the manifest, so a
+manifest that never contained the item is still 100% covered. The run goes
+green.
+
+### Why it is not the same as the cap
+
+The [overflow item](#manifest-overflow-guarantee) below is about items that were
+eligible and got dropped for volume. This is about items that were **never
+eligible**. Fixing the cap would not surface a single one of the 2768, and the
+cap has never actually bitten in production — the largest real manifest is 1790.
+
+### Not a backlog to drain
+
+Most of these should stay undecided. A 2020 paper and a three-year-old repository
+tag are not today's news, and sweeping them into a manifest would produce stale
+stories and cost a full curation pass to reach that conclusion. The 550 under
+seven days old are the population worth arguing about, and even those are mostly
+Hacker News and Semantic Scholar items whose value decays fast.
+
+### Candidate
+
+Select the catch-up half of the window on `created_at` (when this system first
+saw the item) while keeping the day half on `published_at`, and bound it by
+`published_at` age so the sweep cannot reach back years. That makes "collected
+recently but originated earlier" visible exactly once, which is the behaviour a
+reader would expect, without turning the manifest into an archive crawler.
+
+Needs a decision on the age bound before it is worth writing, and it changes
+what the Curator sees — so it does not land inside an observation epoch. See
+[`OBSERVATION_REVIEW.md`](OBSERVATION_REVIEW.md).
 
 ---
 
