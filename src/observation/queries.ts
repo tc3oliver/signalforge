@@ -223,10 +223,35 @@ export async function fetchStageHits(
  * rather than silently vanish, because a filter evaluated only against items
  * the Curator got to would flatter itself on exactly the days it mattered most.
  */
+/**
+ * The triage passes that hold predictions for these dates, newest-written first.
+ *
+ * Since migration 011 an item can carry one row per pass -- the deterministic
+ * rules and a model pass, side by side -- so every triage query has to name the
+ * pass it means. One that does not counts each item once per pass, which is not
+ * a recall figure for anything.
+ */
+export async function fetchTriageVersions(
+	sql: Sql,
+	lineage: string,
+	dates: readonly string[],
+): Promise<string[]> {
+	if (dates.length === 0) return [];
+	const rows = await sql<{ rules_version: string }[]>`
+		select rules_version, max(created_at) as latest
+		from item_triage
+		where lineage = ${lineage} and date = any(${sql.array([...dates])})
+		group by rules_version
+		order by latest desc
+	`;
+	return rows.map((r) => r.rules_version);
+}
+
 export async function fetchTriageOutcomes(
 	sql: Sql,
 	lineage: string,
 	date: string,
+	rulesVersion: string,
 ): Promise<TriageOutcomeRow[]> {
 	const rows = await sql<
 		{
@@ -255,6 +280,7 @@ export async function fetchTriageOutcomes(
 		left join daily_brief_stories b
 			on b.lineage = t.lineage and b.date = t.date and b.story_id = d.story_id
 		where t.lineage = ${lineage} and t.date = ${date}
+		  and t.rules_version = ${rulesVersion}
 	`;
 	return rows.map((r) => ({
 		itemId: r.item_id,

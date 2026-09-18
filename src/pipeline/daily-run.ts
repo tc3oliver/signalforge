@@ -10,7 +10,9 @@ import { getBrief, latestBriefDate, saveBrief, saveDraft } from "../db/briefs.ts
 import { getMaterials, saveMaterials } from "../db/materials.ts";
 import { saveTriage } from "../db/triage.ts";
 import { buildTriageRules } from "../triage/rules.ts";
+import { classifyWithModel } from "../triage/model-classifier.ts";
 import { triageManifest, triageTally } from "../triage/run.ts";
+import { resolveSecret } from "../config/secrets.ts";
 import { finishAgentRun, getRun, recordAttempt, startAgentRun, upsertRun } from "../db/runs.ts";
 import { listSignals, observeSignal } from "../db/signals.ts";
 import { renderBriefMarkdown } from "../renderer/markdown.ts";
@@ -432,8 +434,22 @@ async function runPipelineBody(
 	 * reported no fallback at all. Draining here is what makes the queued
 	 * attempt and degraded-reason writes finish before the caller sees a result.
 	 */
+	/*
+	 * The shadow model-triage pass, if one is started below. Declared here rather
+	 * than at its use site because `finish` closes over it and every early return
+	 * -- including ones taken during Collection, before the pass exists -- goes
+	 * through `finish`.
+	 *
+	 * Joined there so the run never outlives a write it started: the caller ends
+	 * the sql connection when this function returns, and a saveTriage still in
+	 * flight at that moment would fail on a closed pool and lose the day's shadow
+	 * data silently.
+	 */
+	let modelTriagePass: Promise<void> = Promise.resolve();
+
 	const finish = async (state: PipelineState): Promise<DailyRunResult> => {
 		await drainAttempts();
+		await modelTriagePass;
 		result.state = state;
 		result.degraded = degraded;
 		result.degradedReason = degradedReasons.join(" | ") || undefined;
@@ -550,6 +566,91 @@ async function runPipelineBody(
 		log("triage recorded (shadow mode; routing unaffected)", triageTally(triaged));
 	} catch (err) {
 		log("triage skipped", { error: err instanceof Error ? err.message : String(err) });
+	}
+
+	/*
+	 * ---- Stage 0 triage, model pass, also in shadow mode -------------------
+	 *
+	 * The same measurement, formed by a model instead of by rules, stored under
+	 * its own rulesVersion beside them (migration 011 widened the shadow table's
+	 * key so the two can coexist). Everything said about the deterministic pass above applies
+	 * here unchanged: no item is dropped, reordered or annotated, no tool can see
+	 * it, and `pnpm observe` is the only reader.
+	 *
+	 * Swallowed for the same reason too -- and one more. This one costs money and
+	 * talks to a third party, which is two additional ways for a measurement to
+	 * take down a run that does not depend on it.
+	 *
+	 * Started here and joined in `finish`, so it overlaps curation instead of
+	 * delaying it. Off the critical path by construction: it reads the manifest,
+	 * which is frozen by this point, and writes only shadow rows that nothing in
+	 * this run will read, while the Curator writes `item_decisions` and the story
+	 * ledger. They share no state, so serialising them would buy
+	 * nothing and cost the pass's whole duration -- about 75s on a 1311-item day
+	 * -- out of the run's wall clock.
+	 *
+	 * Everything inside is caught, so the promise can never reject: a floating
+	 * rejection while the Curator is mid-turn would take down a run that does not
+	 * depend on this at all.
+	 */
+	const triageModel = loadConfig().agent.triageModel;
+	if (triageModel?.enabled) {
+		modelTriagePass = (async () => {
+			try {
+				const apiKey = await resolveSecret(triageModel.apiKeySecret);
+				const outcome = await classifyWithModel(
+					manifest.items.map((i) => ({
+						itemId: i.id,
+						sourceType: i.sourceType,
+						sourceName: i.sourceName,
+						title: i.title,
+						summary: i.summary,
+						publishedAt: i.publishedAt,
+						metadata: i.metadata,
+					})),
+					{
+						config: triageModel,
+						apiKey,
+						interests: loadConfig().interests,
+						log: (msg, fields) => log(msg, fields ?? {}),
+					},
+				);
+
+				/*
+				 * A pass where every batch failed is an outage, not an opinion. Writing
+				 * 1300 placeholder UNCERTAIN rows would put a row in the table for every
+				 * item while measuring nothing, and the recall report cannot tell that
+				 * apart from a model that genuinely could not read the day.
+				 */
+				if (outcome.batchesOk === 0) {
+					log("model triage produced nothing; not recorded", {
+						batchesFailed: outcome.batchesFailed,
+						durationMs: outcome.durationMs,
+					});
+				} else {
+					await saveTriage(
+						options.sql,
+						lineage,
+						options.date,
+						outcome.results,
+						triageModel.rulesVersion,
+					);
+					log("model triage recorded (shadow mode; routing unaffected)", {
+						model: triageModel.model,
+						rulesVersion: triageModel.rulesVersion,
+						batchesOk: outcome.batchesOk,
+						batchesFailed: outcome.batchesFailed,
+						degraded: outcome.degraded,
+						durationMs: outcome.durationMs,
+						...triageTally(outcome.results),
+					});
+				}
+			} catch (err) {
+				log("model triage skipped", {
+					error: err instanceof Error ? err.message : String(err),
+				});
+			}
+		})();
 	}
 
 	// ---- Curation ---------------------------------------------------------

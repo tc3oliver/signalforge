@@ -49,6 +49,7 @@ export function keychainAccount(env: NodeJS.ProcessEnv = process.env): string {
  */
 export const KEYCHAIN_MAPPINGS: Readonly<Record<string, KeychainMapping>> = Object.freeze({
 	TAVILY_API_KEY: { service: "pi-tavily", account: keychainAccount() },
+	OPENAI_API_KEY: { service: "pi-openai", account: keychainAccount() },
 });
 
 /** Injectable for tests: never invoke the real Keychain in a unit test. */

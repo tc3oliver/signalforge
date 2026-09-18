@@ -12,6 +12,7 @@ import {
 	fetchSignals,
 	fetchStageHits,
 	fetchTriageOutcomes,
+	fetchTriageVersions,
 } from "../observation/queries.ts";
 import {
 	renderAttribution,
@@ -143,13 +144,28 @@ async function main(): Promise<void> {
 			// Shadow-mode triage, reported per epoch for the same reason everything
 			// else is: a rule change and a profile change both move these numbers,
 			// and averaging across either produces a figure describing no system.
-			const triageFunnels: TriageFunnel[] = [];
-			for (const date of epochDates) {
-				const outcomes = await fetchTriageOutcomes(sql, lineage, date);
-				if (outcomes.length > 0) triageFunnels.push(buildTriageFunnel(outcomes));
+			//
+			// One section per pass. Since migration 011 the deterministic rules and
+			// the model pass both hold rows for the same items, and the whole point
+			// of running them together is to read their recall side by side --
+			// merging them would average two different filters into a figure that
+			// describes neither.
+			const versions = await fetchTriageVersions(sql, lineage, epochDates);
+			for (const version of versions) {
+				const triageFunnels: TriageFunnel[] = [];
+				for (const date of epochDates) {
+					const outcomes = await fetchTriageOutcomes(sql, lineage, date, version);
+					if (outcomes.length > 0) triageFunnels.push(buildTriageFunnel(outcomes));
+				}
+				console.log("");
+				console.log(
+					renderTriage(triageFunnels, assessRoutingReadiness(triageFunnels), version),
+				);
 			}
-			console.log("");
-			console.log(renderTriage(triageFunnels, assessRoutingReadiness(triageFunnels)));
+			if (versions.length === 0) {
+				console.log("");
+				console.log(renderTriage([], assessRoutingReadiness([])));
+			}
 		}
 
 		console.log("");

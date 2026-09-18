@@ -21,6 +21,18 @@ import type { TriageResult } from "../triage/types.ts";
  */
 export const TRIAGE_RULES_VERSION = "deterministic-v1";
 
+/*
+ * The conflict target below must name the table's primary key exactly.
+ *
+ * Migration 011 widened that key to include `rules_version` so two passes can
+ * hold an opinion about the same item. The ON CONFLICT target was not widened
+ * with it, and Postgres answers a target that matches no constraint with "there
+ * is no unique or exclusion constraint matching the ON CONFLICT specification"
+ * -- which the pipeline catches and logs as "triage skipped". Both passes wrote
+ * nothing, for one line of log, and only an end-to-end run through the real
+ * pipeline showed it.
+ */
+
 export async function saveTriage(
 	sql: Sql,
 	lineage: string,
@@ -60,7 +72,7 @@ export async function saveTriage(
 				"topic_ids",
 				"rules_version",
 			)}
-			on conflict (lineage, date, item_id) do update set
+			on conflict (lineage, date, item_id, rules_version) do update set
 				category = excluded.category,
 				rule_id = excluded.rule_id,
 				reason = excluded.reason,

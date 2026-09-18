@@ -141,8 +141,20 @@ export function renderAttribution(pattern: string, result: AttributionResult): s
 	return lines.join("\n");
 }
 
-export function renderTriage(funnels: readonly TriageFunnel[], readiness: RoutingReadiness): string {
-	const lines = ["## Stage 0 triage (SHADOW MODE — routing unaffected)", ""];
+/**
+ * @param rulesVersion Which pass these funnels describe. Named in the heading
+ * because two passes now report side by side, and a recall figure whose pass is
+ * unstated is not attributable to anything.
+ */
+export function renderTriage(
+	funnels: readonly TriageFunnel[],
+	readiness: RoutingReadiness,
+	rulesVersion?: string,
+): string {
+	const heading = rulesVersion
+		? `## Stage 0 triage — ${rulesVersion} (SHADOW MODE — routing unaffected)`
+		: "## Stage 0 triage (SHADOW MODE — routing unaffected)";
+	const lines = [heading, ""];
 	if (funnels.length === 0) {
 		lines.push("No triage rows for these days. Nothing to measure yet.");
 		return lines.join("\n");

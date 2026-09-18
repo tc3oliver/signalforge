@@ -79,3 +79,36 @@ searchWeb:
   timeoutMs: 15000
   maxCallsPerStory: 3
   maxCallsPerRun: 20
+
+# Stage 0 triage, model pass -- SHADOW MODE, routing unaffected.
+#
+# Runs beside the deterministic rules in src/triage/rules.ts and writes to
+# item_triage under its own rulesVersion; `pnpm observe` compares both against
+# what the Curator and Editor actually did. Nothing in the pipeline reads it.
+#
+# Why a model at all, when the rules were built to avoid one: rules.ts states
+# the condition -- "If UNCERTAIN turns out to dominate and the misses
+# concentrate there, that is the evidence for spending a model on UNCERTAIN
+# only". On 2026-09-18 UNCERTAIN was 471 of 1311 items (35.9%), the largest
+# bucket, and PRIORITY was wrong 73% of the time (246 of 339 PRIORITY items were
+# judged IRRELEVANT by the Curator). The rules are neither dropping much nor
+# predicting well, which is what this pass is here to improve on -- measurably.
+#
+# A failure here never fails a run: no key, a wrong model id, a dead endpoint or
+# a whole pass of failed batches all end with a log line and nothing recorded.
+triageModel:
+  enabled: true
+  baseUrl: https://api.openai.com/v1
+  # UNVERIFIED as of 2026-09-18: this model id has not been confirmed against
+  # the account's available models, nor confirmed to be covered by the daily
+  # free-token allowance. If it is wrong, every batch fails, nothing is written,
+  # and `daily.err.log` says "model triage batch failed" with the HTTP status.
+  model: gpt-5.6-terra
+  apiKeySecret: OPENAI_API_KEY
+  batchSize: 40
+  concurrency: 8
+  timeoutMs: 60000
+  # The pipeline must not wait on a measurement. A 1311-item day is ~33 batches;
+  # at 8 in flight that is ~5 rounds, so 4 minutes is generous even when slow.
+  maxWallClockMs: 240000
+  rulesVersion: model-v1

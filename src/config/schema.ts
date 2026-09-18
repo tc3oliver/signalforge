@@ -105,6 +105,20 @@ export const CollectorSourceConfig = z
 		requiredSecrets: z.array(z.string().min(1)).default([]),
 		/** SEC-only: mandatory contact User-Agent. See {@link SecUserAgent}. */
 		userAgent: SecUserAgent.optional(),
+		/**
+		 * Hacker News only: the score below which a story is not worth carrying
+		 * into the day's manifest.
+		 *
+		 * A volume control at the source, NOT a relevance judgement -- the
+		 * distinction matters, because dropping items on a guess about their
+		 * subject is exactly what `src/triage/rules.ts` refuses to do. This drops
+		 * on the one structural signal HN publishes about an item: how many people
+		 * have voted for it. An unranked submission nobody has voted on yet is not
+		 * a story the site is telling us about.
+		 *
+		 * 0 disables it and restores the pre-2026-09-18 behaviour.
+		 */
+		minScore: z.number().int().min(0).optional(),
 	})
 	.strict();
 export type CollectorSourceConfig = z.infer<typeof CollectorSourceConfig>;
@@ -199,6 +213,48 @@ export const SearchWebConfig = z
 	.strict();
 export type SearchWebConfig = z.infer<typeof SearchWebConfig>;
 
+/**
+ * The shadow-mode model triage pass.
+ *
+ * Optional in every sense: absent config, `enabled: false`, or an unresolvable
+ * API key each leave the pass unrun and the pipeline unchanged. It writes to
+ * `item_triage` under its own `rulesVersion` and is read only by `pnpm observe`.
+ *
+ * It is deliberately NOT part of `modelChain`. That chain drives the Curator and
+ * Editor through the Pi agent runtime -- tools, skills, multi-turn sessions,
+ * fallback across providers. This is a stateless batch classifier that sees a
+ * title and a summary and answers with a category, and giving it the agent
+ * machinery would buy nothing and cost a fallback path that must not exist:
+ * a measurement that retries across three providers is measuring the retry.
+ */
+export const TriageModelConfig = z
+	.object({
+		enabled: z.boolean().default(false),
+		/** OpenAI-compatible chat-completions endpoint. */
+		baseUrl: z.string().min(1).default("https://api.openai.com/v1"),
+		model: z.string().min(1),
+		/** Logical secret name, resolved through env -> secrets.env -> Keychain. */
+		apiKeySecret: z.string().min(1).default("OPENAI_API_KEY"),
+		/** Items per request. Bounded so one failed batch loses a bounded slice. */
+		batchSize: z.number().int().positive().max(200).default(40),
+		/** Batches in flight at once. */
+		concurrency: z.number().int().positive().max(32).default(8),
+		timeoutMs: z.number().int().positive().default(60_000),
+		/**
+		 * Wall-clock ceiling for the whole pass. The pipeline must not be delayed
+		 * by a measurement, so this bounds it independently of per-request timeouts.
+		 */
+		maxWallClockMs: z.number().int().positive().default(240_000),
+		/**
+		 * Stamped into `item_triage.rules_version`. Bump it whenever the prompt or
+		 * the model changes, for the same reason the deterministic rules carry one:
+		 * recall averaged across a prompt change is two measurements merged.
+		 */
+		rulesVersion: z.string().min(1).default("model-v1"),
+	})
+	.strict();
+export type TriageModelConfig = z.infer<typeof TriageModelConfig>;
+
 export const AgentConfig = z
 	.object({
 		modelChain: z.array(ModelSpecConfig).min(1),
@@ -209,6 +265,7 @@ export const AgentConfig = z
 			})
 			.strict(),
 		searchWeb: SearchWebConfig,
+		triageModel: TriageModelConfig.optional(),
 	})
 	.strict();
 export type AgentConfig = z.infer<typeof AgentConfig>;
