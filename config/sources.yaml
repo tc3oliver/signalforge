@@ -40,6 +40,20 @@ collectors:
     timeoutMs: 10000
     pageSize: 50
     requiredSecrets: []
+    # Score floor. This collector reads topstories, beststories AND newstories,
+    # and newstories is unranked -- every submission in arrival order, most of
+    # them never voted on. Those arrive with a score of 1 or 2 and still cost a
+    # full Curator decision each.
+    #
+    # 2026-09-18, a 1311-item day of which 366 were HN: the 320 items scoring
+    # under 20 produced 15 candidates, 3 of which reached materials and NONE of
+    # which reached the published brief -- while taking 24% of the day's curation
+    # workload, roughly thirteen minutes of model time.
+    #
+    # One day of evidence, so it is set where that day's data is unambiguous and
+    # no lower. Set to 0 to disable; a run reports what it dropped as a warning,
+    # so raising or lowering this is measurable rather than a matter of opinion.
+    minScore: 20
 
   arxiv:
     enabled: true

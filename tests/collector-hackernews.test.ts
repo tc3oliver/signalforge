@@ -149,3 +149,129 @@ describe("HackerNewsCollector work ceiling", () => {
 		expect(result.health).toBe("OK");
 	});
 })
+
+/*
+ * 2026-09-18. The collector reads three HN lists and only two of them are
+ * ranked; `newstories` is every submission in arrival order. That day it carried
+ * 366 HN items into a 1311-item manifest, and the 320 scoring under 20 produced
+ * 15 candidates, 3 that reached materials and 0 that reached the published
+ * brief -- for roughly a quarter of the day's curation workload.
+ *
+ * What these tests fix is the *shape* of the filter, not the threshold: it drops
+ * on HN's own score and nothing else, an unscored item counts as zero, and the
+ * run says how many it dropped so the threshold stays measurable.
+ */
+describe("HackerNewsCollector score floor", () => {
+	it("keeps everything when minScore is unset, as before", async () => {
+		const fetchImpl = mockFetch();
+		const collector = new HackerNewsCollector();
+		const result = await collector.collect(makeCtx({}, fetchImpl as unknown as typeof fetch));
+
+		// item-1 (score 42) and item-2 (score 7); 3 is deleted, 4 has no title.
+		expect(result.items.map((i) => i.externalId).sort()).toEqual(["1", "2"]);
+	});
+
+	it("drops items below the floor and keeps those at or above it", async () => {
+		const fetchImpl = mockFetch();
+		const collector = new HackerNewsCollector();
+		const result = await collector.collect(
+			makeCtx(
+				{
+					sourceConfig: {
+						enabled: true,
+						rateLimitPerMinute: 60,
+						timeoutMs: 10_000,
+						pageSize: 50,
+						requiredSecrets: [],
+						minScore: 20,
+					},
+				},
+				fetchImpl as unknown as typeof fetch,
+			),
+		);
+
+		// 42 >= 20 stays; 7 < 20 goes.
+		expect(result.items.map((i) => i.externalId)).toEqual(["1"]);
+	});
+
+	it("reports the drop as a single counted warning, not one per item", async () => {
+		const fetchImpl = mockFetch();
+		const collector = new HackerNewsCollector();
+		const result = await collector.collect(
+			makeCtx(
+				{
+					sourceConfig: {
+						enabled: true,
+						rateLimitPerMinute: 60,
+						timeoutMs: 10_000,
+						pageSize: 50,
+						requiredSecrets: [],
+						minScore: 20,
+					},
+				},
+				fetchImpl as unknown as typeof fetch,
+			),
+		);
+
+		const scoreWarnings = result.warnings.filter((w) => w.includes("minScore"));
+		expect(scoreWarnings).toHaveLength(1);
+		expect(scoreWarnings[0]).toContain("dropped 1 item(s)");
+		expect(scoreWarnings[0]).toContain("minScore=20");
+	});
+
+	it("treats an item HN has not scored yet as score 0", async () => {
+		// The unranked newstories case this floor exists for: a submission so new
+		// that the payload carries no score at all must not slip through as if the
+		// filter did not apply to it.
+		const fetchImpl = vi.fn().mockImplementation(async (url: string) => {
+			if (url.includes("topstories.json")) return jsonResponse([10]);
+			if (url.includes("beststories.json")) return jsonResponse([]);
+			if (url.includes("newstories.json")) return jsonResponse([]);
+			if (url.includes("item/10.json")) {
+				return jsonResponse({ id: 10, type: "story", title: "Brand new", by: "eve", time: 1_757_000_400 });
+			}
+			throw new Error(`unexpected url ${url}`);
+		});
+		const collector = new HackerNewsCollector();
+		const result = await collector.collect(
+			makeCtx(
+				{
+					sourceConfig: {
+						enabled: true,
+						rateLimitPerMinute: 60,
+						timeoutMs: 10_000,
+						pageSize: 50,
+						requiredSecrets: [],
+						minScore: 20,
+					},
+				},
+				fetchImpl as unknown as typeof fetch,
+			),
+		);
+
+		expect(result.items).toHaveLength(0);
+	});
+
+	it("is disabled by minScore: 0, which must not behave like minScore: 1", async () => {
+		const fetchImpl = mockFetch();
+		const collector = new HackerNewsCollector();
+		const result = await collector.collect(
+			makeCtx(
+				{
+					sourceConfig: {
+						enabled: true,
+						rateLimitPerMinute: 60,
+						timeoutMs: 10_000,
+						pageSize: 50,
+						requiredSecrets: [],
+						minScore: 0,
+					},
+				},
+				fetchImpl as unknown as typeof fetch,
+			),
+		);
+
+		expect(result.items.map((i) => i.externalId).sort()).toEqual(["1", "2"]);
+		expect(result.warnings.some((w) => w.includes("minScore"))).toBe(false);
+	});
+});

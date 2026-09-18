@@ -92,6 +92,34 @@ export class HackerNewsCollector implements Collector {
 				}
 			});
 
+			/*
+			 * The score floor. A volume control, not a relevance filter.
+			 *
+			 * `newstories` is one of the three lists this collector reads, and it is
+			 * the only unranked one: it is every submission in arrival order, most
+			 * of which no one has voted on yet. The head of a ranked list is the
+			 * part worth having (see fetchList above); the head of an unranked one
+			 * is merely the most recent.
+			 *
+			 * Measured on 2026-09-18, which took 366 HN items into a 1311-item day:
+			 *
+			 *   score     items  candidates  reached the brief
+			 *   <20         320          15                  0
+			 *   20-49        14           3                  0
+			 *   50-99        15           3                  0
+			 *   100-299      15           5                  -
+			 *   >=300         2           1                  -
+			 *
+			 * The <20 bucket was 24% of the entire day's curation workload -- about
+			 * thirteen minutes of model time -- and contributed nothing to the
+			 * published brief. That is one day of evidence, which is why this is an
+			 * operator setting with the measurement written down rather than a
+			 * constant: set `minScore: 0` in sources.yaml to restore the old
+			 * behaviour, and the warnings below say exactly what a run dropped.
+			 */
+			const minScore = ctx.sourceConfig.minScore ?? 0;
+			let belowScoreFloor = 0;
+
 			for (const hnItem of fetched) {
 				if (!hnItem) continue;
 				seenIds.add(hnItem.id);
@@ -104,7 +132,22 @@ export class HackerNewsCollector implements Collector {
 					warnings.push(`dropped ${hnItem.id}: missing title (invalid payload)`);
 					continue;
 				}
+				// Absent score is treated as 0: an item HN has not scored yet is
+				// precisely the unranked case this floor exists for.
+				if (minScore > 0 && (hnItem.score ?? 0) < minScore) {
+					belowScoreFloor += 1;
+					continue;
+				}
 				items.push(toCollectedItem(hnItem, startedAt));
+			}
+
+			// One warning for the whole bucket, not one per item: at the shipped
+			// floor this drops a few hundred items a day, and a warning each would
+			// bury every other warning this collector has to report.
+			if (belowScoreFloor > 0) {
+				warnings.push(
+					`dropped ${belowScoreFloor} item(s): score below minScore=${minScore} (source-policy)`,
+				);
 			}
 		} catch (err) {
 			health = "FAILED";
