@@ -56,7 +56,16 @@ stages:
     # wind down: one turn exhausted its budget and still ran to the clock, so the
     # ceiling is not instantaneous.
     #
+    # Since 2026-09-18 this count is a backstop rather than the only bound: the
+    # work unit also closes once the turn has spent 60% of timeoutMs (180s), so a
+    # slow turn stops at a tool boundary instead of being aborted by the timeout.
+    # On 2026-09-18, 24 of 26 units closed on the count at p50 125s -- 42% of the
+    # clock -- and two still ran past it; the clock now catches those two.
+    #
     # Raise it only with telemetry showing p90 well under 3s/decision.
+    # 2026-09-18 measured p50 2.50, p90 3.96, max 6.00 -- p90 does not meet that
+    # bar, so the count stays at 50 even though the soft deadline now covers the
+    # slow tail.
     maxDecisionsPerTurn: 50
   EDITOR:
     timeoutMs: 300000

@@ -5,7 +5,11 @@ import type { ModelSpec } from "../runtime/model-config.ts";
 import { InvalidAgentOutputError, ToolLoopError } from "../runtime/error-classifier.ts";
 import { loadProjectSkills } from "../runtime/pi-runtime.ts";
 import { isTurnAbandoned, TurnTimeoutError, withTurnTimeout } from "../runtime/turn-timeout.ts";
-import { ProgressYieldError, TurnBudget } from "../runtime/progress-yield.ts";
+import {
+	DEFAULT_SOFT_DEADLINE_FRACTION,
+	ProgressYieldError,
+	TurnBudget,
+} from "../runtime/progress-yield.ts";
 import {
 	createSkillReferenceTool,
 	loadSkillBundle,
@@ -92,9 +96,23 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 	// can then make no further progress, the turn ends, and the attempt fails with
 	// the injected error -- exactly as a real provider outage would end it.
 	let faultError: Error | undefined;
+	/*
+	 * The work unit is bounded by a decision count AND by a fraction of the turn
+	 * clock. Either alone is wrong at one end of the observed rate spread: the
+	 * count runs past the clock when decisions are slow, and leaves most of the
+	 * clock unused when they are fast.
+	 *
+	 * The soft deadline is derived from `timeoutMs` rather than configured beside
+	 * it so the two cannot be tuned into disagreement -- a soft deadline longer
+	 * than the hard timeout would be a budget that never fires.
+	 */
 	const turnBudget =
 		opts.maxDecisionsPerTurn !== undefined && opts.maxDecisionsPerTurn > 0
-			? new TurnBudget(opts.maxDecisionsPerTurn)
+			? new TurnBudget(opts.maxDecisionsPerTurn, {
+					...(opts.timeoutMs !== undefined && opts.timeoutMs > 0
+						? { softDeadlineMs: Math.floor(opts.timeoutMs * DEFAULT_SOFT_DEADLINE_FRACTION) }
+						: {}),
+				})
 			: undefined;
 	const ctx: CuratorContext = {
 		date: opts.date,
@@ -265,6 +283,7 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 					decidedAfter,
 					totalItems,
 					reason: "WORK_UNIT_COMPLETE",
+					...(turnBudget.closedBy ? { closedBy: turnBudget.closedBy } : {}),
 				});
 			}
 		};

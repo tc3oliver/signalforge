@@ -215,6 +215,8 @@ export type RunStageOptions<T> = {
 		decidedAfter: number;
 		totalItems: number;
 		reason: string;
+		/** Which bound closed the work unit, when one did. See ProgressYieldInfo. */
+		closedBy?: "COUNT" | "TIME";
 		durationMs: number;
 		/** Measured, not estimated. Null when the turn decided nothing. */
 		secondsPerDecision: number | null;
@@ -355,6 +357,7 @@ export async function runStageWithFallback<T>(opts: RunStageOptions<T>): Promise
 						decidedAfter: err.info.decidedAfter,
 						totalItems: err.info.totalItems,
 						reason: err.info.reason,
+						...(err.info.closedBy ? { closedBy: err.info.closedBy } : {}),
 						durationMs,
 						secondsPerDecision: secondsPerDecision(durationMs, err.decidedThisTurn),
 					});

@@ -615,6 +615,7 @@ async function runPipelineBody(
 						decidedThisTurn: info.decidedThisTurn,
 						decided: `${info.decidedAfter}/${info.totalItems}`,
 						reason: info.reason,
+						...(info.closedBy ? { closedBy: info.closedBy } : {}),
 						durationMs: info.durationMs,
 						secondsPerDecision: info.secondsPerDecision,
 						// The Pi SDK reports only estimated context-window occupancy, not

@@ -34,6 +34,17 @@ export interface ProgressYieldInfo {
 	totalItems: number;
 	/** Why the turn stopped: the work-unit ceiling, or the turn clock. */
 	reason: "WORK_UNIT_COMPLETE" | "TURN_TIMEOUT_WITH_PROGRESS";
+	/**
+	 * Which bound closed a WORK_UNIT_COMPLETE: the decision count or the soft
+	 * time budget. Absent on a TURN_TIMEOUT_WITH_PROGRESS, which by definition
+	 * was closed by neither.
+	 *
+	 * Recorded because the two are tuned against each other and a yield that
+	 * does not say which one fired makes that untunable: a day where every unit
+	 * closes on TIME wants a larger count, and one where every unit closes on
+	 * COUNT well inside the clock wants a larger unit.
+	 */
+	closedBy?: "COUNT" | "TIME";
 }
 
 /**
@@ -65,30 +76,92 @@ export function isProgressYield(err: unknown): err is ProgressYieldError {
 }
 
 /**
- * The per-turn work ceiling.
+ * How much of the turn clock a work unit may occupy before it stops asking for
+ * more work. Expressed as a fraction of `timeoutMs` rather than a duration so
+ * the two cannot drift apart when the timeout is retuned.
  *
- * Deliberately an explicit counter rather than "however much fits before the
- * clock runs out". Using the timeout as the yield mechanism would mean every
- * normal turn ends by being aborted mid-flight, which is both slower (the abort
- * grace period, every turn) and less safe: a turn killed at an arbitrary point
- * can have a `record_item_decisions` in flight, whereas a turn that stops
- * because the tools stopped offering it work ends at a tool boundary with the
- * durable state consistent by construction.
+ * 0.6 leaves 40% of the clock for the model to wind down after the tools stop
+ * offering work -- which is not instantaneous, and is why a unit sized to fit
+ * "on average" still ran to the clock on 2026-09-16.
+ */
+export const DEFAULT_SOFT_DEADLINE_FRACTION = 0.6;
+
+export interface TurnBudgetOptions {
+	/**
+	 * Wall-clock budget for the unit, from construction. Once elapsed, the budget
+	 * reports exhausted even with decisions left, so the unit closes at the next
+	 * tool boundary instead of being aborted mid-flight by the turn timeout.
+	 */
+	softDeadlineMs?: number;
+	/** Injectable clock; defaults to `Date.now`. */
+	now?: () => number;
+}
+
+/**
+ * The per-turn work ceiling: a decision count, and optionally a soft time budget.
+ *
+ * Deliberately NOT the turn timeout. Using the timeout as the yield mechanism
+ * would mean every normal turn ends by being aborted mid-flight, which is both
+ * slower (the abort grace period, every turn) and less safe: a turn killed at an
+ * arbitrary point can have a `record_item_decisions` in flight, whereas a turn
+ * that stops because the tools stopped offering it work ends at a tool boundary
+ * with the durable state consistent by construction.
+ *
+ * The soft deadline preserves exactly that property. It does not abort anything;
+ * it only makes `exhausted` true early, and the yield still happens where it
+ * always did -- when `list_unseen_items` declines to hand out more work.
+ *
+ * It exists because no fixed count can hold a time budget across the observed
+ * rate spread. On 2026-09-18 the curator ran 2.50 s/decision at p50 and 6.00 at
+ * the maximum: a unit of 50 took 125s at p50 (42% of a 300s clock, so 24 of 26
+ * units left more than half the clock unused) and still ran past it twice. The
+ * count now bounds the fast case and the clock bounds the slow one.
  */
 export class TurnBudget {
 	readonly limit: number;
+	readonly softDeadlineMs: number | undefined;
+	readonly #now: () => number;
+	readonly #startedAt: number;
 	#spent = 0;
 
-	constructor(limit: number) {
+	constructor(limit: number, options: TurnBudgetOptions = {}) {
 		this.limit = limit;
+		this.softDeadlineMs = options.softDeadlineMs;
+		this.#now = options.now ?? (() => Date.now());
+		this.#startedAt = this.#now();
 	}
 
 	get spent(): number {
 		return this.#spent;
 	}
 
-	get exhausted(): boolean {
+	get elapsedMs(): number {
+		return this.#now() - this.#startedAt;
+	}
+
+	/** True once the count is spent. Kept separate so a yield can say which bound fired. */
+	get countExhausted(): boolean {
 		return this.#spent >= this.limit;
+	}
+
+	/** True once the soft deadline has passed. Always false when none is configured. */
+	get timeExhausted(): boolean {
+		return this.softDeadlineMs !== undefined && this.elapsedMs >= this.softDeadlineMs;
+	}
+
+	get exhausted(): boolean {
+		return this.countExhausted || this.timeExhausted;
+	}
+
+	/**
+	 * Which bound closed the unit, or undefined if neither has. The count is
+	 * reported in preference to the clock when both are spent: it is the bound
+	 * the operator set directly.
+	 */
+	get closedBy(): "COUNT" | "TIME" | undefined {
+		if (this.countExhausted) return "COUNT";
+		if (this.timeExhausted) return "TIME";
+		return undefined;
 	}
 
 	get remaining(): number {

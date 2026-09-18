@@ -59,9 +59,15 @@ export interface StageTuning {
  * grace period and re-establishes context in a fresh session, so the timeout
  * path is more expensive per decision than the yield path, not less.
  *
- * The real fix is a time-aware budget -- yield at elapsed >= 60% of timeoutMs,
- * with the count as a backstop -- because no fixed count can hold a time budget
- * across a 3x rate spread. That is a backlog item, not this change.
+ * Since 2026-09-18 the count is no longer the only bound: `TurnBudget` also
+ * carries a soft deadline at DEFAULT_SOFT_DEADLINE_FRACTION of `timeoutMs`
+ * (180s of the 300s clock), because no fixed count can hold a time budget across
+ * a 3x rate spread. The count bounds the fast case, the clock bounds the slow
+ * one, and both close the unit at a tool boundary rather than by abort.
+ *
+ * That makes the count safe to raise, but does not by itself justify raising it:
+ * the gate in `config/agent.yaml` is p90 well under 3 s/decision, and 2026-09-18
+ * measured p90 3.96. Left at 50 until the telemetry meets the stated bar.
  */
 const CURATOR_WORK_UNIT = 50;
 
