@@ -44,6 +44,26 @@ function formatIssuePath(path: ReadonlyArray<PropertyKey>): string {
 }
 
 /**
+ * The ids a rejected reference could legally have named, as a bounded list.
+ *
+ * An error that says an id is wrong without saying what is right leaves the
+ * model guessing, and it guesses by resubmitting a near-miss. On 2026-09-18 that
+ * cost three rejected submissions and about four minutes at the end of a
+ * 64-minute curation -- each one a whole model turn spent rediscovering a set
+ * this validator already had in hand.
+ *
+ * Bounded because the correction is fed back verbatim into a model turn: a
+ * ledger of several hundred ids would crowd out the instruction it is attached
+ * to. Sorted so the same rejection reads the same way twice.
+ */
+function listValidIds(ids: Iterable<string>, limit = 40): string {
+	const all = [...ids].sort();
+	if (all.length === 0) return "none (the ledger is empty)";
+	const shown = all.slice(0, limit).join(", ");
+	return all.length > limit ? `${shown} (and ${all.length - limit} more)` : shown;
+}
+
+/**
  * Gate between the curator and the editor. Every failure string is fed back to
  * the model verbatim as a corrective retry, so each one names what is wrong and
  * what to do about it.
@@ -95,7 +115,9 @@ export function validateMaterials(
 
 		if (!ctx.knownStoryIds.has(story.storyId)) {
 			errors.push(
-				`Unknown storyId in ${where}: it is not in the story ledger. Upsert the story before citing it in materials.`,
+				`Unknown storyId in ${where}: it is not in the story ledger. ` +
+					`Upsert the story before citing it in materials, or cite one of the ` +
+					`ids already in the ledger: ${listValidIds(ctx.knownStoryIds)}.`,
 			);
 		}
 
@@ -133,7 +155,9 @@ export function validateMaterials(
 		const missing = signal.storyIds.filter((id) => !seenStoryIds.has(id));
 		if (missing.length > 0) {
 			errors.push(
-				`Emerging signal "${signal.label}" references storyIds not present in the materials: ${missing.join(", ")}. Reference only stories you submitted, or drop them from the signal.`,
+				`Emerging signal "${signal.label}" references storyIds not present in the materials: ${missing.join(", ")}. ` +
+					`Reference only stories you submitted, or drop them from the signal. ` +
+					`The stories in this submission are: ${listValidIds(seenStoryIds)}.`,
 			);
 		}
 	}

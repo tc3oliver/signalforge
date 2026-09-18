@@ -123,8 +123,18 @@ export function validateBrief(input: unknown, ctx: BriefValidationContext): Vali
 
 		const material = materialById.get(story.storyId);
 		if (!material) {
+			/*
+			 * The valid set is named for the same reason as in the materials
+			 * validator: a correction fed back verbatim to a model has to carry the
+			 * answer, or the model spends a whole turn guessing at it. The editor
+			 * picks from a curated set that is small by construction (the curator
+			 * submits tens of stories, not hundreds), so it is listed in full.
+			 */
+			const validIds = [...materialById.keys()].sort().join(", ");
 			errors.push(
-				`Unknown storyId in ${where}: it is not in today's curated materials. Write only about stories the curator selected; do not invent one.`,
+				`Unknown storyId in ${where}: it is not in today's curated materials. ` +
+					`Write only about stories the curator selected; do not invent one. ` +
+					`Today's curated storyIds are: ${validIds}.`,
 			);
 		}
 
