@@ -235,3 +235,45 @@ describe("submit_materials rejections", () => {
 		expect((await repo.processedItemIds(DATE)).size).toBe(9);
 	});
 });
+
+describe("upsert rejection telemetry", () => {
+	it("records a single upsert's rejection family, the same way a batch entry's is recorded", async () => {
+		const manifest = makeManifest({ groups: 1, perGroup: 1, date: DATE });
+		const repo = new JsonStoryRepository(join(root, "ledger"));
+		const calls: Array<{ name: string; summary: Record<string, unknown> }> = [];
+		const ctx: CuratorContext = {
+			date: DATE,
+			manifest,
+			repo,
+			now: () => new Date("2026-09-13T12:00:00Z"),
+			onToolCall: (name, summary) => calls.push({ name, summary }),
+		};
+		const single = createCuratorTools(ctx).find((t) => t.name === "upsert_story")!;
+		const id = manifest.items[0]!.id;
+		await expect(
+			single.execute(
+				"call-1",
+				{
+					storyId: "no-history-story",
+					canonicalTitle: "A story with no earlier entry",
+					sourceItemIds: [id],
+					primarySourceIds: [id],
+					status: "OPEN",
+					changeType: "UPDATE",
+					relevance: 0.5,
+					novelty: 0.5,
+					importance: 0.5,
+					confidence: 0.5,
+					reason: "continues something",
+				} as never,
+				undefined,
+				undefined,
+				{} as never,
+			),
+		).rejects.toThrow(/no earlier ledger entry/);
+		expect(calls.at(-1)).toEqual({
+			name: "upsert_story",
+			summary: { rejected: 1, rejectedBy: { CHANGE_TYPE_WITHOUT_HISTORY: 1 } },
+		});
+	});
+});

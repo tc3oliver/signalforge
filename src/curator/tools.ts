@@ -585,8 +585,23 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		promptSnippet: "upsert_story: create or merge one story cluster (history checked for you)",
 		parameters: storyPayload,
 		execute: async (_id, params) => {
-			const result = await upsertOne(params as Record<string, unknown>);
-			return ok({ story: result.receipt, ...(result.history ? { history: result.history } : {}), ...(result.note ? { note: result.note } : {}) });
+			/*
+			 * A rejection here is recorded by the same family as a batch entry's.
+			 * Without it the single path's failures are invisible while the batch
+			 * path's are counted, and "why does the model fall back to single
+			 * upserts?" cannot be answered from a trace: the obvious hypothesis
+			 * is that batches feel less reliable, and that is only testable if
+			 * both paths report refusals the same way.
+			 */
+			try {
+				const result = await upsertOne(params as Record<string, unknown>);
+				return ok({ story: result.receipt, ...(result.history ? { history: result.history } : {}), ...(result.note ? { note: result.note } : {}) });
+			} catch (err) {
+				if (err instanceof ToolRejection) {
+					note("upsert_story", { rejected: 1, rejectedBy: { [upsertRejectionKind(err.message)]: 1 } });
+				}
+				throw err;
+			}
 		},
 	});
 
@@ -597,7 +612,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 	 * and re-sending the good ones would only cost tokens. The model is told
 	 * exactly which failed and why, and resends those alone.
 	 */
-const upsertStories = defineTool({
+	const upsertStories = defineTool({
 		name: "upsert_stories",
 		label: "Upsert stories",
 		description:
