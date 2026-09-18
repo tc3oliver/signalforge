@@ -642,6 +642,18 @@ async function runPipelineBody(
 						batchesFailed: outcome.batchesFailed,
 						degraded: outcome.degraded,
 						durationMs: outcome.durationMs,
+						// The only authoritative token figure in the whole run: the agent
+						// stages go through the Pi runtime, which reports an estimate of
+						// context occupancy and nothing billable. Omitted rather than
+						// zeroed when the provider did not say, so "not told" stays
+						// distinguishable from a measured nothing.
+						...(outcome.usage
+							? {
+									inputTokens: outcome.usage.inputTokens,
+									outputTokens: outcome.usage.outputTokens,
+									usageFromBatches: outcome.usage.reportedBy,
+								}
+							: {}),
 						...triageTally(outcome.results),
 					});
 				}

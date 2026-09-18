@@ -64,6 +64,27 @@ export interface ModelTriageDeps {
 	log?: (msg: string, fields?: Record<string, unknown>) => void;
 }
 
+/**
+ * Token usage, as reported by the provider. Summed across the batches that
+ * answered.
+ *
+ * Recorded because this is the one stage of the run where an authoritative
+ * number exists. The Curator and Editor go through the Pi runtime, which
+ * exposes only an ESTIMATE of context-window occupancy -- so `model-router.ts`
+ * records `tokenUsage: "unavailable"` rather than store a guess next to
+ * measured values. Here the provider states it, so it is kept.
+ *
+ * Absent when no batch reported usage: a provider that does not return the
+ * field leaves this undefined rather than zero, because zero is a measurement
+ * and "not told" is not.
+ */
+export interface ModelTriageUsage {
+	inputTokens: number;
+	outputTokens: number;
+	/** Batches whose response carried a usage block. */
+	reportedBy: number;
+}
+
 export interface ModelTriageOutcome {
 	results: TriageResult[];
 	/** Batches that returned a usable response. */
@@ -73,6 +94,8 @@ export interface ModelTriageOutcome {
 	/** Items that came back UNCERTAIN because something went wrong, not because the model said so. */
 	degraded: number;
 	durationMs: number;
+	/** Provider-reported token usage, or undefined when no batch reported any. */
+	usage?: ModelTriageUsage;
 }
 
 /**
@@ -154,11 +177,16 @@ function chunk<T>(items: readonly T[], size: number): T[][] {
 	return out;
 }
 
+interface BatchOutcome {
+	results: TriageResult[];
+	usage?: { inputTokens: number; outputTokens: number };
+}
+
 async function classifyBatch(
 	batch: readonly TriageInput[],
 	deps: ModelTriageDeps,
 	signal: AbortSignal,
-): Promise<TriageResult[]> {
+): Promise<BatchOutcome> {
 	const { config, apiKey, interests } = deps;
 	const fetchImpl = deps.fetchImpl ?? fetch;
 
@@ -193,7 +221,10 @@ async function classifyBatch(
 		throw new Error(`HTTP ${res.status}`);
 	}
 
-	const payload = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+	const payload = (await res.json()) as {
+		choices?: Array<{ message?: { content?: string } }>;
+		usage?: { prompt_tokens?: number; completion_tokens?: number };
+	};
 	const content = payload.choices?.[0]?.message?.content;
 	if (typeof content !== "string" || content.trim() === "") {
 		throw new Error("empty completion");
@@ -202,8 +233,15 @@ async function classifyBatch(
 	const parsed = ModelResponse.safeParse(JSON.parse(content));
 	if (!parsed.success) throw new Error("response did not match the expected shape");
 
+	const prompt = payload.usage?.prompt_tokens;
+	const completion = payload.usage?.completion_tokens;
+	const usage =
+		typeof prompt === "number" && typeof completion === "number"
+			? { inputTokens: prompt, outputTokens: completion }
+			: undefined;
+
 	const byId = new Map(parsed.data.verdicts.map((v) => [v.itemId, v] as const));
-	return batch.map((item) => {
+	const results = batch.map((item) => {
 		const verdict = byId.get(item.itemId);
 		// An item the model skipped is a gap in the measurement, not a NORMAL.
 		if (!verdict) return degradedResult(item, "model returned no verdict for this item");
@@ -219,6 +257,8 @@ async function classifyBatch(
 			ruleId: "model-classifier",
 		};
 	});
+
+	return usage ? { results, usage } : { results };
 }
 
 /**
@@ -243,6 +283,9 @@ export async function classifyWithModel(
 	const results = new Map<string, TriageResult>();
 	let batchesOk = 0;
 	let batchesFailed = 0;
+	let inputTokens = 0;
+	let outputTokens = 0;
+	let usageReportedBy = 0;
 
 	// One controller for the whole pass: when the wall clock runs out, every
 	// request still in flight is abandoned at once rather than each waiting out
@@ -259,8 +302,12 @@ export async function classifyWithModel(
 				if (!batch) return;
 
 				try {
-					for (const r of await classifyBatch(batch, deps, passController.signal)) {
-						results.set(r.itemId, r);
+					const outcome = await classifyBatch(batch, deps, passController.signal);
+					for (const r of outcome.results) results.set(r.itemId, r);
+					if (outcome.usage) {
+						inputTokens += outcome.usage.inputTokens;
+						outputTokens += outcome.usage.outputTokens;
+						usageReportedBy += 1;
 					}
 					batchesOk += 1;
 				} catch (err) {
@@ -291,5 +338,8 @@ export async function classifyWithModel(
 		batchesFailed,
 		degraded: ordered.filter((r) => r.ruleId === "model-unavailable").length,
 		durationMs: now() - startedAt,
+		...(usageReportedBy > 0
+			? { usage: { inputTokens, outputTokens, reportedBy: usageReportedBy } }
+			: {}),
 	};
 }

@@ -108,7 +108,15 @@ triageModel:
   batchSize: 40
   concurrency: 8
   timeoutMs: 60000
-  # The pipeline must not wait on a measurement. A 1311-item day is ~33 batches;
-  # at 8 in flight that is ~5 rounds, so 4 minutes is generous even when slow.
-  maxWallClockMs: 240000
+  # A ceiling on a pass that cannot delay the run: it is started before curation
+  # and joined at the end, so it overlaps a stage that takes tens of minutes and
+  # a longer budget here costs nothing.
+  #
+  # Measured 2026-09-18 against gpt-5.6-terra: one 40-item batch took 27s and
+  # reported 6872 input + 1738 output tokens, i.e. ~215 tokens per item. A
+  # 1311-item day is ~33 batches; at 8 in flight that is ~5 rounds, ~135s, and
+  # ~282k tokens. 240s left only a 1.8x margin on a pass whose whole output is
+  # lost if it is cut off, and the margin bought nothing because nothing waits
+  # on it -- so it is 15 minutes, still far inside the stage it runs beside.
+  maxWallClockMs: 900000
   rulesVersion: model-v1

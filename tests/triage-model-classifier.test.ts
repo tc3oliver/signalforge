@@ -186,3 +186,73 @@ describe("classifyWithModel", () => {
 		expect(peak).toBe(2);
 	});
 });
+
+/*
+ * The Curator and Editor run through the Pi runtime, which reports only an
+ * estimate of context-window occupancy -- so `model-router.ts` deliberately
+ * records `tokenUsage: "unavailable"` rather than file a guess beside measured
+ * values. This pass talks to the provider directly and is told, so this is the
+ * one place in a run where a real number exists. These tests keep it real:
+ * summed when reported, and absent -- not zero -- when it is not.
+ */
+describe("provider-reported token usage", () => {
+	function completionWithUsage(ids: string[], prompt: number, completion: number): Response {
+		return new Response(
+			JSON.stringify({
+				choices: [
+					{
+						message: {
+							content: JSON.stringify({
+								verdicts: ids.map((id) => ({ itemId: id, category: "NORMAL", reason: "ok" })),
+							}),
+						},
+					},
+				],
+				usage: { prompt_tokens: prompt, completion_tokens: completion },
+			}),
+			{ status: 200 },
+		);
+	}
+
+	it("sums usage across the batches that reported it", async () => {
+		const fetchImpl = vi.fn(async (_url: string, init?: RequestInit) => {
+			const body = JSON.parse(String(init?.body)) as { messages: Array<{ content: string }> };
+			const ids = [...String(body.messages[1]?.content).matchAll(/itemId: (\S+)/g)].map((m) => String(m[1]));
+			return completionWithUsage(ids, 1000, 200);
+		}) as unknown as typeof fetch;
+
+		// 4 items at batchSize 2 -> 2 batches.
+		const outcome = await classifyWithModel(items(4), deps(fetchImpl));
+
+		expect(outcome.usage).toEqual({ inputTokens: 2000, outputTokens: 400, reportedBy: 2 });
+	});
+
+	it("reports no usage at all when the provider does not return any", async () => {
+		// Undefined, not zero: a provider that never said is not a run that used
+		// nothing, and a zero here would read as a measurement in every report.
+		const fetchImpl = vi.fn(async () =>
+			completion([{ itemId: "item-0", category: "NORMAL", reason: "ok" }]),
+		) as unknown as typeof fetch;
+
+		const outcome = await classifyWithModel(items(1), deps(fetchImpl));
+
+		expect(outcome.usage).toBeUndefined();
+	});
+
+	it("counts only the batches that answered", async () => {
+		let call = 0;
+		const fetchImpl = vi.fn(async (_url: string, init?: RequestInit) => {
+			call += 1;
+			if (call === 1) return new Response("down", { status: 503 });
+			const body = JSON.parse(String(init?.body)) as { messages: Array<{ content: string }> };
+			const ids = [...String(body.messages[1]?.content).matchAll(/itemId: (\S+)/g)].map((m) => String(m[1]));
+			return completionWithUsage(ids, 500, 100);
+		}) as unknown as typeof fetch;
+
+		const outcome = await classifyWithModel(items(4), deps(fetchImpl));
+
+		expect(outcome.usage?.reportedBy).toBe(1);
+		expect(outcome.usage?.inputTokens).toBe(500);
+		expect(outcome.degraded).toBe(2);
+	});
+});
