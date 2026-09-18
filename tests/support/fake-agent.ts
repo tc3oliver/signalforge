@@ -194,9 +194,16 @@ export function makeManifest(opts: SyntheticManifestOptions): DailyManifest {
 	return { date: opts.date, generatedAt: `${opts.date}T00:00:00.000Z`, items, facts };
 }
 
-/** The grouping the scripted curator uses: `metadata.group`, else the item id. */
-export function groupOf(item: { id: string; metadata: Record<string, unknown> }): string {
-	const g = item.metadata["group"];
+/**
+ * The grouping the scripted curator uses: the `gNN` token that opens every
+ * synthetic title, else the item id. Read from the title rather than from
+ * `metadata.group` because the broad-scan view no longer carries metadata --
+ * the scripted curator sees exactly what a real one sees.
+ */
+export function groupOf(item: { id: string; title?: string; metadata?: Record<string, unknown> }): string {
+	const fromTitle = /^(g\d+)\b/.exec(item.title ?? "")?.[1];
+	if (fromTitle) return fromTitle;
+	const g = item.metadata?.["group"];
 	return typeof g === "string" ? g : item.id;
 }
 
@@ -231,7 +238,7 @@ export interface CuratorScriptOptions {
 }
 
 type UnseenPage = {
-	items: Array<{ id: string; metadata: Record<string, unknown> }>;
+	items: Array<{ id: string; title: string }>;
 	returned: number;
 	remainingAfterPage: number;
 	nextCursor: string | null;

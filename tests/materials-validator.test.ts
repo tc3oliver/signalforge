@@ -94,7 +94,7 @@ describe("validateMaterials", () => {
 		expect(result.ok).toBe(false);
 		expect(
 			result.errors.some(
-				(e) => e.includes("1 of 2 items processed, 1 still unseen") && e.includes("item-2"),
+				(e) => e.includes("1 of 2 offered items decided, 1 still unseen") && e.includes("item-2"),
 			),
 		).toBe(true);
 	});
@@ -179,7 +179,7 @@ describe("validateMaterials", () => {
 		expect(result.ok).toBe(false);
 		expect(
 			result.errors.some(
-				(e) => e.includes("1 of 2 items processed") && e.includes("item-2"),
+				(e) => e.includes("1 of 2 offered items decided") && e.includes("item-2"),
 			),
 		).toBe(true);
 	});

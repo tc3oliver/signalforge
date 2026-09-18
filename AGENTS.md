@@ -44,9 +44,10 @@ either that trust or the machine it runs on.
   parse JSON out of an assistant message.
 - Never relax a validator to make a live run pass. A rejected submission is a
   result; record it and let the model correct itself.
-- `submit_materials` enforcing 100% scan coverage is the core guarantee of the whole
-  system.
-  It is not negotiable and has no override flag.
+- `submit_materials` enforcing that every manifest item is accounted for -- a
+  Curator decision, or a routed screener DROP from the trusted version -- and that
+  every cited source has a Curator decision, is the core guarantee of the whole
+  system. It is not negotiable and has no override flag.
 
 ## Scope
 

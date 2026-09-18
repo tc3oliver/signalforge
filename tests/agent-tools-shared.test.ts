@@ -156,7 +156,7 @@ describe("shared tool scaffolding — the model-visible surface is unchanged", (
 		expect(e.label).toBe("Find history");
 		expect(c.promptSnippet).toBe("find_history: look up this story on earlier days");
 		expect(e.promptSnippet).toBe("find_history: what this story looked like on earlier days");
-		expect(c.description).toContain("Call this before you decide a changeType");
+		expect(c.description).toContain("upsert_story and upsert_stories run this check for you");
 		expect(e.description).toContain("describes an actual delta");
 	});
 
@@ -241,9 +241,11 @@ describe("shared get_structured_facts behaviour", () => {
 });
 
 describe("shared helpers", () => {
-	it("ok() wraps a payload as one pretty-printed text block", () => {
+	it("ok() wraps a payload as one compact JSON text block", () => {
+		// Compact, not pretty-printed: every tool result is re-sent on every later
+		// model turn of the session, and indentation is paid for each time.
 		expect(ok({ a: 1 })).toEqual({
-			content: [{ type: "text", text: '{\n  "a": 1\n}' }],
+			content: [{ type: "text", text: '{"a":1}' }],
 			details: {},
 		});
 	});
@@ -259,5 +261,49 @@ describe("shared helpers", () => {
 		expect(rejection.message).toContain("storyId: ");
 		expect(rejection.message).toContain("count: ");
 		expect(rejection.message).toContain("; ");
+	});
+});
+
+describe("upsertRejectionKind", () => {
+	it("names the family a batch rejection belongs to, so a trace says why without a replay", async () => {
+		const { upsertRejectionKind } = await import("../src/curator/tools.ts");
+		expect(upsertRejectionKind('story "x" is UPDATE but no earlier ledger entry matches its id or title.')).toBe(
+			"CHANGE_TYPE_WITHOUT_HISTORY",
+		);
+		expect(upsertRejectionKind("sourceItemIds contains id(s) not in today's manifest: a")).toBe("UNKNOWN_ITEM_ID");
+		expect(upsertRejectionKind("primarySourceIds must be a subset of sourceItemIds; these are missing: a")).toBe(
+			"PRIMARY_NOT_IN_SOURCES",
+		);
+		expect(upsertRejectionKind("factRefs contains unknown fact id(s): f")).toBe("UNKNOWN_FACT_REF");
+		expect(upsertRejectionKind("topicIds contains id(s) that are not in the reader profile: t")).toBe("UNKNOWN_TOPIC_ID");
+		expect(upsertRejectionKind("upsert_story payload rejected: canonicalTitle is required")).toBe("SCHEMA");
+		expect(upsertRejectionKind("something else entirely")).toBe("OTHER");
+	});
+});
+
+describe("measureToolResults", () => {
+	it("reports the characters each result adds to the session without changing it", async () => {
+		const { measureToolResults, ok, ToolRejection } = await import("../src/agent-tools/shared.ts");
+		const seen: Array<{ tool: string; chars: number; rejected: boolean }> = [];
+		const [good, bad] = measureToolResults(
+			[
+				{ name: "good", execute: async () => ok({ a: 1 }) },
+				{
+					name: "bad",
+					execute: async () => {
+						throw new ToolRejection("nope");
+					},
+				},
+			] as never,
+			(info) => seen.push(info),
+		) as unknown as Array<{ name: string; execute: () => Promise<unknown> }>;
+
+		const result = await good!.execute();
+		expect(result).toEqual(ok({ a: 1 }));
+		await expect(bad!.execute()).rejects.toThrow("nope");
+		expect(seen).toEqual([
+			{ tool: "good", chars: JSON.stringify({ a: 1 }).length, rejected: false },
+			{ tool: "bad", chars: 4, rejected: true },
+		]);
 	});
 });

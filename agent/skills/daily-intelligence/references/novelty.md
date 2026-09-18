@@ -7,7 +7,8 @@
 它**不是**「今天有沒有新文章」。新文章每天都有。
 一件事被重新報導二十次,知識沒有增加,novelty 就是低的。
 
-先 `find_history`,拿到這個 story 昨天以前的狀態,再問:
+先拿到這個 story 昨天以前的狀態(`upsert_stories` / `upsert_story` 會替你查,
+命中隨回覆的 `history` 回來;要先讀舊 entry 就自己呼叫 `find_history`),再問:
 **把今天的 item 拿掉,我對這件事的理解會少掉什麼?**
 
 - 少掉一個具體事實 → 高 novelty。
@@ -17,15 +18,19 @@
 
 ## 先決條件:沒查過歷史就不能給 changeType
 
-`changeType` 是**今天相對於 ledger** 的判斷,所以它在邏輯上依賴 `find_history` 的結果。
+`changeType` 是**今天相對於 ledger** 的判斷,所以它在邏輯上依賴歷史查詢的結果。
 沒有查過歷史就填的 changeType 是猜的,而猜錯會污染明天的判斷 —— 明天的 Curator
 會把你今天的錯誤當成事實。
 
-流程是固定的,不能顛倒:
+查歷史的動作由工具替你做:每一次 `upsert_stories` / `upsert_story` 都會先用 storyId、
+再用標題去查昨天以前的 ledger,把命中放進回覆的 `history`。所以流程是:
 
 ```
-find_history(storyId)  →  看結果  →  決定 changeType  →  upsert_story
+upsert(changeType 你的判斷)  →  讀回覆的 history  →  有命中且是同一條線?→  用舊 storyId 重新 upsert
 ```
+
+工具同時執行下面第一條規則:非 `NEW` 卻查無歷史,直接拒絕。
+拿不準、想先讀舊 entry 再決定的,呼叫 `find_history`。
 
 ### 兩條硬規則
 
@@ -46,17 +51,18 @@ find_history(storyId)  →  看結果  →  決定 changeType  →  upsert_story
 
 ### 批次作業時特別容易錯
 
-如果你先把一整批 story 都 `upsert_story` 建好、之後才回頭補 changeType,
-你幾乎一定會漏掉 `find_history`。**一則一則做完整循環**,
-不要把「建 story」和「查歷史」拆成兩個階段。
+`upsert_stories` 一次寫一整頁的 story,回覆裡每一則各自帶自己的 `history`。
+**一則一則做完整循環**是指:對回覆裡的**每一則**都讀它的 history 再定案,
+不要掃過去只看第一則。有命中卻標 `NEW` 的,當場用舊 storyId 重送那一則;
+不要把「建 story」和「看歷史」拆成兩個階段,更不要留到最後回頭補。
 
 ---
 
 ## 八種 changeType
 
 ### `NEW`
-這個 story 之前不存在於 ledger。`find_history` 沒有命中,
-而且你已經用另一種拼法再查過一次確認不是漏找。
+這個 story 之前不存在於 ledger。upsert 回覆沒有 `history`
+(工具已用 storyId 和標題各查過一次),或你自己 `find_history` 確認過。
 
 > 例:某公司今天首次公告將於 Q4 開放某 API。ledger 裡沒有任何相關 story。
 

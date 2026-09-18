@@ -339,8 +339,13 @@ describe("the observation layer stays off the decision path", () => {
 	const SKIP_DIRS = new Set(["node_modules", "dist", "out", ".turbo"]);
 	const SOURCE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 
-	/** The one file allowed to consume it: the read-only reporting command. */
-	const ALLOWED = new Set(["cli/run-observation.ts"]);
+	/**
+	 * The files allowed to consume it: the read-only reporting command, and the
+	 * screening backtest command, which prints the same report for the day it
+	 * just replayed. Neither is on the decision path -- nothing under
+	 * src/pipeline, src/curator or src/editor may reach this layer.
+	 */
+	const ALLOWED = new Set(["cli/run-observation.ts", "cli/run-screening.ts"]);
 
 	async function walk(dir: string): Promise<string[]> {
 		let entries;

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { AgentAttempt, FailureClass, Stage } from "../schemas/run.ts";
+import type { AgentAttempt, FailureClass, Stage, TokenUsage } from "../schemas/run.ts";
 import { classifyError } from "./error-classifier.ts";
 import { FaultInjector, getFaultInjectionRecord } from "./fault-injection.ts";
 import { type ModelSpec, modelKey } from "./model-config.ts";
@@ -193,6 +193,13 @@ export type RunStageOptions<T> = {
 		 * is off, which is the default.
 		 */
 		checkFault: (processedItems: number) => void;
+		/**
+		 * Hands the attempt's provider-reported token usage to the router, so it
+		 * lands on the attempt record whether the attempt succeeded, yielded or
+		 * failed. Called by the stage from its driver's `getUsage()` before the
+		 * driver is disposed; a stage whose driver reports nothing never calls it.
+		 */
+		reportUsage: (usage: TokenUsage) => void;
 	}) => Promise<T>;
 	recordAttempt: (attempt: AgentAttempt) => void;
 	now?: () => Date;
@@ -220,6 +227,8 @@ export type RunStageOptions<T> = {
 		durationMs: number;
 		/** Measured, not estimated. Null when the turn decided nothing. */
 		secondsPerDecision: number | null;
+		/** Provider-reported usage for the turn's session, when the driver reported it. */
+		tokenUsage?: TokenUsage;
 	}) => void;
 	/** Test-only; defaults to reading `DAILY_INTELLIGENCE_FAULT_INJECTION` from the environment. */
 	faultInjector?: FaultInjector;
@@ -268,6 +277,11 @@ export async function runStageWithFallback<T>(opts: RunStageOptions<T>): Promise
 				startedAt: startedAt.toISOString(),
 			};
 
+			let usage: TokenUsage | undefined;
+			const reportUsage = (u: TokenUsage) => {
+				usage = u;
+			};
+			const withUsage = () => (usage === undefined ? {} : { tokenUsage: usage });
 			try {
 				const chainIndex = i;
 				const checkFault = (processedItems: number) => {
@@ -279,6 +293,7 @@ export async function runStageWithFallback<T>(opts: RunStageOptions<T>): Promise
 					attemptIndex,
 					mode,
 					checkFault,
+					reportUsage,
 					...(lastErrorMessage === undefined ? {} : { lastError: lastErrorMessage }),
 				});
 				const finishedAt = now();
@@ -287,6 +302,7 @@ export async function runStageWithFallback<T>(opts: RunStageOptions<T>): Promise
 					finishedAt: finishedAt.toISOString(),
 					durationMs: finishedAt.getTime() - startedAt.getTime(),
 					status: "SUCCESS",
+					...withUsage(),
 				});
 				return result;
 			} catch (err) {
@@ -310,6 +326,7 @@ export async function runStageWithFallback<T>(opts: RunStageOptions<T>): Promise
 						status: "FAILED",
 						failureClass,
 						errorMeta: { ...errorMeta, terminal: "session did not stop; no replacement started" },
+						...withUsage(),
 					});
 					throw err;
 				}
@@ -338,17 +355,10 @@ export async function runStageWithFallback<T>(opts: RunStageOptions<T>): Promise
 							decidedAfter: err.info.decidedAfter,
 							totalItems: err.info.totalItems,
 							secondsPerDecision: secondsPerDecision(durationMs, err.decidedThisTurn),
-							/*
-							 * The Pi SDK exposes only `ContextUsage`, whose `tokens` field is
-							 * documented as an ESTIMATE of context-window occupancy -- not
-							 * per-turn input, output or cached token counts. There is no
-							 * authoritative usage to record, so none is recorded. Deriving a
-							 * tokensPerDecision from an estimate and storing it next to
-							 * measured values would make a guess indistinguishable from a
-							 * measurement in every report that reads this row.
-							 */
-							tokenUsage: "unavailable",
 						},
+						// Provider-reported, via the driver's assistant-message usage; see
+						// runtime/agent-driver.ts. Absent when the driver reported nothing.
+						...withUsage(),
 					});
 					opts.onContinue?.({
 						spec,
@@ -360,6 +370,7 @@ export async function runStageWithFallback<T>(opts: RunStageOptions<T>): Promise
 						...(err.info.closedBy ? { closedBy: err.info.closedBy } : {}),
 						durationMs,
 						secondsPerDecision: secondsPerDecision(durationMs, err.decidedThisTurn),
+						...withUsage(),
 					});
 
 					// The ceiling ends the stage rather than falling through the chain:
@@ -434,6 +445,7 @@ export async function runStageWithFallback<T>(opts: RunStageOptions<T>): Promise
 									retryReason: `${modelKey(spec)} failed with ${failureClass}; ${effective.kind}`,
 								},
 					...(faultInjected ? { faultInjected } : {}),
+					...withUsage(),
 				});
 
 				attemptIndex++;

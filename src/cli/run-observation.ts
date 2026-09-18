@@ -11,6 +11,9 @@ import {
 	fetchFunnelStories,
 	fetchSignals,
 	fetchStageHits,
+	fetchScreeningOutcomes,
+	fetchScreeningVersions,
+	fetchStageUsage,
 	fetchTriageOutcomes,
 	fetchTriageVersions,
 } from "../observation/queries.ts";
@@ -20,9 +23,16 @@ import {
 	renderContinuity,
 	renderEpochs,
 	renderFunnel,
+	renderScreening,
 	renderSignals,
+	renderStageUsage,
 	renderTriage,
 } from "../observation/render.ts";
+import {
+	assessScreeningReadiness,
+	buildScreeningFunnel,
+	type ScreeningFunnel,
+} from "../observation/screening-funnel.ts";
 import {
 	assessRoutingReadiness,
 	buildTriageFunnel,
@@ -46,6 +56,15 @@ import { parseFlags } from "./_args.ts";
  * that spans a profile change prints the refusal from checkAggregation rather
  * than a merged figure; see src/observation/epoch.ts for why that is a feature.
  */
+
+/** Items the Curator decided on these days, the denominator for tokens per Curator item. */
+async function countDecisions(sql: ReturnType<typeof createSql>, lineage: string, dates: readonly string[]): Promise<number> {
+	const rows = await sql<{ n: number }[]>`
+		select count(*)::int as n from item_decisions
+		where lineage = ${lineage} and date = any(${sql.array([...dates])})
+	`;
+	return rows[0]?.n ?? 0;
+}
 
 function usage(): string {
 	return [
@@ -166,6 +185,32 @@ async function main(): Promise<void> {
 				console.log("");
 				console.log(renderTriage([], assessRoutingReadiness([])));
 			}
+
+			// The screener, one section per (model, policy) version -- a prompt
+			// change is a new evidence epoch and must not be averaged into the old.
+			const screeningMode = loadConfig().agent.screening?.mode ?? "off";
+			const screeners = await fetchScreeningVersions(sql, lineage, epochDates);
+			let screenedItems = 0;
+			for (const version of screeners) {
+				const funnels: ScreeningFunnel[] = [];
+				for (const date of epochDates) {
+					const outcomes = await fetchScreeningOutcomes(sql, lineage, date, version);
+					if (outcomes.length > 0) funnels.push(buildScreeningFunnel(date, outcomes));
+				}
+				screenedItems += funnels.reduce((n, f) => n + f.total, 0);
+				console.log("");
+				console.log(renderScreening(funnels, assessScreeningReadiness(funnels), version, screeningMode));
+			}
+			if (screeners.length === 0) {
+				console.log("");
+				console.log(
+					renderScreening([], assessScreeningReadiness([]), { provider: "-", model: "-", policyVersion: "-" }, screeningMode),
+				);
+			}
+
+			const curatorItems = stories.length === 0 ? 0 : await countDecisions(sql, lineage, epochDates);
+			console.log("");
+			console.log(renderStageUsage(await fetchStageUsage(sql, lineage, epochDates), screenedItems, curatorItems));
 		}
 
 		console.log("");

@@ -80,43 +80,82 @@ searchWeb:
   maxCallsPerStory: 3
   maxCallsPerRun: 20
 
-# Stage 0 triage, model pass -- SHADOW MODE, routing unaffected.
+# Screening: the cheap breadth stage.
 #
-# Runs beside the deterministic rules in src/triage/rules.ts and writes to
-# item_triage under its own rulesVersion; `pnpm observe` compares both against
-# what the Curator and Editor actually did. Nothing in the pipeline reads it.
+# One stateless model verdict per item -- DROP / KEEP / UNSURE -- formed from
+# title + summary alone, written to item_screening. It exists because the
+# expensive part of a run is not judging each item once; it is that every item
+# on a page stays in the Curator's context and is re-sent on each of the
+# ~25 model turns that page takes, ~70% of those items being ones the Curator
+# will call IRRELEVANT. The screener reads each item once, in a request that is
+# thrown away afterwards, so the Curator's page holds only what survived.
 #
-# Why a model at all, when the rules were built to avoid one: rules.ts states
-# the condition -- "If UNCERTAIN turns out to dominate and the misses
-# concentrate there, that is the evidence for spending a model on UNCERTAIN
-# only". On 2026-09-18 UNCERTAIN was 471 of 1311 items (35.9%), the largest
-# bucket, and PRIORITY was wrong 73% of the time (246 of 339 PRIORITY items were
-# judged IRRELEVANT by the Curator). The rules are neither dropping much nor
-# predicting well, which is what this pass is here to improve on -- measurably.
+# It is NOT part of modelChain and deliberately has no tools, no skill, no
+# session and no fallback: a screener that could look things up would start
+# spending tokens on the questions the Curator exists to answer.
 #
-# A failure here never fails a run: no key, a wrong model id, a dead endpoint or
-# a whole pass of failed batches all end with a log line and nothing recorded.
-triageModel:
-  enabled: true
+# mode:
+#   off     nothing runs.
+#   shadow  every item is screened and every item still reaches the Curator;
+#           `pnpm observe` compares the verdicts with what the Curator did.
+#   route   DROP verdicts from the trusted (model, policyVersion) below are
+#           withheld from the Curator's default scan. Everything else -- KEEP,
+#           UNSURE, unscreened, audit-sampled DROP, an untrusted version -- is
+#           offered exactly as before. A withheld item is not erased: it stays
+#           in the manifest, search_items still finds it, and the Curator may
+#           rescue it by deciding it. Every failure fails open to the Curator
+#           and marks the run degraded so the reversion is visible.
+#
+# Nothing switches shadow -> route by itself. `pnpm observe` prints a verdict
+# (READY TO ROUTE / KEEP SHADOWING / NOT WORTH ROUTING); a human edits this.
+#
+# Evidence epochs: bumping `policyVersion` (any prompt change) or `model`
+# starts a new epoch. Until routing.trustedModel / trustedPolicyVersion are
+# updated to match, the new version screens in shadow whatever `mode` says.
+screening:
+  mode: route
+  provider: openai
   baseUrl: https://api.openai.com/v1
-  # UNVERIFIED as of 2026-09-18: this model id has not been confirmed against
-  # the account's available models, nor confirmed to be covered by the daily
-  # free-token allowance. If it is wrong, every batch fails, nothing is written,
-  # and `daily.err.log` says "model triage batch failed" with the HTTP status.
   model: gpt-5.6-terra
   apiKeySecret: OPENAI_API_KEY
+  # v3 is the policy the 2026-09-16..18 backtest (3971 items, `pnpm screen`)
+  # settled on: DROP 49.2%, DROP precision 96.9%, final-story and Must Know
+  # recall 100% on every day, two tier-B material stories lost across the
+  # three days. v1 dropped 28% with the same recall; v2 dropped 61% and lost a
+  # Must Know story. The policies are in src/screening/screener.ts.
+  policyVersion: screening-v3
   batchSize: 40
   concurrency: 8
-  timeoutMs: 60000
-  # A ceiling on a pass that cannot delay the run: it is started before curation
-  # and joined at the end, so it overlaps a stage that takes tens of minutes and
-  # a longer budget here costs nothing.
-  #
-  # Measured 2026-09-18 against gpt-5.6-terra: one 40-item batch took 27s and
-  # reported 6872 input + 1738 output tokens, i.e. ~215 tokens per item. A
-  # 1311-item day is ~33 batches; at 8 in flight that is ~5 rounds, ~135s, and
-  # ~282k tokens. 240s left only a 1.8x margin on a pass whose whole output is
-  # lost if it is cut off, and the margin bought nothing because nothing waits
-  # on it -- so it is 15 minutes, still far inside the stage it runs beside.
+  # Per-request bound. 60s was measured against one batch in isolation (27s);
+  # at 8 in flight the 2026-09-18 backtest saw 11 of 33 batches exceed it, and
+  # a timed-out batch is 40 items that fail open to the Curator for nothing.
+  timeoutMs: 150000
+  # Shadow: a ceiling on a pass that overlaps curation and delays nothing.
+  # Route: how long the run waits for the workset before failing open.
+  # Measured 2026-09-18 against gpt-5.6-terra at batchSize 40: ~27s per batch,
+  # ~215 tokens per item; a 1311-item day is ~33 batches, ~5 rounds at 8 in
+  # flight, ~135s.
   maxWallClockMs: 900000
-  rulesVersion: model-v1
+  # Fraction of DROPs offered to the Curator anyway, chosen deterministically
+  # from hash(date, itemId, policyVersion), so a routed day keeps producing
+  # ground truth about its own DROPs.
+  #
+  # Held at 10% for the first week of routing rather than the 5% the backtest
+  # used. A routed day's only continuous evidence about what it withheld is
+  # this sample, and the first week is when an unmeasured drift would be
+  # cheapest to catch. Lower it deliberately, from telemetry, never on a
+  # schedule.
+  auditDropSampleRate: 0.10
+  # The measured pair. Routing withholds nothing unless the configured model
+  # and policyVersion equal these, so changing either above reverts the run to
+  # shadow until the new version has been measured in its own right.
+  #
+  # Enabled 2026-09-19 on the evidence of a full routed replay of 2026-09-18
+  # against that day's production run: 579 of 1311 items withheld, zero final
+  # and zero Must Know stories lost, 3 of 66 material stories lost (all tier
+  # B/C, none in the brief), 38 audit-sampled DROPs all judged IRRELEVANT,
+  # no rescue needed, Curator tokens 5.35M -> 3.17M and wall clock 62.5 ->
+  # 43.9 minutes against a same-code control run with screening off.
+  routing:
+    trustedModel: gpt-5.6-terra
+    trustedPolicyVersion: screening-v3

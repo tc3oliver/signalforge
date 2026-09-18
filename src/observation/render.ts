@@ -5,6 +5,7 @@ import type { Epoch, EpochAggregationCheck } from "./epoch.ts";
 import { REQUIRED_CLEAN_DAYS } from "./epoch.ts";
 import type { TopicFunnel } from "./funnel.ts";
 import type { RoutingReadiness, TriageFunnel } from "./triage-funnel.ts";
+import type { ScreeningFunnel, ScreeningReadiness, StageUsage } from "./screening-funnel.ts";
 
 /*
  * Plain text, not Markdown or JSON: this is read in a terminal next to the
@@ -215,5 +216,139 @@ export function renderTriage(
 	if (readiness.ready) {
 		lines.push("  Evidence supports enabling routing. Enabling it is still a manual decision.");
 	}
+	return lines.join("\n");
+}
+
+export function renderScreening(
+	funnels: readonly ScreeningFunnel[],
+	readiness: ScreeningReadiness,
+	version: { provider: string; model: string; policyVersion: string },
+	mode: string,
+): string {
+	const lines = [`## Screening — ${version.provider}/${version.model} @ ${version.policyVersion} (mode: ${mode})`, ""];
+	if (funnels.length === 0) {
+		lines.push("No screening rows for these days. Run `pnpm screen --date <day>` to backfill a past day.");
+		return lines.join("\n");
+	}
+	const anyRouted = funnels.some((f) => f.rescued > 0 || f.byVerdict.DROP > f.dropEvaluated + 0);
+	lines.push(
+		anyRouted
+			? "Some DROPs were withheld from the Curator. DROP precision below is measured on the audit sample and on rescues only."
+			: "Every item reached the Curator. These numbers are the exact counterfactual of routing on DROP.",
+	);
+	lines.push("");
+
+	const total = funnels.reduce((n, f) => n + f.total, 0);
+	const drops = funnels.reduce((n, f) => n + f.byVerdict.DROP, 0);
+	const keeps = funnels.reduce((n, f) => n + f.byVerdict.KEEP, 0);
+	const unsure = funnels.reduce((n, f) => n + f.byVerdict.UNSURE, 0);
+	const share = (n: number) => (total === 0 ? "n/a" : `${((n / total) * 100).toFixed(1)}%`);
+	lines.push(bar("items screened", `${total} over ${funnels.length} day(s)`));
+	lines.push(`  ${bar("DROP", `${drops}  (${share(drops)})`, 20)}`);
+	lines.push(`  ${bar("KEEP", `${keeps}  (${share(keeps)})`, 20)}`);
+	lines.push(`  ${bar("UNSURE", `${unsure}  (${share(unsure)})`, 20)}`);
+
+	lines.push("");
+	lines.push("DROP against the Curator's own decision:");
+	const evaluated = funnels.reduce((n, f) => n + f.dropEvaluated, 0);
+	const agreed = funnels.reduce((n, f) => n + f.dropAgreed, 0);
+	const fn = funnels.reduce((n, f) => n + f.dropToCandidate, 0);
+	lines.push(`  ${bar("DROPs with a decision", evaluated, 26)}`);
+	lines.push(`  ${bar("Curator agreed (IRRELEVANT/DUPLICATE)", agreed, 26)}`);
+	lines.push(`  ${bar("Curator made CANDIDATE", fn, 26)}`);
+	lines.push(`  ${bar("DROP precision", pct(evaluated === 0 ? null : agreed / evaluated), 26)}`);
+
+	lines.push("");
+	lines.push("What a full DROP filter would have taken with it (story-level except candidate):");
+	lines.push(`  ${bar("material stories lost", funnels.reduce((n, f) => n + f.lost.materialStories, 0), 26)}`);
+	lines.push(`  ${bar("final stories lost", funnels.reduce((n, f) => n + f.lost.finalStories, 0), 26)}`);
+	lines.push(`  ${bar("must-know stories lost", funnels.reduce((n, f) => n + f.lost.mustKnowStories, 0), 26)}`);
+	const showRecall = (label: string, pick: (f: ScreeningFunnel) => number | null) => {
+		const measured = funnels.map(pick).filter((v): v is number => v !== null);
+		const value = measured.length === 0 ? "n/a" : `${(Math.min(...measured) * 100).toFixed(1)}% (worst day)`;
+		lines.push(`  ${bar(label, value, 26)}`);
+	};
+	showRecall("candidate recall", (f) => f.recall.candidate);
+	showRecall("material recall", (f) => f.recall.material);
+	showRecall("final-story recall", (f) => f.recall.final);
+	showRecall("must-know recall", (f) => f.recall.mustKnow);
+
+	const lostMustKnow = funnels.flatMap((f) => f.lostMustKnowStoryIds);
+	if (lostMustKnow.length > 0) {
+		lines.push("");
+		lines.push("Must Know stories that would have been lost entirely:");
+		for (const id of lostMustKnow) lines.push(`  ${id}`);
+	}
+	const lostFinal = funnels.flatMap((f) => f.lostFinalStoryIds);
+	if (lostFinal.length > 0) {
+		lines.push("");
+		lines.push("Final stories that would have been lost entirely:");
+		for (const id of lostFinal) lines.push(`  ${id}`);
+	}
+
+	lines.push("");
+	lines.push("Continuous ground truth on a routed day:");
+	lines.push(`  ${bar("audit-sampled DROPs", funnels.reduce((n, f) => n + f.auditSampled, 0), 26)}`);
+	lines.push(`  ${bar("audit leakage (kept)", funnels.reduce((n, f) => n + f.auditLeakage, 0), 26)}`);
+	lines.push(`  ${bar("rescued DROPs", funnels.reduce((n, f) => n + f.rescued, 0), 26)}`);
+	lines.push(`  ${bar("rescued -> CANDIDATE", funnels.reduce((n, f) => n + f.rescuedToCandidate, 0), 26)}`);
+	const undecided = funnels.reduce((n, f) => n + f.undecidedOffered, 0);
+	if (undecided > 0) {
+		lines.push(`  ${bar("offered, never decided", `${undecided}  (incomplete scan)`, 26)}`);
+	}
+
+	lines.push("");
+	lines.push("Per day:");
+	// Every recall column, per day, so a day's material loss cannot hide behind
+	// a 100% in the final and Must Know columns beside it.
+	lines.push(
+		`  ${"date".padEnd(12)}${"items".padEnd(7)}${"drop%".padEnd(7)}${"prec".padEnd(7)}${"cand".padEnd(7)}${"matl".padEnd(7)}${"final".padEnd(7)}${"mustKnow".padEnd(10)}lost(matl/final/mk)`,
+	);
+	for (const f of funnels) {
+		lines.push(
+			`  ${f.date.padEnd(12)}${String(f.total).padEnd(7)}${pct(f.dropRate).padEnd(7)}${pct(f.dropPrecision).padEnd(7)}${pct(f.recall.candidate).padEnd(7)}${pct(f.recall.material).padEnd(7)}${pct(f.recall.final).padEnd(7)}${pct(f.recall.mustKnow).padEnd(10)}${f.lost.materialStories}/${f.lost.finalStories}/${f.lost.mustKnowStories}`,
+		);
+	}
+
+	lines.push("");
+	const label =
+		readiness.verdict === "READY_TO_ROUTE"
+			? "READY TO ROUTE"
+			: readiness.verdict === "NOT_WORTH_ROUTING"
+				? "NOT WORTH ROUTING"
+				: "KEEP SHADOWING";
+	lines.push(`Routing verdict: ${label}  (${readiness.evaluatedItems} evaluated items over ${readiness.days} day(s))`);
+	for (const reason of readiness.reasons) lines.push(`  - ${reason}`);
+	if (readiness.verdict === "READY_TO_ROUTE") {
+		lines.push(
+			`  Evidence supports routing on ${version.model} @ ${version.policyVersion}. Enabling it is a manual edit of config/agent.yaml (mode: route, routing.trusted*).`,
+		);
+	}
+	return lines.join("\n");
+}
+
+export function renderStageUsage(usage: readonly StageUsage[], screenedItems: number, curatorItems: number): string {
+	const lines = ["## Model usage by stage (provider-reported; never estimated)", ""];
+	if (usage.length === 0) return `${lines.join("\n")}(no attempts)`;
+	lines.push(`${"stage".padEnd(10)}${"attempts".padEnd(10)}${"wall".padEnd(9)}${"input".padEnd(12)}${"output".padEnd(10)}${"cacheRead".padEnd(12)}total`);
+	for (const u of usage) {
+		const wall = `${Math.round(u.wallClockMs / 1000)}s`;
+		if (u.reported === 0) {
+			lines.push(`${u.stage.padEnd(10)}${String(u.attempts).padEnd(10)}${wall.padEnd(9)}usage unavailable (no attempt reported it)`);
+			continue;
+		}
+		const partial = u.reported < u.attempts ? ` (${u.reported}/${u.attempts} reported)` : "";
+		lines.push(
+			`${u.stage.padEnd(10)}${String(u.attempts).padEnd(10)}${wall.padEnd(9)}${String(u.input).padEnd(12)}${String(u.output).padEnd(10)}${String(u.cacheRead).padEnd(12)}${u.totalTokens}${partial}`,
+		);
+	}
+	const per = (stage: string, items: number) => {
+		const u = usage.find((x) => x.stage === stage);
+		if (!u || u.reported === 0 || items === 0) return "n/a";
+		return `${Math.round(u.totalTokens / items)} tokens/item`;
+	};
+	lines.push("");
+	lines.push(bar("per screened item", per("SCREENER", screenedItems)));
+	lines.push(bar("per Curator item", per("CURATOR", curatorItems)));
 	return lines.join("\n");
 }

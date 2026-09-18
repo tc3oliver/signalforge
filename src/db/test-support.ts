@@ -161,6 +161,7 @@ export async function purgeLineage(sql: Sql, lineage: string): Promise<void> {
 	await sql.begin(async (tx) => {
 		await tx`delete from item_decisions where lineage = ${lineage}`;
 		await tx`delete from item_triage where lineage = ${lineage}`;
+		await tx`delete from item_screening where lineage = ${lineage}`;
 		await tx`delete from story_items where lineage = ${lineage}`;
 		await tx`delete from story_ledger where lineage = ${lineage}`;
 		await tx`delete from daily_brief_stories where lineage = ${lineage}`;

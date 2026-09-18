@@ -240,7 +240,9 @@ Stated plainly, because they determine whether this is worth your time.
   primary model produces a visibly weaker brief.
 - **The curator is expensive by design.** Scanning every item is the product
   requirement that makes historical comparison possible, and it is also the
-  single largest cost.
+  single largest cost. A cheap screener now reads each item once so the
+  expensive Curator's pages hold only what survived; every item is still
+  accounted for, and a screened-out item stays searchable and rescuable.
 - **Personalization is v1: priors, not learning.** The interest profile does
   reach both agents, topic attributions are persisted on each story, and each
   brief records the profile version that shaped it. What that does *not* give

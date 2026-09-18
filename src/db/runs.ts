@@ -114,8 +114,9 @@ export async function recordAttempt(
 ): Promise<void> {
 	await sql.unsafe(
 		`insert into agent_attempts (attempt_id, run_id, stage, provider, model, started_at,
-			finished_at, duration_ms, status, failure_class, fallback_reason, error_meta, fault_injected)
-		 values ($1,$2,$3,$4,$5,$6::timestamptz,$7::timestamptz,$8,$9,$10,$11,$12::jsonb,$13::jsonb)
+			finished_at, duration_ms, status, failure_class, fallback_reason, error_meta, fault_injected,
+			token_usage)
+		 values ($1,$2,$3,$4,$5,$6::timestamptz,$7::timestamptz,$8,$9,$10,$11,$12::jsonb,$13::jsonb,$14::jsonb)
 		 on conflict (attempt_id) do nothing`,
 		[
 			attempt.attemptId, runId, attempt.stage, attempt.provider, attempt.model,
@@ -123,6 +124,7 @@ export async function recordAttempt(
 			attempt.failureClass ?? null, attempt.fallbackReason ?? null,
 			jsonParam(sql, attempt.errorMeta ?? null),
 			jsonParam(sql, attempt.faultInjected ?? null),
+			jsonParam(sql, attempt.tokenUsage ?? null),
 		],
 	);
 }
@@ -244,12 +246,13 @@ export async function listAttempts(
 			failure_class: string | null; fallback_reason: string | null;
 			error_meta: Record<string, unknown> | null;
 			fault_injected: AgentAttempt["faultInjected"] | null;
+			token_usage: AgentAttempt["tokenUsage"] | null;
 		}[]
 	>(
 		`select attempt_id, run_id, stage, provider, model,
 			to_char(started_at at time zone 'utc', ${ISO}) as started_at,
 			to_char(finished_at at time zone 'utc', ${ISO}) as finished_at,
-			duration_ms, status, failure_class, fallback_reason, error_meta, fault_injected
+			duration_ms, status, failure_class, fallback_reason, error_meta, fault_injected, token_usage
 		 from agent_attempts where run_id = any($1::text[])
 		 order by run_id, started_at`,
 		[runIds as string[]],
@@ -268,5 +271,6 @@ export async function listAttempts(
 		...(r.fallback_reason === null ? {} : { fallbackReason: r.fallback_reason }),
 		...(r.error_meta === null ? {} : { errorMeta: r.error_meta }),
 		...(r.fault_injected === null ? {} : { faultInjected: r.fault_injected }),
+		...(r.token_usage === null ? {} : { tokenUsage: r.token_usage }),
 	}));
 }

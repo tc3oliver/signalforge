@@ -31,12 +31,13 @@
 
 CVE 編號、法案編號、repo 全名這類天然穩定鍵,**直接放進 slug**,是最好的選擇。
 
-### 新建之前先查
+### 新建之後看回覆
 
-建立新 story 前,先 `find_history` 用你打算用的 slug 查一次。
-- 命中且確實是同一事件 → 沿用,這是 UPDATE 系列,不是 NEW。
-- 命中但其實是不同事件 → 換一個更具辨識度的 slug(加上產品名或編號)。
-- 沒命中 → 再用主要實體名查一次,確認不是因為你的 slug 拼法跟昨天不同而漏掉。
+`upsert_stories` / `upsert_story` 會用你給的 slug、再用 canonicalTitle 查昨天以前的 ledger,
+命中放在回覆的 `history`。
+- 命中且確實是同一事件 → 用舊 storyId 重新 upsert,這是 UPDATE 系列,不是 NEW。
+- 命中但其實是不同事件 → 換一個更具辨識度的 slug(加上產品名或編號)重送。
+- 沒命中但你懷疑只是拼法不同 → 自己 `find_history` 用主要實體名再查一次。
 
 這第二次查很重要:漏掉歷史會讓你把 UPDATE 誤記成 NEW。
 

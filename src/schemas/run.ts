@@ -37,7 +37,14 @@ export const FailureClass = z.enum([
 ]);
 export type FailureClass = z.infer<typeof FailureClass>;
 
-export const Stage = z.enum(["CURATOR", "EDITOR"]);
+/*
+ * SCREENER is the cheap model screening pass (src/screening/). It is a stage
+ * for telemetry purposes -- wall clock and token usage attributable beside the
+ * Curator and Editor -- and not a stage of the model chain: it never falls back
+ * across providers, because a measurement that retries across three providers
+ * is measuring the retry.
+ */
+export const Stage = z.enum(["SCREENER", "CURATOR", "EDITOR"]);
 export type Stage = z.infer<typeof Stage>;
 
 /*
@@ -51,6 +58,27 @@ export type Stage = z.infer<typeof Stage>;
  * fallbacks, has to be able to tell the two apart from the row alone.
  */
 export const AttemptStatus = z.enum(["SUCCESS", "FAILED", "YIELDED"]);
+
+/**
+ * Provider-reported token usage, summed over the responses in one attempt.
+ *
+ * Absent -- not zero -- when nothing reported it. The Pi SDK delivers the
+ * provider's own `Usage` on every assistant `message_end`; the screener reads
+ * the `usage` block of each chat-completions response. Both are the provider's
+ * statement, never an estimate of context occupancy. `reportedBy` counts the
+ * responses that contributed, so a partial sum is visibly partial.
+ */
+export const TokenUsage = z
+	.object({
+		input: z.number().int().nonnegative(),
+		output: z.number().int().nonnegative(),
+		cacheRead: z.number().int().nonnegative(),
+		cacheWrite: z.number().int().nonnegative(),
+		totalTokens: z.number().int().nonnegative(),
+		reportedBy: z.number().int().positive(),
+	})
+	.strict();
+export type TokenUsage = z.infer<typeof TokenUsage>;
 
 export const AgentAttempt = z
 	.object({
@@ -66,6 +94,8 @@ export const AgentAttempt = z
 		fallbackReason: z.string().optional(),
 		/** Sanitized error metadata — never credentials, never raw headers. */
 		errorMeta: z.record(z.string(), z.unknown()).optional(),
+		/** See {@link TokenUsage}. Absent when the provider reported nothing. */
+		tokenUsage: TokenUsage.optional(),
 		/**
 		 * Present only when this failure was a test-only synthetic fault (see
 		 * `src/runtime/fault-injection.ts`), never a real provider error. A report

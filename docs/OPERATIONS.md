@@ -64,7 +64,33 @@ launchctl print gui/$(id -u)/com.dailyintelligence.incremental
 
 # Tail today's run:
 tail -f logs/daily.out.log logs/daily.err.log
+
+# Backtest the screener over past days the Curator already judged (shadow only):
+pnpm screen --date 2026-09-18
 ```
+
+## Routing is on
+
+Since 2026-09-19 the screener routes: `gpt-5.6-terra @ screening-v3` withholds
+its DROP verdicts from the Curator's default scan, at roughly half the day's
+items. See `docs/ARCHITECTURE.md` for the measurement that justified it.
+
+What to watch on a routed day, in `pnpm observe`:
+
+- **`degraded_reason` mentioning screening.** Every screener failure fails open
+  to full Curator coverage and says so. A routed day that is not degraded
+  withheld only what the trusted version decided to withhold.
+- **Audit leakage.** 10% of DROPs are offered anyway; any of them the Curator
+  turns into a CANDIDATE is a real false negative. The rate is deliberately
+  double the backtest's 5% for the first week. Lower it from telemetry, never
+  on a schedule.
+- **Rescues.** A withheld item the Curator found through `search_items` and
+  decided anyway. Zero is normal; a rising count means the scan is missing
+  things the Curator needs.
+
+To revert, set `screening.mode` back to `shadow` in `config/agent.yaml`. Every
+item reaches the Curator again on the next run; nothing else has to change, and
+no stored row has to be undone.
 
 ## Backup and restore
 

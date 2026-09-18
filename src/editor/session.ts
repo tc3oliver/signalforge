@@ -2,6 +2,7 @@ import type { DailyBrief, DailyManifest, DailyMaterials } from "../schemas/index
 import type { StoryRepository } from "../stories/repository.ts";
 import type { AgentDriverFactory } from "../runtime/agent-driver.ts";
 import type { ModelSpec } from "../runtime/model-config.ts";
+import type { TokenUsage } from "../schemas/run.ts";
 import { InvalidAgentOutputError } from "../runtime/error-classifier.ts";
 import { loadProjectSkills } from "../runtime/pi-runtime.ts";
 import { renderReaderProfile, type ReaderProfile } from "../profile/reader-profile.ts";
@@ -11,6 +12,7 @@ import {
 	loadSkillBundle,
 	renderSkillSection,
 } from "../runtime/skill-access.ts";
+import { measureToolResults } from "../agent-tools/shared.ts";
 import { createEditorTools, type EditorContext } from "./tools.ts";
 import {
 	buildEditorNudgePrompt,
@@ -45,6 +47,8 @@ export interface EditorStageOptions {
 	 * honest equivalent of stage progress.
 	 */
 	checkFault?: (toolCalls: number) => void;
+	/** Receives the driver's provider-reported usage before the driver is disposed. */
+	reportUsage?: (usage: TokenUsage) => void;
 }
 
 export interface EditorStageResult {
@@ -127,7 +131,9 @@ export async function runEditorStage(opts: EditorStageOptions): Promise<EditorSt
 	const driver = await opts.driverFactory({
 		spec: opts.spec,
 		systemPrompt: buildEditorSystemPrompt(promptCtx),
-		customTools: [...tools, createSkillReferenceTool(bundle)],
+		customTools: measureToolResults([...tools, createSkillReferenceTool(bundle)], (info) =>
+			opts.onEvent?.({ kind: "tool_result", stage: "EDITOR", ...info }),
+		),
 		skillsRoot: opts.skillsRoot,
 		cwd: opts.cwd,
 		onText: opts.onText,
@@ -170,6 +176,8 @@ export async function runEditorStage(opts: EditorStageOptions): Promise<EditorSt
 			activeToolNames: driver.getActiveToolNames(),
 		};
 	} finally {
+		const usage = driver.getUsage?.();
+		if (usage) opts.reportUsage?.(usage);
 		driver.dispose();
 	}
 }

@@ -30,6 +30,7 @@
     "setup:check": "tsx --env-file-if-exists=.env src/cli/setup-check.ts",
     "demo": "tsx --env-file-if-exists=.env web/scripts/seed-dev.ts",
     "observe": "tsx --env-file-if-exists=.env src/cli/run-observation.ts",
+    "screen": "tsx --env-file-if-exists=.env src/cli/run-screening.ts",
     "phase1:generate": "tsx src/cli/generate-fixtures.ts",
     "phase1:curate": "tsx src/cli/run-curator.ts",
     "phase1:edit": "tsx src/cli/run-editor.ts",

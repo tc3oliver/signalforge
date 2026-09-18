@@ -2,6 +2,7 @@ import type { DailyManifest, DailyMaterials } from "../schemas/index.ts";
 import type { StoryRepository } from "../stories/repository.ts";
 import type { AgentDriverFactory } from "../runtime/agent-driver.ts";
 import type { ModelSpec } from "../runtime/model-config.ts";
+import type { TokenUsage } from "../schemas/run.ts";
 import { InvalidAgentOutputError, ToolLoopError } from "../runtime/error-classifier.ts";
 import { loadProjectSkills } from "../runtime/pi-runtime.ts";
 import { isTurnAbandoned, TurnTimeoutError, withTurnTimeout } from "../runtime/turn-timeout.ts";
@@ -15,6 +16,7 @@ import {
 	loadSkillBundle,
 	renderSkillSection,
 } from "../runtime/skill-access.ts";
+import { measureToolResults } from "../agent-tools/shared.ts";
 import { createCuratorTools, type CuratorContext } from "./tools.ts";
 import { renderReaderProfile, type ReaderProfile } from "../profile/reader-profile.ts";
 import {
@@ -61,6 +63,13 @@ export interface CuratorStageOptions {
 	 * work unit, which is the ceiling it exists to prevent.
 	 */
 	maxDecisionsPerTurn?: number;
+	/**
+	 * Items the screener withheld from the default broad scan (routed DROP
+	 * verdicts from the trusted screener version). Computed once per run by the
+	 * pipeline and passed to every attempt and continuation unchanged, so the
+	 * workset cannot shift between sessions. Absent outside route mode.
+	 */
+	screenedOutItemIds?: ReadonlySet<string>;
 	onEvent?: (event: Record<string, unknown>) => void;
 	onText?: (delta: string) => void;
 	/**
@@ -69,6 +78,8 @@ export interface CuratorStageOptions {
 	 * the configured threshold; a no-op when fault injection is off.
 	 */
 	checkFault?: (processedItems: number) => void;
+	/** Receives the driver's provider-reported usage before the driver is disposed. */
+	reportUsage?: (usage: TokenUsage) => void;
 }
 
 export interface CuratorStageResult {
@@ -120,6 +131,7 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 		repo: opts.repo,
 		now,
 		...(turnBudget ? { turnBudget } : {}),
+		...(opts.screenedOutItemIds ? { screenedOutItemIds: opts.screenedOutItemIds } : {}),
 		...(opts.readerProfile
 			? { topicIds: new Set(opts.readerProfile.topics.map((t) => t.id)) }
 			: {}),
@@ -169,11 +181,27 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 		};
 	});
 
-	const tools = [...curatorTools, createSkillReferenceTool(bundle)];
+	/*
+	 * Result sizes for every tool, including the skill reference: this is the
+	 * context the session accumulates and re-sends on each later turn, and it
+	 * is the term the token decomposition could not see.
+	 */
+	const tools = measureToolResults([...curatorTools, createSkillReferenceTool(bundle)], (info) =>
+		opts.onEvent?.({ kind: "tool_result", stage: "CURATOR", ...info }),
+	);
 
+	/*
+	 * What the Curator is asked to judge: the manifest minus what the screener
+	 * withheld. Progress, the yield condition and the prompt all count against
+	 * this set, never against the whole manifest -- a routed day would otherwise
+	 * never reach "all decided" and the work unit would never finish.
+	 */
+	const screenedOut = opts.screenedOutItemIds ?? new Set<string>();
+	const offeredIds = new Set(opts.manifest.items.map((i) => i.id).filter((id) => !screenedOut.has(id)));
 	const systemPrompt = buildCuratorSystemPrompt({
 		date: opts.date,
-		totalItems: opts.manifest.items.length,
+		totalItems: offeredIds.size,
+		manifestItems: opts.manifest.items.length,
 		skillSection: renderSkillSection(bundle),
 		...(opts.readerProfile ? { readerProfile: renderReaderProfile(opts.readerProfile) } : {}),
 	});
@@ -188,9 +216,9 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 	});
 
 	try {
-		const totalItems = opts.manifest.items.length;
+		const totalItems = offeredIds.size;
 		/*
-		 * Decisions for items IN THIS MANIFEST, not decisions for this date.
+		 * Decisions for items OFFERED FROM THIS MANIFEST, not decisions for this date.
 		 *
 		 * The repository is keyed by date and answers with everything decided that
 		 * day, which is a larger set than the manifest whenever a run is continuing
@@ -204,11 +232,10 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 		 * It only looks correct on a fresh day, where the manifest is a superset of
 		 * the day's decisions. That is exactly the case the tests covered.
 		 */
-		const manifestIds = new Set(opts.manifest.items.map((i) => i.id));
 		const decidedCount = async () => {
 			const processed = await opts.repo.processedItemIds(opts.date);
 			let n = 0;
-			for (const id of manifestIds) if (processed.has(id)) n++;
+			for (const id of offeredIds) if (processed.has(id)) n++;
 			return n;
 		};
 
@@ -228,12 +255,14 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 				: opts.mode === "CORRECTIVE" && opts.lastError
 					? `${buildCuratorTaskPrompt({
 							date: opts.date,
-							totalItems: opts.manifest.items.length,
+							totalItems,
+							manifestItems: opts.manifest.items.length,
 							skillSection: "",
 						})}\n\nA previous attempt failed with:\n${opts.lastError}\nAvoid repeating that mistake.`
 					: buildCuratorTaskPrompt({
 							date: opts.date,
-							totalItems: opts.manifest.items.length,
+							totalItems,
+							manifestItems: opts.manifest.items.length,
 							skillSection: "",
 						});
 
@@ -372,6 +401,10 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 			activeToolNames: driver.getActiveToolNames(),
 		};
 	} finally {
+		// Before dispose, and on every exit including a yield: the usage of a
+		// turn that yielded is exactly the figure the continuation telemetry needs.
+		const usage = driver.getUsage?.();
+		if (usage) opts.reportUsage?.(usage);
 		driver.dispose();
 	}
 }

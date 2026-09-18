@@ -84,8 +84,8 @@ describe("search_web registration", () => {
 			now: () => new Date(),
 		});
 		expect(tools.map((t) => t.name)).not.toContain("search_web");
-		// The offline tool set is exactly the eleven the restricted runtime expects.
-		expect(tools).toHaveLength(11);
+		// The offline tool set is exactly the twelve the restricted runtime expects.
+		expect(tools).toHaveLength(12);
 	});
 
 	it("is present, and additive, when a router is configured", () => {
@@ -93,7 +93,7 @@ describe("search_web registration", () => {
 		const names = tools.map((t) => t.name);
 		expect(names).toContain("search_web");
 		expect(names).toContain("submit_materials");
-		expect(names).toHaveLength(12);
+		expect(names).toHaveLength(13);
 	});
 
 	it("states its permitted uses in the description the model sees", () => {

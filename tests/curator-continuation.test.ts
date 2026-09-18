@@ -402,10 +402,11 @@ describe("continuation telemetry is measured, never estimated", () => {
 		expect(seen[0]).toBeGreaterThan(0);
 	});
 
-	it("marks token usage unavailable rather than estimating it", async () => {
-		// The Pi SDK exposes only estimated context-window occupancy, not per-turn
-		// input/output/cached tokens. Storing a derived number next to measured
-		// ones would make a guess indistinguishable from a measurement.
+	it("records no token usage when the stage reported none, rather than estimating it", async () => {
+		// Usage is the provider's own statement, handed up through reportUsage.
+		// A stage whose driver reported nothing leaves the field absent; a
+		// derived number next to measured ones would be indistinguishable from
+		// a measurement.
 		const attempts: AgentAttempt[] = [];
 		let n = 0;
 		await runStageWithFallback<string>({
@@ -419,8 +420,28 @@ describe("continuation telemetry is measured, never estimated", () => {
 			},
 		});
 		const yielded = attempts.find((a) => a.status === "YIELDED");
-		expect(yielded?.errorMeta?.["tokenUsage"]).toBe("unavailable");
-		expect(Object.keys(yielded?.errorMeta ?? {})).not.toContain("inputTokens");
+		expect(yielded?.tokenUsage).toBeUndefined();
+		expect(yielded?.errorMeta?.["tokenUsage"]).toBeUndefined();
+	});
+
+	it("records the usage a stage reports, on the yielded attempt and on the success", async () => {
+		const attempts: AgentAttempt[] = [];
+		let n = 0;
+		const usage = { input: 1200, output: 80, cacheRead: 900, cacheWrite: 0, totalTokens: 1280, reportedBy: 3 };
+		await runStageWithFallback<string>({
+			stage: "CURATOR",
+			chain: CHAIN,
+			routerState: new RouterState(),
+			recordAttempt: (a) => attempts.push(a),
+			onAttempt: async ({ reportUsage }) => {
+				reportUsage(usage);
+				if (n++ === 0) throw yieldAt(0, 100);
+				return "ok";
+			},
+		});
+		expect(attempts.map((a) => a.status)).toEqual(["YIELDED", "SUCCESS"]);
+		expect(attempts[0]?.tokenUsage).toEqual(usage);
+		expect(attempts[1]?.tokenUsage).toEqual(usage);
 	});
 
 	it("reports null seconds-per-decision rather than dividing by zero", async () => {

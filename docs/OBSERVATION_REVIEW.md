@@ -261,6 +261,34 @@ stories from three feeds" are different amounts of confidence and the stored
 `confidence` does not distinguish them. Recorded only: whether `WATCHING` needs
 splitting out of `EMERGING` is deferred until five days of this exist.
 
+**Screening.** One section per screener version (`provider/model @
+policyVersion`): the DROP / KEEP / UNSURE distribution; DROP precision against
+the Curator's own decision (a DROP the Curator also set aside, as IRRELEVANT or
+DUPLICATE, is agreement; a DROP the Curator made CANDIDATE is a false
+negative); story-level material / final / Must Know recall a full DROP filter
+would have achieved, with the lost story ids named; audit-sampled DROPs and
+their leakage; rescued DROPs; a per-day table; and a verdict — READY TO ROUTE,
+KEEP SHADOWING or NOT WORTH ROUTING — against `SCREENING_GATE`: at least 3000
+evaluated items over at least 3 distinct days, Must Know recall 100%, final
+recall ≥ 98%, material recall ≥ 95%, DROP precision ≥ 95%, and a DROP rate
+≥ 30% (perfect recall on a 2% DROP rate is safe and pointless, and the verdict
+says so). Item-level precision is an early-warning bar rather than the safety
+bar: on the 2026-09-16..18 backtest most DROP-but-CANDIDATE items belonged to
+stories that survived through their other items. The verdict is
+advisory; a human edits `config/agent.yaml`.
+
+`pnpm screen --date <day>[,<day>...]` backtests past days whose Curator
+decisions and brief outcomes already exist. It screens exactly the items the
+Curator decided, writes rows with no run id, and prints the same section.
+A backfilled row can never withhold anything: `routed` is always false.
+
+**Model usage by stage.** Per stage: attempts, wall clock, and provider-reported
+input / output / cache-read / total tokens, plus tokens per screened item and
+per Curator item. Usage comes from the provider's own statement (the Pi
+assistant message for the Curator and Editor, the chat-completions response
+for the screener) and is never estimated; a stage whose provider reported
+nothing is printed as unavailable, not as zero.
+
 ## What the review must not do
 
 - Do not edit gold, thresholds, prompts, the interest profile or sources

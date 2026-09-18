@@ -156,7 +156,7 @@ describe("both system prompts carry the profile", () => {
 			skillSection: "SKILL",
 			readerProfile: renderReaderProfile(zeroed),
 		});
-		expect(prompt).toContain("Every one of the 590 items must have a recorded decision");
+		expect(prompt).toContain("Every one of the 590 items offered to you must have a recorded decision");
 		expect(prompt).toContain("priors, not filters");
 	});
 });

@@ -29,3 +29,28 @@ describe("model chain configuration", () => {
 		expect(new Set(keys).size).toBe(keys.length);
 	});
 });
+
+describe("the shipped screening config", () => {
+	/*
+	 * Routing is the one setting that decides whether roughly half the day's
+	 * items ever reach the Curator, and it is enabled by editing YAML. The
+	 * trusted pair is what makes route mode actually withhold: if `model` or
+	 * `policyVersion` drifts away from it, the run silently reverts to shadow
+	 * and full coverage. Both directions are worth failing a build over.
+	 */
+	it("routes on the pair the 2026-09-18 replay measured", () => {
+		const screening = loadConfig().agent.screening;
+		expect(screening).toBeDefined();
+		expect(screening!.mode).toBe("route");
+		expect(screening!.model).toBe("gpt-5.6-terra");
+		expect(screening!.policyVersion).toBe("screening-v3");
+		expect(screening!.routing).toEqual({
+			trustedModel: "gpt-5.6-terra",
+			trustedPolicyVersion: "screening-v3",
+		});
+	});
+
+	it("keeps the first-week audit sample at 10%", () => {
+		expect(loadConfig().agent.screening!.auditDropSampleRate).toBe(0.1);
+	});
+});

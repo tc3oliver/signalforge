@@ -5,6 +5,7 @@ import type { BriefEpochRow } from "./epoch.ts";
 import type { FunnelStoryInput } from "./funnel.ts";
 import type { StageHits } from "./attribution.ts";
 import type { TriageOutcomeRow } from "./triage-funnel.ts";
+import type { ScreeningOutcomeRow, StageUsage } from "./screening-funnel.ts";
 
 /*
  * Every read the observation report makes. All of them are selects against rows
@@ -290,5 +291,138 @@ export async function fetchTriageOutcomes(
 		reachedMaterial: r.reached_material,
 		reachedFinal: r.reached_final,
 		reachedMustKnow: r.reached_must_know,
+	}));
+}
+
+/* -------------------------------------------------------------------------- */
+/* Screening (item_screening)                                                  */
+/* -------------------------------------------------------------------------- */
+
+/** The screener versions holding verdicts on these dates, newest-written first. */
+export async function fetchScreeningVersions(
+	sql: Sql,
+	lineage: string,
+	dates: readonly string[],
+): Promise<Array<{ provider: string; model: string; policyVersion: string }>> {
+	if (dates.length === 0) return [];
+	const rows = await sql<{ provider: string; model: string; policy_version: string }[]>`
+		select provider, model, policy_version, max(created_at) as latest
+		from item_screening
+		where lineage = ${lineage} and date = any(${sql.array([...dates])})
+		group by provider, model, policy_version
+		order by latest desc
+	`;
+	return rows.map((r) => ({ provider: r.provider, model: r.model, policyVersion: r.policy_version }));
+}
+
+/**
+ * Screening verdicts joined to each item's downstream fate, for one screener
+ * version on one day. Left-outer from item_screening: a withheld DROP has no
+ * decision by design, and an offered item with no decision is an incomplete
+ * scan; both must survive the join to be counted for what they are.
+ */
+export async function fetchScreeningOutcomes(
+	sql: Sql,
+	lineage: string,
+	date: string,
+	version: { model: string; policyVersion: string },
+): Promise<ScreeningOutcomeRow[]> {
+	const rows = await sql<
+		{
+			item_id: string;
+			verdict: "DROP" | "KEEP" | "UNSURE";
+			audit_sampled: boolean;
+			routed: boolean;
+			disposition: string | null;
+			story_id: string | null;
+			reached_material: boolean;
+			reached_final: boolean;
+			reached_must_know: boolean;
+		}[]
+	>`
+		select
+			s.item_id,
+			s.verdict,
+			s.audit_sampled,
+			s.routed,
+			d.disposition,
+			d.story_id,
+			(m.story_id is not null) as reached_material,
+			(b.story_id is not null) as reached_final,
+			coalesce(b.must_know, false) as reached_must_know
+		from item_screening s
+		left join item_decisions d
+			on d.lineage = s.lineage and d.date = s.date and d.item_id = s.item_id
+		left join daily_material_stories m
+			on m.lineage = s.lineage and m.date = s.date and m.story_id = d.story_id
+		left join daily_brief_stories b
+			on b.lineage = s.lineage and b.date = s.date and b.story_id = d.story_id
+		where s.lineage = ${lineage} and s.date = ${date}
+		  and s.model = ${version.model} and s.policy_version = ${version.policyVersion}
+	`;
+	return rows.map((r) => ({
+		itemId: r.item_id,
+		verdict: r.verdict,
+		auditSampled: r.audit_sampled,
+		routed: r.routed,
+		disposition: r.disposition,
+		storyId: r.story_id,
+		reachedMaterial: r.reached_material,
+		reachedFinal: r.reached_final,
+		reachedMustKnow: r.reached_must_know,
+	}));
+}
+
+/**
+ * Per-stage wall clock and provider-reported usage over the runs of these
+ * days. `reported` counts the attempts that carried a usage block, so a stage
+ * whose provider reports nothing shows tokens 0 with reported 0 -- which the
+ * renderer prints as unavailable, never as a measured zero.
+ */
+export async function fetchStageUsage(
+	sql: Sql,
+	lineage: string,
+	dates: readonly string[],
+): Promise<StageUsage[]> {
+	if (dates.length === 0) return [];
+	const rows = await sql<
+		{
+			stage: string;
+			attempts: number;
+			reported: number;
+			input: string;
+			output: string;
+			cache_read: string;
+			cache_write: string;
+			total_tokens: string;
+			wall_clock_ms: string;
+		}[]
+	>`
+		select
+			a.stage,
+			count(*)::int as attempts,
+			count(a.token_usage)::int as reported,
+			coalesce(sum((a.token_usage->>'input')::bigint), 0)::text as input,
+			coalesce(sum((a.token_usage->>'output')::bigint), 0)::text as output,
+			coalesce(sum((a.token_usage->>'cacheRead')::bigint), 0)::text as cache_read,
+			coalesce(sum((a.token_usage->>'cacheWrite')::bigint), 0)::text as cache_write,
+			coalesce(sum((a.token_usage->>'totalTokens')::bigint), 0)::text as total_tokens,
+			coalesce(sum(a.duration_ms), 0)::text as wall_clock_ms
+		from agent_attempts a
+		join daily_runs r on r.run_id = a.run_id
+		where r.lineage = ${lineage} and r.date = any(${sql.array([...dates])})
+		group by a.stage
+		order by a.stage
+	`;
+	return rows.map((r) => ({
+		stage: r.stage,
+		attempts: r.attempts,
+		reported: r.reported,
+		input: Number(r.input),
+		output: Number(r.output),
+		cacheRead: Number(r.cache_read),
+		cacheWrite: Number(r.cache_write),
+		totalTokens: Number(r.total_tokens),
+		wallClockMs: Number(r.wall_clock_ms),
 	}));
 }

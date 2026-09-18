@@ -56,7 +56,7 @@ describe.skipIf(!probe.available)("migrations", () => {
 			"story_items", "item_decisions", "daily_materials", "daily_material_stories",
 			"daily_brief_drafts", "daily_briefs", "daily_brief_stories", "structured_facts",
 			"interest_profiles", "watchlists", "source_configs", "agent_runs", "agent_attempts",
-			"emerging_signals", "item_triage", "schema_migrations",
+			"emerging_signals", "item_triage", "item_screening", "schema_migrations",
 		]) {
 			expect(tables).toContain(expected);
 		}

@@ -165,6 +165,7 @@ describe.skipIf(!haveFixtures)("gold truth is unreachable from inside the agent 
 				"search_items",
 				"submit_brief",
 				"submit_materials",
+				"upsert_stories",
 				"upsert_story",
 			].sort(),
 		);

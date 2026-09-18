@@ -214,46 +214,78 @@ export const SearchWebConfig = z
 export type SearchWebConfig = z.infer<typeof SearchWebConfig>;
 
 /**
- * The shadow-mode model triage pass.
+ * The screening stage: a cheap model's DROP / KEEP / UNSURE per item.
  *
- * Optional in every sense: absent config, `enabled: false`, or an unresolvable
- * API key each leave the pass unrun and the pipeline unchanged. It writes to
- * `item_triage` under its own `rulesVersion` and is read only by `pnpm observe`.
- *
- * It is deliberately NOT part of `modelChain`. That chain drives the Curator and
+ * Deliberately NOT part of `modelChain`. That chain drives the Curator and
  * Editor through the Pi agent runtime -- tools, skills, multi-turn sessions,
- * fallback across providers. This is a stateless batch classifier that sees a
- * title and a summary and answers with a category, and giving it the agent
- * machinery would buy nothing and cost a fallback path that must not exist:
- * a measurement that retries across three providers is measuring the retry.
+ * fallback across providers. The screener is a stateless batch function that
+ * sees a title and a summary and answers with a verdict; giving it the agent
+ * machinery would buy nothing and cost a fallback path that must not exist,
+ * because a screener that retries across three providers is measuring the
+ * retry. Its failure mode is fail-open: the Curator sees the items.
+ *
+ * `mode` is the only switch that changes what the Curator sees, and it is
+ * changed by a human after reading `pnpm observe`. Nothing flips it.
  */
-export const TriageModelConfig = z
+export const ScreeningConfig = z
 	.object({
-		enabled: z.boolean().default(false),
+		mode: z.enum(["off", "shadow", "route"]).default("off"),
+		/** A label for telemetry; the transport is the OpenAI-compatible endpoint below. */
+		provider: z.string().min(1).default("openai"),
 		/** OpenAI-compatible chat-completions endpoint. */
 		baseUrl: z.string().min(1).default("https://api.openai.com/v1"),
 		model: z.string().min(1),
 		/** Logical secret name, resolved through env -> secrets.env -> Keychain. */
 		apiKeySecret: z.string().min(1).default("OPENAI_API_KEY"),
+		/**
+		 * Stamped on every row. Bump it whenever the prompt changes: recall
+		 * averaged across a prompt change is two measurements merged, and a new
+		 * version starts a new evidence epoch instead of inheriting the old one's.
+		 */
+		policyVersion: z.string().min(1).default("screening-v1"),
 		/** Items per request. Bounded so one failed batch loses a bounded slice. */
 		batchSize: z.number().int().positive().max(200).default(40),
 		/** Batches in flight at once. */
 		concurrency: z.number().int().positive().max(32).default(8),
 		timeoutMs: z.number().int().positive().default(60_000),
 		/**
-		 * Wall-clock ceiling for the whole pass. The pipeline must not be delayed
-		 * by a measurement, so this bounds it independently of per-request timeouts.
+		 * Wall-clock ceiling for the whole pass. In shadow mode the pass overlaps
+		 * curation and this bounds a measurement; in route mode the pass is on
+		 * the critical path and this bounds how long the run waits before it
+		 * fails open to full Curator coverage.
 		 */
-		maxWallClockMs: z.number().int().positive().default(240_000),
+		maxWallClockMs: z.number().int().positive().default(900_000),
 		/**
-		 * Stamped into `item_triage.rules_version`. Bump it whenever the prompt or
-		 * the model changes, for the same reason the deterministic rules carry one:
-		 * recall averaged across a prompt change is two measurements merged.
+		 * Fraction of DROP verdicts offered to the Curator anyway, chosen
+		 * deterministically from hash(date, itemId, policyVersion). This is what
+		 * keeps a routed day producing ground truth about its own DROPs.
 		 */
-		rulesVersion: z.string().min(1).default("model-v1"),
+		auditDropSampleRate: z.number().min(0).max(1).default(0.05),
+		/**
+		 * Add one per-source hint line (Hacker News score, GitHub repo/kind,
+		 * arXiv categories) to each screened item. Off by default: the screener
+		 * sees five fields, and a sixth has to earn its place with a backtest
+		 * showing it moves DROP precision or rate. `pnpm screen --hint` runs that
+		 * comparison.
+		 */
+		includeHint: z.boolean().default(false),
+		/**
+		 * The (model, policyVersion) pair whose DROP rows may withhold items in
+		 * route mode. Set by hand, after `pnpm observe` reports READY TO ROUTE for
+		 * exactly this pair. A run whose configured model or policyVersion differs
+		 * from the trusted pair screens in shadow and says so: a new version has to
+		 * earn its own evidence before it routes anything.
+		 */
+		routing: z
+			.object({
+				trustedModel: z.string().min(1),
+				trustedPolicyVersion: z.string().min(1),
+			})
+			.strict()
+			.optional(),
 	})
 	.strict();
-export type TriageModelConfig = z.infer<typeof TriageModelConfig>;
+export type ScreeningConfig = z.infer<typeof ScreeningConfig>;
 
 export const AgentConfig = z
 	.object({
@@ -265,7 +297,7 @@ export const AgentConfig = z
 			})
 			.strict(),
 		searchWeb: SearchWebConfig,
-		triageModel: TriageModelConfig.optional(),
+		screening: ScreeningConfig.optional(),
 	})
 	.strict();
 export type AgentConfig = z.infer<typeof AgentConfig>;

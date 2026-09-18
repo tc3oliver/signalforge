@@ -53,7 +53,8 @@ detail 花在主來源身上,不要花在第七篇轉述上。
 - 一次 `list_unseen_items` 取一頁(上限 50),**這一頁全部判完**再抓下一頁。
 - 判斷順序:先掃過整頁的 title,把明顯噪音一次判掉;
   剩下的才逐則處理,並在需要時 `search_items` 找兄弟。
-- 整頁判完後,用**一次** `record_item_decisions` 送出整批。
+- 整頁的 story 用**一次** `upsert_stories` 寫入,整頁的判斷用**一次**
+  `record_item_decisions` 送出。每多一次呼叫,整頁都會再被送一次給模型。
 - 每則 decision 的 `reason` 寫一句具體的話。不要寫「不相關」,
   寫「消費性產品發表,無技術或決策影響」。`reason` 是你下一輪回頭看的唯一線索。
 - `DUPLICATE` 一定要帶 `storyId`,指向它所屬的 cluster。

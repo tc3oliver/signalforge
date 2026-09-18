@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { loadStageTuning, type StageTuning } from "../config/stage-tuning.ts";
 import { loadConfig } from "../config/loader.ts";
+import type { ScreeningConfig } from "../config/schema.ts";
 import { buildReaderProfile, type ReaderProfile } from "../profile/reader-profile.ts";
 import { runCuratorStage } from "../curator/session.ts";
 import { configureCuratorResearch, type CuratorResearchConfig } from "../curator/tools.ts";
@@ -10,9 +11,8 @@ import { getBrief, latestBriefDate, saveBrief, saveDraft } from "../db/briefs.ts
 import { getMaterials, saveMaterials } from "../db/materials.ts";
 import { saveTriage } from "../db/triage.ts";
 import { buildTriageRules } from "../triage/rules.ts";
-import { classifyWithModel } from "../triage/model-classifier.ts";
 import { triageManifest, triageTally } from "../triage/run.ts";
-import { resolveSecret } from "../config/secrets.ts";
+import { runScreeningStage, type ScreeningStageOutcome } from "../screening/stage.ts";
 import { finishAgentRun, getRun, recordAttempt, startAgentRun, upsertRun } from "../db/runs.ts";
 import { listSignals, observeSignal } from "../db/signals.ts";
 import { renderBriefMarkdown } from "../renderer/markdown.ts";
@@ -182,6 +182,13 @@ export interface DailyRunOptions {
 	};
 	/** Enables the curator's `search_web` tool for this run only. */
 	research?: CuratorResearchConfig;
+	/**
+	 * Screening configuration for this run, overriding `config/agent.yaml`.
+	 * Production leaves this unset; a test passes a route-mode config with a
+	 * stubbed endpoint so routing can be exercised without editing the shipped
+	 * (routed) config.
+	 */
+	screening?: ScreeningConfig;
 	log?: (msg: string, fields?: Record<string, unknown>) => void;
 	onEvent?: (event: Record<string, unknown>) => void;
 }
@@ -435,21 +442,18 @@ async function runPipelineBody(
 	 * attempt and degraded-reason writes finish before the caller sees a result.
 	 */
 	/*
-	 * The shadow model-triage pass, if one is started below. Declared here rather
-	 * than at its use site because `finish` closes over it and every early return
-	 * -- including ones taken during Collection, before the pass exists -- goes
-	 * through `finish`.
-	 *
-	 * Joined there so the run never outlives a write it started: the caller ends
-	 * the sql connection when this function returns, and a saveTriage still in
-	 * flight at that moment would fail on a closed pool and lose the day's shadow
-	 * data silently.
+	 * The shadow screening pass, if one is started below, is joined in `finish`
+	 * so the run never outlives a write it started: the caller ends the sql
+	 * connection when this function returns, and a write still in flight at that
+	 * moment would fail on a closed pool and lose the day's shadow data silently.
+	 * `finish` is declared before the pass exists because every early return --
+	 * including ones taken during Collection -- goes through it.
 	 */
-	let modelTriagePass: Promise<void> = Promise.resolve();
+	let screeningPass: Promise<void> = Promise.resolve();
 
 	const finish = async (state: PipelineState): Promise<DailyRunResult> => {
 		await drainAttempts();
-		await modelTriagePass;
+		await screeningPass;
 		result.state = state;
 		result.degraded = degraded;
 		result.degradedReason = degradedReasons.join(" | ") || undefined;
@@ -569,101 +573,56 @@ async function runPipelineBody(
 	}
 
 	/*
-	 * ---- Stage 0 triage, model pass, also in shadow mode -------------------
+	 * ---- Screening ---------------------------------------------------------
 	 *
-	 * The same measurement, formed by a model instead of by rules, stored under
-	 * its own rulesVersion beside them (migration 011 widened the shadow table's
-	 * key so the two can coexist). Everything said about the deterministic pass above applies
-	 * here unchanged: no item is dropped, reordered or annotated, no tool can see
-	 * it, and `pnpm observe` is the only reader.
+	 * The cheap breadth stage: one stateless model verdict per item, DROP /
+	 * KEEP / UNSURE, written to item_screening. What it changes depends on the
+	 * mode in config/agent.yaml:
 	 *
-	 * Swallowed for the same reason too -- and one more. This one costs money and
-	 * talks to a third party, which is two additional ways for a measurement to
-	 * take down a run that does not depend on it.
+	 *   off     nothing runs; the Curator's default scan is the whole manifest.
+	 *   shadow  runs beside curation, off the critical path, changes nothing.
+	 *           Every item still reaches the Curator, and `pnpm observe`
+	 *           compares each verdict with what the Curator then did.
+	 *   route   runs BEFORE curation. Routed DROP verdicts from the trusted
+	 *           (model, policyVersion) are withheld from the Curator's default
+	 *           scan; everything else -- KEEP, UNSURE, unscreened, audit-sampled
+	 *           DROP, any untrusted version -- is offered as before.
 	 *
-	 * Started here and joined in `finish`, so it overlaps curation instead of
-	 * delaying it. Off the critical path by construction: it reads the manifest,
-	 * which is frozen by this point, and writes only shadow rows that nothing in
-	 * this run will read, while the Curator writes `item_decisions` and the story
-	 * ledger. They share no state, so serialising them would buy
-	 * nothing and cost the pass's whole duration -- about 75s on a 1311-item day
-	 * -- out of the run's wall clock.
+	 * It fails open in every direction. No key, a dead endpoint, a wrong model
+	 * id, a malformed response, a wall clock exhausted: each ends with the
+	 * affected items unscreened, which means offered to the Curator, and in
+	 * route mode with the run marked degraded so the reversion is visible.
 	 *
-	 * Everything inside is caught, so the promise can never reject: a floating
-	 * rejection while the Curator is mid-turn would take down a run that does not
-	 * depend on this at all.
+	 * The stage is a function call, deliberately not an agent: no tools, no
+	 * skill, no session, no fallback chain. See src/screening/screener.ts.
 	 */
-	const triageModel = loadConfig().agent.triageModel;
-	if (triageModel?.enabled) {
-		modelTriagePass = (async () => {
-			try {
-				const apiKey = await resolveSecret(triageModel.apiKeySecret);
-				const outcome = await classifyWithModel(
-					manifest.items.map((i) => ({
-						itemId: i.id,
-						sourceType: i.sourceType,
-						sourceName: i.sourceName,
-						title: i.title,
-						summary: i.summary,
-						publishedAt: i.publishedAt,
-						metadata: i.metadata,
-					})),
-					{
-						config: triageModel,
-						apiKey,
-						interests: loadConfig().interests,
-						log: (msg, fields) => log(msg, fields ?? {}),
-					},
-				);
-
-				/*
-				 * A pass where every batch failed is an outage, not an opinion. Writing
-				 * 1300 placeholder UNCERTAIN rows would put a row in the table for every
-				 * item while measuring nothing, and the recall report cannot tell that
-				 * apart from a model that genuinely could not read the day.
-				 */
-				if (outcome.batchesOk === 0) {
-					log("model triage produced nothing; not recorded", {
-						batchesFailed: outcome.batchesFailed,
-						durationMs: outcome.durationMs,
-					});
-				} else {
-					await saveTriage(
-						options.sql,
-						lineage,
-						options.date,
-						outcome.results,
-						triageModel.rulesVersion,
-					);
-					log("model triage recorded (shadow mode; routing unaffected)", {
-						model: triageModel.model,
-						rulesVersion: triageModel.rulesVersion,
-						batchesOk: outcome.batchesOk,
-						batchesFailed: outcome.batchesFailed,
-						degraded: outcome.degraded,
-						durationMs: outcome.durationMs,
-						// The only authoritative token figure in the whole run: the agent
-						// stages go through the Pi runtime, which reports an estimate of
-						// context occupancy and nothing billable. Omitted rather than
-						// zeroed when the provider did not say, so "not told" stays
-						// distinguishable from a measured nothing.
-						...(outcome.usage
-							? {
-									inputTokens: outcome.usage.inputTokens,
-									outputTokens: outcome.usage.outputTokens,
-									usageFromBatches: outcome.usage.reportedBy,
-								}
-							: {}),
-						...triageTally(outcome.results),
-					});
-				}
-			} catch (err) {
-				log("model triage skipped", {
-					error: err instanceof Error ? err.message : String(err),
-				});
-			}
-		})();
+	const screeningConfig = options.screening ?? loadConfig().agent.screening;
+	const wantsCurationAtAll = stage === undefined || stage === "curate";
+	let screening: ScreeningStageOutcome | undefined;
+	if (screeningConfig && screeningConfig.mode !== "off" && wantsCurationAtAll) {
+		const run = async (): Promise<void> => {
+			screening = await runScreeningStage({
+				sql: options.sql,
+				lineage,
+				date: options.date,
+				runId: seed.runId,
+				manifest,
+				config: screeningConfig,
+				interests: loadConfig().interests,
+				now,
+				log,
+			});
+			for (const reason of screening.degradedReasons) await addDegradedReason(reason);
+		};
+		if (screeningConfig.mode === "route") {
+			// On the critical path by definition: the workset depends on it.
+			await run();
+		} else {
+			// Off the critical path: overlaps curation, joined in finish().
+			screeningPass = run();
+		}
 	}
+	const screenedOutItemIds: ReadonlySet<string> = screening?.screenedOutItemIds ?? new Set<string>();
 
 	// ---- Curation ---------------------------------------------------------
 	const wantsCuration = stage === undefined || stage === "curate";
@@ -731,19 +690,19 @@ async function runPipelineBody(
 						...(info.closedBy ? { closedBy: info.closedBy } : {}),
 						durationMs: info.durationMs,
 						secondsPerDecision: info.secondsPerDecision,
-						// The Pi SDK reports only estimated context-window occupancy, not
-						// per-turn input/output/cached tokens, so there is nothing
-						// authoritative to record. Said out loud rather than omitted, so a
-						// reader knows it is absent by decision and not by oversight.
-						tokenUsage: "unavailable",
+						// Provider-reported via the Pi driver, or "unavailable" when the
+						// provider said nothing -- never an estimate.
+						usage: info.tokenUsage ?? "unavailable",
 					}),
 				routerState,
 				recordAttempt: recordStageAttempt,
 				now,
-				onAttempt: async ({ spec, mode, checkFault, lastError }) => {
-					log("curator attempt", { model: modelKey(spec), mode });
+				onAttempt: async ({ spec, mode, checkFault, lastError, reportUsage }) => {
+					log("curator attempt", { model: modelKey(spec), mode, screenedOut: screenedOutItemIds.size });
 					return runCuratorStage({
 						...(readerProfile ? { readerProfile } : {}),
+						...(screenedOutItemIds.size > 0 ? { screenedOutItemIds } : {}),
+						reportUsage,
 						// A corrective retry is only corrective if the stage is told what
 						// went wrong; without this it re-sends the prompt that just failed.
 						...(lastError === undefined ? {} : { lastError }),
@@ -835,10 +794,11 @@ async function runPipelineBody(
 				routerState,
 				recordAttempt: recordStageAttempt,
 				now,
-				onAttempt: async ({ spec, mode, checkFault, lastError }) => {
+				onAttempt: async ({ spec, mode, checkFault, lastError, reportUsage }) => {
 					log("editor attempt", { model: modelKey(spec), mode });
 					return runEditorStage({
 						...(readerProfile ? { readerProfile } : {}),
+						reportUsage,
 						// See the curator stage: the corrective prompt needs the failure.
 						...(lastError === undefined ? {} : { lastError }),
 						maxNudges: stages.EDITOR.maxNudges,

@@ -70,13 +70,20 @@ is an interface, `JsonStoryRepository` and `PostgresStoryRepository`
         │             normalized_items + structured_facts, and the only shape
         │             an agent ever sees
         ▼
-  Pi Curator session ── restricted runtime, 12 custom tools (13 with search_web)
+  screener (src/screening/) ── a stateless batched model function, not an
+        │   agent: title + summary in, DROP / KEEP / UNSURE out, written to
+        │   item_screening. mode off / shadow / route (config/agent.yaml).
+        │   In route mode a trusted DROP is withheld from the Curator's
+        │   default scan; nothing is removed from the manifest.
+        ▼
+  Pi Curator session ── restricted runtime, 13 custom tools (14 with search_web),
+        │   including `upsert_stories` (one call per page of clusters)
         │   ── tools ──►  item_decisions, story_ledger
         │                 (the cross-day ledger; story_items is provisioned
         │                  but has no production writer yet -- see
         │                  INTELLIGENCE_BACKLOG.md)
         │
-        │  submit_materials  (validated; rejects unless scan coverage == 100%)
+        │  submit_materials  (validated; rejects unless every item is accounted for)
         ▼
   daily_materials / daily_material_stories
         │
@@ -94,6 +101,87 @@ is an interface, `JsonStoryRepository` and `PostgresStoryRepository`
 
 `eval/gold/` sits outside this diagram on purpose. It is read by the evaluator and by
 nothing that the agent can reach.
+
+## Screening = routing hint, never erasure
+
+The screener exists because of where the tokens went. Once a page of items
+enters the Curator's session, every one of them is re-sent on every later model
+turn of that session -- each search, history lookup, upsert and decision batch
+carries the whole accumulated context back to the provider -- and on
+2026-09-18 about 70% of those items ended up IRRELEVANT. The screener reads each
+item once, in a request that is thrown away afterwards, so the Curator's page
+holds only what survived. The trust boundaries:
+
+- **The manifest is the canonical evidence universe.** Screening never shrinks
+  it. `search_items` and `get_item_detail` see every manifest item regardless of
+  verdict; `upsert_story` accepts any manifest item as a source.
+- **A screening row is a routing hint and an accountable cheap decision.** It is
+  written to `item_screening` (migration 012) with provider, model, policy
+  version, verdict, reason code and reason, one row per item per screener
+  version. It is a different thing from `item_triage`, whose rows keep their
+  deterministic Stage 0 meaning and which the pipeline still never reads.
+- **DROP is omitted from the default expensive scan, not erased.** In route mode
+  `list_unseen_items` skips a routed DROP; nothing else changes. The Curator can
+  rescue it: find it through `search_items` (flagged `screenedOut: true`), read
+  it, cite it, and record a decision. A Curator decision supersedes the screening
+  row editorially, and a story may only cite items that carry one -- a DROP row
+  alone never makes an item citable.
+- **Every manifest item must be accounted for**, by a Curator decision or by a
+  routed DROP from the trusted screener version. `submit_materials` refuses
+  while anything is unaccounted, and refuses any story citing an undecided item.
+- **Shadow vs route.** In shadow every item still reaches the Curator and the
+  verdicts are only compared afterwards (`pnpm observe`, `pnpm screen`). In
+  route, DROPs from the trusted `(model, policyVersion)` are withheld. Nothing
+  switches the mode; a human edits `config/agent.yaml`.
+- **Fail-open, in every direction.** No key, a dead endpoint, a wrong model id,
+  a malformed response, an item the model did not mention, an exhausted wall
+  clock: each ends with the affected items unscreened, which means offered to
+  the Curator. In route mode the run is marked degraded so the reversion is
+  visible. The screener never fabricates a placeholder verdict.
+- **Continuous ground truth.** A configured fraction of DROPs is audit-sampled
+  and offered to the Curator anyway, chosen deterministically from
+  `hash(date, itemId, policyVersion)`, so a routed day keeps measuring its own
+  false negatives and the sample is reproducible from the rows alone.
+- **Evidence epochs.** A prompt change is a new `policyVersion`; a model change
+  is a new model. Route mode only withholds when the configured pair equals
+  `routing.trustedModel` / `routing.trustedPolicyVersion`; anything else screens
+  in shadow until it has earned its own evidence.
+
+### What was measured before routing was switched on
+
+Routing has been on since 2026-09-19 for `gpt-5.6-terra @ screening-v3`. The
+evidence is a full replay of 2026-09-18 on an isolated lineage with the real
+models, compared against that day's production run and against a same-code
+control run with screening off:
+
+| | A production | B control | C routed |
+|---|---|---|---|
+| Curator code | old | new | new |
+| Screening | none | none | route |
+| Items into the Curator | 1311 | 1311 | 732 |
+| Curator tokens | not recorded | 5,354,836 | 3,173,332 |
+| Model turns | not recorded | 232 | 136 |
+| Wall clock | 67.2 min | 62.5 min | 43.9 min |
+| Materials | 66 | 15 | 15 |
+| Final stories | 14 | 12 | 12 |
+| Must Know | 5 | 5 | 5 |
+
+Routing cost three of production's 66 material stories, all tier B or C and
+none of them in that day's brief; no final story and no Must Know story lost an
+item to it. The 38 audit-sampled DROPs were every one judged IRRELEVANT, and no
+rescue was needed.
+
+Two changes are **not** semantics-preserving and should not be described as if
+they were:
+
+- **Materials fell from 66 to 15.** This is a Curator behaviour change caused by
+  the refactor, not by routing: the control run with screening off produced the
+  same 15. The final brief was the same size either way, so the Editor now reads
+  a tighter package, but the Curator is genuinely selecting differently.
+- **Must Know composition varies between runs.** B and C disagree with each
+  other about Must Know as much as either disagrees with production, on stories
+  whose items were never withheld. Run-to-run editorial variance dominates here;
+  routing is not the cause and equality between runs is not a thing to expect.
 
 ## Collectors, and the rule about editorial filtering
 
@@ -211,10 +299,19 @@ Pi turns that into a tool error the model can read and correct. Tools signal
 rejection by throwing — `AgentToolResult` has no `isError` field.
 
 This is why "the model said it reviewed everything" is irrelevant.
-`submit_materials` compares `processedItemIds()` from the repository against the
-manifest and refuses to accept anything while a single item lacks a recorded
-decision. Scan coverage is not a metric we hope for, it is a precondition the tool
-enforces, and `AGENTS.md` makes it explicit that it has no override flag.
+`submit_materials` accounts for every manifest item by id: each one must carry a
+recorded Curator decision or a routed screener DROP from the trusted version, and
+every item a story cites must carry a Curator decision. Accounting is not a
+metric we hope for, it is a precondition the tool enforces, and `AGENTS.md` makes
+it explicit that it has no override flag.
+
+The Curator's context is kept deliberately small for the same reason the
+screener exists: every tool call re-sends the whole session. The broad-scan view
+is compact (title, capped summary, one per-source hint, no metadata), tool
+results are compact JSON with nothing the model just sent echoed back, and
+`upsert_stories` writes a page's clusters in one call while checking each
+story's prior-day history itself -- which replaced the separate `find_history`
+call before every upsert, sixteen of the ~25 model turns a page used to take.
 
 ## Validator = trust boundary
 

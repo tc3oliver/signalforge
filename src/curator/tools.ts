@@ -1,6 +1,6 @@
 import { Type } from "typebox";
 import { defineTool, type ToolDefinition } from "@earendil-works/pi-coding-agent";
-import type { DailyManifest, NormalizedItem } from "../schemas/index.ts";
+import type { DailyManifest, NormalizedItem, StoryLedgerEntry } from "../schemas/index.ts";
 import {
 	DailyMaterialsInput,
 	ItemDecisionInput,
@@ -12,7 +12,8 @@ import type { ResearchRouter } from "../research/router.ts";
 import { toCollectedItem } from "../research/types.ts";
 import type { StoryRepository } from "../stories/repository.ts";
 import type { TurnBudget } from "../runtime/progress-yield.ts";
-import { scanCoverage, validateMaterials } from "../validator/materials-validator.ts";
+import { screeningHint } from "../screening/stage.ts";
+import { accountManifest, validateMaterials } from "../validator/materials-validator.ts";
 import {
 	defineFindHistoryTool,
 	defineStructuredFactsTool,
@@ -26,16 +27,78 @@ import {
 // is imported from.
 export { ToolRejection };
 
-/** Only the fields a broad scan needs. Full content costs a get_item_detail. */
-function toSummaryView(item: NormalizedItem) {
+/**
+ * The broad-scan projection of an item. Deliberately small.
+ *
+ * Every field here is re-sent on every later model turn of the session that
+ * received it -- each search, history lookup, upsert and decision batch carries
+ * the whole accumulated context back to the provider -- so a field in the scan
+ * view is paid for twenty-odd times per page, not once. Measured on
+ * 2026-09-18: the previous view (full summary, full metadata, pretty-printed)
+ * was ~278 tokens per item; this one is ~105. The full record is one
+ * `get_item_detail` away for the items that a title and summary cannot settle.
+ *
+ * `metadata` is not passed through. It is arbitrary per-source JSON, and the
+ * one or two keys per source that help a scan decision are projected by hand
+ * below.
+ */
+const SCAN_SUMMARY_CHARS = 400;
+
+function toScanView(item: NormalizedItem) {
+	const summary =
+		item.summary.length > SCAN_SUMMARY_CHARS
+			? `${item.summary.slice(0, SCAN_SUMMARY_CHARS)}…`
+			: item.summary;
+	const hint = screeningHint(item);
 	return {
 		id: item.id,
-		sourceType: item.sourceType,
-		sourceName: item.sourceName,
+		source: `${item.sourceName} (${item.sourceType})`,
 		title: item.title,
-		summary: item.summary,
-		publishedAt: item.publishedAt,
-		metadata: item.metadata,
+		summary,
+		at: item.publishedAt.slice(0, 10),
+		...(hint ? { hint } : {}),
+	};
+}
+
+/** How a story is echoed back after a write: enough to cite it, nothing the model just sent. */
+function toStoryReceipt(entry: StoryLedgerEntry) {
+	return {
+		storyId: entry.storyId,
+		changeType: entry.changeType,
+		sourceItems: entry.sourceItemIds.length,
+	};
+}
+
+/*
+ * Why a batch entry was refused, as a stable family rather than the sentence.
+ *
+ * The 2026-09-18 routed replay had 96 of 322 batch entries rejected and the
+ * trace recorded only the count, so the cause could not be told from the run:
+ * a rejected entry costs a whole extra model turn, and at ~19k tokens of
+ * re-sent context per turn that is the single most expensive kind of mistake
+ * the Curator can make. The family is what lets a rise in one cause be
+ * attributed without replaying the day.
+ */
+export function upsertRejectionKind(message: string): string {
+	if (message.includes("no earlier ledger entry matches")) return "CHANGE_TYPE_WITHOUT_HISTORY";
+	if (message.includes("not in today's manifest")) return "UNKNOWN_ITEM_ID";
+	if (message.includes("primarySourceIds must be a subset")) return "PRIMARY_NOT_IN_SOURCES";
+	if (message.includes("unknown fact id")) return "UNKNOWN_FACT_REF";
+	if (message.includes("not in the reader profile")) return "UNKNOWN_TOPIC_ID";
+	if (message.includes("payload rejected")) return "SCHEMA";
+	return "OTHER";
+}
+
+/** A prior-day ledger entry as history evidence: what it was, not every score. */
+function toHistoryView(entry: StoryLedgerEntry) {
+	return {
+		storyId: entry.storyId,
+		date: entry.date,
+		canonicalTitle: entry.canonicalTitle,
+		changeType: entry.changeType,
+		status: entry.status,
+		importance: entry.importance,
+		reason: entry.reason.length > 200 ? `${entry.reason.slice(0, 200)}…` : entry.reason,
 	};
 }
 
@@ -72,6 +135,18 @@ export interface CuratorContext {
 	 * not change shape because a budget was introduced.
 	 */
 	turnBudget?: TurnBudget;
+	/**
+	 * Items the screener withheld from the default broad scan (routed DROP
+	 * verdicts from the trusted screener version). Absent or empty outside route
+	 * mode, in which case every tool behaves exactly as it always has.
+	 *
+	 * Withheld is not erased: these items stay in the manifest, `search_items`
+	 * and `get_item_detail` still see them, `upsert_story` still accepts them as
+	 * sources, and `record_item_decisions` still records them. Only
+	 * `list_unseen_items` skips them, and only until the Curator decides one --
+	 * which is a rescue, and supersedes the screener's verdict.
+	 */
+	screenedOutItemIds?: ReadonlySet<string>;
 	/** Set by submit_materials on success; the session driver reads it afterwards. */
 	submitted?: DailyMaterials;
 	onToolCall?: (name: string, summary: Record<string, unknown>) => void;
@@ -111,7 +186,7 @@ export interface CuratorResearchConfig {
 /*
  * `search_web` is the one tool that reaches the network, so it is NOT part of
  * the default tool set: a synthetic, eval, gold or offline-fixture run must get
- * exactly the eleven offline tools, and `createRestrictedSession` asserts the
+ * exactly the twelve offline tools, and `createRestrictedSession` asserts the
  * active tool set exactly. Production configures a router for the duration of a
  * run; everything else leaves this unset and never sees the tool.
  *
@@ -132,36 +207,45 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 
 	const note = (name: string, summary: Record<string, unknown>) => ctx.onToolCall?.(name, summary);
 
+	const screenedOut = ctx.screenedOutItemIds ?? new Set<string>();
+	/** Everything the Curator is asked to judge and has not judged yet. */
 	const unseenIds = async (): Promise<string[]> => {
 		const processed = await ctx.repo.processedItemIds(ctx.date);
-		return orderedIds.filter((id) => !processed.has(id));
+		return orderedIds.filter((id) => !processed.has(id) && !screenedOut.has(id));
 	};
+	const accounting = async () =>
+		accountManifest({
+			manifest: ctx.manifest,
+			knownStoryIds: new Set(),
+			processedItemIds: await ctx.repo.processedItemIds(ctx.date),
+			screenedOutItemIds: screenedOut,
+		});
 
 	const getDailyInventory = defineTool({
 		name: "get_daily_inventory",
 		label: "Daily inventory",
 		description:
-			"Return counts for today's feed: total items, items per source, how many have a recorded decision, how many are still unseen, and how many stories exist so far. Call this first and again whenever you want to check progress.",
+			"Return counts for today's feed: total items, items per source, how many were set aside by the screener, how many are offered to you, how many have a recorded decision, how many are still unseen, and how many stories exist so far. Call this first and again whenever you want to check progress.",
 		promptSnippet: "get_daily_inventory: counts of today's items and scan progress",
 		parameters: Type.Object({}),
 		execute: async () => {
-			const processed = await ctx.repo.processedItemIds(ctx.date);
 			const stories = await ctx.repo.listStories(ctx.date);
 			const itemsBySource: Record<string, number> = {};
 			for (const item of ctx.manifest.items) {
 				itemsBySource[item.sourceType] = (itemsBySource[item.sourceType] ?? 0) + 1;
 			}
-			const coverage = scanCoverage({
-				manifest: ctx.manifest,
-				knownStoryIds: new Set(),
-				processedItemIds: processed,
-			});
+			const account = await accounting();
 			const payload = {
 				date: ctx.date,
-				totalItems: coverage.total,
+				totalItems: account.total,
 				itemsBySource,
-				processedItems: coverage.decided,
-				unseenItems: coverage.unseenItemIds.length,
+				// Set aside by the cheap screener; not offered by list_unseen_items,
+				// still reachable through search_items, still yours to rescue.
+				screenedOutItems: account.screenedOut,
+				offeredItems: account.sentToCurator,
+				processedItems: account.curatorDecided,
+				rescuedItems: account.rescued,
+				unseenItems: account.unaccountedItemIds.length,
 				storyCount: stories.length,
 			};
 			note("get_daily_inventory", payload);
@@ -173,7 +257,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		name: "list_unseen_items",
 		label: "List unseen items",
 		description:
-			"Page through items that have no recorded decision yet, in publication order. Returns scan-level fields only (no full content). Use the returned nextCursor to continue. Decide and record every item in a page before requesting the next one.",
+			"Page through the items offered to you that have no recorded decision yet, in publication order. Returns scan-level fields only (no full content). Items the screener set aside are not offered here (search_items still finds them). Use the returned nextCursor to continue. Decide and record every item in a page before requesting the next one.",
 		promptSnippet: "list_unseen_items: page undecided items (max 50)",
 		parameters: Type.Object({
 			limit: Type.Optional(Type.Integer({ minimum: 1, maximum: MAX_PAGE })),
@@ -221,7 +305,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			const page = unseen.slice(start, start + limit);
 			const nextCursor = unseen[start + limit];
 			const payload = {
-				items: page.map((id) => toSummaryView(itemsById.get(id)!)),
+				items: page.map((id) => toScanView(itemsById.get(id)!)),
 				returned: page.length,
 				remainingAfterPage: Math.max(0, unseen.length - (start + page.length)),
 				nextCursor: nextCursor ?? null,
@@ -256,7 +340,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		name: "search_items",
 		label: "Search items",
 		description:
-			"Lexical search over today's item titles and summaries. Use it to find the other coverage of an event you are looking at, so one event becomes one story rather than five.",
+			"Lexical search over ALL of today's items (including any the screener set aside) by title and summary. Use it to find the other coverage of an event you are looking at, so one event becomes one story rather than five. Returns scan-level fields only.",
 		promptSnippet: "search_items: find sibling coverage of the same event",
 		parameters: Type.Object({
 			query: Type.String({ minLength: 2 }),
@@ -276,10 +360,17 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 				})
 				.filter((r) => r.score > 0)
 				.sort((a, b) => b.score - a.score || a.item.id.localeCompare(b.item.id))
-				.slice(0, params.limit ?? 20);
+				.slice(0, params.limit ?? 10);
 			note("search_items", { query: params.query, hits: scored.length });
 			return ok({
-				results: scored.map((r) => ({ ...toSummaryView(r.item), score: Number(r.score.toFixed(3)) })),
+				results: scored.map((r) => ({
+					...toScanView(r.item),
+					score: Number(r.score.toFixed(3)),
+					// Flagged rather than hidden. A sibling the screener set aside is
+					// exactly what this search exists to recover; the flag says it needs
+					// a decision from you before it can be cited.
+					...(screenedOut.has(r.item.id) ? { screenedOut: true } : {}),
+				})),
 			});
 		},
 	});
@@ -288,9 +379,10 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		repo: ctx.repo,
 		date: ctx.date,
 		description:
-			"Search story ledger entries from PREVIOUS days. Call this before you decide a changeType — it is the only way to know whether today adds anything to what was already known.",
+			"Search story ledger entries from PREVIOUS days. upsert_story and upsert_stories run this check for you and report any hits; call it directly when you need to read prior entries before deciding whether today's coverage is the same story.",
 		promptSnippet: "find_history: look up this story on earlier days",
 		note,
+		project: toHistoryView,
 	});
 
 	const getStory = defineTool({
@@ -309,112 +401,251 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		name: "list_today_stories",
 		label: "List today's stories",
 		description:
-			"List every story that already exists for today, with its source items and current judgement. Call this when you resume work another session started — it is the only way to recover story ids you did not create yourself, and re-using an existing storyId in upsert_story merges into it instead of creating a duplicate.",
+			"List every story that already exists for today: id, title, changeType and source-item count. Call this when you resume work another session started — it is the only way to recover story ids you did not create yourself, and re-using an existing storyId in upsert_story merges into it instead of creating a duplicate. Use get_story for the full entry of one story.",
 		promptSnippet: "list_today_stories: recover stories created earlier today",
 		parameters: Type.Object({}),
 		execute: async () => {
 			const stories = await ctx.repo.listStories(ctx.date);
 			note("list_today_stories", { count: stories.length });
+			// Compact by design: this is called at the start of every resumed work
+			// unit and a day can hold 200 stories, so every field here is paid for
+			// once per unit for the rest of the day.
 			return ok({
 				stories: stories.map((s) => ({
 					storyId: s.storyId,
-					canonicalTitle: s.canonicalTitle,
+					title: s.canonicalTitle,
 					changeType: s.changeType,
-					status: s.status,
-					importance: s.importance,
-					novelty: s.novelty,
-					confidence: s.confidence,
-					sourceItemIds: s.sourceItemIds,
-					primarySourceIds: s.primarySourceIds,
-					reason: s.reason,
+					sourceItems: s.sourceItemIds.length,
 				})),
 			});
 		},
 	});
 
+	/*
+	 * The story payload schema, shared by the single and the batch tool so the two
+	 * cannot drift. TypeBox rather than Zod here because Pi reads it as the
+	 * parameter schema; the Zod StoryUpsertInput validates the same shape below.
+	 */
+	const storyPayload = Type.Object({
+		storyId: Type.String({ minLength: 1 }),
+		canonicalTitle: Type.String({ minLength: 1 }),
+		sourceItemIds: Type.Array(Type.String(), { minItems: 1 }),
+		primarySourceIds: Type.Array(Type.String(), { minItems: 1 }),
+		status: Type.Union([
+			Type.Literal("OPEN"),
+			Type.Literal("RESOLVED"),
+			Type.Literal("DORMANT"),
+		]),
+		changeType: Type.Union([
+			Type.Literal("NEW"),
+			Type.Literal("UPDATE"),
+			Type.Literal("ESCALATION"),
+			Type.Literal("RESOLUTION"),
+			Type.Literal("REVERSAL"),
+			Type.Literal("CONFIRMATION"),
+			Type.Literal("RUMOR"),
+			Type.Literal("NO_MATERIAL_CHANGE"),
+		]),
+		relevance: Type.Number({ minimum: 0, maximum: 1 }),
+		novelty: Type.Number({ minimum: 0, maximum: 1 }),
+		importance: Type.Number({ minimum: 0, maximum: 1 }),
+		confidence: Type.Number({ minimum: 0, maximum: 1 }),
+		reason: Type.String({ minLength: 1 }),
+		factRefs: Type.Optional(Type.Array(Type.String())),
+		topicIds: Type.Optional(Type.Array(Type.String())),
+	});
+
+	/** How many prior-day entries a history check returns to the model. */
+	const HISTORY_HINT_LIMIT = 3;
+
+	/**
+	 * Validates and writes one story, and checks its history in the same call.
+	 *
+	 * The history check used to be a separate mandatory tool call before every
+	 * upsert: on 2026-09-18 that was 241 find_history calls beside 214 upserts,
+	 * sixteen of the ~25 model turns in every work unit, each one re-sending the
+	 * whole page. The lookup itself costs nothing -- it is a ledger query -- so
+	 * it is done here, and its result travels back with the receipt:
+	 *
+	 *   - NEW with prior-day hits: the write goes through (the story is real)
+	 *     and the hits are returned, so the model can re-upsert with the right
+	 *     changeType in the same breath as its next story. It is not rejected,
+	 *     because a token-overlap hit is a strong hint and not a proof, and a
+	 *     rejection would force a round trip to say "no, really, NEW".
+	 *   - non-NEW with no hits at all: rejected. A continuation of nothing is a
+	 *     contradiction the model cannot have evidence for.
+	 *
+	 * find_history stays available for the case where the model wants to read
+	 * the prior entries before it writes anything.
+	 */
+	const upsertOne = async (
+		raw: Record<string, unknown>,
+	): Promise<{ receipt: ReturnType<typeof toStoryReceipt>; history?: ReturnType<typeof toHistoryView>[]; note?: string }> => {
+		const parsed = StoryUpsertInput.safeParse({
+			...raw,
+			factRefs: (raw["factRefs"] as unknown[] | undefined) ?? [],
+			topicIds: (raw["topicIds"] as unknown[] | undefined) ?? [],
+		});
+		if (!parsed.success) {
+			throw rejectFromZod("upsert_story payload rejected", parsed.error);
+		}
+		const input = parsed.data;
+
+		const unknownItems = input.sourceItemIds.filter((i) => !itemsById.has(i));
+		if (unknownItems.length > 0) {
+			throw new ToolRejection(
+				`sourceItemIds contains id(s) not in today's manifest: ${unknownItems.join(", ")}. Use ids returned by tools only.`,
+			);
+		}
+		const notInSource = input.primarySourceIds.filter((i) => !input.sourceItemIds.includes(i));
+		if (notInSource.length > 0) {
+			throw new ToolRejection(
+				`primarySourceIds must be a subset of sourceItemIds; these are missing from sourceItemIds: ${notInSource.join(", ")}`,
+			);
+		}
+		const unknownFacts = input.factRefs.filter((f) => !factsById.has(f));
+		if (unknownFacts.length > 0) {
+			throw new ToolRejection(
+				`factRefs contains unknown fact id(s): ${unknownFacts.join(", ")}. Call get_structured_facts to see the valid ids.`,
+			);
+		}
+
+		/*
+		 * Same shape as the factRefs check above, and for the same reason: a
+		 * topic id the model invented would record a prior that never existed,
+		 * and the whole point of storing them is that the prior can be audited
+		 * afterwards. Named ids only, from the profile in the system prompt.
+		 */
+		if (ctx.topicIds) {
+			const unknownTopics = input.topicIds.filter((t) => !ctx.topicIds!.has(t));
+			if (unknownTopics.length > 0) {
+				throw new ToolRejection(
+					`topicIds contains id(s) that are not in the reader profile: ${unknownTopics.join(", ")}. ` +
+						`Valid ids: ${[...ctx.topicIds].sort().join(", ")}. An empty list is fine — a story that matches no listed topic still belongs in the ledger.`,
+				);
+			}
+		}
+
+		// By id first (the same slug on an earlier day is the same story by
+		// definition), then by title tokens.
+		let history = await ctx.repo.findHistory({
+			storyId: input.storyId,
+			beforeDate: ctx.date,
+			limit: HISTORY_HINT_LIMIT,
+		});
+		if (history.length === 0) {
+			history = await ctx.repo.findHistory({
+				text: input.canonicalTitle,
+				beforeDate: ctx.date,
+				limit: HISTORY_HINT_LIMIT,
+			});
+		}
+		if (input.changeType !== "NEW" && history.length === 0) {
+			throw new ToolRejection(
+				`story "${input.storyId}" is ${input.changeType} but no earlier ledger entry matches its id or title. ` +
+					`A story with no history can only be NEW; express low importance through the scores, not the changeType. ` +
+					`If you know the earlier storyId, re-use it exactly.`,
+			);
+		}
+
+		const entry = await ctx.repo.upsertStory(ctx.date, input, ctx.now());
+		const rescuing = input.sourceItemIds.filter((id) => screenedOut.has(id));
+		note("upsert_story", {
+			storyId: entry.storyId,
+			changeType: entry.changeType,
+			historyHits: history.length,
+			...(rescuing.length > 0 ? { rescuedSources: rescuing.length } : {}),
+		});
+
+		const notes: string[] = [];
+		if (input.changeType === "NEW" && history.length > 0) {
+			notes.push(
+				`History exists for this story (${history.map((h) => `${h.storyId}@${h.date}`).join(", ")}). ` +
+					`If today's coverage continues one of them, re-upsert with that storyId and a non-NEW changeType.`,
+			);
+		}
+		if (rescuing.length > 0) {
+			notes.push(
+				`${rescuing.length} source(s) (${rescuing.join(", ")}) were set aside by the screener. ` +
+					`Record a decision for each with record_item_decisions (CANDIDATE or DUPLICATE, storyId ${entry.storyId}) -- submit_materials rejects a cited source with no decision.`,
+			);
+		}
+		return {
+			receipt: toStoryReceipt(entry),
+			...(history.length > 0 ? { history: history.map(toHistoryView) } : {}),
+			...(notes.length > 0 ? { note: notes.join(" ") } : {}),
+		};
+	};
+
 	const upsertStory = defineTool({
 		name: "upsert_story",
 		label: "Upsert story",
 		description:
-			"Create or update a story for today. Re-calling with the same storyId merges source items and overwrites the judgement fields. Use a stable slug for storyId so the same real-world event keeps its id across days.",
-		promptSnippet: "upsert_story: create or merge a story cluster",
+			"Create or update ONE story for today. Prefer upsert_stories for a page's worth of stories at once. Re-calling with the same storyId merges source items and overwrites the judgement fields. Use a stable slug for storyId so the same real-world event keeps its id across days. History from previous days is checked for you and returned; a non-NEW changeType with no history is rejected.",
+		promptSnippet: "upsert_story: create or merge one story cluster (history checked for you)",
+		parameters: storyPayload,
+		execute: async (_id, params) => {
+			const result = await upsertOne(params as Record<string, unknown>);
+			return ok({ story: result.receipt, ...(result.history ? { history: result.history } : {}), ...(result.note ? { note: result.note } : {}) });
+		},
+	});
+
+	/*
+	 * The batch form. One model turn instead of one per story. Applied in
+	 * order and independently: a story that fails validation is reported at its
+	 * index and the others are still written, because an upsert is idempotent
+	 * and re-sending the good ones would only cost tokens. The model is told
+	 * exactly which failed and why, and resends those alone.
+	 */
+const upsertStories = defineTool({
+		name: "upsert_stories",
+		label: "Upsert stories",
+		description:
+			"Create or update SEVERAL stories for today in one call -- use this for a page's clusters instead of one upsert_story per cluster. Each entry has exactly the upsert_story shape and semantics, including the automatic history check. Entries are applied independently: the response lists each accepted story with its history hits, and each rejected entry with the reason; fix and resend only the rejected ones.",
+		promptSnippet: "upsert_stories: create or merge up to 20 story clusters in one call",
 		parameters: Type.Object({
-			storyId: Type.String({ minLength: 1 }),
-			canonicalTitle: Type.String({ minLength: 1 }),
-			sourceItemIds: Type.Array(Type.String(), { minItems: 1 }),
-			primarySourceIds: Type.Array(Type.String(), { minItems: 1 }),
-			status: Type.Union([
-				Type.Literal("OPEN"),
-				Type.Literal("RESOLVED"),
-				Type.Literal("DORMANT"),
-			]),
-			changeType: Type.Union([
-				Type.Literal("NEW"),
-				Type.Literal("UPDATE"),
-				Type.Literal("ESCALATION"),
-				Type.Literal("RESOLUTION"),
-				Type.Literal("REVERSAL"),
-				Type.Literal("CONFIRMATION"),
-				Type.Literal("RUMOR"),
-				Type.Literal("NO_MATERIAL_CHANGE"),
-			]),
-			relevance: Type.Number({ minimum: 0, maximum: 1 }),
-			novelty: Type.Number({ minimum: 0, maximum: 1 }),
-			importance: Type.Number({ minimum: 0, maximum: 1 }),
-			confidence: Type.Number({ minimum: 0, maximum: 1 }),
-			reason: Type.String({ minLength: 1 }),
-			factRefs: Type.Optional(Type.Array(Type.String())),
-			topicIds: Type.Optional(Type.Array(Type.String())),
+			stories: Type.Array(storyPayload, { minItems: 1, maxItems: 20 }),
 		}),
 		execute: async (_id, params) => {
-			const parsed = StoryUpsertInput.safeParse({
-				...params,
-				factRefs: params.factRefs ?? [],
-				topicIds: params.topicIds ?? [],
-			});
-			if (!parsed.success) {
-				throw rejectFromZod("upsert_story payload rejected", parsed.error);
-			}
-			const input = parsed.data;
-
-			const unknownItems = input.sourceItemIds.filter((i) => !itemsById.has(i));
-			if (unknownItems.length > 0) {
-				throw new ToolRejection(
-					`sourceItemIds contains id(s) not in today's manifest: ${unknownItems.join(", ")}. Use ids returned by tools only.`,
-				);
-			}
-			const notInSource = input.primarySourceIds.filter((i) => !input.sourceItemIds.includes(i));
-			if (notInSource.length > 0) {
-				throw new ToolRejection(
-					`primarySourceIds must be a subset of sourceItemIds; these are missing from sourceItemIds: ${notInSource.join(", ")}`,
-				);
-			}
-			const unknownFacts = input.factRefs.filter((f) => !factsById.has(f));
-			if (unknownFacts.length > 0) {
-				throw new ToolRejection(
-					`factRefs contains unknown fact id(s): ${unknownFacts.join(", ")}. Call get_structured_facts to see the valid ids.`,
-				);
-			}
-
-			/*
-			 * Same shape as the factRefs check above, and for the same reason: a
-			 * topic id the model invented would record a prior that never existed,
-			 * and the whole point of storing them is that the prior can be audited
-			 * afterwards. Named ids only, from the profile in the system prompt.
-			 */
-			if (ctx.topicIds) {
-				const unknownTopics = input.topicIds.filter((t) => !ctx.topicIds!.has(t));
-				if (unknownTopics.length > 0) {
-					throw new ToolRejection(
-						`topicIds contains id(s) that are not in the reader profile: ${unknownTopics.join(", ")}. ` +
-							`Valid ids: ${[...ctx.topicIds].sort().join(", ")}. An empty list is fine — a story that matches no listed topic still belongs in the ledger.`,
-					);
+			const accepted: Array<Record<string, unknown>> = [];
+			const rejected: Array<{ index: number; storyId: string; error: string }> = [];
+			for (const [index, story] of params.stories.entries()) {
+				try {
+					const result = await upsertOne(story as Record<string, unknown>);
+					accepted.push({
+						...result.receipt,
+						...(result.history ? { history: result.history } : {}),
+						...(result.note ? { note: result.note } : {}),
+					});
+				} catch (err) {
+					if (!(err instanceof ToolRejection)) throw err;
+					rejected.push({ index, storyId: String(story.storyId ?? ""), error: err.message });
 				}
 			}
-
-			const entry = await ctx.repo.upsertStory(ctx.date, input, ctx.now());
-			note("upsert_story", { storyId: entry.storyId, changeType: entry.changeType });
-			return ok({ story: entry });
+			const rejectedBy: Record<string, number> = {};
+			for (const r of rejected) {
+				const kind = upsertRejectionKind(r.error);
+				rejectedBy[kind] = (rejectedBy[kind] ?? 0) + 1;
+			}
+			note("upsert_stories", {
+				accepted: accepted.length,
+				rejected: rejected.length,
+				...(rejected.length > 0 ? { rejectedBy } : {}),
+			});
+			if (accepted.length === 0) {
+				throw new ToolRejection(
+					`upsert_stories rejected every entry:\n- ${rejected.map((r) => `[${r.index}] ${r.storyId}: ${r.error}`).join("\n- ")}`,
+				);
+			}
+			return ok({
+				accepted,
+				...(rejected.length > 0
+					? {
+							rejected,
+							note: `${rejected.length} entry/ies were not written. Fix the named problem and resend only those.`,
+						}
+					: {}),
+			});
 		},
 	});
 
@@ -485,18 +716,17 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 
 			await ctx.repo.recordDecisions(ctx.date, parsedList);
 			// Spent after the write, so a rejected batch never costs the turn budget.
-			ctx.turnBudget?.spend(parsedList.length);
-			const processed = await ctx.repo.processedItemIds(ctx.date);
-			const coverage = scanCoverage({
-				manifest: ctx.manifest,
-				knownStoryIds: new Set(),
-				processedItemIds: processed,
-			});
+			// Rescues are not charged: the budget bounds the broad scan, and a rescue
+			// is the Curator following a story past what the scan offered.
+			const rescuedNow = parsedList.filter((d) => screenedOut.has(d.itemId)).length;
+			ctx.turnBudget?.spend(parsedList.length - rescuedNow);
+			const account = await accounting();
 			const payload = {
 				recorded: parsedList.length,
-				processedItems: coverage.decided,
-				totalItems: coverage.total,
-				unseenItems: coverage.unseenItemIds.length,
+				...(rescuedNow > 0 ? { rescued: rescuedNow } : {}),
+				processedItems: account.curatorDecided,
+				totalItems: account.sentToCurator,
+				unseenItems: account.unaccountedItemIds.length,
 			};
 			note("record_item_decisions", payload);
 			return ok(payload);
@@ -516,8 +746,8 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		name: "submit_materials",
 		label: "Submit materials",
 		description:
-			"Submit the curated material set. This is the only way to finish. It is rejected unless every item in today's manifest has a recorded decision and every id you reference exists. Read a rejection carefully and fix the specific problem it names.",
-		promptSnippet: "submit_materials: final curator output (requires 100% scan coverage)",
+			"Submit the curated material set. This is the only way to finish. It is rejected unless every item offered to you has a recorded decision, every item a story cites has a recorded decision, and every id you reference exists. Read a rejection carefully and fix the specific problem it names.",
+		promptSnippet: "submit_materials: final curator output (requires every offered item decided)",
 		parameters: Type.Object({
 			stories: Type.Array(
 				Type.Object({
@@ -572,6 +802,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 				manifest: ctx.manifest,
 				knownStoryIds,
 				processedItemIds: processed,
+				screenedOutItemIds: screenedOut,
 			};
 			const result = validateMaterials(parsed.data, validationCtx);
 			if (!result.ok) {
@@ -581,8 +812,8 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			}
 
 			// Recomputed from the same context the gate used, so the success line
-			// can only report coverage that was actually verified.
-			const coverage = scanCoverage(validationCtx);
+			// can only report accounting that was actually verified.
+			const account = accountManifest(validationCtx);
 			const materials: DailyMaterials = {
 				date: ctx.date,
 				producedAt: ctx.now().toISOString(),
@@ -594,7 +825,13 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 				content: [
 					{
 						type: "text" as const,
-						text: `Accepted ${materials.stories.length} stories with full scan coverage (${coverage.decided}/${coverage.total} manifest items decided). Curation is complete — stop here.`,
+						text:
+							`Accepted ${materials.stories.length} stories with every manifest item accounted for ` +
+							`(${account.curatorDecided} decided by you` +
+							(account.screenedOut > 0
+								? `, ${account.screenedOut} set aside by the screener, ${account.rescued} of those rescued`
+								: "") +
+							`; ${account.total} total). Curation is complete — stop here.`,
 					},
 				],
 				details: {},
@@ -706,6 +943,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		getStory,
 		listTodayStories,
 		upsertStory,
+		upsertStories,
 		recordItemDecisions,
 		getStructuredFacts,
 		submitMaterials,
