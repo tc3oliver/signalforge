@@ -123,3 +123,26 @@ describe("the observation report makes a dead provider impossible to miss", () =
 		expect(text).toContain("3,148,478");
 	});
 });
+
+describe("a real cause is never overwritten by silence", () => {
+	/*
+	 * Several genuine provider failures also report zero tokens, because the
+	 * request never completed. Only the two classes that mean "the session ended
+	 * without the model producing what it was asked for" are ambiguous with a
+	 * provider that ran nothing; re-labelling the rest would turn a transient
+	 * blip on the first turn into an immediate fallback and throw away the one
+	 * cheap retry the router exists to give it.
+	 */
+	it("leaves a network error alone even with no tokens reported", () => {
+		const err = Object.assign(new Error("fetch failed"), { code: "ECONNRESET" });
+		expect(asSilentProviderFailure(err, silent, SPEC)).toBe(err);
+		expect(classifyError(err).failureClass).toBe("NETWORK");
+		expect(decideAction("NETWORK", 1)).toEqual({ kind: "RETRY_SAME" });
+	});
+
+	it("leaves a rate limit alone even with no tokens reported", () => {
+		const err = Object.assign(new Error("too many requests"), { status: 429 });
+		expect(asSilentProviderFailure(err, silent, SPEC)).toBe(err);
+		expect(classifyError(err).failureClass).toBe("RATE_LIMIT");
+	});
+});
