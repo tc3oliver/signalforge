@@ -278,7 +278,7 @@ Recorded tool sets (`restricted-runtime.json`, written per run):
 
 | Stage | Tools |
 |---|---|
-| Curator | `find_history`, `get_daily_inventory`, `get_item_detail`, `get_item_evidence` (when configured), `commit_curation_batch`, `get_story`, `get_structured_facts`, `list_today_stories`, `list_unseen_items`, `read_item_body`, `read_skill_reference`, `search_items`, `submit_materials` (+ `search_web` when research is configured) |
+| Curator | `commit_curation_batch`, `find_history`, `get_daily_inventory`, `get_item_detail`, `get_item_evidence` (when configured), `get_story`, `get_structured_facts`, `list_today_stories`, `list_unseen_items`, `read_item_body`, `read_skill_reference`, `search_items`, `submit_materials` (+ `search_web` when research is configured) |
 | Editor | `find_history`, `get_materials`, `get_source_items`, `get_story_detail`, `get_structured_facts`, `read_skill_reference`, `read_source_body`, `submit_brief` |
 
 ## Agent output = custom tool submission
