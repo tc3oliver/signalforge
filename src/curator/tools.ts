@@ -131,6 +131,20 @@ function toHistoryView(entry: StoryLedgerEntry) {
 	};
 }
 
+/**
+ * A story counts as today's near-neighbour at this much title overlap. Measured
+ * on the 2026-09-19 ledger: every one of the day's duplicate pairs scored 0.5
+ * or better and ranked first for its twin, and the threshold fires on about one
+ * story in ten, so a run pays a sentence a dozen times to be told about
+ * something it otherwise shipped twice.
+ *
+ * Exported because `pnpm observe` reports the pairs that survived to the ledger
+ * at the same threshold, and a report drawing its own line somewhere else would
+ * be describing a check that is not the one running.
+ */
+export const TODAY_NEAR_SCORE = 0.5;
+const TODAY_NEAR_LIMIT = 3;
+
 function tokenize(text: string): string[] {
 	return text
 		.toLowerCase()
@@ -733,15 +747,6 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 	 * find_history stays available for the case where the model wants to read
 	 * the prior entries before it writes anything.
 	 */
-	/**
-	 * A story counts as today's near-neighbour at this much title overlap. Measured
-	 * on the 2026-09-19 ledger: every one of the day's duplicate pairs scored 0.5
-	 * or better and ranked first for its twin, and the threshold fires on about
-	 * one story in ten, so a run pays a sentence a dozen times to be told about
-	 * something it otherwise shipped twice.
-	 */
-	const TODAY_NEAR_SCORE = 0.5;
-	const TODAY_NEAR_LIMIT = 3;
 
 	/*
 	 * Today's ledger as this session has seen it: loaded once and then kept in
@@ -892,7 +897,21 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			// story -- a renamed profile topic, say -- is still a detectable
 			// regression rather than a silent one.
 			...(droppedTopicIds.length > 0 ? { droppedTopicIds } : {}),
-			...(todayNear.length > 0 ? { todayNear: todayNear.map((r) => r.entry.storyId) } : {}),
+			/*
+			 * Enough to judge the check from a trace without re-reading the
+			 * ledger: which story was written, what the strongest existing
+			 * neighbour was and how strongly it matched, and every candidate
+			 * named. Whether the model then merged is the next upsert's storyId,
+			 * which is already recorded, so acceptance is derivable from the log
+			 * alone -- see src/observation/story-ledger.ts.
+			 */
+			...(todayNear.length > 0
+				? {
+						todayNear: todayNear.map((r) => r.entry.storyId),
+						todayNearTop: todayNear[0]!.entry.storyId,
+						todayNearScore: Number(todayNear[0]!.score.toFixed(3)),
+					}
+				: {}),
 		});
 
 		const notes: string[] = [];

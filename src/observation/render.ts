@@ -6,6 +6,7 @@ import { REQUIRED_CLEAN_DAYS } from "./epoch.ts";
 import type { TopicFunnel } from "./funnel.ts";
 import type { RoutingReadiness, TriageFunnel } from "./triage-funnel.ts";
 import type { ScreeningFunnel, ScreeningReadiness, StageUsage } from "./screening-funnel.ts";
+import { AMPLIFICATION, CHARS_PER_PROMPT_TOKEN, type LedgerPair, type LedgerTelemetry } from "./story-ledger.ts";
 
 /*
  * Plain text, not Markdown or JSON: this is read in a terminal next to the
@@ -350,5 +351,82 @@ export function renderStageUsage(usage: readonly StageUsage[], screenedItems: nu
 	lines.push("");
 	lines.push(bar("per screened item", per("SCREENER", screenedItems)));
 	lines.push(bar("per Curator item", per("CURATOR", curatorItems)));
+	return lines.join("\n");
+}
+
+/*
+ * The story ledger's own report: what the near-duplicate check did, what the
+ * id-only story list saved, and which pairs survived to the ledger anyway.
+ *
+ * Printed as three separate counts rather than one rate. A fire the model
+ * declined is not a false positive on its own -- two similar titles can be two
+ * events -- and a pair in the final ledger is not a split event until someone
+ * reads the two titles. The report keeps those apart so neither gets credited
+ * to the other.
+ */
+export function renderStoryLedger(input: {
+	date: string;
+	telemetry: LedgerTelemetry;
+	savings: { before: number; after: number; beforeTokens: number; afterTokens: number };
+	pairs: LedgerPair[];
+	threshold: number;
+	storyCount: number;
+}): string {
+	const { telemetry: t, savings, pairs } = input;
+	const lines = [`## Story ledger — ${input.date}`, ""];
+
+	lines.push("list_today_stories");
+	lines.push(bar("  calls", `${t.listCalls} (${t.listMatchCalls} with match)`));
+	lines.push(bar("  result chars", t.listChars.toLocaleString()));
+	lines.push(bar("  largest single result", t.largestList.toLocaleString()));
+	lines.push(
+		bar("  amplified tokens", `${t.listTokens.toLocaleString()} (×${AMPLIFICATION} re-sent, ${CHARS_PER_PROMPT_TOKEN} chars/token)`),
+	);
+	if (savings.before > 0) {
+		const saved = savings.beforeTokens - savings.afterTokens;
+		lines.push(
+			bar(
+				"  same calls with titles",
+				`${savings.before.toLocaleString()} chars / ${savings.beforeTokens.toLocaleString()} tokens`,
+			),
+		);
+		lines.push(
+			bar("  saved", `${saved.toLocaleString()} tokens (${((1 - savings.after / savings.before) * 100).toFixed(1)}%)`),
+		);
+	}
+	lines.push("");
+
+	lines.push(`todayNear (threshold ${input.threshold})`);
+	lines.push(bar("  upserts", t.upserts));
+	lines.push(
+		bar("  fired", `${t.fires.length}${t.upserts > 0 ? ` (${((100 * t.fires.length) / t.upserts).toFixed(1)}% of upserts)` : ""}`),
+	);
+	lines.push(bar("  merged into the candidate", t.accepted));
+	lines.push(bar("  wrote a new story anyway", t.declined));
+	if (t.fires.length > 0) {
+		lines.push("");
+		lines.push("  story                                    top candidate                            score  merged");
+		for (const f of t.fires) {
+			lines.push(
+				`  ${f.storyId.slice(0, 38).padEnd(40)} ${f.top.slice(0, 38).padEnd(40)} ${f.score.toFixed(2).padStart(5)}  ${f.accepted ? "yes" : "no"}`,
+			);
+		}
+	}
+	lines.push("");
+
+	lines.push(`Residual pairs in the ledger (${input.storyCount} stories, overlap ≥ ${input.threshold})`);
+	if (pairs.length === 0) {
+		lines.push("  none");
+	} else {
+		lines.push(`  ${pairs.length} pair(s). Read the two titles; token overlap cannot tell a follow-up from a neighbour.`);
+		for (const p of pairs) {
+			lines.push("");
+			lines.push(`  ${p.score.toFixed(2)}${p.sharesSource ? "  shares a source item" : ""}`);
+			lines.push(`    ${p.storyId}`);
+			lines.push(`      ${p.title}`);
+			lines.push(`    ${p.otherStoryId}`);
+			lines.push(`      ${p.otherTitle}`);
+		}
+	}
 	return lines.join("\n");
 }
