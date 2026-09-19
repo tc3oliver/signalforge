@@ -163,6 +163,7 @@ describe.skipIf(!haveFixtures)("gold truth is unreachable from inside the agent 
 				"list_unseen_items",
 				"read_item_body",
 				"read_skill_reference",
+				"read_source_body",
 				"commit_curation_batch",
 				"record_item_decisions",
 				"search_items",

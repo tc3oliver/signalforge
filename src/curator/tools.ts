@@ -1,5 +1,9 @@
 import { Type } from "typebox";
-import { htmlToText } from "../collectors/html-text.ts";
+import {
+	BODY_WINDOW_MAX,
+	canonicalBody,
+	defineReadBodyTool,
+} from "../agent-tools/item-body.ts";
 import type { EvidenceConfig } from "../config/schema.ts";
 import { distillEvidence } from "../evidence/distill.ts";
 import { defineTool, type ToolDefinition } from "@earendil-works/pi-coding-agent";
@@ -63,29 +67,6 @@ export function toScanView(item: NormalizedItem) {
 	};
 }
 
-/*
- * The addressable form of an item body.
- *
- * `normalized_items.content` is whatever the source served, which for most RSS
- * items is HTML. Across the 2026-09-19 manifest that is 30% markup by volume,
- * and on individual items far more: one 16,419-character record is 4,765
- * characters of prose, another 37,318 is 12,017. Markup is not merely wasted
- * context. An offset into raw HTML is meaningless as a handle, and a sentence a
- * reader sees whole is split by tags in the bytes -- which is why five quotes
- * that looked fabricated turned out to be real text with an <em> in the middle.
- *
- * So every character offset the Curator is given, and every window it reads,
- * is expressed in this projection and never in the raw bytes. `htmlToText` is
- * the collectors' own normalizer, reused rather than reimplemented so the
- * agent-visible text cannot drift from the text collection already produces.
- */
-function canonicalBody(item: NormalizedItem): string {
-	return htmlToText(item.content ?? "");
-}
-
-/** Characters of body a single tool result may carry, per item. */
-const BODY_WINDOW_DEFAULT = 2000;
-const BODY_WINDOW_MAX = 3000;
 /** Body characters `get_item_detail` may return per item before it truncates. */
 const DETAIL_BODY_CHARS = 1500;
 
@@ -439,90 +420,16 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		},
 	});
 
-	/*
-	 * Reading one item properly, without pouring it into the session.
-	 *
-	 * Two things make a window usable rather than a lottery. It is taken over
-	 * the canonical prose, so offsets mean something and no budget is spent on
-	 * markup. And it is addressed by content: `find` locates a term and returns
-	 * the passage around it plus every other place it occurs, so the model never
-	 * has to guess a number. Paging by offset remains possible and is the thing
-	 * you do second, with an offset the tool itself handed you.
-	 */
-	const readItemBody = defineTool({
+	const readItemBody = defineReadBodyTool({
 		name: "read_item_body",
 		label: "Read item body",
 		description:
 			"Read part of one item's body. Give `find` to jump to a term -- the reply centres on the first match and lists where the others are -- or `start` to continue from an offset the tool gave you earlier. A long article is never returned whole: ask for what you need to know. The reply always says how long the body is and whether there is more before or after the window.",
 		promptSnippet: "read_item_body: search inside one item and read the passage around a match",
-		parameters: Type.Object({
-			itemId: Type.String({ minLength: 1 }),
-			find: Type.Optional(Type.String({ minLength: 3, maxLength: 120 })),
-			start: Type.Optional(Type.Integer({ minimum: 0 })),
-			length: Type.Optional(Type.Integer({ minimum: 200, maximum: BODY_WINDOW_MAX })),
-		}),
-		execute: async (_id, params) => {
-			const item = itemsById.get(params.itemId);
-			if (!item) {
-				throw new ToolRejection(
-					`Unknown item id: ${params.itemId}. Item ids come from list_unseen_items or search_items — never construct one.`,
-				);
-			}
-			const body = canonicalBody(item);
-			if (body.length === 0) {
-				note("read_item_body", { itemId: params.itemId, bodyChars: 0 });
-				return ok({
-					itemId: item.id,
-					bodyChars: 0,
-					text: "",
-					note: "This item has no body text; the title and summary are all there is.",
-				});
-			}
-
-			const length = Math.min(params.length ?? BODY_WINDOW_DEFAULT, BODY_WINDOW_MAX);
-			let matches: number[] = [];
-			let start = Math.min(params.start ?? 0, Math.max(0, body.length - 1));
-			if (params.find !== undefined) {
-				const haystack = body.toLowerCase();
-				const needle = params.find.toLowerCase();
-				for (let at = haystack.indexOf(needle); at !== -1 && matches.length < 8; at = haystack.indexOf(needle, at + 1)) {
-					matches.push(at);
-				}
-				if (matches.length === 0) {
-					// Not a rejection: "the word is not in this document" is an
-					// answer, and a rejection would cost a turn to learn it.
-					note("read_item_body", { itemId: params.itemId, find: params.find, matches: 0 });
-					return ok({
-						itemId: item.id,
-						bodyChars: body.length,
-						text: "",
-						matches: 0,
-						note: `"${params.find}" does not appear in this item's body. Try another term, or read from the start with no find.`,
-					});
-				}
-				// Centre the window on the first match, keeping some lead-in.
-				start = Math.max(0, matches[0]! - Math.floor(length / 3));
-			}
-			const end = Math.min(body.length, start + length);
-			note("read_item_body", {
-				itemId: params.itemId,
-				...(params.find !== undefined ? { find: params.find, matches: matches.length } : {}),
-				start,
-				returned: end - start,
-				bodyChars: body.length,
-			});
-			return ok({
-				itemId: item.id,
-				bodyChars: body.length,
-				start,
-				returnedChars: end - start,
-				text: body.slice(start, end),
-				hasMoreBefore: start > 0,
-				hasMoreAfter: end < body.length,
-				...(matches.length > 0 ? { matchOffsets: matches } : {}),
-				...(end < body.length ? { nextStart: end } : {}),
-			});
-		},
+		lookup: (id) => itemsById.get(id),
+		unknownIdMessage: (id) =>
+			`Unknown item id: ${id}. Item ids come from list_unseen_items or search_items — never construct one.`,
+		note,
 	});
 
 	const searchItems = defineTool({

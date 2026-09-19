@@ -69,7 +69,7 @@ ${ctx.skillSection}
 export function buildEditorTaskPrompt(ctx: EditorPromptContext): string {
 	return `Write the daily brief for ${ctx.date}.
 
-Start with \`get_materials\`. Use \`get_story_detail\` and \`get_source_items\` on the stories you intend to write, \`find_history\` to ground "what changed", and \`get_structured_facts\` for any number you need.
+Start with \`get_materials\`. Use \`get_story_detail\` and \`get_source_items\` on the stories you intend to write -- the latter gives each source's record and the opening of its text, and \`read_source_body\` with a \`find\` term reaches any passage you need to quote exactly -- \`find_history\` to ground "what changed", and \`get_structured_facts\` for any number you need.
 
 Then decide the shape of the day: which stories earn a place (the system prompt gives today's range), which are Must Know, which section each belongs to, and what the through-line is for Daily Analysis. Write in 正體中文, dense and direct.
 

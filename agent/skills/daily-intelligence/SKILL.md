@@ -102,14 +102,15 @@ description: Curate a day of raw feed items into deduplicated, historically-awar
 
 ## Role 2 — Editor
 
-可用工具:`get_materials`、`get_story_detail`、`get_source_items`、
+可用工具:`get_materials`、`get_story_detail`、`get_source_items`、`read_source_body`、
 `find_history`、`get_structured_facts`、`submit_brief`。
 
 ### 流程
 
 1. `get_materials` 取得 Curator 交出的 story 清單與 tier。
 2. 對要寫的每則 story:`get_story_detail` 看完整 ledger entry,
-   `get_source_items` 讀來源原文,`find_history` 確認「今天多了什麼」的說法站得住。
+   `get_source_items` 讀來源紀錄與開頭正文;要引述原句或查證數字時,用 `read_source_body`
+   帶 `find` 跳到那一段,不要把整篇拉進來。`find_history` 確認「今天多了什麼」站得住。
 3. **先決定 `emergingSignals`,再決定 final stories。** 一條 signal 的構成事件
    逐一跑 **Standalone Value Test**:「如果這條 signal 不存在,這則還值得佔一個
    story 位置嗎?」不值得 → 只留在 signal 的 `storyIds` 裡當證據,不要另外寫成

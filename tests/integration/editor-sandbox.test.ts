@@ -212,6 +212,7 @@ describe("editor sandbox", () => {
 			"get_story_detail",
 			"get_structured_facts",
 			"read_skill_reference",
+			"read_source_body",
 			"submit_brief",
 		]);
 		for (const curatorOnly of ["get_daily_inventory", "list_unseen_items", "search_items", "get_item_detail"]) {

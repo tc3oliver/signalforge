@@ -11,6 +11,7 @@ import {
 	ok,
 	rejectFromZod,
 } from "../agent-tools/shared.ts";
+import { canonicalBody, defineReadBodyTool } from "../agent-tools/item-body.ts";
 
 export interface EditorContext {
 	date: string;
@@ -101,12 +102,33 @@ export function createEditorTools(ctx: EditorContext): ToolDefinition[] {
 		},
 	});
 
+	/** Body characters `get_source_items` carries per item before it points at the reader. */
+	const SOURCE_BODY_CHARS = 2000;
+
+	/*
+	 * The record of a source item, and the beginning of what it says.
+	 *
+	 * It used to return the whole NormalizedItem, raw `content` and all. On
+	 * 2026-09-19 two calls put 152,078 characters into the editor's session, one
+	 * of them 107,353 -- mostly HTML markup, and all of it re-sent on every later
+	 * turn of the stage. The curator had the identical bug and lost it the same
+	 * morning; this is the same fix, from the same module, so the two cannot
+	 * drift.
+	 *
+	 * The opening of an article is usually enough to write from, because the
+	 * curator already decided what the story is and why. When it is not -- a
+	 * number, a name, the exact words someone used -- `read_source_body` reaches
+	 * the rest by searching it, which is both cheaper and more accurate than
+	 * scrolling a wall of markup. Nothing the editor could previously read has
+	 * become unreachable; it is reached a sentence at a time instead of all at
+	 * once.
+	 */
 	const getSourceItems = defineTool({
 		name: "get_source_items",
 		label: "Source items",
 		description:
-			"Return the full text of source items belonging to material stories. Only items the curator attached to a story are reachable — you cannot see the raw daily inventory.",
-		promptSnippet: "get_source_items: full text of a story's source items",
+			"Return the record of source items belonging to material stories: title, source, url, publication time, summary, and the opening of the body as plain prose. Only items the curator attached to a story are reachable — you cannot see the raw daily inventory. A long body is not returned whole; use read_source_body to search inside one for the passage you need to quote.",
+		promptSnippet: "get_source_items: the record and opening text of a story's sources",
 		parameters: Type.Object({ itemIds: Type.Array(Type.String(), { minItems: 1, maxItems: 20 }) }),
 		execute: async (_id, params) => {
 			const outOfScope = params.itemIds.filter((i) => !allowedItemIds.has(i));
@@ -115,9 +137,44 @@ export function createEditorTools(ctx: EditorContext): ToolDefinition[] {
 					`Not available: ${outOfScope.join(", ")}. You can only read source items that belong to a story in today's materials.`,
 				);
 			}
-			note("get_source_items", { count: params.itemIds.length });
-			return ok({ items: params.itemIds.map((id) => itemsById.get(id)!) });
+			let bodyChars = 0;
+			const items = params.itemIds.map((id) => {
+				const item = itemsById.get(id)!;
+				const body = canonicalBody(item);
+				bodyChars += body.length;
+				const head = body.slice(0, SOURCE_BODY_CHARS);
+				return {
+					id: item.id,
+					source: `${item.sourceName} (${item.sourceType})`,
+					title: item.title,
+					at: item.publishedAt,
+					...(item.url ? { url: item.url } : {}),
+					summary: item.summary,
+					bodyChars: body.length,
+					body: head,
+					...(body.length > head.length
+						? {
+								truncated: true,
+								note: `${body.length - head.length} more characters. Use read_source_body with a \`find\` term to reach a specific passage.`,
+							}
+						: {}),
+				};
+			});
+			note("get_source_items", { count: params.itemIds.length, bodyChars });
+			return ok({ items });
 		},
+	});
+
+	const readSourceBody = defineReadBodyTool({
+		name: "read_source_body",
+		label: "Read source body",
+		description:
+			"Read part of one source item's body as plain prose. Give `find` to jump to a term — the reply centres on the first match and lists where the others are — or `start` to continue from an offset the tool gave you earlier. Use this to check a number or copy a quotation exactly, rather than pulling a whole article into the conversation.",
+		promptSnippet: "read_source_body: search inside one source and read the passage around a match",
+		lookup: (id) => (allowedItemIds.has(id) ? itemsById.get(id) : undefined),
+		unknownIdMessage: (id) =>
+			`Not available: ${id}. You can only read source items that belong to a story in today's materials.`,
+		note,
 	});
 
 	const findHistory = defineFindHistoryTool({
@@ -248,6 +305,7 @@ export function createEditorTools(ctx: EditorContext): ToolDefinition[] {
 		getMaterials,
 		getStoryDetail,
 		getSourceItems,
+		readSourceBody,
 		findHistory,
 		getStructuredFacts,
 		submitBrief,
