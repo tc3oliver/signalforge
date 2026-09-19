@@ -854,7 +854,17 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			"Commit your complete judgement about the batch of items you just reviewed: the stories the batch's items belong to, and a disposition for every item in it. This is the one call that ends a batch — it writes the stories, checks each one's history for you, records the decisions, and tells you whether the work unit is finished. Stories are applied independently: a refused story is reported on its own and the rest are kept, and any decision naming a story that did not commit is refused with it so nothing is recorded pointing at a story that does not exist. Use CANDIDATE with a storyId for an item that feeds a story, DUPLICATE with a storyId for redundant coverage of one, IRRELEVANT for noise.",
 		promptSnippet: "commit_curation_batch: write a page's stories and decisions in one call",
 		parameters: Type.Object({
-			stories: Type.Optional(Type.Array(storyPayload, { maxItems: 20 })),
+			/*
+			 * Room for a whole page's events in one call.
+			 *
+			 * The old batch tool capped at 20 and one of 2026-09-19's 33 batches
+			 * landed exactly on it, which is the shape of a clip rather than a
+			 * coincidence. Now that the decisions travel with the stories, a
+			 * 50-item page is meant to be one commit, and a page that happens to
+			 * hold 22 distinct events should not be split into two model turns by
+			 * a number.
+			 */
+			stories: Type.Optional(Type.Array(storyPayload, { maxItems: 25 })),
 			decisions: Type.Optional(Type.Array(
 				Type.Object({
 					itemId: Type.String({ minLength: 1 }),
