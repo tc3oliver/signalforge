@@ -41,7 +41,7 @@ export class JsonStoryRepository implements StoryRepository {
 	/*
 	 * The date list is a readdir of the ledger root, and it was re-read on every
 	 * getStory — which the curator calls once per decision in a batch, so a
-	 * single record_item_decisions call did fifty directory scans. This process
+	 * single decisions write did fifty directory scans. This process
 	 * is the only writer of that directory, so the listing is cached and dropped
 	 * whenever a write could have added a date.
 	 */

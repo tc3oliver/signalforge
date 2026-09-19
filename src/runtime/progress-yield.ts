@@ -103,7 +103,7 @@ export interface TurnBudgetOptions {
  * Deliberately NOT the turn timeout. Using the timeout as the yield mechanism
  * would mean every normal turn ends by being aborted mid-flight, which is both
  * slower (the abort grace period, every turn) and less safe: a turn killed at an
- * arbitrary point can have a `record_item_decisions` in flight, whereas a turn
+ * arbitrary point can have a `commit_curation_batch` in flight, whereas a turn
  * that stops because the tools stopped offering it work ends at a tool boundary
  * with the durable state consistent by construction.
  *

@@ -29,7 +29,7 @@ export class TurnTimeoutError extends Error {
  * that timed out and then stopped is safe to replace: whatever it wrote, it
  * wrote before the replacement read anything. A turn that is still running is
  * not, because the two sessions would share one durable state -- the old one's
- * in-flight `record_item_decisions` landing after the new one has already taken
+ * in-flight `commit_curation_batch` landing after the new one has already taken
  * its unseen snapshot, so the replacement works from a set that was stale the
  * moment it was read.
  *
@@ -79,7 +79,7 @@ const ABORT_GRACE_MS = 5_000;
  *
  * After the abort, the turn is awaited rather than discarded. `Promise.race`
  * abandons the losing promise but does not stop it, so the timed-out turn kept
- * running while the router opened its replacement: a `record_item_decisions`
+ * running while the router opened its replacement: a `commit_curation_batch`
  * still in flight could land after the new session had already read the decided
  * set, and the replacement would work from a snapshot that was stale the moment
  * it was taken. Both repositories upsert by item id, so the cost was a stale row
