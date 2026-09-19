@@ -25,6 +25,35 @@ export class ToolLoopError extends Error {
 	}
 }
 
+/*
+ * The provider accepted the turn and ran nothing.
+ *
+ * Not a hypothetical. From 2026-09-17 the whole `github-copilot` provider began
+ * returning empty completions in this Pi installation -- no text, no tool call,
+ * no error, and a usage report of zero tokens -- while `pi auth check` still
+ * said "ready" and a plain `pi` chat without custom tools still answered. Every
+ * model under it behaved identically, so it is the provider and not a schema
+ * the model disliked.
+ *
+ * The pipeline could not see that. A session that is handed nothing makes no
+ * progress, so it was classified TOOL_LOOP for the curator and
+ * INVALID_AGENT_OUTPUT for the editor -- both of which say "the model answered
+ * badly", both of which earn a retry, and neither of which is true. The chain
+ * absorbed it as an ordinary fallback and three days of production ran entirely
+ * on the expensive model with nothing anywhere saying the cheap one had died.
+ *
+ * Zero provider-reported tokens across a whole attempt is the evidence, and it
+ * is unambiguous: a model that thought about the task and declined still bills
+ * for the prompt. So this maps to MODEL_UNAVAILABLE, which already means "do
+ * not retry, fall back now".
+ */
+export class ModelSilentError extends Error {
+	override readonly name = "ModelSilentError";
+	constructor(message: string, options?: { cause?: unknown }) {
+		super(message, options);
+	}
+}
+
 /** A bug in this codebase. Never retried, never fallen back from. */
 export class ProgrammerError extends Error {
 	override readonly name = "ProgrammerError";
@@ -155,6 +184,8 @@ function classifyName(name: string): FailureClass | undefined {
 			return "INVALID_AGENT_OUTPUT";
 		case "ToolLoopError":
 			return "TOOL_LOOP";
+		case "ModelSilentError":
+			return "MODEL_UNAVAILABLE";
 		case "ProgrammerError":
 			return "PROGRAMMER_ERROR";
 		case "AbortError":
@@ -226,6 +257,7 @@ function classifyMessage(message: string): FailureClass | undefined {
 function classifyStructural(err: unknown): FailureClass | undefined {
 	if (err instanceof InvalidAgentOutputError) return "INVALID_AGENT_OUTPUT";
 	if (err instanceof ToolLoopError) return "TOOL_LOOP";
+	if (err instanceof ModelSilentError) return "MODEL_UNAVAILABLE";
 	if (err instanceof ProgrammerError) return "PROGRAMMER_ERROR";
 
 	const rec = asRecord(err);

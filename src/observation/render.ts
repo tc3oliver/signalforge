@@ -6,6 +6,7 @@ import { REQUIRED_CLEAN_DAYS } from "./epoch.ts";
 import type { TopicFunnel } from "./funnel.ts";
 import type { RoutingReadiness, TriageFunnel } from "./triage-funnel.ts";
 import type { ScreeningFunnel, ScreeningReadiness, StageUsage } from "./screening-funnel.ts";
+import type { ModelChainRow } from "./queries.ts";
 import { AMPLIFICATION, CHARS_PER_PROMPT_TOKEN, type LedgerPair, type LedgerTelemetry } from "./story-ledger.ts";
 
 /*
@@ -426,6 +427,46 @@ export function renderStoryLedger(input: {
 			lines.push(`      ${p.title}`);
 			lines.push(`    ${p.otherStoryId}`);
 			lines.push(`      ${p.otherTitle}`);
+		}
+	}
+	return lines.join("\n");
+}
+
+/**
+ * The model chain, per stage: who did the work and who only failed.
+ *
+ * Prints a line of its own when a model's failures were all silent — zero
+ * provider-reported tokens — because that is not a model doing badly, it is a
+ * provider that is not there, and the only way it ever shows up is that
+ * everything downstream quietly runs on the expensive fallback.
+ */
+export function renderModelChain(rows: ModelChainRow[]): string {
+	const lines = ["## Model chain", ""];
+	if (rows.length === 0) {
+		lines.push("No attempts recorded.");
+		return lines.join("\n");
+	}
+	lines.push("stage    model                                    att  ok  yld  fail  silent      tokens");
+	for (const r of rows) {
+		lines.push(
+			`${r.stage.padEnd(8)} ${`${r.provider}/${r.model}`.slice(0, 38).padEnd(40)} ` +
+				`${String(r.attempts).padStart(3)} ${String(r.succeeded).padStart(3)} ${String(r.yielded).padStart(4)} ` +
+				`${String(r.failed).padStart(5)} ${String(r.silent).padStart(7)} ${r.totalTokens.toLocaleString().padStart(11)}`,
+		);
+	}
+	const dead = rows.filter((r) => r.attempts > 0 && r.silent === r.attempts);
+	if (dead.length > 0) {
+		lines.push("");
+		for (const r of dead) {
+			lines.push(
+				`!! ${r.provider}/${r.model} answered nothing on all ${r.attempts} ${r.stage} attempt(s): zero`,
+			);
+			lines.push(
+				"   provider-reported tokens, so it never ran. Every token below it in the chain",
+			);
+			lines.push(
+				"   was spent because this model was unavailable, not because it was unsuitable.",
+			);
 		}
 	}
 	return lines.join("\n");

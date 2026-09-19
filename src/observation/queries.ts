@@ -426,3 +426,75 @@ export async function fetchStageUsage(
 		wallClockMs: Number(r.wall_clock_ms),
 	}));
 }
+
+/*
+ * How each model in the chain actually behaved, per stage.
+ *
+ * `fetchStageUsage` above sums a stage across every model that touched it,
+ * which is the right shape for "what did curation cost" and the wrong one for
+ * "is the chain working". A first-choice model that silently stopped answering
+ * disappears into that sum: the stage still succeeded, the tokens still add up,
+ * and nothing says they were all spent on the expensive fallback. That happened
+ * for three days from 2026-09-17.
+ */
+export interface ModelChainRow {
+	stage: string;
+	provider: string;
+	model: string;
+	attempts: number;
+	succeeded: number;
+	yielded: number;
+	failed: number;
+	/** Failed attempts where the provider reported no tokens at all. */
+	silent: number;
+	totalTokens: number;
+}
+
+export async function fetchModelChainHealth(
+	sql: Sql,
+	lineage: string,
+	dates: readonly string[],
+): Promise<ModelChainRow[]> {
+	if (dates.length === 0) return [];
+	const rows = await sql<
+		{
+			stage: string;
+			provider: string;
+			model: string;
+			attempts: number;
+			succeeded: number;
+			yielded: number;
+			failed: number;
+			silent: number;
+			total_tokens: string;
+		}[]
+	>`
+		select
+			a.stage, a.provider, a.model,
+			count(*)::int as attempts,
+			count(*) filter (where a.status = 'SUCCESS')::int as succeeded,
+			count(*) filter (where a.status = 'YIELDED')::int as yielded,
+			count(*) filter (where a.status = 'FAILED')::int as failed,
+			count(*) filter (
+				where a.status = 'FAILED'
+				  and coalesce((a.token_usage->>'totalTokens')::bigint, 0) = 0
+			)::int as silent,
+			coalesce(sum((a.token_usage->>'totalTokens')::bigint), 0)::text as total_tokens
+		from agent_attempts a
+		join daily_runs r on r.run_id = a.run_id
+		where r.lineage = ${lineage} and r.date = any(${sql.array([...dates])})
+		group by a.stage, a.provider, a.model
+		order by a.stage, sum((a.token_usage->>'totalTokens')::bigint) desc nulls last
+	`;
+	return rows.map((r) => ({
+		stage: r.stage,
+		provider: r.provider,
+		model: r.model,
+		attempts: r.attempts,
+		succeeded: r.succeeded,
+		yielded: r.yielded,
+		failed: r.failed,
+		silent: r.silent,
+		totalTokens: Number(r.total_tokens),
+	}));
+}

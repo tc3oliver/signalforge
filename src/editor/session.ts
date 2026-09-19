@@ -13,6 +13,7 @@ import {
 	renderSkillSection,
 } from "../runtime/skill-access.ts";
 import { measureToolResults } from "../agent-tools/shared.ts";
+import { asSilentProviderFailure } from "../runtime/silent-model.ts";
 import { createEditorTools, type EditorContext } from "./tools.ts";
 import {
 	buildEditorNudgePrompt,
@@ -175,6 +176,14 @@ export async function runEditorStage(opts: EditorStageOptions): Promise<EditorSt
 			rejectedSubmissions,
 			activeToolNames: driver.getActiveToolNames(),
 		};
+	} catch (err) {
+		/*
+		 * A failure that happened while the provider reported nothing at all is
+		 * the provider's, not the model's. Re-labelled here, at the only place
+		 * that can still see this attempt's usage, so the router falls back at
+		 * once instead of nudging something that is not there.
+		 */
+		throw asSilentProviderFailure(err, driver.getUsage?.(), opts.spec);
 	} finally {
 		const usage = driver.getUsage?.();
 		if (usage) opts.reportUsage?.(usage);

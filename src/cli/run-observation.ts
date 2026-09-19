@@ -15,6 +15,7 @@ import {
 	fetchStageHits,
 	fetchScreeningOutcomes,
 	fetchScreeningVersions,
+	fetchModelChainHealth,
 	fetchStageUsage,
 	fetchTriageOutcomes,
 	fetchTriageVersions,
@@ -27,6 +28,7 @@ import {
 	renderFunnel,
 	renderScreening,
 	renderSignals,
+	renderModelChain,
 	renderStageUsage,
 	renderStoryLedger,
 	renderTriage,
@@ -297,6 +299,8 @@ async function main(): Promise<void> {
 			const curatorItems = stories.length === 0 ? 0 : await countDecisions(sql, lineage, epochDates);
 			console.log("");
 			console.log(renderStageUsage(await fetchStageUsage(sql, lineage, epochDates), screenedItems, curatorItems));
+			console.log("");
+			console.log(renderModelChain(await fetchModelChainHealth(sql, lineage, epochDates)));
 		}
 
 		console.log("");
