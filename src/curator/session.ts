@@ -18,6 +18,7 @@ import {
 } from "../runtime/skill-access.ts";
 import { measureToolResults } from "../agent-tools/shared.ts";
 import { createCuratorTools, type CuratorContext } from "./tools.ts";
+import { buildWorkUnitBrief, renderWorkUnitBrief } from "./work-unit.ts";
 import { renderReaderProfile, type ReaderProfile } from "../profile/reader-profile.ts";
 import {
 	buildCuratorNudgePrompt,
@@ -240,31 +241,46 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 		};
 
 		const decidedAtStart = await decidedCount();
-		const stories = await opts.repo.listStories(opts.date);
+
+		/*
+		 * The session opens holding the state it used to spend three turns
+		 * fetching: the day's counts, the page it is about to work on, and the
+		 * ids of the stories already written. None of those is a judgement, and
+		 * asking for each cost a model turn, in every unit, twelve times a day.
+		 *
+		 * Read once, here, at the point the orchestrator has already decided to
+		 * hand this session work -- so the numbers in the prompt and the numbers
+		 * the orchestrator started it with are the same read.
+		 */
+		const brief = await buildWorkUnitBrief({
+			date: opts.date,
+			manifest: opts.manifest,
+			repo: opts.repo,
+			screenedOutItemIds: screenedOut,
+			...(opts.maxDecisionsPerTurn !== undefined && opts.maxDecisionsPerTurn > 0
+				? { decisionBudget: opts.maxDecisionsPerTurn }
+				: {}),
+		});
+		const briefText = renderWorkUnitBrief(brief);
 
 		// A resume picks up durable state rather than replaying the day; a half-dead
 		// conversation is never migrated to another model.
 		const opening =
 			opts.mode === "RESUME" && decidedAtStart > 0
-				? buildCuratorResumePrompt({
-						date: opts.date,
-						unseenItems: totalItems - decidedAtStart,
-						totalItems,
-						storyCount: stories.length,
-					})
+				? `${buildCuratorResumePrompt({ date: opts.date })}\n\n${briefText}`
 				: opts.mode === "CORRECTIVE" && opts.lastError
 					? `${buildCuratorTaskPrompt({
 							date: opts.date,
 							totalItems,
 							manifestItems: opts.manifest.items.length,
 							skillSection: "",
-						})}\n\nA previous attempt failed with:\n${opts.lastError}\nAvoid repeating that mistake.`
-					: buildCuratorTaskPrompt({
+						})}\n\n${briefText}\n\nA previous attempt failed with:\n${opts.lastError}\nAvoid repeating that mistake.`
+					: `${buildCuratorTaskPrompt({
 							date: opts.date,
 							totalItems,
 							manifestItems: opts.manifest.items.length,
 							skillSection: "",
-						});
+						})}\n\n${briefText}`;
 
 
 		/*

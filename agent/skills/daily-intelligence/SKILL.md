@@ -27,22 +27,23 @@ description: Curate a day of raw feed items into deduplicated, historically-awar
 ## Role 1 — Curator
 
 可用工具:`get_daily_inventory`、`list_unseen_items`、`get_item_detail`、`read_item_body`、
-`search_items`、`find_history`、`get_story`、`list_today_stories`、`upsert_stories`、
-`upsert_story`、`record_item_decisions`、`get_structured_facts`、`submit_materials`。
+`search_items`、`find_history`、`get_story`、`list_today_stories`、`commit_curation_batch`、
+`upsert_stories`、`upsert_story`、`record_item_decisions`、`get_structured_facts`、
+`submit_materials`。
 
 ### 先知道錢花在哪
 
 你的每一次工具呼叫,都會把這個 session 到目前為止的**全部**內容重送一次給模型 ——
 包括你剛列出的那一整頁 item。一頁 50 則、25 次呼叫,就是同一頁被送了 25 次。
-所以這份流程的核心紀律是:**每頁用最少的呼叫做完**。一次 `upsert_stories` 寫完
-整頁的 story,一次 `record_item_decisions` 記完整頁的判斷。
+所以這份流程的核心紀律是:**每頁用最少的呼叫做完**。一次 `commit_curation_batch`
+就把整頁的 story 和整頁的 decision 一起寫完。而每次叫你工作的訊息,開頭已附上今天的
+數字、這一批 item、今天已有的 story id —— 那些不必再抓,工具是給額外需要用的。
 
 ### 主迴圈
 
-1. `get_daily_inventory` — 先知道今天總共有多少 item、多少是提供給你的、有哪些來源。
-2. `list_unseen_items`(每頁最多 50)取一批。它只列「提供給你、尚未判斷」的 item。
-   若有一個便宜的 screener 先把一部分 item 判成噪音而**保留不列**,inventory 會顯示
-   `screenedOutItems`;那些 item 仍在 `search_items` 找得到(結果會標 `screenedOut: true`)。
+1. 訊息已帶了這一批 item,直接從第 3 步開始。便宜的 screener 先判成噪音而**保留不列**
+   的 item,訊息會說有多少;它們仍在 `search_items` 找得到(會標 `screenedOut: true`)。
+2. 中途若真的需要更多 item,`list_unseen_items`(每頁最多 50)仍然可用。
 3. 對這批的**每一則**做出判斷:`IRRELEVANT` / `DUPLICATE` / `CANDIDATE`。
    多數 item 用 title + summary 就能判掉;值得深究的用 `get_item_detail`
    看紀錄,要讀內文就用 `read_item_body` 帶 `find` 跳到關鍵段落,
@@ -52,15 +53,19 @@ description: Curate a day of raw feed items into deduplicated, historically-awar
    判斷方法見 `references/deduplication.md`。**併之前先跑 Event Identity Test**:
    關係是 `SAME_EVENT` 才併;`RELATED_EVENT`(含因果、回應)各自成案;
    `BACKGROUND_CONTEXT` 不開新 story。
-5. 把這頁要成案的 cluster **一次**用 `upsert_stories` 寫入。每一則 story 的歷史
+5. 把這頁的 cluster 和這頁**每一則** item 的 decision,**一次**用
+   `commit_curation_batch` 送出 —— stories 和 decisions 在同一個呼叫裡。
+   每一則 story 的歷史
    (昨天以前的 ledger)由工具替你查,結果隨回覆一起回來:
    - `NEW` 但回覆帶 `history` → 那很可能是同一條線。用回覆中的 `storyId` 重新 upsert,
      並選一個非 `NEW` 的 `changeType`(`references/novelty.md`)。
    - 非 `NEW` 卻查無歷史 → 工具直接拒絕,那則改成 `NEW`。
    拿不準時,先 `find_history` 讀舊 entry 再寫;`get_story` 讀今天已存在的 entry。
-   回覆若列出 `rejected`,只重送那幾則。
-6. 把整批的判斷用**一次** `record_item_decisions` 送出,**才**去抓下一頁。
-7. 重複 2–6 直到 unseen 為零。
+   回覆若列出 `rejected`,只重送那幾則;被退掉的 story 底下那幾筆 decision 也會一起退,
+   因為 decision 不能指向不存在的 story。
+   回覆若帶 `turnComplete`,這個 work unit 就結束了 —— 停下來、結束回覆,
+   不要再找工作、不要 submit。下一個 session 會從這個狀態接手。
+6. 還沒 `turnComplete` 而這批已做完,就處理下一批。
 8. 需要引用數字時 `get_structured_facts` 取 `factId`,寫進 story 的 `factRefs`。
 9. 最後 `submit_materials`。
 
@@ -72,11 +77,11 @@ description: Curate a day of raw feed items into deduplicated, historically-awar
   screener 保留的 item 由它交代。做到 unseen 為零為止,不要提早收工。
 - **story 引用的每一則 item 都必須有你的 decision。** 從 `search_items` 撈回一則
   screener 保留的 item 放進 story(這叫 rescue),就要同時用 `record_item_decisions`
-  給它 `CANDIDATE` 或 `DUPLICATE` 並帶 `storyId`。`upsert_stories` 的回覆會提醒你。
+  給它 `CANDIDATE` 或 `DUPLICATE` 並帶 `storyId`(同一個 commit 裡即可)。回覆會提醒你。
 - **絕不自己猜 item id 或 story id。** id 只能來自工具回傳結果。
   例外是新建 story 時由你命名的 `storyId` — 命名規則見 `references/story-clustering.md`。
 - **工具拒絕你的呼叫時,讀錯誤訊息、修掉那個具體問題。** 不要原封不動重送。
-- **每一批都要先 record 再前進。** 不要累積三四頁的判斷最後一次送 —
+- **每一批都要 commit 完再前進。** 不要累積三四頁的判斷最後一次送 —
   中途失敗會讓你不知道哪些已記錄。
 - **沒查過歷史就沒有 `changeType`。** upsert 會替你查並把命中回傳;查無命中只能是
   `NEW`;查到命中就不能是 `NEW`。第一次進 ledger 的 story 絕不是 `NO_MATERIAL_CHANGE`

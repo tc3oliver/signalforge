@@ -345,14 +345,17 @@ describe("unknown topic ids are normalized, not refused", () => {
 		expect((await repo.getStory("a"))?.topicIds).toEqual(["inference"]);
 		expect((await repo.getStory("b"))?.topicIds).toEqual([]);
 
-		// And the drop stays visible in the trace.
-		const dropped = calls.filter((c) => c.summary["droppedTopicIds"]);
-		expect(dropped.map((c) => c.summary["droppedTopicIds"])).toEqual([
-			["quantum-basketball"],
-			["also-not-real"],
-		]);
+		// And the drop stays visible in the trace, on the batch that is the tool
+		// call. It used to be emitted once per entry, which made a batch of twenty
+		// read as twenty `upsert_story` calls and produced a false reading of the
+		// 2026-09-18 trace; the aggregate is the same signal against the truth.
 		const batchNote = calls.find((c) => c.name === "upsert_stories")!;
-		expect(batchNote.summary).toEqual({ accepted: 2, rejected: 0 });
+		expect(batchNote.summary).toEqual({
+			accepted: 2,
+			rejected: 0,
+			droppedTopicIds: [["quantum-basketball"], ["also-not-real"]],
+		});
+		expect(calls.filter((c) => c.name === "upsert_story")).toEqual([]);
 	});
 
 	it("still refuses a source item that does not exist", async () => {

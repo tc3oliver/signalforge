@@ -131,7 +131,19 @@ export interface LedgerEvent {
 	todayNear?: string[];
 	todayNearTop?: string;
 	todayNearScore?: number;
+	/**
+	 * A batch call's fires, one per story that tripped the check. A batch is one
+	 * tool call, so it reports its entries here rather than emitting a tool call
+	 * per entry -- which is what `upsert_story` used to do, and what made the
+	 * 2026-09-18 trace read as 227 single writes when there had been two.
+	 */
+	near?: Array<{ storyId: string; top: string; score: number; candidates?: string[] }>;
+	accepted?: number;
+	recorded?: number;
 }
+
+/** Tools whose call writes stories and therefore may report a near-duplicate. */
+const WRITE_TOOLS = new Set(["upsert_story", "upsert_stories", "commit_curation_batch"]);
 
 export interface NearFire {
 	ts: string | undefined;
@@ -190,9 +202,23 @@ export function ledgerTelemetry(events: readonly LedgerEvent[]): LedgerTelemetry
 			listCalls += 1;
 			if (e.match !== undefined) listMatchCalls += 1;
 		}
-		if (e.kind === "tool_call" && e.tool === "upsert_story") {
+		if (e.kind === "tool_call" && WRITE_TOOLS.has(e.tool ?? "")) {
+			// A batch reports how many stories it wrote; a single write is one.
+			upserts += e.accepted ?? (e.storyId !== undefined ? 1 : 0);
+			for (const n of e.near ?? []) {
+				fires.push({
+					ts: e.ts,
+					storyId: n.storyId,
+					top: n.top,
+					score: n.score,
+					candidates: n.candidates ?? [n.top],
+					accepted: false,
+				});
+				const seenBatch = writtenAt.get(n.storyId);
+				if (seenBatch) seenBatch.push(index);
+				else writtenAt.set(n.storyId, [index]);
+			}
 			if (e.storyId !== undefined) {
-				upserts += 1;
 				// Every index each id was written at, not just the first. A
 				// candidate the check names has almost always been written once
 				// already -- that is why it exists to be named -- so acceptance is
@@ -216,7 +242,11 @@ export function ledgerTelemetry(events: readonly LedgerEvent[]): LedgerTelemetry
 	});
 
 	for (const fire of fires) {
-		const at = events.findIndex((e) => e.ts === fire.ts && e.storyId === fire.storyId);
+		const at = events.findIndex(
+			(e) =>
+				e.ts === fire.ts &&
+				(e.storyId === fire.storyId || (e.near ?? []).some((n) => n.storyId === fire.storyId)),
+		);
 		fire.accepted = fire.candidates.some((id) =>
 			(writtenAt.get(id) ?? []).some((i) => i > at),
 		);

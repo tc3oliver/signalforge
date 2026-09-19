@@ -47,7 +47,7 @@ export { ToolRejection };
  */
 const SCAN_SUMMARY_CHARS = 400;
 
-function toScanView(item: NormalizedItem) {
+export function toScanView(item: NormalizedItem) {
 	const summary =
 		item.summary.length > SCAN_SUMMARY_CHARS
 			? `${item.summary.slice(0, SCAN_SUMMARY_CHARS)}…`
@@ -207,7 +207,7 @@ export interface CuratorContext {
 	onToolBoundary?: () => Promise<void>;
 }
 
-const MAX_PAGE = 50;
+export const MAX_PAGE = 50;
 
 /* -------------------------------------------------------------------------- */
 /* Optional web research                                                       */
@@ -768,7 +768,25 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 
 	const upsertOne = async (
 		raw: Record<string, unknown>,
-	): Promise<{ receipt: ReturnType<typeof toStoryReceipt>; history?: ReturnType<typeof toHistoryView>[]; note?: string }> => {
+		/*
+		 * Whether this write is its own tool call.
+		 *
+		 * A batch entry is not. Emitting `upsert_story` per entry made the trace
+		 * read as 227 single writes against 36 batched ones on 2026-09-18, when
+		 * the truth was 33 batch calls and 2 singles -- and the conclusion drawn
+		 * from that artifact, that the model would not batch, was wrong. A tool
+		 * call is what the model sent.
+		 */
+		emitNote = true,
+	): Promise<{
+		receipt: ReturnType<typeof toStoryReceipt>;
+		history?: ReturnType<typeof toHistoryView>[];
+		note?: string;
+		/** Topic ids this write discarded, so a batch can report its own total. */
+		droppedTopicIds?: string[];
+		/** Today's nearest existing story, when the check fired, for the same reason. */
+		near?: { storyId: string; top: string; score: number; candidates: string[] };
+	}> => {
 		const parsed = StoryUpsertInput.safeParse({
 			...raw,
 			factRefs: (raw["factRefs"] as unknown[] | undefined) ?? [],
@@ -888,7 +906,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		if (at === -1) todayStories.push(entry);
 		else todayStories[at] = entry;
 		const rescuing = input.sourceItemIds.filter((id) => screenedOut.has(id));
-		note("upsert_story", {
+		if (emitNote) note("upsert_story", {
 			storyId: entry.storyId,
 			changeType: entry.changeType,
 			historyHits: history.length,
@@ -945,6 +963,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			receipt: toStoryReceipt(entry),
 			...(history.length > 0 ? { history: history.map(toHistoryView) } : {}),
 			...(notes.length > 0 ? { note: notes.join(" ") } : {}),
+			...(droppedTopicIds.length > 0 ? { droppedTopicIds } : {}),
 		};
 	};
 
@@ -994,10 +1013,14 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		}),
 		execute: async (_id, params) => {
 			const accepted: Array<Record<string, unknown>> = [];
+			const droppedTopicIds: string[][] = [];
+			const near: Array<{ storyId: string; top: string; score: number; candidates: string[] }> = [];
 			const rejected: Array<{ index: number; storyId: string; error: string }> = [];
 			for (const [index, story] of params.stories.entries()) {
 				try {
-					const result = await upsertOne(story as Record<string, unknown>);
+					const result = await upsertOne(story as Record<string, unknown>, false);
+					if (result.droppedTopicIds) droppedTopicIds.push(result.droppedTopicIds);
+					if (result.near) near.push(result.near);
 					accepted.push({
 						...result.receipt,
 						...(result.history ? { history: result.history } : {}),
@@ -1017,6 +1040,11 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 				accepted: accepted.length,
 				rejected: rejected.length,
 				...(rejected.length > 0 ? { rejectedBy } : {}),
+				// Aggregated here rather than emitted per entry: a batch is one tool
+				// call, and a normalisation that starts happening on every story must
+				// still be a detectable regression.
+				...(droppedTopicIds.length > 0 ? { droppedTopicIds } : {}),
+				...(near.length > 0 ? { near } : {}),
 			});
 			if (accepted.length === 0) {
 				throw new ToolRejection(
@@ -1115,6 +1143,202 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 				unseenItems: account.unaccountedItemIds.length,
 			};
 			note("record_item_decisions", payload);
+			return ok(payload);
+		},
+	});
+
+	/*
+	 * One durable commit for one batch of items.
+	 *
+	 * This is the whole of the Curator's judgement about a page: which events
+	 * the page's items belong to, and what each item was. It exists because the
+	 * two halves were being sent in two model turns, and a turn is the unit that
+	 * costs. On 2026-09-19 every work unit spent a turn on `upsert_stories` and
+	 * then a separate turn on `record_item_decisions` for the same fifty items --
+	 * twelve turns re-sending the whole accumulated session to restate a
+	 * judgement the previous turn had already made.
+	 *
+	 * The division is the one the rest of this file follows. The model decides
+	 * what is an event, what continues an event, what is noise, and how much any
+	 * of it matters. TypeScript looks up history, validates every reference,
+	 * normalizes topic ids, writes both tables, keeps them consistent with each
+	 * other, counts coverage and decides whether the work unit is finished.
+	 *
+	 * Partial by design, in one direction only. A story with a genuine error is
+	 * refused on its own and the rest of the page's editorial work is kept --
+	 * discarding twenty sound clusters because the twenty-first named a
+	 * misspelt fact id is how a repair turn gets created, which is the cost this
+	 * removes. But a decision may never point at a story that did not commit, so
+	 * decisions naming a refused or unknown story are refused with it. That is
+	 * the invariant: nothing recorded here dangles.
+	 *
+	 * There is no transaction across the two writes and none is needed. Both are
+	 * idempotent on their keys -- an upsert merges by (story, date), a decision
+	 * replaces by item -- so a commit interrupted between them, or resent after a
+	 * provider failure, converges to the same state rather than doubling it.
+	 */
+	const commitCurationBatch = defineTool({
+		name: "commit_curation_batch",
+		label: "Commit curation batch",
+		description:
+			"Commit your complete judgement about the batch of items you just reviewed: the stories the batch's items belong to, and a disposition for every item in it. This is the one call that ends a batch — it writes the stories, checks each one's history for you, records the decisions, and tells you whether the work unit is finished. Stories are applied independently: a refused story is reported on its own and the rest are kept, and any decision naming a story that did not commit is refused with it so nothing is recorded pointing at a story that does not exist. Use CANDIDATE with a storyId for an item that feeds a story, DUPLICATE with a storyId for redundant coverage of one, IRRELEVANT for noise.",
+		promptSnippet: "commit_curation_batch: write a page's stories and decisions in one call",
+		parameters: Type.Object({
+			stories: Type.Optional(Type.Array(storyPayload, { maxItems: 20 })),
+			decisions: Type.Array(
+				Type.Object({
+					itemId: Type.String({ minLength: 1 }),
+					disposition: Type.Union([
+						Type.Literal("IRRELEVANT"),
+						Type.Literal("DUPLICATE"),
+						Type.Literal("CANDIDATE"),
+					]),
+					storyId: Type.Optional(Type.String({ minLength: 1 })),
+					reason: Type.String({ minLength: 1 }),
+				}),
+				{ minItems: 1, maxItems: MAX_PAGE },
+			),
+		}),
+		execute: async (_id, params) => {
+			const accepted: Array<Record<string, unknown>> = [];
+			const droppedTopicIds: string[][] = [];
+			const near: Array<{ storyId: string; top: string; score: number; candidates: string[] }> = [];
+			const rejectedStories: Array<{ index: number; storyId: string; error: string }> = [];
+			for (const [index, story] of (params.stories ?? []).entries()) {
+				try {
+					const result = await upsertOne(story as Record<string, unknown>, false);
+					if (result.droppedTopicIds) droppedTopicIds.push(result.droppedTopicIds);
+					if (result.near) near.push(result.near);
+					accepted.push({
+						...result.receipt,
+						...(result.history ? { history: result.history } : {}),
+						...(result.note ? { note: result.note } : {}),
+					});
+				} catch (err) {
+					if (!(err instanceof ToolRejection)) throw err;
+					rejectedStories.push({ index, storyId: String(story.storyId ?? ""), error: err.message });
+				}
+			}
+
+			/*
+			 * Which story ids a decision may name: everything today holds after the
+			 * writes above, which covers the stories this call just created. An id
+			 * from an earlier day is still valid and is looked up individually,
+			 * exactly as it was before -- that path is rare and should not cost a
+			 * lookup per decision.
+			 */
+			const todayIds = new Set((await ctx.repo.listStories(ctx.date)).map((st) => st.storyId));
+			const refusedIds = new Set(rejectedStories.map((r) => r.storyId).filter((id) => id !== ""));
+
+			const toRecord: ItemDecision[] = [];
+			const rejectedDecisions: Array<{ itemId: string; error: string }> = [];
+			const stamp = ctx.now().toISOString();
+			const seenItems = new Set<string>();
+			for (const raw of params.decisions) {
+				const parsed = ItemDecisionInput.safeParse(raw);
+				if (!parsed.success) {
+					rejectedDecisions.push({
+						itemId: String(raw.itemId ?? ""),
+						error: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "),
+					});
+					continue;
+				}
+				const d = parsed.data;
+				if (!itemsById.has(d.itemId)) {
+					rejectedDecisions.push({
+						itemId: d.itemId,
+						error: `unknown item id; ids come from tool results only`,
+					});
+					continue;
+				}
+				if (seenItems.has(d.itemId)) {
+					rejectedDecisions.push({ itemId: d.itemId, error: "duplicate itemId in this batch" });
+					continue;
+				}
+				if (d.storyId !== undefined && !todayIds.has(d.storyId)) {
+					// The pointed case first: the model wrote this story in this very
+					// call and it was refused, so the fix is the story, not the
+					// decision.
+					if (refusedIds.has(d.storyId)) {
+						rejectedDecisions.push({
+							itemId: d.itemId,
+							error: `story "${d.storyId}" was refused above, so this decision was not recorded. Fix that story and resend both.`,
+						});
+						continue;
+					}
+					if (!(await ctx.repo.getStory(d.storyId))) {
+						rejectedDecisions.push({
+							itemId: d.itemId,
+							error: `story "${d.storyId}" does not exist. Include it in this call's stories, or name one that does.`,
+						});
+						continue;
+					}
+				}
+				seenItems.add(d.itemId);
+				toRecord.push({ ...d, decidedAt: stamp });
+			}
+
+			if (toRecord.length > 0) await ctx.repo.recordDecisions(ctx.date, toRecord);
+			// Spent after the write, so a refused decision never costs the turn
+			// budget. Rescues are not charged: the budget bounds the broad scan, and
+			// a rescue is the Curator following a story past what the scan offered.
+			const rescuedNow = toRecord.filter((d) => screenedOut.has(d.itemId)).length;
+			ctx.turnBudget?.spend(toRecord.length - rescuedNow);
+
+			const account = await accounting();
+			const unseenLeft = account.unaccountedItemIds.length;
+			/*
+			 * The work unit closes here rather than on a further question.
+			 *
+			 * Until now the only thing that said "stop" was `list_unseen_items`
+			 * returning an empty page, so every unit ended by asking TypeScript
+			 * whether it was finished -- one model turn per unit, twelve a day, to
+			 * be told something the orchestrator already knew. The commit that
+			 * spends the last of the budget is the moment it becomes true, so it is
+			 * the moment it is said.
+			 */
+			const complete = ctx.turnBudget?.exhausted === true && unseenLeft > 0;
+			const payload = {
+				stories: {
+					accepted,
+					...(rejectedStories.length > 0 ? { rejected: rejectedStories } : {}),
+				},
+				decisions: {
+					recorded: toRecord.length,
+					...(rescuedNow > 0 ? { rescued: rescuedNow } : {}),
+					...(rejectedDecisions.length > 0 ? { rejected: rejectedDecisions } : {}),
+				},
+				processedItems: account.curatorDecided,
+				totalItems: account.sentToCurator,
+				unseenItems: unseenLeft,
+				...(complete
+					? {
+							turnComplete: true,
+							note:
+								`This work unit is complete (${ctx.turnBudget!.spent} decisions recorded). ` +
+								`${unseenLeft} item(s) remain and will be offered to the next session, which ` +
+								`resumes from this exact state. Stop now: do not call submit_materials, do not ` +
+								`list more items, and do not look for other work. Simply end your reply.`,
+						}
+					: {}),
+			};
+			const rejectedBy: Record<string, number> = {};
+			for (const r of rejectedStories) {
+				const kind = upsertRejectionKind(r.error);
+				rejectedBy[kind] = (rejectedBy[kind] ?? 0) + 1;
+			}
+			note("commit_curation_batch", {
+				accepted: accepted.length,
+				...(droppedTopicIds.length > 0 ? { droppedTopicIds } : {}),
+				...(near.length > 0 ? { near } : {}),
+				rejectedStories: rejectedStories.length,
+				...(rejectedStories.length > 0 ? { rejectedBy } : {}),
+				recorded: toRecord.length,
+				rejectedDecisions: rejectedDecisions.length,
+				processedItems: account.curatorDecided,
+				unseenItems: unseenLeft,
+				...(complete ? { turnComplete: true } : {}),
+			});
 			return ok(payload);
 		},
 	});
@@ -1405,6 +1629,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		upsertStory,
 		upsertStories,
 		recordItemDecisions,
+		commitCurationBatch,
 		getStructuredFacts,
 		submitMaterials,
 		...(getItemEvidence ? [getItemEvidence] : []),

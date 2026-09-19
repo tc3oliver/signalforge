@@ -150,3 +150,35 @@ describe("listSavings", () => {
 		expect(listSavings([], [])).toMatchObject({ before: 0, after: 0 });
 	});
 });
+
+describe("ledgerTelemetry reads a batch commit", () => {
+	it("counts a batch's stories and its fires without needing a call per entry", () => {
+		const t = ledgerTelemetry([
+			{
+				kind: "tool_call",
+				tool: "commit_curation_batch",
+				ts: "t1",
+				accepted: 3,
+				recorded: 50,
+				near: [{ storyId: "b", top: "a", score: 0.8, candidates: ["a"] }],
+			},
+		]);
+		expect(t.upserts).toBe(3);
+		expect(t.fires.length).toBe(1);
+		expect(t.fires[0]).toMatchObject({ storyId: "b", top: "a", score: 0.8 });
+	});
+
+	it("sees a later batch merging into the candidate as acceptance", () => {
+		const t = ledgerTelemetry([
+			{
+				kind: "tool_call",
+				tool: "commit_curation_batch",
+				ts: "t1",
+				accepted: 1,
+				near: [{ storyId: "b", top: "a", score: 0.8, candidates: ["a"] }],
+			},
+			{ kind: "tool_call", tool: "upsert_story", ts: "t2", storyId: "a" },
+		]);
+		expect(t.accepted).toBe(1);
+	});
+});

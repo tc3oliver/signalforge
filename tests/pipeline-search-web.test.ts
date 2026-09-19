@@ -84,11 +84,11 @@ describe("search_web registration", () => {
 			now: () => new Date(),
 		});
 		expect(tools.map((t) => t.name)).not.toContain("search_web");
-		// The offline tool set is exactly the thirteen the restricted runtime
+		// The offline tool set is exactly the fourteen the restricted runtime
 		// expects. `read_item_body` joined it when `get_item_detail` stopped
-		// returning whole bodies: reading a long item is now a separate, bounded
-		// act rather than a mode of fetching a record.
-		expect(tools).toHaveLength(13);
+		// returning whole bodies, and `commit_curation_batch` when writing a
+		// page's stories and its decisions stopped being two model turns.
+		expect(tools).toHaveLength(14);
 	});
 
 	it("is present, and additive, when a router is configured", () => {
@@ -96,7 +96,7 @@ describe("search_web registration", () => {
 		const names = tools.map((t) => t.name);
 		expect(names).toContain("search_web");
 		expect(names).toContain("submit_materials");
-		expect(names).toHaveLength(14);
+		expect(names).toHaveLength(15);
 	});
 
 	it("states its permitted uses in the description the model sees", () => {
