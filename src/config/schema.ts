@@ -227,6 +227,47 @@ export type SearchWebConfig = z.infer<typeof SearchWebConfig>;
  * `mode` is the only switch that changes what the Curator sees, and it is
  * changed by a human after reading `pnpm observe`. Nothing flips it.
  */
+/*
+ * Evidence distillation: reading one long source, once, for the Curator.
+ *
+ * A Curator tool result is re-sent on every later turn of its work unit, about
+ * six times for a mid-unit read, so pulling a 97,000-character article into the
+ * session costs it six times over. This turns such a read into one stateless
+ * request to a cheap model that answers a specific question and proposes
+ * passages, which the server then locates in the source before the Curator sees
+ * them.
+ *
+ * It is off unless configured, like `search_web`: an eval, gold or offline run
+ * must get exactly the tool set it has always had.
+ */
+export const EvidenceConfig = z
+	.object({
+		enabled: z.boolean().default(false),
+		/** A label for telemetry; the transport is the OpenAI-compatible endpoint below. */
+		provider: z.string().min(1).default("openai"),
+		baseUrl: z.string().min(1).default("https://api.openai.com/v1"),
+		model: z.string().min(1),
+		/** Logical secret name, resolved through env -> secrets.env -> Keychain. */
+		apiKeySecret: z.string().min(1).default("OPENAI_API_KEY"),
+		/**
+		 * Documents one call may read. The real use is sibling coverage of one
+		 * event, and the packet is paid on every later turn, so this is small.
+		 */
+		maxItemsPerCall: z.number().int().positive().max(10).default(5),
+		/** Located passages kept per item. Beyond this they restate each other. */
+		maxQuotesPerItem: z.number().int().positive().max(10).default(5),
+		/**
+		 * Calls one curation stage may make. A ceiling, not a target: measured
+		 * demand was four detail reads a day, and an unbounded one would let a
+		 * cheap tool become a habit.
+		 */
+		maxCallsPerRun: z.number().int().positive().default(40),
+		/** Per-request bound. Distillation measured 6-15s per document. */
+		timeoutMs: z.number().int().positive().default(60_000),
+	})
+	.strict();
+export type EvidenceConfig = z.infer<typeof EvidenceConfig>;
+
 export const ScreeningConfig = z
 	.object({
 		mode: z.enum(["off", "shadow", "route"]).default("off"),
@@ -298,6 +339,7 @@ export const AgentConfig = z
 			.strict(),
 		searchWeb: SearchWebConfig,
 		screening: ScreeningConfig.optional(),
+		evidence: EvidenceConfig.optional(),
 	})
 	.strict();
 export type AgentConfig = z.infer<typeof AgentConfig>;

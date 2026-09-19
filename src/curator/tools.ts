@@ -1,5 +1,7 @@
 import { Type } from "typebox";
 import { htmlToText } from "../collectors/html-text.ts";
+import type { EvidenceConfig } from "../config/schema.ts";
+import { distillEvidence } from "../evidence/distill.ts";
 import { defineTool, type ToolDefinition } from "@earendil-works/pi-coding-agent";
 import type { DailyManifest, NormalizedItem, StoryLedgerEntry } from "../schemas/index.ts";
 import {
@@ -227,12 +229,38 @@ export function configureCuratorResearch(config?: CuratorResearchConfig): void {
 	researchConfig = config;
 }
 
+/**
+ * How `get_item_evidence` reaches its model, for the duration of a run.
+ *
+ * Module state for the same reason `search_web` uses it: the curator session
+ * builder constructs the context itself, and an eval, gold or offline run must
+ * get exactly the tool set it has always had rather than one that varies with
+ * configuration.
+ */
+export interface CuratorEvidenceConfig {
+	config: EvidenceConfig;
+	apiKey: string;
+	fetchImpl?: typeof fetch;
+	/** Called when distillation fails, so the run can record why. */
+	onDegraded?: (reason: string) => void;
+}
+
+let evidenceConfig: CuratorEvidenceConfig | undefined;
+
+/** Enables `get_item_evidence` for sessions created while the config is set. */
+export function configureCuratorEvidence(config?: CuratorEvidenceConfig): void {
+	evidenceConfig = config;
+}
+
 export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 	const itemsById = new Map(ctx.manifest.items.map((i) => [i.id, i]));
 	const factsById = new Map(ctx.manifest.facts.map((f) => [f.factId, f]));
 	const orderedIds = ctx.manifest.items.map((i) => i.id);
 
 	const note = (name: string, summary: Record<string, unknown>) => ctx.onToolCall?.(name, summary);
+
+	/** Evidence calls made by this tool set; bounded so a cheap tool cannot become a habit. */
+	let evidenceCalls = 0;
 
 	const screenedOut = ctx.screenedOutItemIds ?? new Set<string>();
 	/** Everything the Curator is asked to judge and has not judged yet. */
@@ -1137,6 +1165,79 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 					},
 				} as ToolDefinition);
 
+	/*
+	 * Asking a question of a source instead of reading it.
+	 *
+	 * The measured alternative is worse in both directions. Reading the whole
+	 * article costs its length on every later turn of the work unit. Searching
+	 * it with a term guessed from the headline works only when the decisive fact
+	 * is the one the summary already mentions: on the 2026-09-19 items a blind
+	 * keyword proposer missed 31% of the time, and on the day's Must Know story
+	 * it would have led the Curator to the one case the article says had no
+	 * effect -- returning evidence for the opposite of the published judgement.
+	 */
+	const getItemEvidence = evidenceConfig
+		? defineTool({
+				name: "get_item_evidence",
+				label: "Item evidence",
+				description:
+					"Ask one question of up to five items and get back a short answer with the passages that support it, quoted from the item and checked against it character for character. Prefer this over reading an article whenever you would be reading it to find something out: whether two items describe the same event, what a filing actually says, whether a claim is sourced. A passage you get back is real text at a real offset; anything that could not be checked is discarded and counted, so a thin packet is a thin answer and the story's confidence should say so. Items with no body, or that could not be read, come back marked -- use read_item_body for those.",
+				promptSnippet: "get_item_evidence: ask a question of specific items and get checked quotes",
+				parameters: Type.Object({
+					itemIds: Type.Array(Type.String(), { minItems: 1, maxItems: evidenceConfig.config.maxItemsPerCall }),
+					question: Type.String({ minLength: 10, maxLength: 300 }),
+				}),
+				execute: async (_id, params) => {
+					const unknown = params.itemIds.filter((id) => !itemsById.has(id));
+					if (unknown.length > 0) {
+						throw new ToolRejection(
+							`Unknown item id(s): ${unknown.join(", ")}. Item ids come from list_unseen_items or search_items — never construct one.`,
+						);
+					}
+					if (evidenceCalls >= evidenceConfig!.config.maxCallsPerRun) {
+						// Not a rejection: the budget is a fact about the run, and a
+						// refusal would cost a turn to learn it.
+						return ok({
+							question: params.question,
+							items: [],
+							note: "The evidence budget for this run is spent. Read what you need with read_item_body.",
+						});
+					}
+					evidenceCalls += 1;
+					const outcome = await distillEvidence(
+						params.itemIds.map((id) => {
+							const item = itemsById.get(id)!;
+							return {
+								itemId: id,
+								title: item.title,
+								sourceName: item.sourceName,
+								body: canonicalBody(item),
+							};
+						}),
+						params.question,
+						{
+							config: evidenceConfig!.config,
+							apiKey: evidenceConfig!.apiKey,
+							...(evidenceConfig!.fetchImpl ? { fetchImpl: evidenceConfig!.fetchImpl } : {}),
+						},
+					);
+					if (outcome.degraded) evidenceConfig!.onDegraded?.(outcome.degraded);
+					note("get_item_evidence", {
+						items: params.itemIds.length,
+						ok: outcome.items.filter((i) => i.status === "OK").length,
+						noEvidence: outcome.items.filter((i) => i.status === "NO_EVIDENCE").length,
+						unavailable: outcome.items.filter((i) => i.status === "UNAVAILABLE").length,
+						quotes: outcome.items.reduce((n, i) => n + (i.evidence?.length ?? 0), 0),
+						dropped: outcome.items.reduce((n, i) => n + (i.dropped ?? 0), 0),
+						sourceChars: outcome.items.reduce((n, i) => n + i.bodyChars, 0),
+						durationMs: outcome.durationMs,
+						tokenUsage: outcome.usage ?? "unavailable",
+					});
+					return ok({ question: params.question, items: outcome.items });
+				},
+			})
+		: undefined;
+
 	return [
 		getDailyInventory,
 		listUnseenItems,
@@ -1151,6 +1252,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		recordItemDecisions,
 		getStructuredFacts,
 		submitMaterials,
+		...(getItemEvidence ? [getItemEvidence] : []),
 		...(searchWeb ? [searchWeb] : []),
 	].map(withBoundary);
 }

@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { loadStageTuning, type StageTuning } from "../config/stage-tuning.ts";
 import { loadConfig } from "../config/loader.ts";
-import type { ScreeningConfig } from "../config/schema.ts";
+import type { EvidenceConfig, ScreeningConfig } from "../config/schema.ts";
 import { buildReaderProfile, type ReaderProfile } from "../profile/reader-profile.ts";
 import { runCuratorStage } from "../curator/session.ts";
-import { configureCuratorResearch, type CuratorResearchConfig } from "../curator/tools.ts";
+import { configureCuratorEvidence, configureCuratorResearch, type CuratorResearchConfig } from "../curator/tools.ts";
 import { runEditorStage } from "../editor/session.ts";
 import type { Sql } from "../db/client.ts";
 import { getBrief, latestBriefDate, saveBrief, saveDraft } from "../db/briefs.ts";
@@ -182,6 +182,8 @@ export interface DailyRunOptions {
 	};
 	/** Enables the curator's `search_web` tool for this run only. */
 	research?: CuratorResearchConfig;
+	/** Enables the curator's `get_item_evidence` tool for this run only. */
+	evidence?: { config: EvidenceConfig; apiKey: string; fetchImpl?: typeof fetch };
 	/**
 	 * Screening configuration for this run, overriding `config/agent.yaml`.
 	 * Production leaves this unset; a test passes a route-mode config with a
@@ -597,6 +599,7 @@ async function runPipelineBody(
 	 * skill, no session, no fallback chain. See src/screening/screener.ts.
 	 */
 	const screeningConfig = options.screening ?? loadConfig().agent.screening;
+	const evidence = options.evidence;
 	const wantsCurationAtAll = stage === undefined || stage === "curate";
 	let screening: ScreeningStageOutcome | undefined;
 	if (screeningConfig && screeningConfig.mode !== "off" && wantsCurationAtAll) {
@@ -664,6 +667,14 @@ async function runPipelineBody(
 						},
 					}
 				: undefined,
+		);
+		/*
+		 * Registered for this run only, like `search_web`: a run with no
+		 * evidence credential gets exactly the offline tool set it always had,
+		 * and reading a long source stays possible through `read_item_body`.
+		 */
+		configureCuratorEvidence(
+			evidence ? { ...evidence, onDegraded: (reason) => queueDegradedReason(reason) } : undefined,
 		);
 		try {
 			const curated = await runStageWithFallback({
@@ -750,6 +761,7 @@ async function runPipelineBody(
 			return finish("CURATION_FAILED");
 		} finally {
 			configureCuratorResearch(undefined);
+			configureCuratorEvidence(undefined);
 		}
 		if (stage === "curate") {
 			result.materials = materials;

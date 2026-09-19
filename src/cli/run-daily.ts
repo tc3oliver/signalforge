@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, renameSync } from "node:fs";
 import { join } from "node:path";
 import { parseFlags, projectRoot } from "./_args.ts";
 import { loadConfig } from "../config/loader.ts";
+import type { EvidenceConfig } from "../config/schema.ts";
 import { hasSecret, resolveSecret } from "../config/secrets.ts";
 import { createSql } from "../db/client.ts";
 import { runDailyPipeline, type PipelineStage } from "../pipeline/daily-run.ts";
@@ -62,6 +63,22 @@ function archivePreviousBrief(
 	return stem;
 }
 
+/**
+ * The evidence distiller for this run, or none.
+ *
+ * Same shape as `buildResearch`: a missing credential is not an error, it is a
+ * run whose Curator reads long sources with `read_item_body` instead of asking
+ * a cheap model about them.
+ */
+async function buildEvidence(): Promise<
+	{ config: EvidenceConfig; apiKey: string } | undefined
+> {
+	const configured = loadConfig().agent.evidence;
+	if (!configured?.enabled) return undefined;
+	if (!(await hasSecret(configured.apiKeySecret))) return undefined;
+	return { config: configured, apiKey: await resolveSecret(configured.apiKeySecret) };
+}
+
 async function main(): Promise<number> {
 	const flags = parseFlags(process.argv.slice(2));
 	// The run belongs to the day the reader is in, not to UTC: a 05:30 Taipei
@@ -94,6 +111,8 @@ async function main(): Promise<number> {
 	try {
 		const research = await buildResearch();
 		if (!research) log.info("search_web disabled: no research provider credential configured");
+		const evidence = await buildEvidence();
+		if (!evidence) log.info("get_item_evidence disabled: not enabled, or no credential configured");
 
 		const result = await runDailyPipeline({
 			sql,
@@ -115,6 +134,7 @@ async function main(): Promise<number> {
 			// constant, so the default cannot drift silently.
 			chain: loadConfig().agent.modelChain,
 			...(research ? { research } : {}),
+			...(evidence ? { evidence } : {}),
 			log: (msg, fields) => log.info(msg, fields),
 			// Stage events -- tool calls, nudges, and above all the text of a
 			// rejected submission -- go to the run log. Without this the one thing

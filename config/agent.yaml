@@ -159,3 +159,42 @@ screening:
   routing:
     trustedModel: gpt-5.6-terra
     trustedPolicyVersion: screening-v3
+
+# Evidence distillation: reading one long source, once, for the Curator.
+#
+# A Curator tool result is re-sent on every later turn of its work unit --
+# measured at six occurrences for a mid-unit read -- so pulling a 97,000-char
+# article into the session costs it six times over. On 2026-09-19 three such
+# reads accounted for an estimated 156,000 tokens, 86% of the gap between the
+# work units that made one and the comparable ones that did not.
+#
+# `get_item_evidence` asks one question of up to five items. A stateless,
+# tool-free request to the cheap model answers it and proposes passages; the
+# server then locates each passage in the source and discards what it cannot
+# find, so a quotation the Curator sees is the source's own characters at a
+# real offset, never the model's string.
+#
+# Why not just search the body, which costs nothing? Because a keyword can only
+# be aimed at what the summary already mentions. Tested blind on the day's
+# items, a proposed keyword missed entirely 31% of the time, and on the Must
+# Know story it would have led to the one case the article says had NO effect
+# -- returning evidence for the opposite of the published judgement. Searching
+# stays available as `read_item_body`, and is the right tool once you know what
+# you are looking for.
+#
+# Off disables the tool entirely; the Curator then reads long sources with
+# `read_item_body` alone, exactly as it did before this existed.
+evidence:
+  enabled: true
+  provider: openai
+  baseUrl: https://api.openai.com/v1
+  model: gpt-5.6-terra
+  apiKeySecret: OPENAI_API_KEY
+  # The real use is sibling coverage of one event: one question, several items.
+  maxItemsPerCall: 5
+  # Beyond five located passages they restate each other.
+  maxQuotesPerItem: 5
+  # A ceiling, not a target. Measured demand was four detail reads a day.
+  maxCallsPerRun: 40
+  # Distillation measured 6-15s per document, median 12.7s.
+  timeoutMs: 60000
