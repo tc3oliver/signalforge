@@ -67,9 +67,17 @@ const MAX_RENDERED_TOPICS = 20;
  */
 export function renderReaderProfile(profile: ReaderProfile): string {
 	const shown = profile.topics.slice(0, MAX_RENDERED_TOPICS);
+	/*
+	 * The id leads, because the id is what the tools take.
+	 *
+	 * This block used to render the label alone, while `upsert_story.topicIds`
+	 * validates ids -- so the only place a model could learn the vocabulary was
+	 * the rejection it got for guessing. On 2026-09-19 that produced 119
+	 * refused story entries in one run, 97% of every refusal.
+	 */
 	const lines = shown.map((t) => {
 		const also = t.keywords.slice(0, 5).join(", ");
-		return `- ${t.label} (${t.weight.toFixed(2)})${also ? ` — ${also}` : ""}`;
+		return `- \`${t.id}\` — ${t.label} (${t.weight.toFixed(2)})${also ? ` — ${also}` : ""}`;
 	});
 	const omitted = profile.topics.length - shown.length;
 	if (omitted > 0) lines.push(`- ...and ${omitted} lower-weighted topic(s)`);
@@ -78,7 +86,8 @@ export function renderReaderProfile(profile: ReaderProfile): string {
 
 You are working for ${profile.persona}.
 
-Their standing interests, with relative weight from 0 to 1:
+Their standing interests, as \`topic-id\` — label (relative weight from 0 to 1).
+The id is the value \`topicIds\` takes; ids not listed here are not stored:
 
 ${lines.join("\n")}
 

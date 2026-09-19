@@ -277,3 +277,95 @@ describe("upsert rejection telemetry", () => {
 		});
 	});
 });
+
+describe("unknown topic ids are normalized, not refused", () => {
+	/*
+	 * The expensive failure this prevents: a batch of a dozen fully-formed
+	 * stories refused in its entirety because one string was not in the reader
+	 * profile, costing a whole model turn of re-sent context to resend the same
+	 * judgements with that string removed.
+	 */
+	async function toolsWithProfile(onToolCall: (n: string, s: Record<string, unknown>) => void) {
+		const manifest = makeManifest({ date: DATE, groups: 2, perGroup: 2 });
+		const repo = new JsonStoryRepository(join(root, "ledger"));
+		const ctx: CuratorContext = {
+			date: DATE,
+			manifest,
+			repo,
+			now: () => new Date("2026-09-13T12:00:00Z"),
+			topicIds: new Set(["ai-llm", "inference"]),
+			onToolCall,
+		};
+		return { tools: createCuratorTools(ctx), manifest, repo };
+	}
+
+	function payload(manifest: ReturnType<typeof makeManifest>, storyId: string, topicIds: string[]) {
+		const id = manifest.items[0]!.id;
+		return {
+			storyId,
+			canonicalTitle: `Story ${storyId}`,
+			sourceItemIds: [id],
+			primarySourceIds: [id],
+			status: "OPEN",
+			changeType: "NEW",
+			relevance: 0.5,
+			novelty: 0.5,
+			importance: 0.5,
+			confidence: 0.5,
+			reason: "because",
+			topicIds,
+		};
+	}
+
+	it("accepts a whole batch whose only defect is an unknown topic id, and records what it dropped", async () => {
+		const calls: Array<{ name: string; summary: Record<string, unknown> }> = [];
+		const { tools, manifest, repo } = await toolsWithProfile((name, summary) => calls.push({ name, summary }));
+		const batch = tools.find((t) => t.name === "upsert_stories")!;
+		const result = (await batch.execute(
+			"c",
+			{
+				stories: [
+					payload(manifest, "a", ["quantum-basketball", "inference"]),
+					payload(manifest, "b", ["also-not-real"]),
+				],
+			} as never,
+			undefined,
+			undefined,
+			{} as never,
+		)) as { content: Array<{ text: string }> };
+		const body = JSON.parse(result.content[0]!.text) as {
+			accepted: Array<{ storyId: string; note?: string }>;
+			rejected?: unknown[];
+		};
+		expect(body.accepted.map((a) => a.storyId)).toEqual(["a", "b"]);
+		expect(body.rejected).toBeUndefined();
+		expect(body.accepted[0]!.note).toMatch(/Dropped topic id\(s\).*quantum-basketball/);
+
+		// Only the real id is stored; nothing is invented or remapped.
+		expect((await repo.getStory("a"))?.topicIds).toEqual(["inference"]);
+		expect((await repo.getStory("b"))?.topicIds).toEqual([]);
+
+		// And the drop stays visible in the trace.
+		const dropped = calls.filter((c) => c.summary["droppedTopicIds"]);
+		expect(dropped.map((c) => c.summary["droppedTopicIds"])).toEqual([
+			["quantum-basketball"],
+			["also-not-real"],
+		]);
+		const batchNote = calls.find((c) => c.name === "upsert_stories")!;
+		expect(batchNote.summary).toEqual({ accepted: 2, rejected: 0 });
+	});
+
+	it("still refuses a source item that does not exist", async () => {
+		const { tools, manifest } = await toolsWithProfile(() => {});
+		const single = tools.find((t) => t.name === "upsert_story")!;
+		await expect(
+			single.execute(
+				"c",
+				{ ...payload(manifest, "c", ["inference"]), sourceItemIds: ["no-such-item"], primarySourceIds: ["no-such-item"] } as never,
+				undefined,
+				undefined,
+				{} as never,
+			),
+		).rejects.toThrow(/not in today's manifest/);
+	});
+});

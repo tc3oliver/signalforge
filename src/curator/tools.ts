@@ -452,7 +452,21 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		confidence: Type.Number({ minimum: 0, maximum: 1 }),
 		reason: Type.String({ minLength: 1 }),
 		factRefs: Type.Optional(Type.Array(Type.String())),
-		topicIds: Type.Optional(Type.Array(Type.String())),
+		/*
+		 * The valid ids are named here, in the schema the model is shown, rather
+		 * than only in the rejection it gets for guessing wrong. The 2026-09-19
+		 * production run refused 119 story entries for unknown topic ids -- 97%
+		 * of every refusal that day -- because the prompt rendered topic LABELS
+		 * while this field takes topic IDS, and a work unit is a fresh session,
+		 * so the model relearned the vocabulary by failing once per unit.
+		 */
+		topicIds: Type.Optional(
+			Type.Array(Type.String(), {
+				description: ctx.topicIds
+					? `Reader-profile topic ids. Valid ids: ${[...ctx.topicIds].sort().join(", ")}. Unknown ids are dropped with a warning, not stored. An empty list is fine.`
+					: "Reader-profile topic ids. An empty list is fine.",
+			}),
+		),
 	});
 
 	/** How many prior-day entries a history check returns to the model. */
@@ -516,14 +530,31 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		 * and the whole point of storing them is that the prior can be audited
 		 * afterwards. Named ids only, from the profile in the system prompt.
 		 */
-		if (ctx.topicIds) {
-			const unknownTopics = input.topicIds.filter((t) => !ctx.topicIds!.has(t));
-			if (unknownTopics.length > 0) {
-				throw new ToolRejection(
-					`topicIds contains id(s) that are not in the reader profile: ${unknownTopics.join(", ")}. ` +
-						`Valid ids: ${[...ctx.topicIds].sort().join(", ")}. An empty list is fine — a story that matches no listed topic still belongs in the ledger.`,
-				);
-			}
+		/*
+		 * An unknown topic id is a vocabulary error, not an unsafe reference.
+		 *
+		 * It used to refuse the whole entry, which threw away a complete
+		 * editorial judgement -- the cluster, its sources, its scores, its
+		 * reasoning -- and demanded another model turn to resend it with one
+		 * string removed. On 2026-09-19 that cost about six otherwise
+		 * unnecessary turns at ~27k tokens of re-sent context each.
+		 *
+		 * The id refers to a reader profile that already exists, so an id that
+		 * is not in it simply records nothing. Dropping it is strictly safer
+		 * than refusing: no false prior is stored either way, and the story
+		 * survives. Nothing is remapped or invented -- a dropped id is dropped,
+		 * and the model is told which, so it can use the right one next time.
+		 *
+		 * Unsafe references keep refusing: an unknown item id would let a story
+		 * cite something that does not exist, an unknown fact ref would put a
+		 * number in the brief with no source, and a malformed payload is not a
+		 * judgement at all.
+		 */
+		const droppedTopicIds = ctx.topicIds
+			? input.topicIds.filter((t) => !ctx.topicIds!.has(t))
+			: [];
+		if (droppedTopicIds.length > 0) {
+			input.topicIds = input.topicIds.filter((t) => ctx.topicIds!.has(t));
 		}
 
 		// By id first (the same slug on an earlier day is the same story by
@@ -555,9 +586,19 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			changeType: entry.changeType,
 			historyHits: history.length,
 			...(rescuing.length > 0 ? { rescuedSources: rescuing.length } : {}),
+			// Kept visible so a normalisation that starts happening on every
+			// story -- a renamed profile topic, say -- is still a detectable
+			// regression rather than a silent one.
+			...(droppedTopicIds.length > 0 ? { droppedTopicIds } : {}),
 		});
 
 		const notes: string[] = [];
+		if (droppedTopicIds.length > 0) {
+			notes.push(
+				`Dropped topic id(s) not in the reader profile: ${droppedTopicIds.join(", ")}. ` +
+					`The story was stored without them. Valid ids: ${[...(ctx.topicIds ?? [])].sort().join(", ")}.`,
+			);
+		}
 		if (input.changeType === "NEW" && history.length > 0) {
 			notes.push(
 				`History exists for this story (${history.map((h) => `${h.storyId}@${h.date}`).join(", ")}). ` +

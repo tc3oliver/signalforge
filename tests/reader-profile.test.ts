@@ -65,6 +65,17 @@ describe("the rendered block", () => {
 		expect(block).toContain("Inference (0.85)");
 	});
 
+	/*
+	 * The id is what `upsert_story.topicIds` takes. Rendering only the label
+	 * left the model guessing, and on 2026-09-19 it guessed wrong 119 times in
+	 * one production run.
+	 */
+	it("leads each topic with the id the tools take, and says so", () => {
+		expect(block).toContain("`ai-llm` — AI / LLM (1.00)");
+		expect(block).toContain("`inference` — Inference (0.85)");
+		expect(block).toMatch(/ids not listed here are not stored/);
+	});
+
 	it("says in so many words that weights are priors and not filters", () => {
 		expect(block).toContain("priors, not filters");
 		expect(block).toMatch(/never justify/i);
@@ -168,7 +179,7 @@ describe("both system prompts carry the profile", () => {
  * applied the profile or ignored it.
  */
 describe("the prior is recorded, not just applied", () => {
-	it("rejects a topic id the reader never declared", async () => {
+	it("drops a topic id the reader never declared, and keeps the story", async () => {
 		const { createCuratorTools } = await import("../src/curator/tools.ts");
 		const { JsonStoryRepository } = await import("../src/stories/json-repository.ts");
 		const { mkdtempSync, rmSync } = await import("node:fs");
@@ -217,9 +228,20 @@ describe("the prior is recorded, not just applied", () => {
 				reason: "because",
 			};
 
-			await expect(execute("1", { ...story, topicIds: ["quantum-basketball"] })).rejects.toThrow(
-				/not in the reader profile/,
-			);
+			/*
+			 * An unknown id is dropped, not fatal: the story is stored without it
+			 * and the model is told which id went. Refusing the whole entry cost
+			 * a full model turn to remove one string, and on 2026-09-19 that was
+			 * 119 refusals in a single production run.
+			 */
+			const normalized = (await execute("1", {
+				...story,
+				topicIds: ["quantum-basketball", "inference"],
+			})) as { content: Array<{ text: string }> };
+			const payload = JSON.parse(normalized.content[0]!.text) as { note?: string };
+			expect(payload.note).toMatch(/Dropped topic id\(s\) not in the reader profile: quantum-basketball/);
+			const stored = await new JsonStoryRepository(root).getStory("s1");
+			expect(stored?.topicIds).toEqual(["inference"]);
 			// A declared topic is accepted, and so is none at all -- an important
 			// story that matches nothing the reader listed still belongs in the
 			// ledger, and that has to be expressible.
