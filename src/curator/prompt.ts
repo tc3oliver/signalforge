@@ -108,7 +108,7 @@ export function buildCuratorResumePrompt(input: {
 }): string {
 	return `You are resuming curation of ${input.date} that another run left unfinished. The durable state is intact: ${input.totalItems - input.unseenItems} of ${input.totalItems} items already have recorded decisions and ${input.storyCount} stories already exist in the ledger.
 
-Do not start over. Call \`get_daily_inventory\` to see where things stand, then \`list_unseen_items\` and continue from there. Call \`list_today_stories\` only when a batch looks like it continues a story another session created — re-using an existing storyId merges into it, which is what you want. Write each batch's clusters with one \`upsert_stories\` call.
+Do not start over. Call \`get_daily_inventory\` to see where things stand, then \`list_unseen_items\` and continue from there. Call \`list_today_stories\` when a batch looks like it continues a story another session created: with no arguments it names every story today already has, and with \`match\` it ranks them against a title you are about to write. Re-using an existing storyId merges into it, which is what you want; every upsert also tells you when today already holds a story that looks like the one you just wrote. Write each batch's clusters with one \`upsert_stories\` call.
 
 When unseen reaches zero, call \`submit_materials\`.`;
 }

@@ -572,27 +572,93 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		},
 	});
 
+	/**
+	 * How many ranked matches a `list_today_stories` search returns, and the most
+	 * it will return if asked.
+	 */
+	const TODAY_MATCH_LIMIT = 10;
+	const TODAY_MATCH_MAX = 25;
+
+	/**
+	 * Today's stories ranked by how much of `text` their title accounts for, the
+	 * same measure `find_history` uses for prior days, so "does this continue
+	 * something" is answered the same way whichever side of midnight the answer
+	 * is on.
+	 */
+	function rankToday(
+		stories: readonly StoryLedgerEntry[],
+		text: string,
+		exclude?: string,
+	): Array<{ entry: StoryLedgerEntry; score: number }> {
+		const terms = new Set(tokenize(text));
+		if (terms.size === 0) return [];
+		return stories
+			.filter((s) => s.storyId !== exclude)
+			.map((entry) => {
+				const hay = new Set(tokenize(entry.canonicalTitle));
+				let hits = 0;
+				for (const t of terms) if (hay.has(t)) hits += 1;
+				return { entry, score: hits / terms.size };
+			})
+			.filter((r) => r.score > 0)
+			.sort((a, b) => b.score - a.score || a.entry.storyId.localeCompare(b.entry.storyId));
+	}
+
 	const listTodayStories = defineTool({
 		name: "list_today_stories",
 		label: "List today's stories",
 		description:
-			"List every story that already exists for today: id, title, changeType and source-item count. Call this when you resume work another session started — it is the only way to recover story ids you did not create yourself, and re-using an existing storyId in upsert_story merges into it instead of creating a duplicate. Use get_story for the full entry of one story.",
+			"Name every story that already exists for today. With no arguments it returns each story's id and nothing else — the ids are the slugs you wrote, so a continuation is usually recognisable from the slug alone; call get_story for the full entry of one, or pass match to rank them. With match, it returns the stories whose titles best fit that text, with their titles and changeTypes. Re-using an existing storyId in upsert_story merges into that story instead of creating a duplicate.",
 		promptSnippet: "list_today_stories: recover stories created earlier today",
-		parameters: Type.Object({}),
-		execute: async () => {
+		parameters: Type.Object({
+			match: Type.Optional(
+				Type.String({
+					minLength: 2,
+					description: "Title or keywords of the story you are about to write. Returns the closest existing stories instead of every id.",
+				}),
+			),
+			limit: Type.Optional(Type.Integer({ minimum: 1, maximum: TODAY_MATCH_MAX })),
+		}),
+		execute: async (_id, params) => {
 			const stories = await ctx.repo.listStories(ctx.date);
+			if (params.match !== undefined) {
+				const ranked = rankToday(stories, params.match).slice(
+					0,
+					params.limit ?? TODAY_MATCH_LIMIT,
+				);
+				note("list_today_stories", { match: params.match, hits: ranked.length, total: stories.length });
+				return ok({
+					total: stories.length,
+					matches: ranked.map((r) => ({
+						storyId: r.entry.storyId,
+						title: r.entry.canonicalTitle,
+						changeType: r.entry.changeType,
+						sourceItems: r.entry.sourceItemIds.length,
+						score: Number(r.score.toFixed(3)),
+					})),
+				});
+			}
 			note("list_today_stories", { count: stories.length });
-			// Compact by design: this is called at the start of every resumed work
-			// unit and a day can hold 200 stories, so every field here is paid for
-			// once per unit for the rest of the day.
-			return ok({
-				stories: stories.map((s) => ({
-					storyId: s.storyId,
-					title: s.canonicalTitle,
-					changeType: s.changeType,
-					sourceItems: s.sourceItemIds.length,
-				})),
-			});
+			/*
+			 * Ids only, and all of them.
+			 *
+			 * This is called once at the start of most work units, and a tool
+			 * result stays in the session and is re-sent on every later turn of
+			 * that unit -- about 4.6 times, measured. So the day's ledger is paid
+			 * for repeatedly, and it grows all day: on 2026-09-19 nine calls
+			 * returned 28 stories and then 153, 103,557 characters in total, of
+			 * which 45 ledger rows were ever re-used. The titles were the bulk of
+			 * that and the redundant part: a storyId here is a slug the model
+			 * wrote itself for this exact purpose, `claude-code-2-1-275` beside
+			 * its own title `Claude Code 2.1.277 加入 AGENTS.md 支援`.
+			 *
+			 * Dropping the other fields rather than the rows is what keeps this
+			 * safe. Every story that exists today is still named, so nothing a
+			 * later session could have merged into becomes invisible; a slug that
+			 * is not enough on its own is one get_story call away, and `match`
+			 * ranks them when the model has a title in hand.
+			 */
+			return ok({ total: stories.length, storyIds: stories.map((s) => s.storyId) });
 		},
 	});
 
@@ -667,6 +733,34 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 	 * find_history stays available for the case where the model wants to read
 	 * the prior entries before it writes anything.
 	 */
+	/**
+	 * A story counts as today's near-neighbour at this much title overlap. Measured
+	 * on the 2026-09-19 ledger: every one of the day's duplicate pairs scored 0.5
+	 * or better and ranked first for its twin, and the threshold fires on about
+	 * one story in ten, so a run pays a sentence a dozen times to be told about
+	 * something it otherwise shipped twice.
+	 */
+	const TODAY_NEAR_SCORE = 0.5;
+	const TODAY_NEAR_LIMIT = 3;
+
+	/*
+	 * Today's ledger as this session has seen it: loaded once and then kept in
+	 * step with what this session writes. The neighbour check runs on every
+	 * story, and re-reading the ledger for each entry of a twenty-story batch
+	 * would trade a token problem for a query one. Appending as we go is also
+	 * what lets the check see a duplicate inside a single batch, where nothing
+	 * has been written when the batch is composed.
+	 *
+	 * Work units run one after another, so the only writer during a unit is that
+	 * unit. A story a concurrent session added would be missed here -- and is
+	 * still named by list_today_stories, which reads the ledger itself.
+	 */
+	let todayCache: StoryLedgerEntry[] | undefined;
+	const loadToday = async (): Promise<StoryLedgerEntry[]> => {
+		todayCache ??= await ctx.repo.listStories(ctx.date);
+		return todayCache;
+	};
+
 	const upsertOne = async (
 		raw: Record<string, unknown>,
 	): Promise<{ receipt: ReturnType<typeof toStoryReceipt>; history?: ReturnType<typeof toHistoryView>[]; note?: string }> => {
@@ -754,7 +848,40 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			);
 		}
 
+		/*
+		 * The same check, against today.
+		 *
+		 * The prior-day lookup above exists because a story that ran yesterday
+		 * should keep its id; nothing did the equivalent for the story written
+		 * twenty minutes ago by the previous work unit, and the tool that was
+		 * supposed to cover it -- the whole ledger, injected once per unit --
+		 * demonstrably did not: on 2026-09-19 the day shipped at least ten pairs
+		 * that are one event under two slugs, including
+		 * `openai-astra-for-law` beside `openai-astra-law`, written four units
+		 * apart with the full 153-row list in context both times. A model does
+		 * not re-read 153 rows before every story; it reads a note attached to
+		 * the receipt it was already waiting for.
+		 *
+		 * Advisory, never a rejection. Whether two similar titles are one event
+		 * is exactly the editorial judgement this stage exists to make, and the
+		 * measure here is token overlap, which cannot tell "CFTC extends passive
+		 * software relief" from "CFTC eases passive wallet registration". So
+		 * this names candidates and stops. It fires only for a story that is new
+		 * today, because a merge into an existing id is already the thing it
+		 * would be advising.
+		 */
+		const todayStories = await loadToday();
+		const alreadyToday = todayStories.some((s) => s.storyId === input.storyId);
+		const todayNear = alreadyToday
+			? []
+			: rankToday(todayStories, input.canonicalTitle, input.storyId)
+					.filter((r) => r.score >= TODAY_NEAR_SCORE)
+					.slice(0, TODAY_NEAR_LIMIT);
+
 		const entry = await ctx.repo.upsertStory(ctx.date, input, ctx.now());
+		const at = todayStories.findIndex((s) => s.storyId === entry.storyId);
+		if (at === -1) todayStories.push(entry);
+		else todayStories[at] = entry;
 		const rescuing = input.sourceItemIds.filter((id) => screenedOut.has(id));
 		note("upsert_story", {
 			storyId: entry.storyId,
@@ -765,6 +892,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			// story -- a renamed profile topic, say -- is still a detectable
 			// regression rather than a silent one.
 			...(droppedTopicIds.length > 0 ? { droppedTopicIds } : {}),
+			...(todayNear.length > 0 ? { todayNear: todayNear.map((r) => r.entry.storyId) } : {}),
 		});
 
 		const notes: string[] = [];
@@ -772,6 +900,14 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			notes.push(
 				`Dropped topic id(s) not in the reader profile: ${droppedTopicIds.join(", ")}. ` +
 					`The story was stored without them. Valid ids: ${[...(ctx.topicIds ?? [])].sort().join(", ")}.`,
+			);
+		}
+		if (todayNear.length > 0) {
+			notes.push(
+				`These stories already exist today and may be the same event: ` +
+					`${todayNear.map((r) => `${r.entry.storyId} ("${r.entry.canonicalTitle}")`).join("; ")}. ` +
+					`If one of them is, re-upsert this coverage under that storyId -- it merges the sources ` +
+					`instead of splitting the event across two entries. If they are different events, ignore this.`,
 			);
 		}
 		if (input.changeType === "NEW" && history.length > 0) {
