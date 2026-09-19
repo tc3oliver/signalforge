@@ -182,10 +182,33 @@ screening:
 # stays available as `read_item_body`, and is the right tool once you know what
 # you are looking for.
 #
-# Off disables the tool entirely; the Curator then reads long sources with
-# `read_item_body` alone, exactly as it did before this existed.
+# OFF, on the evidence, and this is the measurement that decided it.
+#
+# The case above was made against a 2,000-char search window. Re-measured at
+# the 3,000-char window `read_item_body` actually ships, a blind keyword search
+# reaches 22 of 22 decisive facts across nine production items, at 1.2 windows
+# per fact. The distilled packet reached 20, 21 and 22 of 22 on three identical
+# passes -- and in the pass that scored 20 it discarded its own best evidence,
+# the sentence carrying the decisive fact, because the model had reconstructed
+# it across markup rather than copying it.
+#
+# So the packet matches a deterministic reader at best, falls below it on two
+# runs in three, varies between identical passes where a reader does not, and
+# costs a network round trip, roughly 3,100 tokens per document, 6-15s of
+# latency and about one transport failure in twelve. A model stage that buys no
+# measured quality and no tokens should not run.
+#
+# What actually solved the mid-document problem was flattening HTML to prose.
+# The Must Know source is 16,419 characters of markup and 4,765 of prose, so a
+# single window now covers 63% of it. The search term was never the hard part.
+#
+# The code, its grounding verifier and its tests stay, because one condition
+# would revive this: canonical prose is currently small, p99 19,498 chars with
+# only 9 of 993 items over 20,000. `find` degrades as bodies grow. If the
+# manifest shifts toward long full-text sources, measure again rather than
+# assuming either way.
 evidence:
-  enabled: true
+  enabled: false
   provider: openai
   baseUrl: https://api.openai.com/v1
   model: gpt-5.6-terra
