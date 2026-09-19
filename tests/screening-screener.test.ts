@@ -269,6 +269,32 @@ describe("audit sampling is deterministic", () => {
 		expect(sampled).toBeLessThan(650);
 	});
 
+	/*
+	 * A golden vector, not another property.
+	 *
+	 * The properties above all hold for ANY hash of these three fields, so none
+	 * of them would notice the sample being redrawn. The separator used to be
+	 * two literal NUL bytes embedded in src/screening/types.ts, which made the
+	 * file read as binary to every text tool and would have been silently
+	 * rewritten by anything that normalised control characters on save. That
+	 * would have changed which items were audited on every past and future day,
+	 * while `isAuditSampled` still looked deterministic and still sampled at the
+	 * right rate.
+	 *
+	 * These values were taken from the implementation as it shipped on
+	 * 2026-09-19, when routing went live with a 10% audit rate. If this test
+	 * fails, the audit sample has moved and the leakage figures recorded against
+	 * earlier days no longer describe the same sample.
+	 */
+	it("draws the sample it drew when routing went live", () => {
+		const ids = Array.from({ length: 2000 }, (_, i) => `itm-${i}`);
+		const sampled = ids.filter((itemId) =>
+			isAuditSampled({ date: "2026-09-19", itemId, policyVersion: "screening-v3" }, 0.1),
+		);
+		expect(sampled.length).toBe(212);
+		expect(sampled.slice(0, 5)).toEqual(["itm-9", "itm-14", "itm-25", "itm-26", "itm-30"]);
+	});
+
 	it("samples nothing at 0 and everything at 1", () => {
 		expect(isAuditSampled(key, 0)).toBe(false);
 		expect(isAuditSampled(key, 1)).toBe(true);
