@@ -43,9 +43,20 @@ export class ToolLoopError extends Error {
  * on the expensive model with nothing anywhere saying the cheap one had died.
  *
  * Zero provider-reported tokens across a whole attempt is the evidence, and it
- * is unambiguous: a model that thought about the task and declined still bills
- * for the prompt. So this maps to MODEL_UNAVAILABLE, which already means "do
- * not retry, fall back now".
+ * is unambiguous about the FACT: a model that thought about the task and
+ * declined still bills for the prompt. It says nothing about the cause, and
+ * neither does this class. An exhausted subscription quota is the ordinary
+ * reason and produces exactly this signature; the provider surfaces no error,
+ * no status and no text to tell QUOTA from AUTH from an outage, so claiming one
+ * would be a guess dressed as telemetry.
+ *
+ * MODEL_UNAVAILABLE is the honest superset -- "this model cannot be used right
+ * now" -- and it is also behaviourally exact: `decideAction` sends QUOTA,
+ * BILLING, AUTH and MODEL_UNAVAILABLE all straight to FALLBACK, so a more
+ * specific label would change no retry, no delay and no ordering. What it
+ * replaced did change them: TOOL_LOOP earned a RESUME_SAME and
+ * INVALID_AGENT_OUTPUT a CORRECTIVE_RETRY_SAME, both spent on a provider that
+ * was never going to answer.
  */
 export class ModelSilentError extends Error {
 	override readonly name = "ModelSilentError";

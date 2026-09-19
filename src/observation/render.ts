@@ -436,9 +436,16 @@ export function renderStoryLedger(input: {
  * The model chain, per stage: who did the work and who only failed.
  *
  * Prints a line of its own when a model's failures were all silent — zero
- * provider-reported tokens — because that is not a model doing badly, it is a
- * provider that is not there, and the only way it ever shows up is that
- * everything downstream quietly runs on the expensive fallback.
+ * provider-reported tokens — because that is not a model doing badly, and the
+ * only way it otherwise shows up is that everything downstream quietly runs on
+ * the next model in the chain.
+ *
+ * Deliberately says what was observed rather than why. An exhausted
+ * subscription quota produces exactly this signature and is the ordinary cause;
+ * the provider returns no reason at all, so naming one would be a guess. The
+ * fallback that follows is the chain working as designed, and the line exists
+ * so that a bill moving down the chain is visible rather than silent — not to
+ * report a defect.
  */
 export function renderModelChain(rows: ModelChainRow[]): string {
 	const lines = ["## Model chain", ""];
@@ -454,18 +461,24 @@ export function renderModelChain(rows: ModelChainRow[]): string {
 				`${String(r.failed).padStart(5)} ${String(r.silent).padStart(7)} ${r.totalTokens.toLocaleString().padStart(11)}`,
 		);
 	}
-	const dead = rows.filter((r) => r.attempts > 0 && r.silent === r.attempts);
-	if (dead.length > 0) {
+	const silent = rows.filter((r) => r.attempts > 0 && r.silent === r.attempts);
+	if (silent.length > 0) {
 		lines.push("");
-		for (const r of dead) {
+		for (const r of silent) {
 			lines.push(
-				`!! ${r.provider}/${r.model} answered nothing on all ${r.attempts} ${r.stage} attempt(s): zero`,
+				`${r.provider}/${r.model} answered nothing on all ${r.attempts} ${r.stage} attempt(s):`,
 			);
 			lines.push(
-				"   provider-reported tokens, so it never ran. Every token below it in the chain",
+				"  zero provider-reported tokens, so the chain fell through to the next model.",
 			);
 			lines.push(
-				"   was spent because this model was unavailable, not because it was unsuitable.",
+				"  An exhausted subscription quota looks exactly like this and is the ordinary",
+			);
+			lines.push(
+				"  cause; the provider reports no reason, so this line states what was observed",
+			);
+			lines.push(
+				"  and not why. It resolves when the quota does, and implies no code change.",
 			);
 		}
 	}

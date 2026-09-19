@@ -110,7 +110,11 @@ describe("the observation report makes a dead provider impossible to miss", () =
 			row({ provider: "github-copilot", model: "gemini-3.8-flash", attempts: 2, succeeded: 0, yielded: 0, failed: 2, silent: 2, totalTokens: 0 }),
 		]);
 		expect(text).toContain("github-copilot/gemini-3.8-flash answered nothing");
-		expect(text).toContain("never ran");
+		// States what was observed, not a cause it cannot see. An exhausted
+		// subscription quota produces this exact signature and is the ordinary
+		// reason; the provider returns no reason at all.
+		expect(text).toContain("exhausted subscription quota");
+		expect(text).toContain("implies no code change");
 	});
 
 	it("says nothing alarming about a model that failed while answering", () => {
