@@ -132,3 +132,25 @@ export async function screeningTally(
 	for (const r of rows) tally[r.verdict] = r.n;
 	return tally;
 }
+
+/**
+ * What the screener did for a specific set of runs.
+ *
+ * Scoped by run id, not by (lineage, date), because a backtest writes extra
+ * rows for a past day under its own policy version with no run id. Those rows
+ * are evidence about that day, not a record of what the published run withheld,
+ * and counting them would double the funnel.
+ */
+export async function screeningForRuns(
+	sql: Sql,
+	runIds: readonly string[],
+): Promise<{ screened: number; withheld: number }> {
+	if (runIds.length === 0) return { screened: 0, withheld: 0 };
+	const rows = await sql<{ screened: number; withheld: number }[]>`
+		select count(*)::int as screened,
+			sum(case when routed then 1 else 0 end)::int as withheld
+		from item_screening
+		where run_id = any(${runIds as string[]})
+	`;
+	return { screened: rows[0]?.screened ?? 0, withheld: rows[0]?.withheld ?? 0 };
+}

@@ -17,6 +17,7 @@ import {
 	collectionRunsForRunIds,
 	collectorThroughput,
 	listCollectionRuns,
+	maxManifestItemsForRunIds,
 	maxProcessedItemsForRunIds,
 	listSourceConfigs,
 	type CollectionRunRow,
@@ -24,6 +25,7 @@ import {
 	type SourceConfigRow,
 } from "../../src/db/collector-health.ts";
 import { dispositionCounts, explainItem, type ItemExplanation } from "../../src/db/decisions.ts";
+import { screeningForRuns } from "../../src/db/screening.ts";
 import { getFacts } from "../../src/db/facts.ts";
 import {
 	getItemProvenance,
@@ -157,10 +159,14 @@ export async function loadDayWorkload(date: string): Promise<DayWorkload | undef
 	const sql = db();
 	const runIds = await listRunsForDate(sql, LINEAGE, date);
 	if (runIds.length === 0) return undefined;
-	const [itemsScanned, dispositions, collectionRuns] = await Promise.all([
+	const [itemsScanned, manifestItems, screening, dispositions, collectionRuns] = await Promise.all([
 		// A day can hold more than one run (a retry, an incremental pass); the
 		// scan-coverage number is the largest processed count any of them reached.
 		maxProcessedItemsForRunIds(sql, runIds),
+		// What the day collected. Equal to the above before routing; larger once
+		// the screener started withholding items from the curator's scan.
+		maxManifestItemsForRunIds(sql, runIds),
+		screeningForRuns(sql, runIds),
 		dispositionCounts(sql, LINEAGE, date),
 		// Filtered by run id in SQL. A recency window over the whole table
 		// answers a different question and undercounts any day but the newest.
@@ -169,7 +175,14 @@ export async function loadDayWorkload(date: string): Promise<DayWorkload | undef
 	const sources = new Set(
 		collectionRuns.filter((row) => row.itemsFetched > 0).map((row) => row.collectorId),
 	).size;
-	return { itemsScanned, sources, dispositions };
+	return {
+		itemsScanned,
+		manifestItems,
+		screenedItems: screening.screened,
+		withheldItems: screening.withheld,
+		sources,
+		dispositions,
+	};
 }
 
 export async function loadLatestBriefDate(): Promise<string | undefined> {

@@ -430,6 +430,30 @@ export async function collectionRunsForRunIds(
  * It lives here rather than in runs.ts because it is a reader-facing coverage
  * projection, the same question `collectionRunsForRunIds` answers for sources.
  */
+/**
+ * The largest manifest any of these runs was measured against: the day's
+ * collected item count.
+ *
+ * Separate from `maxProcessedItemsForRunIds` because routing split the two
+ * apart. Before it, a run processed every item in its manifest and one number
+ * answered both "how much did we collect?" and "how much did the Curator
+ * judge?". A routed run judges only what the screener passed, so a page that
+ * reports processed items as the day's total now understates it by however
+ * much was withheld.
+ */
+export async function maxManifestItemsForRunIds(
+	sql: Sql,
+	runIds: readonly string[],
+): Promise<number> {
+	if (runIds.length === 0) return 0;
+	const rows = await sql.unsafe<{ total: string | null }[]>(
+		`select coalesce(max(total_items), 0)::text as total
+		 from daily_runs where run_id = any($1::text[])`,
+		[runIds as string[]],
+	);
+	return Number(rows[0]?.total ?? 0);
+}
+
 export async function maxProcessedItemsForRunIds(
 	sql: Sql,
 	runIds: readonly string[],

@@ -201,6 +201,12 @@ export interface DashboardView {
 
 /** The day's work, as the pipeline recorded it. Every field is a count of rows. */
 export interface DayWorkload {
+	/** Every item the day collected: the manifest the run was measured against. */
+	manifestItems: number;
+	/** Items the screener judged. Zero on a day that ran with screening off. */
+	screenedItems: number;
+	/** Items the screener withheld from the curator's default scan. */
+	withheldItems: number;
 	/** Items the curator recorded a decision on — the scan-coverage number. */
 	itemsScanned: number;
 	/** Collectors that fetched at least one item for this run. */
@@ -209,13 +215,37 @@ export interface DayWorkload {
 	dispositions: Readonly<Partial<Record<"IRRELEVANT" | "DUPLICATE" | "CANDIDATE", number>>>;
 }
 
+/*
+ * The funnel, in units that can be added up.
+ *
+ * Items and stories are different things and the page used to mix them: it
+ * subtracted two item counts from a third and called the remainder a number of
+ * events, which skipped the ledger and the material selection entirely, and it
+ * divided stories by items to claim a percentage. Routing then broke the first
+ * number too, because `itemsScanned` stopped meaning "what the day collected"
+ * and started meaning "what survived screening".
+ *
+ * So: item counts stay item counts, story counts stay story counts, and the two
+ * are never divided by each other.
+ */
 export interface DayWorkloadView {
+	/** Items collected. */
+	manifestItems: number;
+	/** Items withheld by the screener, and never offered to the curator. */
+	withheldItems: number;
+	/** Items that entered the curator's own analysis. */
 	itemsScanned: number;
 	sources: number;
 	irrelevant: number;
 	duplicate: number;
+	/** Items the curator kept as candidates for a story. */
+	candidates: number;
+	/** Stories written to the day's ledger from those candidates. */
+	ledgerStories: number;
 	/** Stories in the brief — what the reader actually gets. */
 	storiesKept: number;
+	/** Of those, the ones marked Must Know. */
+	mustKnow: number;
 	/** Ledger rows judged NO_MATERIAL_CHANGE: read, recorded, and kept out. */
 	unchangedStories: number;
 }
@@ -397,11 +427,18 @@ function toWorkloadView(
 	ledger: readonly StoryLedgerEntry[],
 ): DayWorkloadView {
 	return {
+		// A day that predates screening, or ran with it off, has no screening
+		// rows; its manifest is then whatever the curator scanned.
+		manifestItems: Math.max(workload.manifestItems, workload.itemsScanned),
+		withheldItems: workload.withheldItems,
 		itemsScanned: workload.itemsScanned,
 		sources: workload.sources,
 		irrelevant: workload.dispositions.IRRELEVANT ?? 0,
 		duplicate: workload.dispositions.DUPLICATE ?? 0,
+		candidates: workload.dispositions.CANDIDATE ?? 0,
+		ledgerStories: ledger.length,
 		storiesKept: brief.stories.length,
+		mustKnow: brief.stories.filter((story) => story.mustKnow).length,
 		unchangedStories: ledger.filter((entry) => entry.changeType === "NO_MATERIAL_CHANGE").length,
 	};
 }

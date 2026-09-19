@@ -177,6 +177,9 @@ describe("Today page day in review", () => {
 	it("closes the page with what the run read, from recorded counts only", () => {
 		const out = render({
 			workload: {
+				manifestItems: 2100,
+				screenedItems: 2100,
+				withheldItems: 857,
 				itemsScanned: 1243,
 				sources: 9,
 				dispositions: { IRRELEVANT: 1180, DUPLICATE: 41, CANDIDATE: 22 },
@@ -184,24 +187,56 @@ describe("Today page day in review", () => {
 			ledger: [ledger(), ledger({ storyId: "st-9", changeType: "NO_MATERIAL_CHANGE" })],
 		});
 		expect(out).toContain('id="day-in-review"');
-		expect(out).toContain("<strong>1,243</strong> 則項目");
+		// Collected, not scanned: the screener's 857 belong to the day too.
+		expect(out).toContain("<strong>2,100</strong> 則項目");
+		expect(out).toContain("<strong>857</strong> 則");
+		expect(out).toContain("<strong>1,243</strong> 則進入深度分析");
 		expect(out).toContain("<strong>9</strong> 個來源");
 		expect(out).toContain("<strong>1,180</strong> 則與追蹤的主題無關");
 		expect(out).toContain("<strong>41</strong> 則是重複報導");
-		expect(out).toContain("<strong>3</strong> 則事件");
+		// Items stay items and stories stay stories: 22 candidate items become
+		// 2 ledger stories, of which 3 reach the brief.
+		expect(out).toContain("<strong>22</strong> 則留下來歸整成");
+		expect(out).toContain("<strong>2</strong> 則事件");
+		expect(out).toContain("<strong>3</strong> 則值得閱讀");
 		expect(out).toContain("<strong>1</strong> 則只是舊聞再報導");
-		// 3 of 1,243, rounded up so a tiny share never reads as 0%.
-		expect(out).toContain("<strong>1%</strong>");
+		// No share-of-everything: stories over items is not a percentage.
+		expect(out).not.toMatch(/這一頁是全部的/);
 		// It is the last section: after the inbox, before the full-brief link.
 		expect(out.indexOf('id="day-in-review"')).toBeGreaterThan(out.indexOf("watch-next"));
 		expect(out.indexOf('id="day-in-review"')).toBeLessThan(out.indexOf('class="full-brief"'));
 	});
 
+	it("says every item went to the curator on a day that ran without screening", () => {
+		const out = render({
+			workload: {
+				manifestItems: 1243,
+				screenedItems: 0,
+				withheldItems: 0,
+				itemsScanned: 1243,
+				sources: 9,
+				dispositions: { IRRELEVANT: 1180, DUPLICATE: 41, CANDIDATE: 22 },
+			},
+			ledger: [ledger()],
+		});
+		expect(out).toContain("全部 <strong>1,243</strong> 則都進入深度分析");
+		expect(out).not.toMatch(/初步篩選過濾掉/);
+	});
+
 	it("omits the paragraph when the day left no run record", () => {
 		expect(render()).not.toContain('id="day-in-review"');
-		expect(render({ workload: { itemsScanned: 0, sources: 0, dispositions: {} } })).not.toContain(
-			'id="day-in-review"',
-		);
+		expect(
+			render({
+				workload: {
+					manifestItems: 0,
+					screenedItems: 0,
+					withheldItems: 0,
+					itemsScanned: 0,
+					sources: 0,
+					dispositions: {},
+				},
+			}),
+		).not.toContain('id="day-in-review"');
 	});
 });
 
