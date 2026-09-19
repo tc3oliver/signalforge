@@ -702,7 +702,16 @@ describe("rescuing a screened-out item", () => {
 		}>("commit_curation_batch", {
 			decisions: [{ itemId: a2, disposition: "DUPLICATE", storyId: "story-g01", reason: "rescued" }],
 		});
-		expect(recorded).toMatchObject({ decisions: { rescued: 1 }, processedItems: 4, totalItems: 3, unseenItems: 0 });
+		// Coherent counts: the scan is 3 of 3, and the rescued item is reported
+		// beside it rather than inside it. It used to read "4 decided of 3
+		// offered", which is true of two different sets and false of either.
+		expect(recorded).toMatchObject({
+			decisions: { rescued: 1 },
+			processedItems: 3,
+			totalItems: 3,
+			rescuedItems: 1,
+			unseenItems: 0,
+		});
 		expect((await call("get_daily_inventory")) as object).toMatchObject({ rescuedItems: 1, unseenItems: 0 });
 
 		const accepted = (await call("submit_materials", materials([a1, a2]))) as string;

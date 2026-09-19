@@ -7,6 +7,7 @@ import type {
 	AgentDriverOptions,
 } from "../../src/runtime/agent-driver.ts";
 import type { DailyManifest, NormalizedItem, StructuredFact } from "../../src/schemas/index.ts";
+import type { TokenUsage } from "../../src/schemas/run.ts";
 import type { Phase1Paths } from "../../src/runtime/orchestrator.ts";
 
 /**
@@ -35,6 +36,15 @@ export type ScriptResolver = (opts: AgentDriverOptions) => Script | Script[];
 export interface FakeDriverOptions {
 	/** Called once per driver creation, before any prompt. */
 	onCreate?: (opts: AgentDriverOptions) => void;
+	/**
+	 * Provider-reported usage for this driver, if any.
+	 *
+	 * Omitted, `getUsage` is absent, which is what every test did before the
+	 * silent-provider check existed -- and which made that check unreachable
+	 * from any stage test, because `providerSpoke(undefined)` is true. A test
+	 * that wants to exercise it passes an all-zero usage here.
+	 */
+	usage?: TokenUsage;
 	/** Record of every tool call made through any driver of this factory. */
 	toolLog?: Array<{ name: string; args: unknown; result?: unknown; error?: unknown }>;
 }
@@ -114,6 +124,7 @@ export function createResolvedDriverFactory(
 				});
 			},
 			getActiveToolNames: () => [...byName.keys()],
+			...(options.usage ? { getUsage: () => options.usage } : {}),
 			dispose: () => {
 				disposed = true;
 			},

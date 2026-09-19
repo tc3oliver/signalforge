@@ -366,22 +366,21 @@ describe("unknown topic ids are normalized, not refused", () => {
 	it("still refuses a source item that does not exist", async () => {
 		const { tools, manifest } = await toolsWithProfile(() => {});
 		const commit = tools.find((t) => t.name === "commit_curation_batch")!;
-		const result = (await commit.execute(
-			"c",
-			{
-				stories: [
-					{ ...payload(manifest, "c", ["inference"]), sourceItemIds: ["no-such-item"], primarySourceIds: ["no-such-item"] },
-				],
-			} as never,
-			undefined,
-			undefined,
-			{} as never,
-		)) as { content: Array<{ text: string }> };
-		const body = JSON.parse(result.content[0]!.text) as {
-			stories: { accepted: unknown[]; rejected?: Array<{ error: string }> };
-		};
-		// Still a hard refusal: a story may not cite an item that does not exist.
-		expect(body.stories.accepted).toEqual([]);
-		expect(body.stories.rejected?.[0]?.error).toMatch(/not in today's manifest/);
+		// A story may not cite an item that does not exist, and a commit that
+		// recorded nothing at all is refused outright rather than returned as a
+		// success with an empty receipt.
+		await expect(
+			commit.execute(
+				"c",
+				{
+					stories: [
+						{ ...payload(manifest, "c", ["inference"]), sourceItemIds: ["no-such-item"], primarySourceIds: ["no-such-item"] },
+					],
+				} as never,
+				undefined,
+				undefined,
+				{} as never,
+			),
+		).rejects.toThrow(/not in today's manifest/);
 	});
 });

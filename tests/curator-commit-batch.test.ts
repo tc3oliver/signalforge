@@ -170,11 +170,54 @@ describe("nothing recorded here dangles", () => {
 
 	it("refuses a decision naming a story that does not exist anywhere", async () => {
 		const { tools, repo } = build();
-		const out = await run(tools, "commit_curation_batch", {
-			decisions: [{ itemId: "rss-1", disposition: "CANDIDATE", storyId: "never-written", reason: "primary" }],
-		});
-		expect((out["decisions"] as Record<string, unknown>)["recorded"]).toBe(0);
+		// Nothing else in the call succeeded either, so the commit is refused
+		// outright rather than returned as a success that recorded nothing.
+		await expect(
+			run(tools, "commit_curation_batch", {
+				decisions: [{ itemId: "rss-1", disposition: "CANDIDATE", storyId: "never-written", reason: "primary" }],
+			}),
+		).rejects.toThrow(/does not exist/);
 		expect(await repo.listDecisions(DATE)).toEqual([]);
+	});
+
+	it("keeps a page whose sound half survives, even when a decision is refused", async () => {
+		const { tools, repo } = build();
+		const out = await run(tools, "commit_curation_batch", {
+			decisions: [
+				irrelevant("rss-3"),
+				{ itemId: "rss-1", disposition: "CANDIDATE", storyId: "never-written", reason: "primary" },
+			],
+		});
+		expect((out["decisions"] as Record<string, unknown>)["recorded"]).toBe(1);
+		expect((await repo.listDecisions(DATE)).map((d) => d.itemId)).toEqual(["rss-3"]);
+	});
+
+	it("refuses a decision for a story this commit tried and failed to update, even though an older row exists", async () => {
+		/*
+		 * The two guards differ exactly here. An earlier work unit wrote the
+		 * story, so the ledger holds its id; this commit re-writes it with a bad
+		 * factRef and is refused. Recording the items against the stale row would
+		 * mark them decided for good, never offer them again, and silently discard
+		 * the updated judgement -- with accounting balanced and no dangling
+		 * reference for anything downstream to catch.
+		 */
+		const { tools, repo } = build();
+		await run(tools, "commit_curation_batch", {
+			stories: [story()],
+			decisions: [{ itemId: "rss-1", disposition: "CANDIDATE", storyId: "acme-ships-a-thing", reason: "primary" }],
+		});
+		const out = await run(tools, "commit_curation_batch", {
+			stories: [story({ factRefs: ["no-such-fact"], sourceItemIds: ["rss-1", "rss-2"] })],
+			decisions: [
+				{ itemId: "rss-2", disposition: "DUPLICATE", storyId: "acme-ships-a-thing", reason: "same event" },
+				irrelevant("rss-3"),
+			],
+		});
+		const rejected = (out["decisions"] as Record<string, unknown>)["rejected"] as Array<Record<string, unknown>>;
+		expect(rejected.map((r) => r["itemId"])).toEqual(["rss-2"]);
+		expect(String(rejected[0]!["error"])).toContain("refused above");
+		// rss-2 stays unseen, so the next session is offered it again.
+		expect((await repo.listDecisions(DATE)).map((d) => d.itemId).sort()).toEqual(["rss-1", "rss-3"]);
 	});
 
 	it("refuses an unknown item id without touching the rest of the page", async () => {

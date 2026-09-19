@@ -954,17 +954,30 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 					rejectedDecisions.push({ itemId: d.itemId, error: "duplicate itemId in this batch" });
 					continue;
 				}
+				/*
+				 * A story this commit tried and failed to write, checked BEFORE the
+				 * ledger, not inside the branch that runs when the ledger misses.
+				 *
+				 * The two differ exactly when the story already has a row from an
+				 * earlier work unit. Unit 3 writes `acme-merger`; unit 7 re-commits it
+				 * with a corrected changeType and one mistyped factRef, so the story is
+				 * refused -- but its four decisions name the same id, the ledger holds unit
+				 * 3's row, and recording them marks those items decided for good. They
+				 * are never offered again, the updated judgement is gone, and nothing
+				 * downstream notices: accounting balances and no reference dangles, so
+				 * the submit gate has nothing to complain about.
+				 *
+				 * The item's decision belongs to the story the model was writing, not to
+				 * whatever happens to share its id.
+				 */
+				if (d.storyId !== undefined && refusedIds.has(d.storyId)) {
+					rejectedDecisions.push({
+						itemId: d.itemId,
+						error: `story "${d.storyId}" was refused above, so this decision was not recorded. Fix that story and resend both.`,
+					});
+					continue;
+				}
 				if (d.storyId !== undefined && !todayIds.has(d.storyId)) {
-					// The pointed case first: the model wrote this story in this very
-					// call and it was refused, so the fix is the story, not the
-					// decision.
-					if (refusedIds.has(d.storyId)) {
-						rejectedDecisions.push({
-							itemId: d.itemId,
-							error: `story "${d.storyId}" was refused above, so this decision was not recorded. Fix that story and resend both.`,
-						});
-						continue;
-					}
 					if (!(await ctx.repo.getStory(d.storyId))) {
 						rejectedDecisions.push({
 							itemId: d.itemId,
@@ -1000,6 +1013,26 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			const rescuedNow = toRecord.filter((d) => screenedOut.has(d.itemId)).length;
 			ctx.turnBudget?.spend(newlyDecided);
 
+			/*
+			 * A commit that wrote nothing is a failure, not a partial success.
+			 *
+			 * Partial application is the point of this tool -- one bad story must not
+			 * cost a page of sound judgement -- but the deleted `record_item_decisions`
+			 * refused outright when it could record nothing, and dropping that left a
+			 * gap: fifty decisions all naming a story refused earlier in the same call
+			 * came back as a success receipt with `recorded: 0`, from the one call the
+			 * model is told ends a batch. Throwing puts the reason in front of it
+			 * instead of leaving it to notice that `unseenItems` did not move.
+			 */
+			if (accepted.length === 0 && toRecord.length === 0) {
+				const why = [
+					...rejectedStories.map((r) => `story ${r.storyId}: ${r.error}`),
+					...rejectedDecisions.map((r) => `item ${r.itemId}: ${r.error}`),
+				];
+				throw new ToolRejection(
+					`commit_curation_batch recorded nothing; every entry was refused:\n- ${why.join("\n- ")}`,
+				);
+			}
 			const account = await accounting();
 			const unseenLeft = account.unaccountedItemIds.length;
 			/*
@@ -1023,8 +1056,18 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 					...(rescuedNow > 0 ? { rescued: rescuedNow } : {}),
 					...(rejectedDecisions.length > 0 ? { rejected: rejectedDecisions } : {}),
 				},
-				processedItems: account.curatorDecided,
+				/*
+				 * Both figures over the same set. `curatorDecided` counts every decided
+				 * manifest item including a rescued screened-out one, while
+				 * `sentToCurator` excludes those -- so on a day with rescues the pair
+				 * read as 45 of 600 beside a work-unit brief that said 40 of 600, and one
+				 * of the two numbers had to be wrong to whoever read them. Rescues are
+				 * reported beside the scan count, as get_daily_inventory already does,
+				 * rather than inflating it.
+				 */
+				processedItems: account.curatorDecided - account.rescued,
 				totalItems: account.sentToCurator,
+				...(account.rescued > 0 ? { rescuedItems: account.rescued } : {}),
 				unseenItems: unseenLeft,
 				...(complete
 					? {
@@ -1050,7 +1093,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 				...(rejectedStories.length > 0 ? { rejectedBy } : {}),
 				recorded: toRecord.length,
 				rejectedDecisions: rejectedDecisions.length,
-				processedItems: account.curatorDecided,
+				processedItems: account.curatorDecided - account.rescued,
 				unseenItems: unseenLeft,
 				...(complete ? { turnComplete: true } : {}),
 			});

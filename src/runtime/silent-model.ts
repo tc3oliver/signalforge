@@ -15,10 +15,24 @@ import type { TokenUsage } from "../schemas/run.ts";
  * produced a useless answer still bills for the prompt.
  */
 
-/** True when the provider answered at all, on any turn of this attempt. */
+/**
+ * True when the provider answered at all, on any turn of this attempt.
+ *
+ * Every counter, including the cache ones. A provider that served a turn
+ * entirely from cache can report zero input and zero output while having
+ * genuinely run, and calling that silence would take away the one cheap retry
+ * a real failure is owed -- the same mistake as re-labelling a network error,
+ * approached from the other side.
+ */
 export function providerSpoke(usage: TokenUsage | undefined): boolean {
 	if (!usage) return true; // No telemetry is not evidence of silence.
-	return usage.totalTokens > 0 || usage.input > 0 || usage.output > 0;
+	return (
+		usage.totalTokens > 0 ||
+		usage.input > 0 ||
+		usage.output > 0 ||
+		usage.cacheRead > 0 ||
+		usage.cacheWrite > 0
+	);
 }
 
 /*
