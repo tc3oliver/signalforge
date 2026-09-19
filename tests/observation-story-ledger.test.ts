@@ -182,3 +182,21 @@ describe("ledgerTelemetry reads a batch commit", () => {
 		expect(t.accepted).toBe(1);
 	});
 });
+
+describe("a trace from before the writers were consolidated still counts correctly", () => {
+	it("does not count a batch's entries twice when it also logged them one by one", () => {
+		// The 2026-09-19 shape: `upsert_stories` reported 20 accepted AND each
+		// entry emitted its own `upsert_story` note.
+		const t = ledgerTelemetry([
+			{ kind: "tool_call", tool: "upsert_stories", ts: "t1", accepted: 2 },
+			{ kind: "tool_call", tool: "upsert_story", ts: "t1", storyId: "a" },
+			{ kind: "tool_call", tool: "upsert_story", ts: "t1", storyId: "b" },
+		]);
+		expect(t.upserts).toBe(2);
+	});
+
+	it("still counts a genuine single write when nothing batched in that run", () => {
+		const t = ledgerTelemetry([{ kind: "tool_call", tool: "upsert_story", ts: "t1", storyId: "a" }]);
+		expect(t.upserts).toBe(1);
+	});
+});

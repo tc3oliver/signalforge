@@ -187,6 +187,18 @@ export interface LedgerTelemetry {
  * counts what it is given and does not know which day it is looking at.
  */
 export function ledgerTelemetry(events: readonly LedgerEvent[]): LedgerTelemetry {
+	/*
+	 * Before the writers were consolidated, a batch emitted a per-entry
+	 * `upsert_story` note as well as its own totals, so counting both reads a
+	 * 33-call day as 424 writes when there were 334. When a run contains a tool
+	 * that reports its own totals, the bare per-entry notes are that artifact and
+	 * are not counted again.
+	 */
+	const hasBatchTotals = events.some(
+		(e) =>
+			e.kind === "tool_call" &&
+			(e.tool === "upsert_stories" || e.tool === "commit_curation_batch"),
+	);
 	const fires: NearFire[] = [];
 	const writtenAt = new Map<string, number[]>();
 	let upserts = 0;
@@ -206,7 +218,8 @@ export function ledgerTelemetry(events: readonly LedgerEvent[]): LedgerTelemetry
 		}
 		if (e.kind === "tool_call" && WRITE_TOOLS.has(e.tool ?? "")) {
 			// A batch reports how many stories it wrote; a single write is one.
-			upserts += e.accepted ?? (e.storyId !== undefined ? 1 : 0);
+			if (e.accepted !== undefined) upserts += e.accepted;
+			else if (e.storyId !== undefined && !hasBatchTotals) upserts += 1;
 			for (const n of e.near ?? []) {
 				fires.push({
 					ts: e.ts,
