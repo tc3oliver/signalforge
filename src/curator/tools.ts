@@ -868,16 +868,23 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		promptSnippet: "commit_curation_batch: write a page's stories and decisions in one call",
 		parameters: Type.Object({
 			/*
-			 * Room for a whole page's events in one call.
+			 * As many stories as the page can hold items, because a smaller number is
+			 * a trap rather than a bound.
 			 *
-			 * The old batch tool capped at 20 and one of 2026-09-19's 33 batches
-			 * landed exactly on it, which is the shape of a clip rather than a
-			 * coincidence. Now that the decisions travel with the stories, a
-			 * 50-item page is meant to be one commit, and a page that happens to
-			 * hold 22 distinct events should not be split into two model turns by
-			 * a number.
+			 * The brief hands the model up to MAX_PAGE items and tells it to commit the
+			 * batch in ONE call. A page holding more distinct events than this cap
+			 * cannot obey that instruction, and the refusal it gets is Pi's parameter
+			 * validation, not a ToolRejection -- so it is the one refusal in this stage
+			 * that cannot say what to do instead, it arrives after the model has
+			 * composed the most expensive payload of the unit, and it emits no note, so
+			 * the trace shows a seeded page with no commit against it.
+			 *
+			 * The old cap of 20 was demonstrably clipping: one of 2026-09-19's 33
+			 * batches landed exactly on it. The cap bounds no resource -- decisions are
+			 * already MAX_PAGE, and a story entry is smaller than the item it describes
+			 * -- so it matches the page.
 			 */
-			stories: Type.Optional(Type.Array(storyPayload, { maxItems: 25 })),
+			stories: Type.Optional(Type.Array(storyPayload, { maxItems: MAX_PAGE })),
 			decisions: Type.Optional(Type.Array(
 				Type.Object({
 					itemId: Type.String({ minLength: 1 }),

@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createCuratorTools, type CuratorContext } from "../src/curator/tools.ts";
+import { createCuratorTools, MAX_PAGE, type CuratorContext } from "../src/curator/tools.ts";
 import { TurnBudget } from "../src/runtime/progress-yield.ts";
 import { JsonStoryRepository } from "../src/stories/json-repository.ts";
 import type { DailyManifest, NormalizedItem } from "../src/schemas/index.ts";
@@ -461,5 +461,33 @@ describe("a refused commit still reports why it was refused", () => {
 			rejectedBy: { CHANGE_TYPE_WITHOUT_HISTORY: 1 },
 			recorded: 1,
 		});
+	});
+});
+
+describe("the commit can hold what the brief hands out", () => {
+	/*
+	 * The brief seeds up to MAX_PAGE items and tells the model to commit the
+	 * batch in one call. A cap below that is a trap: the refusal is Pi's
+	 * parameter validation rather than a ToolRejection, so it is the one refusal
+	 * in this stage that cannot say what to do instead, it costs the turn that
+	 * composed the unit's largest payload, and it emits no note — the trace shows
+	 * a seeded page with no commit against it.
+	 */
+	it("accepts as many stories as a page can have items", async () => {
+		const { tools } = build();
+		const stories = Array.from({ length: MAX_PAGE }, (_, i) =>
+			story({ storyId: `story-${i}`, canonicalTitle: `Event number ${i}` }),
+		);
+		const out = await run(tools, "commit_curation_batch", { stories });
+		expect(((out["stories"] as Record<string, unknown>)["accepted"] as unknown[]).length).toBe(MAX_PAGE);
+	});
+
+	it("caps stories no lower than decisions, so neither half limits the other", () => {
+		const commit = (build().tools as Array<{ name: string; parameters?: unknown }>).find(
+			(t) => t.name === "commit_curation_batch",
+		)!;
+		const schema = JSON.stringify(commit.parameters);
+		const caps = [...schema.matchAll(/"maxItems":(\d+)/g)].map((m) => Number(m[1]));
+		expect(Math.min(...caps)).toBe(MAX_PAGE);
 	});
 });
