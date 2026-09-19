@@ -295,3 +295,62 @@ describe("a work unit opens with its state, not with fetches", () => {
 		expect(toolsUsed).toEqual(["get_daily_inventory", "list_today_stories", "commit_curation_batch"]);
 	});
 });
+
+describe("what the stage puts into the session is measured too", () => {
+	/*
+	 * `measureToolResults` instruments tools and only tools, so the prompt was
+	 * never counted — and it used to be two short paragraphs. Pre-seeded, it
+	 * carries the page, the counts and the ledger's ids: ~8,900 tokens on a real
+	 * 50-item page, re-sent every turn of the unit, which makes it the largest
+	 * single payload in the stage. It was invisible, and it also moved the page
+	 * out of the term the old cost model measured it in, so a re-fit needs this.
+	 */
+	it("records the size of the opening prompt", async () => {
+		const manifest = makeManifest({ date: DATE, groups: 10, perGroup: 4 });
+		const repo = new JsonStoryRepository(join(root, "ledger"));
+		const prompts: Array<Record<string, unknown>> = [];
+		await runCuratorStage({
+			date: DATE,
+			manifest,
+			repo,
+			spec: MODEL_CHAIN[0]!,
+			skillsRoot: SKILLS_ROOT,
+			cwd: root,
+			maxNudges: 0,
+			maxDecisionsPerTurn: 20,
+			driverFactory: createFakeDriverFactory(async (api) => void (await seededScript(api))),
+			mode: "FRESH",
+			onEvent: (e) => {
+				if (e["kind"] === "prompt") prompts.push(e);
+			},
+		}).catch(() => undefined);
+
+		expect(prompts).toHaveLength(1);
+		expect(prompts[0]).toMatchObject({ stage: "CURATOR", prompt: "opening" });
+		// The seeded page dominates it, so the number has to be the real one.
+		expect(Number(prompts[0]!["chars"])).toBeGreaterThan(1000);
+	});
+
+	it("distinguishes a resume from a first prompt", async () => {
+		const manifest = makeManifest({ date: DATE, groups: 10, perGroup: 4 });
+		const repo = new JsonStoryRepository(join(root, "ledger"));
+		await runOnce({ manifest, repo, maxDecisionsPerTurn: 20 }).catch(() => undefined);
+		const kinds: unknown[] = [];
+		await runCuratorStage({
+			date: DATE,
+			manifest,
+			repo,
+			spec: MODEL_CHAIN[0]!,
+			skillsRoot: SKILLS_ROOT,
+			cwd: root,
+			maxNudges: 0,
+			maxDecisionsPerTurn: 20,
+			driverFactory: createFakeDriverFactory(async (api) => void (await seededScript(api))),
+			mode: "RESUME",
+			onEvent: (e) => {
+				if (e["kind"] === "prompt") kinds.push(e["prompt"]);
+			},
+		}).catch(() => undefined);
+		expect(kinds).toEqual(["resume"]);
+	});
+});

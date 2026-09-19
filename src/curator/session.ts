@@ -264,6 +264,27 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 		});
 		const briefText = renderWorkUnitBrief(brief);
 
+		/*
+		 * What the stage itself puts into the session, measured like a tool result.
+		 *
+		 * `measureToolResults` instruments tools and only tools, so the opening
+		 * message has never been counted -- and it used to be two short paragraphs.
+		 * Since the work unit is pre-seeded it carries the page, the day's counts
+		 * and the ledger's ids: on a real 50-item page that measures about 8,900
+		 * tokens, re-sent on every turn of the unit, which makes it the largest
+		 * single payload in the stage and it was invisible.
+		 *
+		 * It also breaks the old cost model. The regression behind the 11,625
+		 * tokens-per-turn figure was fitted when the page arrived as a
+		 * `list_unseen_items` result, so the page sat inside its amplified-chars
+		 * term; it now sits in the prompt, where that term cannot see it. A re-fit
+		 * needs this number, so it is recorded by the run that produces it rather
+		 * than reconstructed afterwards.
+		 */
+		const notePrompt = (kind: string, text: string): void => {
+			opts.onEvent?.({ kind: "prompt", stage: "CURATOR", prompt: kind, chars: text.length });
+		};
+
 		// A resume picks up durable state rather than replaying the day; a half-dead
 		// conversation is never migrated to another model.
 		const opening =
@@ -334,6 +355,7 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 			}
 		};
 
+		notePrompt(opts.mode === "RESUME" ? "resume" : "opening", opening);
 		await runTurn(() => driver.prompt(opening));
 		opts.checkFault?.(await decidedCount());
 
@@ -407,16 +429,14 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 				screenedOutItemIds: screenedOut,
 				...(turnBudget ? { decisionBudget: turnBudget.remaining } : {}),
 			});
-			await runTurn(() =>
-				driver.prompt(
-					`${buildCuratorNudgePrompt({
-						unseenItems: totalItems - current,
-						totalItems,
-						storyCount: nudgeBrief.storyIds.length,
-						...(feedback !== undefined ? { lastError: feedback } : {}),
-					})}\n\n${renderWorkUnitBrief(nudgeBrief)}`,
-				),
-			);
+			const nudgeText = `${buildCuratorNudgePrompt({
+				unseenItems: totalItems - current,
+				totalItems,
+				storyCount: nudgeBrief.storyIds.length,
+				...(feedback !== undefined ? { lastError: feedback } : {}),
+			})}\n\n${renderWorkUnitBrief(nudgeBrief)}`;
+			notePrompt("nudge", nudgeText);
+			await runTurn(() => driver.prompt(nudgeText));
 		}
 
 		if (!ctx.submitted) {
