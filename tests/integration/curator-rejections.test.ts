@@ -246,7 +246,11 @@ describe("upsert rejection telemetry", () => {
 		};
 		const commit = createCuratorTools(ctx).find((t) => t.name === "commit_curation_batch")!;
 		const id = manifest.items[0]!.id;
-		const result = (await commit.execute(
+		// Its only story is refused, so the commit itself is refused -- but the
+		// rejection family is still recorded, which is the whole point of the
+		// telemetry: a rise in one cause must be attributable without a replay.
+		await expect(
+			commit.execute(
 			"call-1",
 			{
 				stories: [
@@ -268,13 +272,9 @@ describe("upsert rejection telemetry", () => {
 			} as never,
 			undefined,
 			undefined,
-			{} as never,
-		)) as { content: Array<{ text: string }> };
-		const body = JSON.parse(result.content[0]!.text) as {
-			stories: { accepted: unknown[]; rejected?: Array<{ error: string }> };
-		};
-		expect(body.stories.rejected?.[0]?.error).toMatch(/no earlier ledger entry/);
-		// The page's sound half still landed: one bad story is not a lost batch.
+				{} as never,
+			),
+		).rejects.toThrow(/accepted none of the 1 story/);
 		expect(calls.at(-1)?.name).toBe("commit_curation_batch");
 		expect(calls.at(-1)?.summary).toMatchObject({
 			rejectedStories: 1,

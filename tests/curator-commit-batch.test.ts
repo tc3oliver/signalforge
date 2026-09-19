@@ -152,8 +152,13 @@ describe("nothing recorded here dangles", () => {
 	it("refuses a decision naming a story that was refused in the same call", async () => {
 		const { tools, repo } = build();
 		const out = await run(tools, "commit_curation_batch", {
-			// changeType with no history anywhere: a genuine refusal.
-			stories: [story({ changeType: "UPDATE" })],
+			stories: [
+				// One sound story, so the commit itself succeeds and the decision
+				// refusal is what is under test.
+				story({ storyId: "other-story", canonicalTitle: "Something else", sourceItemIds: ["rss-4"], primarySourceIds: ["rss-4"] }),
+				// changeType with no history anywhere: a genuine refusal.
+				story({ changeType: "UPDATE" }),
+			],
 			decisions: [
 				{ itemId: "rss-1", disposition: "CANDIDATE", storyId: "acme-ships-a-thing", reason: "primary" },
 				irrelevant("rss-3"),
@@ -178,6 +183,50 @@ describe("nothing recorded here dangles", () => {
 			}),
 		).rejects.toThrow(/does not exist/);
 		expect(await repo.listDecisions(DATE)).toEqual([]);
+	});
+
+	it("refuses a commit whose every story failed, even when its decisions recorded", async () => {
+		/*
+		 * The realistic shape, not the corner. On 2026-09-19, 119 story entries
+		 * were refused for unknown topic ids while their decisions recorded
+		 * perfectly. A guard that fires only when BOTH halves fail would report the
+		 * loss of a page's entire clustering as a field inside a success payload,
+		 * from the one call the model is told ends a batch.
+		 */
+		const { tools, repo } = build();
+		await expect(
+			run(tools, "commit_curation_batch", {
+				stories: [story({ changeType: "UPDATE" })], // no history anywhere
+				decisions: [irrelevant("rss-3"), irrelevant("rss-4")],
+			}),
+		).rejects.toThrow(/accepted none of the 1 story/);
+		// The decisions that landed stay landed, and the message says so, so the
+		// resend is the stories alone.
+		expect((await repo.listDecisions(DATE)).map((d) => d.itemId).sort()).toEqual(["rss-3", "rss-4"]);
+	});
+
+	it("says the decisions do not need resending, so the retry is the stories alone", async () => {
+		const { tools } = build();
+		const err = await run(tools, "commit_curation_batch", {
+			stories: [story({ changeType: "UPDATE" })],
+			decisions: [irrelevant("rss-3")],
+		}).catch((e: unknown) => e as Error);
+		expect(err.message).toContain("were recorded and do not need resending");
+	});
+
+	it("does not charge the budget twice when that resend arrives", async () => {
+		const turnBudget = new TurnBudget(10);
+		const { tools } = build({ turnBudget });
+		await run(tools, "commit_curation_batch", {
+			stories: [story({ changeType: "UPDATE" })],
+			decisions: [irrelevant("rss-3")],
+		}).catch(() => undefined);
+		expect(turnBudget.spent).toBe(1);
+		await run(tools, "commit_curation_batch", {
+			stories: [story()],
+			decisions: [irrelevant("rss-3")],
+		});
+		expect(turnBudget.spent).toBe(1);
 	});
 
 	it("keeps a page whose sound half survives, even when a decision is refused", async () => {
@@ -207,7 +256,12 @@ describe("nothing recorded here dangles", () => {
 			decisions: [{ itemId: "rss-1", disposition: "CANDIDATE", storyId: "acme-ships-a-thing", reason: "primary" }],
 		});
 		const out = await run(tools, "commit_curation_batch", {
-			stories: [story({ factRefs: ["no-such-fact"], sourceItemIds: ["rss-1", "rss-2"] })],
+			stories: [
+				// A sound story alongside, so the commit succeeds and the refused
+				// story's decision is what is under test.
+				story({ storyId: "other-story", canonicalTitle: "Something else", sourceItemIds: ["rss-4"], primarySourceIds: ["rss-4"] }),
+				story({ factRefs: ["no-such-fact"], sourceItemIds: ["rss-1", "rss-2"] }),
+			],
 			decisions: [
 				{ itemId: "rss-2", disposition: "DUPLICATE", storyId: "acme-ships-a-thing", reason: "same event" },
 				irrelevant("rss-3"),
@@ -382,5 +436,30 @@ describe("a near-duplicate reaches the trace, not only the model", () => {
 			decisions: [{ itemId: "rss-1", disposition: "CANDIDATE", storyId: "acme-ships-a-thing", reason: "primary" }],
 		});
 		expect(seen.at(-1)!.summary["near"]).toBeUndefined();
+	});
+});
+
+describe("a refused commit still reports why it was refused", () => {
+	/*
+	 * The refusal families are the reason this telemetry exists: 119
+	 * UNKNOWN_TOPIC_ID refusals on 2026-09-19 are what motivated it, and a
+	 * commit whose stories all failed is exactly the case it has to explain.
+	 * Emitting the note after the throw would make it vanish from the trace
+	 * precisely then.
+	 */
+	it("records the rejection family on a commit that throws", async () => {
+		const seen: Array<{ name: string; summary: Record<string, unknown> }> = [];
+		const { tools } = build({ onToolCall: (name, summary) => seen.push({ name, summary }) });
+		await run(tools, "commit_curation_batch", {
+			stories: [story({ changeType: "UPDATE" })],
+			decisions: [irrelevant("rss-3")],
+		}).catch(() => undefined);
+		expect(seen.at(-1)!.name).toBe("commit_curation_batch");
+		expect(seen.at(-1)!.summary).toMatchObject({
+			accepted: 0,
+			rejectedStories: 1,
+			rejectedBy: { CHANGE_TYPE_WITHOUT_HISTORY: 1 },
+			recorded: 1,
+		});
 	});
 });

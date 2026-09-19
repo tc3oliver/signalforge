@@ -1014,23 +1014,63 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			ctx.turnBudget?.spend(newlyDecided);
 
 			/*
-			 * A commit that wrote nothing is a failure, not a partial success.
+			 * Recorded before the guard below can throw.
 			 *
-			 * Partial application is the point of this tool -- one bad story must not
-			 * cost a page of sound judgement -- but the deleted `record_item_decisions`
-			 * refused outright when it could record nothing, and dropping that left a
-			 * gap: fifty decisions all naming a story refused earlier in the same call
-			 * came back as a success receipt with `recorded: 0`, from the one call the
-			 * model is told ends a batch. Throwing puts the reason in front of it
-			 * instead of leaving it to notice that `unseenItems` did not move.
+			 * A refused commit is exactly the one whose refusal families matter: the
+			 * 119 UNKNOWN_TOPIC_ID refusals of 2026-09-19 are what motivated this
+			 * telemetry, and emitting it after the throw would make it disappear from
+			 * the trace in the case it exists to explain.
 			 */
-			if (accepted.length === 0 && toRecord.length === 0) {
+			const rejectedBy: Record<string, number> = {};
+			for (const r of rejectedStories) {
+				const kind = upsertRejectionKind(r.error);
+				rejectedBy[kind] = (rejectedBy[kind] ?? 0) + 1;
+			}
+			const noteFields = {
+				accepted: accepted.length,
+				...(droppedTopicIds.length > 0 ? { droppedTopicIds } : {}),
+				...(near.length > 0 ? { near } : {}),
+				rejectedStories: rejectedStories.length,
+				...(rejectedStories.length > 0 ? { rejectedBy } : {}),
+				recorded: toRecord.length,
+				rejectedDecisions: rejectedDecisions.length,
+			};
+
+			/*
+			 * A half of this commit that wrote nothing is a failure, not a partial
+			 * success.
+			 *
+			 * Partial application is the point of the tool -- one bad story must not
+			 * cost a page of sound judgement -- but both deleted writers refused
+			 * outright when they could write nothing at all, and that has to survive.
+			 * `upsert_stories` threw whenever it accepted no story; a guard that only
+			 * fires when the decisions ALSO failed lets the realistic case through, and
+			 * it is realistic: on 2026-09-19, 119 story entries were refused for unknown
+			 * topic ids while their decisions recorded perfectly. Twenty-five refused
+			 * clusters beside fifty accepted IRRELEVANTs would have come back as a
+			 * success, with the loss of the entire page's clustering reported as a field
+			 * inside it.
+			 *
+			 * The decisions that did land stay landed; both writes are idempotent, so
+			 * the resend this asks for records nothing twice and costs no budget.
+			 */
+			const storiesOffered = (params.stories ?? []).length;
+			const nothingWritten =
+				storiesOffered > 0 ? accepted.length === 0 : toRecord.length === 0;
+			if (nothingWritten) {
+				note("commit_curation_batch", noteFields);
 				const why = [
 					...rejectedStories.map((r) => `story ${r.storyId}: ${r.error}`),
 					...rejectedDecisions.map((r) => `item ${r.itemId}: ${r.error}`),
 				];
 				throw new ToolRejection(
-					`commit_curation_batch recorded nothing; every entry was refused:\n- ${why.join("\n- ")}`,
+					(storiesOffered > 0
+						? `commit_curation_batch accepted none of the ${storiesOffered} story/ies you sent` +
+							(toRecord.length > 0
+								? `; the ${toRecord.length} decision(s) were recorded and do not need resending. `
+								: "; nothing was recorded. ")
+						: "commit_curation_batch recorded nothing. ") +
+					`Fix and resend:\n- ${why.join("\n- ")}`,
 				);
 			}
 			const account = await accounting();
@@ -1080,19 +1120,8 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 						}
 					: {}),
 			};
-			const rejectedBy: Record<string, number> = {};
-			for (const r of rejectedStories) {
-				const kind = upsertRejectionKind(r.error);
-				rejectedBy[kind] = (rejectedBy[kind] ?? 0) + 1;
-			}
 			note("commit_curation_batch", {
-				accepted: accepted.length,
-				...(droppedTopicIds.length > 0 ? { droppedTopicIds } : {}),
-				...(near.length > 0 ? { near } : {}),
-				rejectedStories: rejectedStories.length,
-				...(rejectedStories.length > 0 ? { rejectedBy } : {}),
-				recorded: toRecord.length,
-				rejectedDecisions: rejectedDecisions.length,
+				...noteFields,
 				processedItems: account.curatorDecided - account.rescued,
 				unseenItems: unseenLeft,
 				...(complete ? { turnComplete: true } : {}),
