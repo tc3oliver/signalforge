@@ -243,7 +243,26 @@ describe("untrusted source content", () => {
 	});
 
 	it("strips control characters that would break an XML document", () => {
-		expect(escapeXmlText("safe text")).toBe("safetext");
+		expect(escapeXmlText("safe\u0000\u0008text")).toBe("safetext");
+	});
+
+	/*
+	 * The whole C0 set, pinned.
+	 *
+	 * The class this checks used to be written as the literal bytes, which made
+	 * both this file and web/lib/untrusted.ts read as binary and made the set
+	 * invisible in an editor. A tool that normalised those bytes on save would
+	 * have quietly narrowed the sanitiser while every test that feeds it an
+	 * ordinary string kept passing. XML 1.0 admits tab, newline and carriage
+	 * return and no other control character, so that is exactly what survives.
+	 */
+	it("strips every C0 control character except tab, newline and carriage return", () => {
+		const kept: string[] = [];
+		for (let code = 0; code < 0x20; code++) {
+			const out = escapeXmlText(`a${String.fromCharCode(code)}b`);
+			if (out !== "ab") kept.push(`0x${code.toString(16)}`);
+		}
+		expect(kept).toEqual(["0x9", "0xa", "0xd"]);
 	});
 
 	it("refuses any URL scheme other than http(s)", () => {
