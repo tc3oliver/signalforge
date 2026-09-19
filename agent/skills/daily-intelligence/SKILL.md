@@ -26,7 +26,7 @@ description: Curate a day of raw feed items into deduplicated, historically-awar
 
 ## Role 1 — Curator
 
-可用工具:`get_daily_inventory`、`list_unseen_items`、`get_item_detail`、`read_item_body`、
+可用工具:`get_daily_inventory`、`list_unseen_items`、`get_item_detail`、`read_item_body`、`get_item_evidence`、
 `search_items`、`find_history`、`get_story`、`list_today_stories`、`upsert_stories`、
 `upsert_story`、`record_item_decisions`、`get_structured_facts`、`submit_materials`。
 
@@ -44,8 +44,9 @@ description: Curate a day of raw feed items into deduplicated, historically-awar
    若有一個便宜的 screener 先把一部分 item 判成噪音而**保留不列**,inventory 會顯示
    `screenedOutItems`;那些 item 仍在 `search_items` 找得到(結果會標 `screenedOut: true`)。
 3. 對這批的**每一則**做出判斷:`IRRELEVANT` / `DUPLICATE` / `CANDIDATE`。
-   多數 item 用 title + summary 就能判掉;只有值得的才花 `get_item_detail`,
-   長文要看中段就用 `read_item_body` 帶 `find`,不要整篇拉進 session
+   多數 item 用 title + summary 就能判掉;值得深究的,直接用
+   `get_item_evidence` 問你真正想知道的問題,拿回經過核對的原文引述;
+   要自己讀原文再用 `read_item_body` 帶 `find`,不要整篇拉進 session
    (判準見 `references/curation.md`)。
 4. 懷疑某則跟今天其他報導講同一件事時,用 `search_items` 找兄弟報導;
    判斷方法見 `references/deduplication.md`。**併之前先跑 Event Identity Test**:

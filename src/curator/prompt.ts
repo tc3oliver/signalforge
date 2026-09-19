@@ -71,7 +71,7 @@ ${ctx.skillSection}
 export function buildCuratorTaskPrompt(ctx: CuratorPromptContext): string {
 	return `Curate ${ctx.date}.
 
-Start with \`get_daily_inventory\`, then work through every unseen item in batches of up to 50. For each batch: triage on title and summary, pull \`get_item_detail\` only where it changes your decision, and \`read_item_body\` with a \`find\` term when the answer is inside a long piece, use \`search_items\` to find the other coverage of the same event, then write ALL of the batch's clusters with one \`upsert_stories\` call (history is checked for you; act on any hits it returns), and \`record_item_decisions\` for the entire batch before moving on.
+Start with \`get_daily_inventory\`, then work through every unseen item in batches of up to 50. For each batch: triage on title and summary, and where a title and summary cannot settle an item, ask \`get_item_evidence\` what you actually need to know about it rather than reading it (\`get_item_detail\` for the record, \`read_item_body\` with a \`find\` term to read the source yourself), use \`search_items\` to find the other coverage of the same event, then write ALL of the batch's clusters with one \`upsert_stories\` call (history is checked for you; act on any hits it returns), and \`record_item_decisions\` for the entire batch before moving on.
 
 When unseen reaches zero, assign tiers and call \`submit_materials\`.`;
 }
