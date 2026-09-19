@@ -230,6 +230,55 @@ describe("a work unit opens with its state, not with fetches", () => {
 		expect((await repo.listStories(DATE)).length).toBe(10);
 	});
 
+	/*
+	 * The nudge text says "keep going from the batch below" and the system prompt
+	 * tells the model it never has to fetch state. If a nudge sent those words
+	 * with nothing under them, a model that stopped early would have been told
+	 * twice not to call `list_unseen_items` and given no other way to obtain
+	 * work; re-committing from its stale in-context page writes nothing, so two
+	 * such turns trip the stall check and are recorded as a model fault.
+	 */
+	it("re-seeds a nudge with the work that is actually left", async () => {
+		const manifest = makeManifest({ date: DATE, groups: 10, perGroup: 4 }); // 40 items
+		const repo = new JsonStoryRepository(join(root, "ledger"));
+		const prompts: string[] = [];
+		await runCuratorStage({
+			date: DATE,
+			manifest,
+			repo,
+			spec: MODEL_CHAIN[0]!,
+			skillsRoot: SKILLS_ROOT,
+			cwd: root,
+			maxNudges: 1,
+			maxDecisionsPerTurn: 40,
+			driverFactory: createFakeDriverFactory(async (api) => {
+				prompts.push(api.promptText);
+				// Stop early on the first turn without spending the budget, which
+				// is exactly what makes the session nudge.
+				if (api.turn > 1) return;
+				const page = seededPage(api.promptText);
+				await api.call("commit_curation_batch", {
+					decisions: page!.items.slice(0, 4).map((i) => ({
+						itemId: i.id,
+						disposition: "IRRELEVANT",
+						reason: "noise",
+					})),
+				});
+			}),
+			mode: "FRESH",
+		}).catch(() => undefined);
+
+		expect(prompts.length).toBeGreaterThan(1);
+		const nudge = prompts[1]!;
+		expect(nudge).toContain("still have no recorded decision");
+		// The batch the words promise is actually under them, and it holds only
+		// what is left.
+		const page = seededPage(nudge);
+		expect(page).toBeDefined();
+		expect(page!.returned).toBe(36);
+		expect(page!.items.map((i) => i.id)).not.toContain(manifest.items[0]!.id);
+	});
+
 	it("still offers the fetch tools to a unit that wants to look again", async () => {
 		const manifest = makeManifest({ date: DATE, groups: 10, perGroup: 4 });
 		const repo = new JsonStoryRepository(join(root, "ledger"));

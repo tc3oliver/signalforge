@@ -52,6 +52,7 @@ const ITEMS = [
 	item("rss-long", `<p>${LONG_PROSE}</p><p>${BURIED}</p><p>${LONG_PROSE}</p>`),
 	item("rss-short", "<p>A short body.</p>"),
 	item("rss-unused", "<p>Not in any material story.</p>"),
+	item("rss-cjk", `<p>${LONG_PROSE}</p><p>央行宣布降息一碼,為兩年來首次。</p>`),
 ];
 
 function tools() {
@@ -69,7 +70,7 @@ function tools() {
 				importance: 0.6,
 				novelty: 0.7,
 				confidence: 0.9,
-				sourceItemIds: ["rss-long", "rss-short"],
+				sourceItemIds: ["rss-long", "rss-short", "rss-cjk"],
 				primarySourceIds: ["rss-long"],
 				factRefs: [],
 			},
@@ -161,5 +162,39 @@ describe("read_source_body reaches what the opening does not", () => {
 		await expect(run(tools(), "read_source_body", { itemId: "rss-unused", find: "any" })).rejects.toThrow(
 			/Not available/,
 		);
+	});
+});
+
+describe("the untrusted marker travels with the text", () => {
+	/*
+	 * Both system prompts tell the model that everything it reads is "tagged
+	 * UNTRUSTED_EXTERNAL_CONTENT". Before the record was projected by hand the
+	 * whole NormalizedItem came back and carried that tag; a projection that
+	 * drops it leaves the prompt naming a marker no tool result ever shows,
+	 * which is the per-item half of the injection defence.
+	 */
+	it("marks each source record", async () => {
+		const out = await run(tools(), "get_source_items", { itemIds: ["rss-short"] });
+		const first = (out["items"] as Array<Record<string, unknown>>)[0]!;
+		expect(first["trust"]).toBe("UNTRUSTED_EXTERNAL_CONTENT");
+	});
+
+	it("marks every body window, which is where source prose actually arrives", async () => {
+		const out = await run(tools(), "read_source_body", { itemId: "rss-long", find: "dividend" });
+		expect(out["trust"]).toBe("UNTRUSTED_EXTERNAL_CONTENT");
+	});
+
+	it("marks a window that found nothing, and an empty body", async () => {
+		const miss = await run(tools(), "read_source_body", { itemId: "rss-long", find: "helicopter" });
+		expect(miss["trust"]).toBe("UNTRUSTED_EXTERNAL_CONTENT");
+	});
+});
+
+describe("a two-character search term is a search, not an error", () => {
+	// The briefs are written in 正體中文 and the terms worth jumping to are
+	// routinely two characters: 降息, 升息, 裁員, 併購.
+	it("accepts a two-character CJK term", async () => {
+		const out = await run(tools(), "read_source_body", { itemId: "rss-cjk", find: "降息" });
+		expect(String(out["text"])).toContain("降息");
 	});
 });

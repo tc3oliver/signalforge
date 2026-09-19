@@ -253,3 +253,91 @@ describe("the work unit closes on the commit", () => {
 		expect(turnBudget.spent).toBe(1);
 	});
 });
+
+describe("the budget counts decisions, not restatements", () => {
+	/*
+	 * A resend is the documented recovery from a partially refused commit --
+	 * "fix that story and resend both" -- so it is a normal path. `recordDecisions`
+	 * is an upsert keyed by item, so a resent decision writes nothing; charging
+	 * the budget for it anyway closes the work unit against items the database
+	 * already held, and the note the model is shown ("N decisions recorded")
+	 * contradicts `processedItems` in the same payload.
+	 */
+	it("does not charge a second time for a decision that was already recorded", async () => {
+		const turnBudget = new TurnBudget(2);
+		const { tools } = build({ turnBudget });
+		const payload = { decisions: [irrelevant("rss-3")] };
+		await run(tools, "commit_curation_batch", payload);
+		const second = await run(tools, "commit_curation_batch", payload);
+		expect(turnBudget.spent).toBe(1);
+		expect(turnBudget.exhausted).toBe(false);
+		expect(second["turnComplete"]).toBeUndefined();
+		expect(second["processedItems"]).toBe(1);
+	});
+
+	it("still charges for the new decisions in a resend that also adds one", async () => {
+		const turnBudget = new TurnBudget(10);
+		const { tools } = build({ turnBudget });
+		await run(tools, "commit_curation_batch", { decisions: [irrelevant("rss-3")] });
+		await run(tools, "commit_curation_batch", {
+			decisions: [irrelevant("rss-3"), irrelevant("rss-4")],
+		});
+		expect(turnBudget.spent).toBe(2);
+	});
+
+	it("keeps the model's count and the database's count in agreement", async () => {
+		const turnBudget = new TurnBudget(4);
+		const { tools, repo } = build({ turnBudget });
+		const payload = { decisions: [irrelevant("rss-3"), irrelevant("rss-4")] };
+		await run(tools, "commit_curation_batch", payload);
+		const second = await run(tools, "commit_curation_batch", payload);
+		expect(second["processedItems"]).toBe((await repo.listDecisions(DATE)).length);
+		expect(turnBudget.spent).toBe(second["processedItems"]);
+	});
+});
+
+describe("a near-duplicate reaches the trace, not only the model", () => {
+	/*
+	 * The receipt note warns the model in-band; `pnpm observe` needs the same
+	 * fact as telemetry to report fires, acceptances and declines. Batch entries
+	 * do not emit their own tool calls, so if the commit does not aggregate this
+	 * the whole measurement reads zero whether the check works or is deleted.
+	 */
+	it("reports the fire, its top candidate and its score on the commit's note", async () => {
+		const seen: Array<{ name: string; summary: Record<string, unknown> }> = [];
+		const { tools } = build({ onToolCall: (name, summary) => seen.push({ name, summary }) });
+		await run(tools, "commit_curation_batch", {
+			stories: [story({ storyId: "acme-ships-a-thing", canonicalTitle: "Acme ships a thing" })],
+			decisions: [{ itemId: "rss-1", disposition: "CANDIDATE", storyId: "acme-ships-a-thing", reason: "primary" }],
+		});
+		await run(tools, "commit_curation_batch", {
+			stories: [
+				story({
+					storyId: "acme-ships-the-thing",
+					canonicalTitle: "Acme ships a thing, confirmed",
+					sourceItemIds: ["rss-2"],
+					primarySourceIds: ["rss-2"],
+				}),
+			],
+			decisions: [{ itemId: "rss-2", disposition: "CANDIDATE", storyId: "acme-ships-the-thing", reason: "primary" }],
+		});
+		const near = seen.at(-1)!.summary["near"] as Array<Record<string, unknown>>;
+		expect(near).toHaveLength(1);
+		expect(near[0]).toMatchObject({
+			storyId: "acme-ships-the-thing",
+			top: "acme-ships-a-thing",
+			candidates: ["acme-ships-a-thing"],
+		});
+		expect(Number(near[0]!["score"])).toBeGreaterThanOrEqual(0.5);
+	});
+
+	it("says nothing in the trace when nothing fired", async () => {
+		const seen: Array<{ name: string; summary: Record<string, unknown> }> = [];
+		const { tools } = build({ onToolCall: (name, summary) => seen.push({ name, summary }) });
+		await run(tools, "commit_curation_batch", {
+			stories: [story()],
+			decisions: [{ itemId: "rss-1", disposition: "CANDIDATE", storyId: "acme-ships-a-thing", reason: "primary" }],
+		});
+		expect(seen.at(-1)!.summary["near"]).toBeUndefined();
+	});
+});

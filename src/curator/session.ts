@@ -343,7 +343,6 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 
 		while (!ctx.submitted && nudges < maxNudges) {
 			const current = await decidedCount();
-			const storyList = await opts.repo.listStories(opts.date);
 			if (faultError) throw faultError;
 			opts.checkFault?.(current);
 
@@ -390,14 +389,32 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 			// during this nudge before the next prompt could carry it.
 			const feedback = lastError;
 			lastError = undefined;
+			/*
+			 * A nudge re-seeds, because the nudge text promises a batch and the
+			 * system prompt tells the model it never has to fetch one. Sending the
+			 * words without the items would leave a model that had been told twice
+			 * not to call `list_unseen_items` with no way to obtain work; re-
+			 * committing from its stale in-context page writes nothing new, so two
+			 * such turns would trip the stall check and be recorded as a model fault.
+			 *
+			 * Read fresh rather than reused: the point of a nudge is that the state
+			 * moved since the opening prompt.
+			 */
+			const nudgeBrief = await buildWorkUnitBrief({
+				date: opts.date,
+				manifest: opts.manifest,
+				repo: opts.repo,
+				screenedOutItemIds: screenedOut,
+				...(turnBudget ? { decisionBudget: turnBudget.remaining } : {}),
+			});
 			await runTurn(() =>
 				driver.prompt(
-					buildCuratorNudgePrompt({
+					`${buildCuratorNudgePrompt({
 						unseenItems: totalItems - current,
 						totalItems,
-						storyCount: storyList.length,
-						lastError: feedback,
-					}),
+						storyCount: nudgeBrief.storyIds.length,
+						...(feedback !== undefined ? { lastError: feedback } : {}),
+					})}\n\n${renderWorkUnitBrief(nudgeBrief)}`,
 				),
 			);
 		}

@@ -77,7 +77,13 @@ export function defineReadBodyTool(opts: BodyWindowOptions): ToolDefinition {
 		promptSnippet: opts.promptSnippet,
 		parameters: Type.Object({
 			itemId: Type.String({ minLength: 1 }),
-			find: Type.Optional(Type.String({ minLength: 3, maxLength: 120 })),
+			/*
+			 * Two characters, not three. The briefs are written in 正體中文 and the
+			 * terms worth jumping to are routinely two characters -- 降息, 升息, 裁員,
+			 * 併購 -- each of which a three-character floor refuses before the tool
+			 * runs, leaving offset paging as the only way to reach the passage.
+			 */
+			find: Type.Optional(Type.String({ minLength: 2, maxLength: 120 })),
 			start: Type.Optional(Type.Integer({ minimum: 0 })),
 			length: Type.Optional(Type.Integer({ minimum: 200, maximum: BODY_WINDOW_MAX })),
 		}),
@@ -90,6 +96,7 @@ export function defineReadBodyTool(opts: BodyWindowOptions): ToolDefinition {
 				opts.note?.(opts.name, { itemId: params.itemId, bodyChars: 0 });
 				return ok({
 					itemId: item.id,
+					trust: item.trust,
 					bodyChars: 0,
 					text: "",
 					note: "This item has no body text; the title and summary are all there is.",
@@ -113,6 +120,7 @@ export function defineReadBodyTool(opts: BodyWindowOptions): ToolDefinition {
 					opts.note?.(opts.name, { itemId: params.itemId, find: params.find, matches: 0 });
 					return ok({
 						itemId: item.id,
+						trust: item.trust,
 						bodyChars: body.length,
 						text: "",
 						matches: 0,
@@ -132,6 +140,13 @@ export function defineReadBodyTool(opts: BodyWindowOptions): ToolDefinition {
 			});
 			return ok({
 				itemId: item.id,
+				/*
+				 * On every window, not only on the record that led here. This is the
+				 * result that carries raw source prose, and it is the one an injection
+				 * attempt would arrive in; the system prompt tells both stages the text
+				 * is tagged, so the tag has to be on the text.
+				 */
+				trust: item.trust,
 				bodyChars: body.length,
 				start,
 				returnedChars: end - start,

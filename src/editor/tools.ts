@@ -145,6 +145,10 @@ export function createEditorTools(ctx: EditorContext): ToolDefinition[] {
 				const head = body.slice(0, SOURCE_BODY_CHARS);
 				return {
 					id: item.id,
+					// The marker the system prompt names. Before this projection existed the
+					// whole NormalizedItem came back and carried it; dropping it would leave
+					// the prompt describing a tag no tool result ever shows.
+					trust: item.trust,
 					source: `${item.sourceName} (${item.sourceType})`,
 					title: item.title,
 					at: item.publishedAt,

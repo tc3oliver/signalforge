@@ -399,6 +399,9 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 				if (body.length > head.length) truncated += 1;
 				return {
 					id: item.id,
+					// The marker the system prompt names, on the result that carries the
+					// source's own prose.
+					trust: item.trust,
 					source: `${item.sourceName} (${item.sourceType})`,
 					title: item.title,
 					at: item.publishedAt.slice(0, 10),
@@ -844,6 +847,16 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			...(history.length > 0 ? { history: history.map(toHistoryView) } : {}),
 			...(notes.length > 0 ? { note: notes.join(" ") } : {}),
 			...(droppedTopicIds.length > 0 ? { droppedTopicIds } : {}),
+			...(todayNear.length > 0
+				? {
+					near: {
+						storyId: entry.storyId,
+						top: todayNear[0]!.entry.storyId,
+						score: Number(todayNear[0]!.score.toFixed(3)),
+						candidates: todayNear.map((r) => r.entry.storyId),
+					},
+				}
+				: {}),
 		};
 	};
 
@@ -964,12 +977,28 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 				toRecord.push({ ...d, decidedAt: stamp });
 			}
 
+			/*
+			 * What this commit actually decided, as opposed to what it restated.
+			 *
+			 * `recordDecisions` is an upsert keyed by item, so re-sending a decision
+			 * writes nothing -- but charging the budget for it anyway would close the
+			 * work unit against items the database already held. A resend is now the
+			 * documented recovery from a partially refused commit ("fix that story and
+			 * resend both"), so this is a normal path, not a rare one: a budget of 50
+			 * met by one 50-item commit and one 3-item correction would close the unit
+			 * having decided 50 items and counted 53.
+			 */
+			const alreadyDecided = await ctx.repo.processedItemIds(ctx.date);
 			if (toRecord.length > 0) await ctx.repo.recordDecisions(ctx.date, toRecord);
 			// Spent after the write, so a refused decision never costs the turn
-			// budget. Rescues are not charged: the budget bounds the broad scan, and
-			// a rescue is the Curator following a story past what the scan offered.
+			// budget. Rescues are not charged either: the budget bounds the broad
+			// scan, and a rescue is the Curator following a story past what the scan
+			// offered.
+			const newlyDecided = toRecord.filter(
+				(d) => !alreadyDecided.has(d.itemId) && !screenedOut.has(d.itemId),
+			).length;
 			const rescuedNow = toRecord.filter((d) => screenedOut.has(d.itemId)).length;
-			ctx.turnBudget?.spend(toRecord.length - rescuedNow);
+			ctx.turnBudget?.spend(newlyDecided);
 
 			const account = await accounting();
 			const unseenLeft = account.unaccountedItemIds.length;
