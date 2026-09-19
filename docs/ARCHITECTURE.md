@@ -77,7 +77,7 @@ is an interface, `JsonStoryRepository` and `PostgresStoryRepository`
         │   default scan; nothing is removed from the manifest.
         ▼
   Pi Curator session ── restricted runtime, 13 custom tools (14 with search_web),
-        │   including `upsert_stories` (one call per page of clusters)
+        │   including `commit_curation_batch` (one call per page)
         │   ── tools ──►  item_decisions, story_ledger
         │                 (the cross-day ledger; story_items is provisioned
         │                  but has no production writer yet -- see
@@ -114,7 +114,7 @@ holds only what survived. The trust boundaries:
 
 - **The manifest is the canonical evidence universe.** Screening never shrinks
   it. `search_items`, `get_item_detail` and `read_item_body` see every manifest item regardless of
-  verdict; `upsert_story` accepts any manifest item as a source.
+  verdict; a commit accepts any manifest item as a source.
 - **A screening row is a routing hint and an accountable cheap decision.** It is
   written to `item_screening` (migration 012) with provider, model, policy
   version, verdict, reason code and reason, one row per item per screener
@@ -220,9 +220,8 @@ degraded, and `daily_runs.degraded_reason` says why.
 
 First, **similarity is never the decision.** Retrieval narrows the field; whether two
 items describe the same real-world event is the curator's judgement, made from the
-item text, and it is recorded explicitly through `record_item_decisions` and
-`upsert_story`. There is no similarity threshold anywhere that merges two items on
-its own. The curator's own `search_items` tool is lexical over the day's manifest,
+item text, and it is recorded explicitly through `commit_curation_batch`. There is
+no similarity threshold anywhere that merges two items on its own. The curator's own `search_items` tool is lexical over the day's manifest,
 and `find_history` searches the ledger — both are candidate generators handed to a
 model that then has to decide.
 
@@ -279,7 +278,7 @@ Recorded tool sets (`restricted-runtime.json`, written per run):
 
 | Stage | Tools |
 |---|---|
-| Curator | `find_history`, `get_daily_inventory`, `get_item_detail`, `get_item_evidence` (when configured), `commit_curation_batch`, `get_story`, `get_structured_facts`, `list_today_stories`, `list_unseen_items`, `read_item_body`, `read_skill_reference`, `record_item_decisions`, `search_items`, `submit_materials`, `upsert_story`, `upsert_stories` (+ `search_web` when research is configured) |
+| Curator | `find_history`, `get_daily_inventory`, `get_item_detail`, `get_item_evidence` (when configured), `commit_curation_batch`, `get_story`, `get_structured_facts`, `list_today_stories`, `list_unseen_items`, `read_item_body`, `read_skill_reference`, `search_items`, `submit_materials` (+ `search_web` when research is configured) |
 | Editor | `find_history`, `get_materials`, `get_source_items`, `get_story_detail`, `get_structured_facts`, `read_skill_reference`, `read_source_body`, `submit_brief` |
 
 ## Agent output = custom tool submission
@@ -309,9 +308,12 @@ The Curator's context is kept deliberately small for the same reason the
 screener exists: every tool call re-sends the whole session. The broad-scan view
 is compact (title, capped summary, one per-source hint, no metadata), tool
 results are compact JSON with nothing the model just sent echoed back, and
-`upsert_stories` writes a page's clusters in one call while checking each
-story's prior-day history itself -- which replaced the separate `find_history`
-call before every upsert, sixteen of the ~25 model turns a page used to take.
+and `commit_curation_batch` writes a page's clusters AND its item decisions in
+one call while checking each story's prior-day history itself. That absorbed
+three earlier steps: the separate `find_history` before every upsert (sixteen of
+the ~25 model turns a page used to take), the split between `upsert_stories` and
+`record_item_decisions` (one turn per work unit to restate a judgement already
+made), and three copies of the story schema in every turn's tool surface.
 
 ## Validator = trust boundary
 

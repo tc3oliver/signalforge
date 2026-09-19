@@ -66,7 +66,7 @@ describe("the rendered block", () => {
 	});
 
 	/*
-	 * The id is what `upsert_story.topicIds` takes. Rendering only the label
+	 * The id is what a story's `topicIds` takes. Rendering only the label
 	 * left the model guessing, and on 2026-09-19 it guessed wrong 119 times in
 	 * one production run.
 	 */
@@ -212,8 +212,9 @@ describe("the prior is recorded, not just applied", () => {
 				now: () => new Date("2026-09-15T01:00:00.000Z"),
 				topicIds: new Set(["ai-llm", "inference"]),
 			});
-			const upsert = tools.find((t) => t.name === "upsert_story")!;
-			const execute = upsert.execute as unknown as (id: string, p: unknown) => Promise<unknown>;
+			const commit = tools.find((t) => t.name === "commit_curation_batch")!;
+			const execute = (id: string, story: unknown) =>
+				(commit.execute as unknown as (i: string, p: unknown) => Promise<unknown>)(id, { stories: [story] });
 			const story = {
 				storyId: "s1",
 				canonicalTitle: "A story",
@@ -238,8 +239,12 @@ describe("the prior is recorded, not just applied", () => {
 				...story,
 				topicIds: ["quantum-basketball", "inference"],
 			})) as { content: Array<{ text: string }> };
-			const payload = JSON.parse(normalized.content[0]!.text) as { note?: string };
-			expect(payload.note).toMatch(/Dropped topic id\(s\) not in the reader profile: quantum-basketball/);
+			const payload = JSON.parse(normalized.content[0]!.text) as {
+				stories: { accepted: Array<{ note?: string }> };
+			};
+			expect(payload.stories.accepted[0]?.note).toMatch(
+				/Dropped topic id\(s\) not in the reader profile: quantum-basketball/,
+			);
 			const stored = await new JsonStoryRepository(root).getStory("s1");
 			expect(stored?.topicIds).toEqual(["inference"]);
 			// A declared topic is accepted, and so is none at all -- an important
@@ -284,8 +289,9 @@ describe("the prior is recorded, not just applied", () => {
 				repo: new JsonStoryRepository(root),
 				now: () => new Date("2026-09-15T01:00:00.000Z"),
 			});
-			const upsert = tools.find((t) => t.name === "upsert_story")!;
-			const execute = upsert.execute as unknown as (id: string, p: unknown) => Promise<unknown>;
+			const commit = tools.find((t) => t.name === "commit_curation_batch")!;
+			const execute = (id: string, story: unknown) =>
+				(commit.execute as unknown as (i: string, p: unknown) => Promise<unknown>)(id, { stories: [story] });
 			await expect(
 				execute("1", {
 					storyId: "s1",

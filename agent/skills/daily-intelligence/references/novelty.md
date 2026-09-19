@@ -7,7 +7,7 @@
 它**不是**「今天有沒有新文章」。新文章每天都有。
 一件事被重新報導二十次,知識沒有增加,novelty 就是低的。
 
-先拿到這個 story 昨天以前的狀態(`upsert_stories` / `upsert_story` 會替你查,
+先拿到這個 story 昨天以前的狀態(`commit_curation_batch` 會替你查,
 命中隨回覆的 `history` 回來;要先讀舊 entry 就自己呼叫 `find_history`),再問:
 **把今天的 item 拿掉,我對這件事的理解會少掉什麼?**
 
@@ -22,7 +22,7 @@
 沒有查過歷史就填的 changeType 是猜的,而猜錯會污染明天的判斷 —— 明天的 Curator
 會把你今天的錯誤當成事實。
 
-查歷史的動作由工具替你做:每一次 `upsert_stories` / `upsert_story` 都會先用 storyId、
+查歷史的動作由工具替你做:`commit_curation_batch` 的每一則 story 都會先用 storyId、
 再用標題去查昨天以前的 ledger,把命中放進回覆的 `history`。所以流程是:
 
 ```
@@ -51,7 +51,7 @@ upsert(changeType 你的判斷)  →  讀回覆的 history  →  有命中且是
 
 ### 批次作業時特別容易錯
 
-`upsert_stories` 一次寫一整頁的 story,回覆裡每一則各自帶自己的 `history`。
+`commit_curation_batch` 一次寫一整頁的 story,回覆裡每一則各自帶自己的 `history`。
 **一則一則做完整循環**是指:對回覆裡的**每一則**都讀它的 history 再定案,
 不要掃過去只看第一則。有命中卻標 `NEW` 的,當場用舊 storyId 重送那一則;
 不要把「建 story」和「看歷史」拆成兩個階段,更不要留到最後回頭補。

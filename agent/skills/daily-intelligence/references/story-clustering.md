@@ -33,7 +33,7 @@ CVE 編號、法案編號、repo 全名這類天然穩定鍵,**直接放進 slug
 
 ### 新建之後看回覆
 
-`upsert_stories` / `upsert_story` 會用你給的 slug、再用 canonicalTitle 查昨天以前的 ledger,
+`commit_curation_batch` 會用你給的 slug、再用 canonicalTitle 查昨天以前的 ledger,
 命中放在回覆的 `history`。
 - 命中且確實是同一事件 → 用舊 storyId 重新 upsert,這是 UPDATE 系列,不是 NEW。
 - 命中但其實是不同事件 → 換一個更具辨識度的 slug(加上產品名或編號)重送。
@@ -86,8 +86,8 @@ CVE 編號、法案編號、repo 全名這類天然穩定鍵,**直接放進 slug
 - 你發現自己對兩個 cluster 寫出了幾乎一樣的 `reason`。
 
 併的時候:選一個更穩定的 storyId(通常是較早建立、或命名較準的那個),
-`upsert_story` 把兩邊的 `sourceItemIds` 合併,重新指定 `primarySourceIds`,
-並把原本指向被併 storyId 的 decision 一併用 `record_item_decisions` 更新。
+在一次 `commit_curation_batch` 裡把兩邊的 `sourceItemIds` 合併、重新指定
+`primarySourceIds`,並把原本指向被併 storyId 的 decision 一併更新。
 
 ### 併之前必須通過 Event Identity Test
 

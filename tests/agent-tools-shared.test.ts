@@ -156,7 +156,7 @@ describe("shared tool scaffolding — the model-visible surface is unchanged", (
 		expect(e.label).toBe("Find history");
 		expect(c.promptSnippet).toBe("find_history: look up this story on earlier days");
 		expect(e.promptSnippet).toBe("find_history: what this story looked like on earlier days");
-		expect(c.description).toContain("upsert_story and upsert_stories run this check for you");
+		expect(c.description).toContain("commit_curation_batch runs this check for you");
 		expect(e.description).toContain("describes an actual delta");
 	});
 
@@ -276,7 +276,7 @@ describe("upsertRejectionKind", () => {
 		);
 		expect(upsertRejectionKind("factRefs contains unknown fact id(s): f")).toBe("UNKNOWN_FACT_REF");
 		expect(upsertRejectionKind("topicIds contains id(s) that are not in the reader profile: t")).toBe("UNKNOWN_TOPIC_ID");
-		expect(upsertRejectionKind("upsert_story payload rejected: canonicalTitle is required")).toBe("SCHEMA");
+		expect(upsertRejectionKind("story payload rejected: canonicalTitle is required")).toBe("SCHEMA");
 		expect(upsertRejectionKind("something else entirely")).toBe("OTHER");
 	});
 });

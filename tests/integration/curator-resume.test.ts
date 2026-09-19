@@ -49,8 +49,8 @@ describe("partial curator run then resume", () => {
 				const g = groupOf(item);
 				groups.set(g, [...(groups.get(g) ?? []), item.id]);
 			}
-			for (const [g, ids] of groups) {
-				await call("upsert_story", {
+			await call("commit_curation_batch", {
+				stories: [...groups.entries()].map(([g, ids]) => ({
 					storyId: storyIdFor(g),
 					canonicalTitle: `Event ${g}`,
 					sourceItemIds: ids,
@@ -62,9 +62,7 @@ describe("partial curator run then resume", () => {
 					importance: 0.5,
 					confidence: 0.5,
 					reason: `Cluster ${g}`,
-				});
-			}
-			await call("record_item_decisions", {
+				})),
 				decisions: half.map((item) => ({
 					itemId: item.id,
 					disposition: "CANDIDATE",

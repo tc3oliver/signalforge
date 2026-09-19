@@ -183,7 +183,7 @@ Principal actor 同、core action 同(發布該版本)、時間同、
 3. 對候選逐一比對上面 6 個訊號。兩個以上獨立訊號吻合 → 同一事件。
 4. 不確定時,對最關鍵的那一兩則呼叫 `get_item_detail` 看內文有沒有互引。
 5. 確定後:選出主來源(見 `story-clustering.md`),
-   `upsert_story` 帶上全部 `sourceItemIds`,其餘 item 記 `DUPLICATE` + 同一 `storyId`。
+   story 帶上全部 `sourceItemIds`,其餘 item 記 `DUPLICATE` + 同一 `storyId`。
 
 ## 邊界情況
 

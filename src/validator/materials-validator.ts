@@ -176,7 +176,7 @@ export function validateMaterials(
 		);
 		if (undecidedSources.length > 0) {
 			errors.push(
-				`Undecided sourceItemIds in ${where}: ${undecidedSources.join(", ")}. Every item a story cites needs a recorded decision from you (record_item_decisions with CANDIDATE or DUPLICATE and this storyId). An item the screener set aside can be cited only after you decide it yourself.`,
+				`Undecided sourceItemIds in ${where}: ${undecidedSources.join(", ")}. Every item a story cites needs a recorded decision from you (commit_curation_batch with CANDIDATE or DUPLICATE and this storyId). An item the screener set aside can be cited only after you decide it yourself.`,
 			);
 		}
 

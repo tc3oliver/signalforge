@@ -70,7 +70,7 @@ export function renderReaderProfile(profile: ReaderProfile): string {
 	/*
 	 * The id leads, because the id is what the tools take.
 	 *
-	 * This block used to render the label alone, while `upsert_story.topicIds`
+	 * This block used to render the label alone, while a story's `topicIds`
 	 * validates ids -- so the only place a model could learn the vocabulary was
 	 * the rejection it got for guessing. On 2026-09-19 that produced 119
 	 * refused story entries in one run, 97% of every refusal.

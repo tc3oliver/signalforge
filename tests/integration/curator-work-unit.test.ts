@@ -62,9 +62,9 @@ const pagingScript: Script = async ({ call }) => {
 			const g = groupOf(item);
 			groups.set(g, [...(groups.get(g) ?? []), item.id]);
 		}
-		for (const [g, ids] of groups) {
-			seenGroups.set(g, [...(seenGroups.get(g) ?? []), ...ids]);
-			await call("upsert_story", {
+		for (const [g, ids] of groups) seenGroups.set(g, [...(seenGroups.get(g) ?? []), ...ids]);
+		await call("commit_curation_batch", {
+			stories: [...groups.entries()].map(([g, ids]) => ({
 				storyId: storyIdFor(g),
 				canonicalTitle: `Event ${g}`,
 				sourceItemIds: ids,
@@ -76,9 +76,7 @@ const pagingScript: Script = async ({ call }) => {
 				importance: 0.5,
 				confidence: 0.6,
 				reason: "grouped",
-			});
-		}
-		await call("record_item_decisions", {
+			})),
 			decisions: page.items.map((i) => ({
 				itemId: i.id,
 				disposition: "CANDIDATE",
@@ -281,18 +279,22 @@ describe("bounded curator work units", () => {
 			);
 			const g = groupOf(page.items[0]!);
 			seenGroups.set(g, [page.items[0]!.id]);
-			await api.call("upsert_story", {
-				storyId: storyIdFor(g),
-				canonicalTitle: `Event ${g}`,
-				sourceItemIds: [page.items[0]!.id],
-				primarySourceIds: [page.items[0]!.id],
-				status: "OPEN",
-				changeType: "NEW",
-				relevance: 0.5,
-				novelty: 0.5,
-				importance: 0.5,
-				confidence: 0.6,
-				reason: "grouped",
+			await api.call("commit_curation_batch", {
+				stories: [
+					{
+						storyId: storyIdFor(g),
+						canonicalTitle: `Event ${g}`,
+						sourceItemIds: [page.items[0]!.id],
+						primarySourceIds: [page.items[0]!.id],
+						status: "OPEN",
+						changeType: "NEW",
+						relevance: 0.5,
+						novelty: 0.5,
+						importance: 0.5,
+						confidence: 0.6,
+						reason: "grouped",
+					},
+				],
 			});
 			try {
 				await submitAll(api.call as Call);

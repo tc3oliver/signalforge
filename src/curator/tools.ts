@@ -139,7 +139,7 @@ export interface CuratorContext {
 	repo: StoryRepository;
 	now: () => Date;
 	/**
-	 * The reader's interest topic ids, for validating `upsert_story.topicIds`.
+	 * The reader's interest topic ids, for validating a story's `topicIds`.
 	 * Absent when the run has no profile, in which case the field is accepted as
 	 * given rather than rejected -- a run without a profile should behave as it
 	 * always did, not refuse work.
@@ -149,7 +149,7 @@ export interface CuratorContext {
 	 * How many decisions this turn may still record before it should stop.
 	 *
 	 * The ceiling is enforced by `list_unseen_items` refusing to hand out more
-	 * work, not by `record_item_decisions` refusing to accept it: a model that
+	 * work, not by the commit refusing to accept it: a model that
 	 * has already read a page must always be able to commit its judgement of it.
 	 * Refusing the write would throw away work the model has already paid for and
 	 * leave the page to be re-read by the next turn.
@@ -165,8 +165,8 @@ export interface CuratorContext {
 	 * mode, in which case every tool behaves exactly as it always has.
 	 *
 	 * Withheld is not erased: these items stay in the manifest, `search_items`
-	 * and `get_item_detail` still see them, `upsert_story` still accepts them as
-	 * sources, and `record_item_decisions` still records them. Only
+	 * and `get_item_detail` still see them, and a commit still accepts them as
+	 * sources and records their decisions. Only
 	 * `list_unseen_items` skips them, and only until the Curator decides one --
 	 * which is a rescue, and supersedes the screener's verdict.
 	 */
@@ -475,7 +475,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		repo: ctx.repo,
 		date: ctx.date,
 		description:
-			"Search story ledger entries from PREVIOUS days. upsert_story and upsert_stories run this check for you and report any hits; call it directly when you need to read prior entries before deciding whether today's coverage is the same story.",
+			"Search story ledger entries from PREVIOUS days. commit_curation_batch runs this check for you on every story and reports any hits; call it directly when you need to read prior entries before deciding whether today's coverage is the same story.",
 		promptSnippet: "find_history: look up this story on earlier days",
 		note,
 		project: toHistoryView,
@@ -529,7 +529,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		name: "list_today_stories",
 		label: "List today's stories",
 		description:
-			"Name every story that already exists for today. With no arguments it returns each story's id and nothing else — the ids are the slugs you wrote, so a continuation is usually recognisable from the slug alone; call get_story for the full entry of one, or pass match to rank them. With match, it returns the stories whose titles best fit that text, with their titles and changeTypes. Re-using an existing storyId in upsert_story merges into that story instead of creating a duplicate.",
+			"Name every story that already exists for today. With no arguments it returns each story's id and nothing else — the ids are the slugs you wrote, so a continuation is usually recognisable from the slug alone; call get_story for the full entry of one, or pass match to rank them. With match, it returns the stories whose titles best fit that text, with their titles and changeTypes. Re-using an existing storyId in a commit merges into that story instead of creating a duplicate.",
 		promptSnippet: "list_today_stories: recover stories created earlier today",
 		parameters: Type.Object({
 			match: Type.Optional(
@@ -673,18 +673,17 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		return todayCache;
 	};
 
+	/*
+	 * One story's write, shared by every entry of a commit.
+	 *
+	 * It records no tool call of its own. A batch entry is not a tool call, and
+	 * emitting one per entry made the 2026-09-18 trace read as 227 single writes
+	 * against 36 batched ones when the truth was 33 batch calls and 2 singles --
+	 * and the conclusion drawn from that artifact, that the model would not
+	 * batch, was wrong. The caller reports what the model actually sent.
+	 */
 	const upsertOne = async (
 		raw: Record<string, unknown>,
-		/*
-		 * Whether this write is its own tool call.
-		 *
-		 * A batch entry is not. Emitting `upsert_story` per entry made the trace
-		 * read as 227 single writes against 36 batched ones on 2026-09-18, when
-		 * the truth was 33 batch calls and 2 singles -- and the conclusion drawn
-		 * from that artifact, that the model would not batch, was wrong. A tool
-		 * call is what the model sent.
-		 */
-		emitNote = true,
 	): Promise<{
 		receipt: ReturnType<typeof toStoryReceipt>;
 		history?: ReturnType<typeof toHistoryView>[];
@@ -700,7 +699,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			topicIds: (raw["topicIds"] as unknown[] | undefined) ?? [],
 		});
 		if (!parsed.success) {
-			throw rejectFromZod("upsert_story payload rejected", parsed.error);
+			throw rejectFromZod("story payload rejected", parsed.error);
 		}
 		const input = parsed.data;
 
@@ -813,32 +812,6 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		if (at === -1) todayStories.push(entry);
 		else todayStories[at] = entry;
 		const rescuing = input.sourceItemIds.filter((id) => screenedOut.has(id));
-		if (emitNote) note("upsert_story", {
-			storyId: entry.storyId,
-			changeType: entry.changeType,
-			historyHits: history.length,
-			...(rescuing.length > 0 ? { rescuedSources: rescuing.length } : {}),
-			// Kept visible so a normalisation that starts happening on every
-			// story -- a renamed profile topic, say -- is still a detectable
-			// regression rather than a silent one.
-			...(droppedTopicIds.length > 0 ? { droppedTopicIds } : {}),
-			/*
-			 * Enough to judge the check from a trace without re-reading the
-			 * ledger: which story was written, what the strongest existing
-			 * neighbour was and how strongly it matched, and every candidate
-			 * named. Whether the model then merged is the next upsert's storyId,
-			 * which is already recorded, so acceptance is derivable from the log
-			 * alone -- see src/observation/story-ledger.ts.
-			 */
-			...(todayNear.length > 0
-				? {
-						todayNear: todayNear.map((r) => r.entry.storyId),
-						todayNearTop: todayNear[0]!.entry.storyId,
-						todayNearScore: Number(todayNear[0]!.score.toFixed(3)),
-					}
-				: {}),
-		});
-
 		const notes: string[] = [];
 		if (droppedTopicIds.length > 0) {
 			notes.push(
@@ -863,7 +836,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		if (rescuing.length > 0) {
 			notes.push(
 				`${rescuing.length} source(s) (${rescuing.join(", ")}) were set aside by the screener. ` +
-					`Record a decision for each with record_item_decisions (CANDIDATE or DUPLICATE, storyId ${entry.storyId}) -- submit_materials rejects a cited source with no decision.`,
+					`Include a decision for each in this commit (CANDIDATE or DUPLICATE, storyId ${entry.storyId}) -- submit_materials rejects a cited source with no decision.`,
 			);
 		}
 		return {
@@ -874,216 +847,6 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		};
 	};
 
-	const upsertStory = defineTool({
-		name: "upsert_story",
-		label: "Upsert story",
-		description:
-			"Create or update ONE story for today. Prefer upsert_stories for a page's worth of stories at once. Re-calling with the same storyId merges source items and overwrites the judgement fields. Use a stable slug for storyId so the same real-world event keeps its id across days. History from previous days is checked for you and returned; a non-NEW changeType with no history is rejected.",
-		promptSnippet: "upsert_story: create or merge one story cluster (history checked for you)",
-		parameters: storyPayload,
-		execute: async (_id, params) => {
-			/*
-			 * A rejection here is recorded by the same family as a batch entry's.
-			 * Without it the single path's failures are invisible while the batch
-			 * path's are counted, and "why does the model fall back to single
-			 * upserts?" cannot be answered from a trace: the obvious hypothesis
-			 * is that batches feel less reliable, and that is only testable if
-			 * both paths report refusals the same way.
-			 */
-			try {
-				const result = await upsertOne(params as Record<string, unknown>);
-				return ok({ story: result.receipt, ...(result.history ? { history: result.history } : {}), ...(result.note ? { note: result.note } : {}) });
-			} catch (err) {
-				if (err instanceof ToolRejection) {
-					note("upsert_story", { rejected: 1, rejectedBy: { [upsertRejectionKind(err.message)]: 1 } });
-				}
-				throw err;
-			}
-		},
-	});
-
-	/*
-	 * The batch form. One model turn instead of one per story. Applied in
-	 * order and independently: a story that fails validation is reported at its
-	 * index and the others are still written, because an upsert is idempotent
-	 * and re-sending the good ones would only cost tokens. The model is told
-	 * exactly which failed and why, and resends those alone.
-	 */
-	const upsertStories = defineTool({
-		name: "upsert_stories",
-		label: "Upsert stories",
-		description:
-			"Create or update SEVERAL stories for today in one call -- use this for a page's clusters instead of one upsert_story per cluster. Each entry has exactly the upsert_story shape and semantics, including the automatic history check. Entries are applied independently: the response lists each accepted story with its history hits, and each rejected entry with the reason; fix and resend only the rejected ones.",
-		promptSnippet: "upsert_stories: create or merge up to 20 story clusters in one call",
-		parameters: Type.Object({
-			stories: Type.Array(storyPayload, { minItems: 1, maxItems: 20 }),
-		}),
-		execute: async (_id, params) => {
-			const accepted: Array<Record<string, unknown>> = [];
-			const droppedTopicIds: string[][] = [];
-			const near: Array<{ storyId: string; top: string; score: number; candidates: string[] }> = [];
-			const rejected: Array<{ index: number; storyId: string; error: string }> = [];
-			for (const [index, story] of params.stories.entries()) {
-				try {
-					const result = await upsertOne(story as Record<string, unknown>, false);
-					if (result.droppedTopicIds) droppedTopicIds.push(result.droppedTopicIds);
-					if (result.near) near.push(result.near);
-					accepted.push({
-						...result.receipt,
-						...(result.history ? { history: result.history } : {}),
-						...(result.note ? { note: result.note } : {}),
-					});
-				} catch (err) {
-					if (!(err instanceof ToolRejection)) throw err;
-					rejected.push({ index, storyId: String(story.storyId ?? ""), error: err.message });
-				}
-			}
-			const rejectedBy: Record<string, number> = {};
-			for (const r of rejected) {
-				const kind = upsertRejectionKind(r.error);
-				rejectedBy[kind] = (rejectedBy[kind] ?? 0) + 1;
-			}
-			note("upsert_stories", {
-				accepted: accepted.length,
-				rejected: rejected.length,
-				...(rejected.length > 0 ? { rejectedBy } : {}),
-				// Aggregated here rather than emitted per entry: a batch is one tool
-				// call, and a normalisation that starts happening on every story must
-				// still be a detectable regression.
-				...(droppedTopicIds.length > 0 ? { droppedTopicIds } : {}),
-				...(near.length > 0 ? { near } : {}),
-			});
-			if (accepted.length === 0) {
-				throw new ToolRejection(
-					`upsert_stories rejected every entry:\n- ${rejected.map((r) => `[${r.index}] ${r.storyId}: ${r.error}`).join("\n- ")}`,
-				);
-			}
-			return ok({
-				accepted,
-				...(rejected.length > 0
-					? {
-							rejected,
-							note: `${rejected.length} entry/ies were not written. Fix the named problem and resend only those.`,
-						}
-					: {}),
-			});
-		},
-	});
-
-	const recordItemDecisions = defineTool({
-		name: "record_item_decisions",
-		label: "Record item decisions",
-		description:
-			"Record a disposition for each item in the batch you just reviewed. THIS is what marks an item processed — an item without a recorded decision counts as unscanned no matter what you wrote in your reply. Use CANDIDATE with a storyId for anything that feeds a story, DUPLICATE for redundant coverage already attached to a story, IRRELEVANT for noise.",
-		promptSnippet: "record_item_decisions: mark items processed (required for every item)",
-		parameters: Type.Object({
-			decisions: Type.Array(
-				Type.Object({
-					itemId: Type.String({ minLength: 1 }),
-					disposition: Type.Union([
-						Type.Literal("IRRELEVANT"),
-						Type.Literal("DUPLICATE"),
-						Type.Literal("CANDIDATE"),
-					]),
-					storyId: Type.Optional(Type.String({ minLength: 1 })),
-					reason: Type.String({ minLength: 1 }),
-				}),
-				{ minItems: 1, maxItems: MAX_PAGE },
-			),
-		}),
-		execute: async (_id, params) => {
-			const parsedList: ItemDecision[] = [];
-			const stamp = ctx.now().toISOString();
-			for (const raw of params.decisions) {
-				const parsed = ItemDecisionInput.safeParse(raw);
-				if (!parsed.success) {
-					throw rejectFromZod(`decision for "${raw.itemId}" rejected`, parsed.error);
-				}
-				if (!itemsById.has(parsed.data.itemId)) {
-					throw new ToolRejection(
-						`Unknown item id "${parsed.data.itemId}". Nothing was recorded — resend the batch with ids from list_unseen_items.`,
-					);
-				}
-				parsedList.push({ ...parsed.data, decidedAt: stamp });
-			}
-
-			const dupes = parsedList
-				.map((d) => d.itemId)
-				.filter((id, i, arr) => arr.indexOf(id) !== i);
-			if (dupes.length > 0) {
-				throw new ToolRejection(`Duplicate itemId(s) in one batch: ${[...new Set(dupes)].join(", ")}`);
-			}
-
-			// A CANDIDATE or DUPLICATE that names a storyId must name one that exists,
-			// otherwise the clustering recorded here is a dangling reference.
-			//
-			// Resolved against today's stories once for the whole batch. getStory
-			// searches every date, so it stays the authority for the rare id created
-			// on an earlier day; it just no longer runs fifty times for the fifty
-			// ids the curator almost always created minutes ago. Rejection order and
-			// wording are unchanged.
-			const namedStoryIds = parsedList.map((d) => d.storyId).filter((id): id is string => !!id);
-			if (namedStoryIds.length > 0) {
-				const today = new Set((await ctx.repo.listStories(ctx.date)).map((s) => s.storyId));
-				for (const d of parsedList) {
-					if (!d.storyId || today.has(d.storyId)) continue;
-					if (!(await ctx.repo.getStory(d.storyId))) {
-						throw new ToolRejection(
-							`storyId "${d.storyId}" does not exist yet. Call upsert_story for it first, then resend this batch.`,
-						);
-					}
-				}
-			}
-
-			await ctx.repo.recordDecisions(ctx.date, parsedList);
-			// Spent after the write, so a rejected batch never costs the turn budget.
-			// Rescues are not charged: the budget bounds the broad scan, and a rescue
-			// is the Curator following a story past what the scan offered.
-			const rescuedNow = parsedList.filter((d) => screenedOut.has(d.itemId)).length;
-			ctx.turnBudget?.spend(parsedList.length - rescuedNow);
-			const account = await accounting();
-			const payload = {
-				recorded: parsedList.length,
-				...(rescuedNow > 0 ? { rescued: rescuedNow } : {}),
-				processedItems: account.curatorDecided,
-				totalItems: account.sentToCurator,
-				unseenItems: account.unaccountedItemIds.length,
-			};
-			note("record_item_decisions", payload);
-			return ok(payload);
-		},
-	});
-
-	/*
-	 * One durable commit for one batch of items.
-	 *
-	 * This is the whole of the Curator's judgement about a page: which events
-	 * the page's items belong to, and what each item was. It exists because the
-	 * two halves were being sent in two model turns, and a turn is the unit that
-	 * costs. On 2026-09-19 every work unit spent a turn on `upsert_stories` and
-	 * then a separate turn on `record_item_decisions` for the same fifty items --
-	 * twelve turns re-sending the whole accumulated session to restate a
-	 * judgement the previous turn had already made.
-	 *
-	 * The division is the one the rest of this file follows. The model decides
-	 * what is an event, what continues an event, what is noise, and how much any
-	 * of it matters. TypeScript looks up history, validates every reference,
-	 * normalizes topic ids, writes both tables, keeps them consistent with each
-	 * other, counts coverage and decides whether the work unit is finished.
-	 *
-	 * Partial by design, in one direction only. A story with a genuine error is
-	 * refused on its own and the rest of the page's editorial work is kept --
-	 * discarding twenty sound clusters because the twenty-first named a
-	 * misspelt fact id is how a repair turn gets created, which is the cost this
-	 * removes. But a decision may never point at a story that did not commit, so
-	 * decisions naming a refused or unknown story are refused with it. That is
-	 * the invariant: nothing recorded here dangles.
-	 *
-	 * There is no transaction across the two writes and none is needed. Both are
-	 * idempotent on their keys -- an upsert merges by (story, date), a decision
-	 * replaces by item -- so a commit interrupted between them, or resent after a
-	 * provider failure, converges to the same state rather than doubling it.
-	 */
 	const commitCurationBatch = defineTool({
 		name: "commit_curation_batch",
 		label: "Commit curation batch",
@@ -1092,7 +855,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		promptSnippet: "commit_curation_batch: write a page's stories and decisions in one call",
 		parameters: Type.Object({
 			stories: Type.Optional(Type.Array(storyPayload, { maxItems: 20 })),
-			decisions: Type.Array(
+			decisions: Type.Optional(Type.Array(
 				Type.Object({
 					itemId: Type.String({ minLength: 1 }),
 					disposition: Type.Union([
@@ -1104,16 +867,22 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 					reason: Type.String({ minLength: 1 }),
 				}),
 				{ minItems: 1, maxItems: MAX_PAGE },
-			),
+			)),
 		}),
 		execute: async (_id, params) => {
+			const decisions = params.decisions ?? [];
+			if ((params.stories ?? []).length === 0 && decisions.length === 0) {
+				throw new ToolRejection(
+					"commit_curation_batch needs stories, decisions, or both. An empty commit records nothing.",
+				);
+			}
 			const accepted: Array<Record<string, unknown>> = [];
 			const droppedTopicIds: string[][] = [];
 			const near: Array<{ storyId: string; top: string; score: number; candidates: string[] }> = [];
 			const rejectedStories: Array<{ index: number; storyId: string; error: string }> = [];
 			for (const [index, story] of (params.stories ?? []).entries()) {
 				try {
-					const result = await upsertOne(story as Record<string, unknown>, false);
+					const result = await upsertOne(story as Record<string, unknown>);
 					if (result.droppedTopicIds) droppedTopicIds.push(result.droppedTopicIds);
 					if (result.near) near.push(result.near);
 					accepted.push({
@@ -1141,7 +910,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 			const rejectedDecisions: Array<{ itemId: string; error: string }> = [];
 			const stamp = ctx.now().toISOString();
 			const seenItems = new Set<string>();
-			for (const raw of params.decisions) {
+			for (const raw of decisions) {
 				const parsed = ItemDecisionInput.safeParse(raw);
 				if (!parsed.success) {
 					rejectedDecisions.push({
@@ -1533,9 +1302,6 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		findHistory,
 		getStory,
 		listTodayStories,
-		upsertStory,
-		upsertStories,
-		recordItemDecisions,
 		commitCurationBatch,
 		getStructuredFacts,
 		submitMaterials,

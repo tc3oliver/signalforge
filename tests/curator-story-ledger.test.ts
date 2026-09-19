@@ -64,6 +64,16 @@ function tools() {
 
 type Tool = { name: string; execute: unknown };
 
+/** One story through the single writer, shaped like the old single-story call. */
+async function upsert(all: readonly unknown[], payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+	const out = await run(all, "commit_curation_batch", { stories: [payload] });
+	const stories = out["stories"] as Record<string, unknown>;
+	const accepted = (stories["accepted"] as Array<Record<string, unknown>>)[0];
+	const rejected = stories["rejected"] as Array<{ error: string }> | undefined;
+	if (!accepted) throw new Error(rejected?.[0]?.error ?? "no story accepted");
+	return { story: accepted, ...(accepted["note"] ? { note: accepted["note"] } : {}) };
+}
+
 async function run(all: readonly unknown[], name: string, params: unknown): Promise<Record<string, unknown>> {
 	const tool = (all as Tool[]).find((t) => t.name === name);
 	if (!tool) throw new Error(`no tool ${name}`);
@@ -92,8 +102,8 @@ function story(over: Record<string, unknown>): Record<string, unknown> {
 describe("list_today_stories default result", () => {
 	it("names every story and carries no other field", async () => {
 		const all = tools();
-		await run(all, "upsert_story", story({ storyId: "openai-astra-for-law", canonicalTitle: "OpenAI ships Astra for Law" }));
-		await run(all, "upsert_story", story({ storyId: "jemalloc-5-4-0", canonicalTitle: "jemalloc 5.4.0 released", sourceItemIds: ["rss-3"], primarySourceIds: ["rss-3"] }));
+		await upsert(all, story({ storyId: "openai-astra-for-law", canonicalTitle: "OpenAI ships Astra for Law" }));
+		await upsert(all, story({ storyId: "jemalloc-5-4-0", canonicalTitle: "jemalloc 5.4.0 released", sourceItemIds: ["rss-3"], primarySourceIds: ["rss-3"] }));
 
 		const out = await run(all, "list_today_stories", {});
 		expect(out["total"]).toBe(2);
@@ -105,7 +115,7 @@ describe("list_today_stories default result", () => {
 	it("is complete, so nothing a later session could merge into is invisible", async () => {
 		const all = tools();
 		for (let i = 0; i < 40; i += 1) {
-			await run(all, "upsert_story", story({ storyId: `story-${i}`, canonicalTitle: `Story number ${i}` }));
+			await upsert(all, story({ storyId: `story-${i}`, canonicalTitle: `Story number ${i}` }));
 		}
 		const out = await run(all, "list_today_stories", {});
 		expect(out["total"]).toBe(40);
@@ -116,8 +126,8 @@ describe("list_today_stories default result", () => {
 describe("list_today_stories match", () => {
 	it("ranks by title overlap and returns the fields a slug does not carry", async () => {
 		const all = tools();
-		await run(all, "upsert_story", story({ storyId: "openai-astra-for-law", canonicalTitle: "OpenAI ships Astra for Law" }));
-		await run(all, "upsert_story", story({ storyId: "jemalloc-5-4-0", canonicalTitle: "jemalloc 5.4.0 released", sourceItemIds: ["rss-3"], primarySourceIds: ["rss-3"] }));
+		await upsert(all, story({ storyId: "openai-astra-for-law", canonicalTitle: "OpenAI ships Astra for Law" }));
+		await upsert(all, story({ storyId: "jemalloc-5-4-0", canonicalTitle: "jemalloc 5.4.0 released", sourceItemIds: ["rss-3"], primarySourceIds: ["rss-3"] }));
 
 		const out = await run(all, "list_today_stories", { match: "OpenAI Astra for Law confirmed by a second outlet" });
 		const matches = out["matches"] as Array<Record<string, unknown>>;
@@ -130,7 +140,7 @@ describe("list_today_stories match", () => {
 	it("honours limit", async () => {
 		const all = tools();
 		for (let i = 0; i < 12; i += 1) {
-			await run(all, "upsert_story", story({ storyId: `openai-story-${i}`, canonicalTitle: `OpenAI ships thing ${i}` }));
+			await upsert(all, story({ storyId: `openai-story-${i}`, canonicalTitle: `OpenAI ships thing ${i}` }));
 		}
 		const out = await run(all, "list_today_stories", { match: "OpenAI ships thing", limit: 3 });
 		expect((out["matches"] as unknown[]).length).toBe(3);
@@ -138,7 +148,7 @@ describe("list_today_stories match", () => {
 
 	it("returns no matches rather than failing when nothing overlaps", async () => {
 		const all = tools();
-		await run(all, "upsert_story", story({ storyId: "jemalloc-5-4-0", canonicalTitle: "jemalloc 5.4.0 released", sourceItemIds: ["rss-3"], primarySourceIds: ["rss-3"] }));
+		await upsert(all, story({ storyId: "jemalloc-5-4-0", canonicalTitle: "jemalloc 5.4.0 released", sourceItemIds: ["rss-3"], primarySourceIds: ["rss-3"] }));
 		const out = await run(all, "list_today_stories", { match: "quantum tunnelling in beetles" });
 		expect(out["matches"]).toEqual([]);
 	});
@@ -147,17 +157,13 @@ describe("list_today_stories match", () => {
 describe("a near-duplicate is reported when it is written", () => {
 	it("names today's similar story in the receipt note", async () => {
 		const all = tools();
-		await run(all, "upsert_story", story({ storyId: "openai-astra-for-law", canonicalTitle: "OpenAI ships Astra for Law" }));
-		const out = await run(
-			all,
-			"upsert_story",
-			story({
+		await upsert(all, story({ storyId: "openai-astra-for-law", canonicalTitle: "OpenAI ships Astra for Law" }));
+		const out = await upsert(all, story({
 				storyId: "openai-astra-law",
 				canonicalTitle: "OpenAI ships Astra for Law, confirmed",
 				sourceItemIds: ["rss-2"],
 				primarySourceIds: ["rss-2"],
-			}),
-		);
+			}));
 		expect(String(out["note"])).toContain("openai-astra-for-law");
 		// Advisory only: the story was still written.
 		expect((out["story"] as Record<string, unknown>)["storyId"]).toBe("openai-astra-law");
@@ -165,34 +171,26 @@ describe("a near-duplicate is reported when it is written", () => {
 
 	it("says nothing when the story is unlike anything today", async () => {
 		const all = tools();
-		await run(all, "upsert_story", story({ storyId: "openai-astra-for-law", canonicalTitle: "OpenAI ships Astra for Law" }));
-		const out = await run(
-			all,
-			"upsert_story",
-			story({ storyId: "jemalloc-5-4-0", canonicalTitle: "jemalloc 5.4.0 released", sourceItemIds: ["rss-3"], primarySourceIds: ["rss-3"] }),
-		);
+		await upsert(all, story({ storyId: "openai-astra-for-law", canonicalTitle: "OpenAI ships Astra for Law" }));
+		const out = await upsert(all, story({ storyId: "jemalloc-5-4-0", canonicalTitle: "jemalloc 5.4.0 released", sourceItemIds: ["rss-3"], primarySourceIds: ["rss-3"] }));
 		expect(out["note"]).toBeUndefined();
 	});
 
 	it("says nothing when merging into the story it resembles", async () => {
 		const all = tools();
-		await run(all, "upsert_story", story({ storyId: "openai-astra-for-law", canonicalTitle: "OpenAI ships Astra for Law" }));
-		const out = await run(
-			all,
-			"upsert_story",
-			story({
+		await upsert(all, story({ storyId: "openai-astra-for-law", canonicalTitle: "OpenAI ships Astra for Law" }));
+		const out = await upsert(all, story({
 				storyId: "openai-astra-for-law",
 				canonicalTitle: "OpenAI ships Astra for Law",
 				sourceItemIds: ["rss-1", "rss-2"],
 				primarySourceIds: ["rss-1"],
-			}),
-		);
+			}));
 		expect(out["note"]).toBeUndefined();
 	});
 
 	it("catches a duplicate written inside one batch", async () => {
 		const all = tools();
-		const out = await run(all, "upsert_stories", {
+		const out = await run(all, "commit_curation_batch", {
 			stories: [
 				story({ storyId: "openai-astra-for-law", canonicalTitle: "OpenAI ships Astra for Law" }),
 				story({

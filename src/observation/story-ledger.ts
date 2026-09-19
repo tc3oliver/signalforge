@@ -143,6 +143,8 @@ export interface LedgerEvent {
 }
 
 /** Tools whose call writes stories and therefore may report a near-duplicate. */
+/* The historical names are kept so a report can still read a trace from before
+ * the three writers became one. */
 const WRITE_TOOLS = new Set(["upsert_story", "upsert_stories", "commit_curation_batch"]);
 
 export interface NearFire {

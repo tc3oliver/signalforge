@@ -28,7 +28,7 @@ description: Curate a day of raw feed items into deduplicated, historically-awar
 
 可用工具:`get_daily_inventory`、`list_unseen_items`、`get_item_detail`、`read_item_body`、
 `search_items`、`find_history`、`get_story`、`list_today_stories`、`commit_curation_batch`、
-`upsert_stories`、`upsert_story`、`record_item_decisions`、`get_structured_facts`、
+`get_structured_facts`、
 `submit_materials`。
 
 ### 先知道錢花在哪
@@ -76,7 +76,7 @@ description: Curate a day of raw feed items into deduplicated, historically-awar
 - **`submit_materials` 要求每一則 item 都有交代。** 提供給你的 item 每一則都要有 decision;
   screener 保留的 item 由它交代。做到 unseen 為零為止,不要提早收工。
 - **story 引用的每一則 item 都必須有你的 decision。** 從 `search_items` 撈回一則
-  screener 保留的 item 放進 story(這叫 rescue),就要同時用 `record_item_decisions`
+  screener 保留的 item 放進 story(這叫 rescue),就要在同一次 commit 裡
   給它 `CANDIDATE` 或 `DUPLICATE` 並帶 `storyId`(同一個 commit 裡即可)。回覆會提醒你。
 - **絕不自己猜 item id 或 story id。** id 只能來自工具回傳結果。
   例外是新建 story 時由你命名的 `storyId` — 命名規則見 `references/story-clustering.md`。
@@ -121,7 +121,7 @@ description: Curate a day of raw feed items into deduplicated, historically-awar
 ### 硬規則
 
 - **只能用 materials 裡出現的 story。** 不在 materials 裡的 storyId 會被拒絕。
-- **不能改 ledger。** Editor 沒有 `upsert_story`,發現分類有誤就在文字裡處理,
+- **不能改 ledger。** Editor 不能寫 story,發現分類有誤就在文字裡處理,
   不要假裝改得動。
 - **看不到當日原始 inventory。** 你只看得到 Curator 篩過的東西。
   覺得少了什麼,那是 Curator 的判斷,不是你能補的。

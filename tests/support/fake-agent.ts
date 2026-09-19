@@ -278,10 +278,11 @@ export function competentCuratorScript(opts: CuratorScriptOptions = {}): Script 
 				pageGroups.set(g, [...(pageGroups.get(g) ?? []), item.id]);
 			}
 
-			for (const [group, itemIds] of pageGroups) {
-				const merged = [...(groups.get(group) ?? []), ...itemIds];
-				groups.set(group, merged);
-				await call("upsert_story", {
+			// One commit for the page: the stories its items belong to and a
+			// disposition for every one of them, which is the contract the real
+			// curator has.
+			await call("commit_curation_batch", {
+				stories: [...pageGroups.entries()].map(([group, itemIds]) => ({
 					storyId: storyIdFor(group),
 					canonicalTitle: `Event ${group}`,
 					sourceItemIds: itemIds,
@@ -293,11 +294,7 @@ export function competentCuratorScript(opts: CuratorScriptOptions = {}): Script 
 					importance: 0.6,
 					confidence: 0.9,
 					reason: `All coverage of ${group} clusters into one story.`,
-				});
-				opts.onStory?.(storyIdFor(group), merged);
-			}
-
-			await call("record_item_decisions", {
+				})),
 				decisions: batch.map((item, idx) => ({
 					itemId: item.id,
 					disposition: idx === 0 ? "CANDIDATE" : "DUPLICATE",
@@ -305,6 +302,11 @@ export function competentCuratorScript(opts: CuratorScriptOptions = {}): Script 
 					reason: `Assigned to ${storyIdFor(groupOf(item))}.`,
 				})),
 			});
+			for (const [group, itemIds] of pageGroups) {
+				const merged = [...(groups.get(group) ?? []), ...itemIds];
+				groups.set(group, merged);
+				opts.onStory?.(storyIdFor(group), merged);
+			}
 			decided += batch.length;
 
 			if (page.nextCursor === null) break;

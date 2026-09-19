@@ -67,8 +67,8 @@ async function curateFully(
 		const g = groupOf(item);
 		groups.set(g, [...(groups.get(g) ?? []), item.id]);
 	}
-	for (const [g, ids] of groups) {
-		await call("upsert_story", {
+	await call("commit_curation_batch", {
+		stories: [...groups.entries()].map(([g, ids]) => ({
 			storyId: storyIdFor(g),
 			canonicalTitle: `Event ${g}`,
 			sourceItemIds: ids,
@@ -80,9 +80,7 @@ async function curateFully(
 			importance: 0.5,
 			confidence: 0.5,
 			reason: `Cluster ${g}`,
-		});
-	}
-	await call("record_item_decisions", {
+		})),
 		decisions: manifest.items.map((item) => ({
 			itemId: item.id,
 			disposition: "CANDIDATE",
@@ -181,8 +179,8 @@ describe("submit_materials rejections", () => {
 				const g = groupOf(item);
 				groups.set(g, [...(groups.get(g) ?? []), item.id]);
 			}
-			for (const [g, ids] of groups) {
-				await call("upsert_story", {
+			await call("commit_curation_batch", {
+				stories: [...groups.entries()].map(([g, ids]) => ({
 					storyId: storyIdFor(g),
 					canonicalTitle: `Event ${g}`,
 					sourceItemIds: ids,
@@ -194,9 +192,7 @@ describe("submit_materials rejections", () => {
 					importance: 0.5,
 					confidence: 0.5,
 					reason: `Cluster ${g}`,
-				});
-			}
-			await call("record_item_decisions", {
+				})),
 				decisions: allButOne.map((item) => ({
 					itemId: item.id,
 					disposition: "CANDIDATE",
@@ -237,7 +233,7 @@ describe("submit_materials rejections", () => {
 });
 
 describe("upsert rejection telemetry", () => {
-	it("records a single upsert's rejection family, the same way a batch entry's is recorded", async () => {
+	it("records a refused story's rejection family on the commit that carried it", async () => {
 		const manifest = makeManifest({ groups: 1, perGroup: 1, date: DATE });
 		const repo = new JsonStoryRepository(join(root, "ledger"));
 		const calls: Array<{ name: string; summary: Record<string, unknown> }> = [];
@@ -248,32 +244,42 @@ describe("upsert rejection telemetry", () => {
 			now: () => new Date("2026-09-13T12:00:00Z"),
 			onToolCall: (name, summary) => calls.push({ name, summary }),
 		};
-		const single = createCuratorTools(ctx).find((t) => t.name === "upsert_story")!;
+		const commit = createCuratorTools(ctx).find((t) => t.name === "commit_curation_batch")!;
 		const id = manifest.items[0]!.id;
-		await expect(
-			single.execute(
-				"call-1",
-				{
-					storyId: "no-history-story",
-					canonicalTitle: "A story with no earlier entry",
-					sourceItemIds: [id],
-					primarySourceIds: [id],
-					status: "OPEN",
-					changeType: "UPDATE",
-					relevance: 0.5,
-					novelty: 0.5,
-					importance: 0.5,
-					confidence: 0.5,
-					reason: "continues something",
-				} as never,
-				undefined,
-				undefined,
-				{} as never,
-			),
-		).rejects.toThrow(/no earlier ledger entry/);
-		expect(calls.at(-1)).toEqual({
-			name: "upsert_story",
-			summary: { rejected: 1, rejectedBy: { CHANGE_TYPE_WITHOUT_HISTORY: 1 } },
+		const result = (await commit.execute(
+			"call-1",
+			{
+				stories: [
+					{
+						storyId: "no-history-story",
+						canonicalTitle: "A story with no earlier entry",
+						sourceItemIds: [id],
+						primarySourceIds: [id],
+						status: "OPEN",
+						changeType: "UPDATE",
+						relevance: 0.5,
+						novelty: 0.5,
+						importance: 0.5,
+						confidence: 0.5,
+						reason: "continues something",
+					},
+				],
+				decisions: [{ itemId: id, disposition: "IRRELEVANT", reason: "noise" }],
+			} as never,
+			undefined,
+			undefined,
+			{} as never,
+		)) as { content: Array<{ text: string }> };
+		const body = JSON.parse(result.content[0]!.text) as {
+			stories: { accepted: unknown[]; rejected?: Array<{ error: string }> };
+		};
+		expect(body.stories.rejected?.[0]?.error).toMatch(/no earlier ledger entry/);
+		// The page's sound half still landed: one bad story is not a lost batch.
+		expect(calls.at(-1)?.name).toBe("commit_curation_batch");
+		expect(calls.at(-1)?.summary).toMatchObject({
+			rejectedStories: 1,
+			rejectedBy: { CHANGE_TYPE_WITHOUT_HISTORY: 1 },
+			recorded: 1,
 		});
 	});
 });
@@ -320,7 +326,7 @@ describe("unknown topic ids are normalized, not refused", () => {
 	it("accepts a whole batch whose only defect is an unknown topic id, and records what it dropped", async () => {
 		const calls: Array<{ name: string; summary: Record<string, unknown> }> = [];
 		const { tools, manifest, repo } = await toolsWithProfile((name, summary) => calls.push({ name, summary }));
-		const batch = tools.find((t) => t.name === "upsert_stories")!;
+		const batch = tools.find((t) => t.name === "commit_curation_batch")!;
 		const result = (await batch.execute(
 			"c",
 			{
@@ -334,12 +340,11 @@ describe("unknown topic ids are normalized, not refused", () => {
 			{} as never,
 		)) as { content: Array<{ text: string }> };
 		const body = JSON.parse(result.content[0]!.text) as {
-			accepted: Array<{ storyId: string; note?: string }>;
-			rejected?: unknown[];
+			stories: { accepted: Array<{ storyId: string; note?: string }>; rejected?: unknown[] };
 		};
-		expect(body.accepted.map((a) => a.storyId)).toEqual(["a", "b"]);
-		expect(body.rejected).toBeUndefined();
-		expect(body.accepted[0]!.note).toMatch(/Dropped topic id\(s\).*quantum-basketball/);
+		expect(body.stories.accepted.map((a) => a.storyId)).toEqual(["a", "b"]);
+		expect(body.stories.rejected).toBeUndefined();
+		expect(body.stories.accepted[0]!.note).toMatch(/Dropped topic id\(s\).*quantum-basketball/);
 
 		// Only the real id is stored; nothing is invented or remapped.
 		expect((await repo.getStory("a"))?.topicIds).toEqual(["inference"]);
@@ -349,10 +354,10 @@ describe("unknown topic ids are normalized, not refused", () => {
 		// call. It used to be emitted once per entry, which made a batch of twenty
 		// read as twenty `upsert_story` calls and produced a false reading of the
 		// 2026-09-18 trace; the aggregate is the same signal against the truth.
-		const batchNote = calls.find((c) => c.name === "upsert_stories")!;
-		expect(batchNote.summary).toEqual({
+		const batchNote = calls.find((c) => c.name === "commit_curation_batch")!;
+		expect(batchNote.summary).toMatchObject({
 			accepted: 2,
-			rejected: 0,
+			rejectedStories: 0,
 			droppedTopicIds: [["quantum-basketball"], ["also-not-real"]],
 		});
 		expect(calls.filter((c) => c.name === "upsert_story")).toEqual([]);
@@ -360,15 +365,23 @@ describe("unknown topic ids are normalized, not refused", () => {
 
 	it("still refuses a source item that does not exist", async () => {
 		const { tools, manifest } = await toolsWithProfile(() => {});
-		const single = tools.find((t) => t.name === "upsert_story")!;
-		await expect(
-			single.execute(
-				"c",
-				{ ...payload(manifest, "c", ["inference"]), sourceItemIds: ["no-such-item"], primarySourceIds: ["no-such-item"] } as never,
-				undefined,
-				undefined,
-				{} as never,
-			),
-		).rejects.toThrow(/not in today's manifest/);
+		const commit = tools.find((t) => t.name === "commit_curation_batch")!;
+		const result = (await commit.execute(
+			"c",
+			{
+				stories: [
+					{ ...payload(manifest, "c", ["inference"]), sourceItemIds: ["no-such-item"], primarySourceIds: ["no-such-item"] },
+				],
+			} as never,
+			undefined,
+			undefined,
+			{} as never,
+		)) as { content: Array<{ text: string }> };
+		const body = JSON.parse(result.content[0]!.text) as {
+			stories: { accepted: unknown[]; rejected?: Array<{ error: string }> };
+		};
+		// Still a hard refusal: a story may not cite an item that does not exist.
+		expect(body.stories.accepted).toEqual([]);
+		expect(body.stories.rejected?.[0]?.error).toMatch(/not in today's manifest/);
 	});
 });

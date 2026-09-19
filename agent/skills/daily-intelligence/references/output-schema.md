@@ -35,7 +35,7 @@ ConfidenceLevel: HIGH | MEDIUM | LOW
 
 ---
 
-## 1. `record_item_decisions`
+## 1. `commit_curation_batch` 的 `decisions`
 
 送出一整批(一頁 `list_unseen_items` 的全部)的 decision。
 
@@ -76,7 +76,7 @@ ConfidenceLevel: HIGH | MEDIUM | LOW
 
 ---
 
-## 2. `upsert_story`
+## 2. `commit_curation_batch` 的 `stories`
 
 建立或更新 ledger 中的一則 story。同一個 `storyId` 再次 upsert 即為更新。
 
@@ -132,7 +132,7 @@ Top level:
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `storyId` | string, non-empty | yes | 必須已 `upsert_story` 存在於 ledger |
+| `storyId` | string, non-empty | yes | 必須已存在於 ledger,或在同一次 commit 的 `stories` 裡 |
 | `tier` | `A` \| `B` \| `C` | yes | |
 | `canonicalTitle` | string, non-empty | yes | |
 | `whySelected` | string, non-empty | yes | 為何值得 Editor 考慮 |
@@ -271,7 +271,7 @@ Top level:
 | score 超出 0..1 | 你可能寫了 85 而不是 0.85 |
 | `confidence` 型別錯誤(brief) | brief 用 `HIGH`/`MEDIUM`/`LOW`,不是浮點數 |
 | `primarySourceIds` 為空 | 至少要指認 1 個 |
-| storyId 不存在 | 先 `upsert_story`(Curator)或確認它在 materials 裡(Editor) |
+| storyId 不存在 | 在同一次 `commit_curation_batch` 的 `stories` 裡建立(Curator),或確認它在 materials 裡(Editor) |
 | 送了 `date` / `producedAt` / `decidedAt` | 移除。server 自己加 |
 | materials 送了 `relevance` 或 `status` | 移除。那兩個欄位只存在於 ledger entry |
-| 仍有未決 item | 繼續 `list_unseen_items` + `record_item_decisions` 直到 unseen 為零 |
+| 仍有未決 item | 繼續 `commit_curation_batch` 直到 unseen 為零 |

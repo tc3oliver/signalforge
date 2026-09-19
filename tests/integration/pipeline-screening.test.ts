@@ -672,13 +672,18 @@ describe("rescuing a screened-out item", () => {
 		expect(found.results.find((r) => r.id === a2)?.screenedOut).toBe(true);
 		expect(found.results.find((r) => r.id === a1)?.screenedOut).toBeUndefined();
 
-		const upserted = await call<{ story: { storyId: string }; note?: string }>("upsert_story", story([a1, a2]));
-		expect(upserted.story.storyId).toBe("story-g01");
-		expect(upserted.note).toMatch(new RegExp(`${a2}.*were set aside by the screener.*record_item_decisions`));
+		const upserted = await call<{ stories: { accepted: Array<{ storyId: string; note?: string }> } }>(
+			"commit_curation_batch",
+			{ stories: [story([a1, a2])] },
+		);
+		expect(upserted.stories.accepted[0]?.storyId).toBe("story-g01");
+		expect(upserted.stories.accepted[0]?.note).toMatch(
+			new RegExp(`${a2}.*were set aside by the screener.*Include a decision for each`),
+		);
 
 		// Decide the offered items, but not the rescued one yet.
-		await call("upsert_story", { ...story([b1, b2]), storyId: "story-g02", canonicalTitle: "Event g02" });
-		await call("record_item_decisions", {
+		await call("commit_curation_batch", {
+			stories: [{ ...story([b1, b2]), storyId: "story-g02", canonicalTitle: "Event g02" }],
 			decisions: [
 				{ itemId: a1, disposition: "CANDIDATE", storyId: "story-g01", reason: "r" },
 				{ itemId: b1, disposition: "CANDIDATE", storyId: "story-g02", reason: "r" },
@@ -689,11 +694,15 @@ describe("rescuing a screened-out item", () => {
 			new RegExp(`Undecided sourceItemIds in story "story-g01": ${a2}`),
 		);
 
-		const recorded = await call<{ rescued?: number; processedItems: number; totalItems: number; unseenItems: number }>(
-			"record_item_decisions",
-			{ decisions: [{ itemId: a2, disposition: "DUPLICATE", storyId: "story-g01", reason: "rescued" }] },
-		);
-		expect(recorded).toMatchObject({ rescued: 1, processedItems: 4, totalItems: 3, unseenItems: 0 });
+		const recorded = await call<{
+			decisions: { rescued?: number };
+			processedItems: number;
+			totalItems: number;
+			unseenItems: number;
+		}>("commit_curation_batch", {
+			decisions: [{ itemId: a2, disposition: "DUPLICATE", storyId: "story-g01", reason: "rescued" }],
+		});
+		expect(recorded).toMatchObject({ decisions: { rescued: 1 }, processedItems: 4, totalItems: 3, unseenItems: 0 });
 		expect((await call("get_daily_inventory")) as object).toMatchObject({ rescuedItems: 1, unseenItems: 0 });
 
 		const accepted = (await call("submit_materials", materials([a1, a2]))) as string;
@@ -702,8 +711,8 @@ describe("rescuing a screened-out item", () => {
 
 	it("still rejects an offered item that has no decision, by id", async () => {
 		const call = tools([a2]);
-		await call("upsert_story", story([a1]));
-		await call("record_item_decisions", {
+		await call("commit_curation_batch", {
+			stories: [story([a1])],
 			decisions: [
 				{ itemId: a1, disposition: "CANDIDATE", storyId: "story-g01", reason: "r" },
 				{ itemId: b1, disposition: "IRRELEVANT", reason: "r" },
