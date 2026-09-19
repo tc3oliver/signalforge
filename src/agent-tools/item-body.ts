@@ -29,9 +29,31 @@ import { ok, ToolRejection } from "./shared.ts";
  * measuring.
  */
 
-/** Canonical prose for an item: what a reader sees, not what the source served. */
+/*
+ * Canonical prose for an item: what a reader sees, not what the source served.
+ *
+ * `content` first, and `summary` when there is no content. That fallback is not
+ * a convenience -- 6,276 of the 11,038 stored items have `content IS NULL`,
+ * because GitHub releases and arXiv entries carry their whole body in `summary`
+ * and nothing else. Reading the body of one of those returned the empty string
+ * and answered "this item has no body text", so for the majority of the corpus
+ * the bounded reader was inert and `find` could not reach a single word. The
+ * largest such item is 124,924 characters of release notes.
+ *
+ * `htmlToText` is safe on both: checked against the stored GitHub bodies, it
+ * strips HTML comments and normalises CRLF while leaving Markdown headings,
+ * lists and fenced code intact -- which matters, because a fenced block is
+ * exactly where the quotable text of a release note lives.
+ */
 export function canonicalBody(item: NormalizedItem): string {
-	return htmlToText(item.content ?? "");
+	const content = htmlToText(item.content ?? "");
+	if (content.length > 0) return content;
+	return htmlToText(item.summary ?? "");
+}
+
+/** True when the body above came from `summary` because there was no content. */
+export function bodyIsSummary(item: NormalizedItem): boolean {
+	return htmlToText(item.content ?? "").length === 0 && (item.summary ?? "").length > 0;
 }
 
 /** Characters of body a single window may carry. */

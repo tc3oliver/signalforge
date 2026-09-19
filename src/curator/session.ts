@@ -204,7 +204,7 @@ export async function runCuratorStage(opts: CuratorStageOptions): Promise<Curato
 		date: opts.date,
 		totalItems: offeredIds.size,
 		manifestItems: opts.manifest.items.length,
-		skillSection: renderSkillSection(bundle),
+		skillSection: renderSkillSection(bundle, "CURATOR"),
 		...(opts.readerProfile ? { readerProfile: renderReaderProfile(opts.readerProfile) } : {}),
 	});
 

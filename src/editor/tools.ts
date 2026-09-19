@@ -11,7 +11,7 @@ import {
 	ok,
 	rejectFromZod,
 } from "../agent-tools/shared.ts";
-import { canonicalBody, defineReadBodyTool } from "../agent-tools/item-body.ts";
+import { bodyIsSummary, canonicalBody, defineReadBodyTool } from "../agent-tools/item-body.ts";
 
 export interface EditorContext {
 	date: string;
@@ -153,7 +153,16 @@ export function createEditorTools(ctx: EditorContext): ToolDefinition[] {
 					title: item.title,
 					at: item.publishedAt,
 					...(item.url ? { url: item.url } : {}),
-					summary: item.summary,
+					/*
+					 * Only when it is something the body is not.
+					 *
+					 * For an RSS item `summary` is a short lede the body already contains.
+					 * For a GitHub release or an arXiv entry it IS the body -- and returning
+					 * it as a field as well meant returning it whole and unbounded, which on
+					 * the largest stored item is 124,924 characters. That is the defect this
+					 * tool was rewritten to remove, relocated to another field.
+					 */
+					...(bodyIsSummary(item) ? {} : { summary: item.summary }),
 					bodyChars: body.length,
 					body: head,
 					...(body.length > head.length

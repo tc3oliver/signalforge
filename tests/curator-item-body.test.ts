@@ -124,7 +124,10 @@ describe("read_item_body", () => {
 	});
 
 	it("says so plainly when an item has no body at all", async () => {
-		const set = tools([item({ id: "i1", content: "" })]);
+		// No content AND no summary: 6,276 of 11,038 stored items have no content
+		// and carry their whole body in summary, so "no content" alone is not an
+		// empty item.
+		const set = tools([item({ id: "i1", content: "", summary: "" })]);
 		const out = await run(set.find((t) => t.name === "read_item_body")!, { itemId: "i1" });
 		expect(out["bodyChars"]).toBe(0);
 		expect(out["note"]).toMatch(/no body text/);

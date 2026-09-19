@@ -57,7 +57,7 @@ function tools(fetchImpl: typeof fetch, calls?: { onToolCall?: CuratorContext["o
 	const manifest: DailyManifest = {
 		date: DATE,
 		generatedAt: DATE,
-		items: [item({ id: "i1", content: BODY }), item({ id: "i2", content: "" })],
+		items: [item({ id: "i1", content: BODY }), item({ id: "i2", content: "", summary: "" })],
 		facts: [],
 	};
 	configureCuratorEvidence({

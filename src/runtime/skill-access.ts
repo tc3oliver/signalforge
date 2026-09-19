@@ -128,14 +128,48 @@ export function createSkillReferenceTool(bundle: SkillBundle): ToolDefinition {
 	});
 }
 
+/** Which role's half of the skill body a stage is shown. */
+export type SkillRole = "CURATOR" | "EDITOR";
+
+/**
+ * The stage's own half of the skill body, plus everything before both halves.
+ *
+ * SKILL.md documents two roles under `## Role 1 — Curator` and `## Role 2 —
+ * Editor`, and it was inlined whole into both system prompts -- so every
+ * Curator turn carried the Editor's workflow and every Editor turn carried the
+ * Curator's. That is not a rounding error: measured with the gpt-4o tokenizer,
+ * the document is 1.94 characters per token because it is written in 正體中文,
+ * and the Editor half alone is 1,197 tokens on every one of the Curator's ~47
+ * turns a day.
+ *
+ * Only the body is split. Every reference stays readable by both roles through
+ * `read_skill_reference`, because which document answers a question is a
+ * judgement the stage makes at the time, and narrowing it to save a listing
+ * would trade a real capability for a few dozen tokens.
+ */
+function roleBody(body: string, role: SkillRole): string {
+	const lines = body.split("\n");
+	const headings = lines
+		.map((line, i) => ({ line, i }))
+		.filter(({ line }) => /^##\s+Role\s+\d/.test(line));
+	// No role headings, or not the two this expects: render what is there rather
+	// than silently dropping the instructions.
+	if (headings.length !== 2) return body;
+	const first = headings[0]!.i;
+	const second = headings[1]!.i;
+	const shared = lines.slice(0, first);
+	const own = role === "CURATOR" ? lines.slice(first, second) : lines.slice(second);
+	return [...shared, ...own].join("\n").trimEnd();
+}
+
 /** The skill section injected into the system prompt, replacing Pi's read-tool advertisement. */
-export function renderSkillSection(bundle: SkillBundle): string {
+export function renderSkillSection(bundle: SkillBundle, role?: SkillRole): string {
 	return [
 		"<skill>",
 		`<name>${bundle.skill.name}</name>`,
 		`<description>${bundle.skill.description}</description>`,
 		"",
-		bundle.body,
+		role ? roleBody(bundle.body, role) : bundle.body,
 		"",
 		"<references>",
 		"Load any of these with read_skill_reference when you need the detailed policy:",

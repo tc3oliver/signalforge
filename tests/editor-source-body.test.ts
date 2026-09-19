@@ -53,6 +53,12 @@ const ITEMS = [
 	item("rss-short", "<p>A short body.</p>"),
 	item("rss-unused", "<p>Not in any material story.</p>"),
 	item("rss-cjk", `<p>${LONG_PROSE}</p><p>央行宣布降息一碼,為兩年來首次。</p>`),
+	// A GitHub release: the whole body is in `summary`, `content` is null.
+	{
+		...item("gh-release", ""),
+		content: undefined,
+		summary: `# v2.0.0\n\n${LONG_PROSE}\n\n- This is a breaking change for anyone using the old flag.`,
+	} as NormalizedItem,
 ];
 
 function tools() {
@@ -70,7 +76,7 @@ function tools() {
 				importance: 0.6,
 				novelty: 0.7,
 				confidence: 0.9,
-				sourceItemIds: ["rss-long", "rss-short", "rss-cjk"],
+				sourceItemIds: ["rss-long", "rss-short", "rss-cjk", "gh-release"],
 				primarySourceIds: ["rss-long"],
 				factRefs: [],
 			},
@@ -196,5 +202,37 @@ describe("a two-character search term is a search, not an error", () => {
 	it("accepts a two-character CJK term", async () => {
 		const out = await run(tools(), "read_source_body", { itemId: "rss-cjk", find: "降息" });
 		expect(String(out["text"])).toContain("降息");
+	});
+});
+
+describe("an item whose body lives in summary is readable like any other", () => {
+	/*
+	 * 6,276 of the 11,038 stored items have `content IS NULL`: GitHub releases
+	 * and arXiv entries carry their whole body in `summary` and nothing else.
+	 * While `canonicalBody` read only `content`, the bounded reader was inert on
+	 * the majority of the corpus — `bodyChars: 0`, "this item has no body text",
+	 * and `find` unable to reach a single word — for precisely the items where a
+	 * release note's exact wording is the thing worth quoting. The largest such
+	 * item is 124,924 characters.
+	 */
+	it("bounds it, instead of returning the whole summary as a field", async () => {
+		const out = await run(tools(), "get_source_items", { itemIds: ["gh-release"] });
+		const first = (out["items"] as Array<Record<string, unknown>>)[0]!;
+		expect(first["bodyChars"]).toBeGreaterThan(2000);
+		expect(String(first["body"]).length).toBeLessThanOrEqual(2000);
+		expect(first["truncated"]).toBe(true);
+		// Not returned twice: the summary IS the body here.
+		expect(first["summary"]).toBeUndefined();
+		expect(JSON.stringify(out).length).toBeLessThan(4000);
+	});
+
+	it("can be searched, which is the whole point of bounding it", async () => {
+		const out = await run(tools(), "read_source_body", { itemId: "gh-release", find: "breaking change" });
+		expect(String(out["text"])).toContain("breaking change");
+	});
+
+	it("still returns summary as its own field when it is a lede the body repeats", async () => {
+		const out = await run(tools(), "get_source_items", { itemIds: ["rss-short"] });
+		expect((out["items"] as Array<Record<string, unknown>>)[0]!["summary"]).toBe("Summary rss-short");
 	});
 });

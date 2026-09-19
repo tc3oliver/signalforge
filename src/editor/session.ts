@@ -119,7 +119,7 @@ export async function runEditorStage(opts: EditorStageOptions): Promise<EditorSt
 		date: opts.date,
 		materialCount: opts.materials.stories.length,
 		tierACount: opts.materials.stories.filter((s) => s.tier === "A").length,
-		skillSection: renderSkillSection(bundle),
+		skillSection: renderSkillSection(bundle, "EDITOR"),
 		hasPreviousBrief: Boolean(opts.previousBrief),
 		...(opts.readerProfile
 			? {
