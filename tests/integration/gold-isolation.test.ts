@@ -79,6 +79,7 @@ describe.skipIf(!haveFixtures)("gold truth is unreachable from inside the agent 
 			await call("get_daily_inventory", {});
 			await call("list_unseen_items", { limit: 50 });
 			await call("get_item_detail", { itemIds: ids });
+			await call("read_item_body", { itemId: ids[0], find: "the" }).catch(() => undefined);
 			await call("search_items", { query: "model release quantum" });
 			await call("find_history", { text: "model" }).catch(() => undefined);
 			await call("get_structured_facts", {});
@@ -160,6 +161,7 @@ describe.skipIf(!haveFixtures)("gold truth is unreachable from inside the agent 
 				"get_structured_facts",
 				"list_today_stories",
 				"list_unseen_items",
+				"read_item_body",
 				"read_skill_reference",
 				"record_item_decisions",
 				"search_items",

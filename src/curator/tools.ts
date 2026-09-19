@@ -1,4 +1,5 @@
 import { Type } from "typebox";
+import { htmlToText } from "../collectors/html-text.ts";
 import { defineTool, type ToolDefinition } from "@earendil-works/pi-coding-agent";
 import type { DailyManifest, NormalizedItem, StoryLedgerEntry } from "../schemas/index.ts";
 import {
@@ -59,6 +60,32 @@ function toScanView(item: NormalizedItem) {
 		...(hint ? { hint } : {}),
 	};
 }
+
+/*
+ * The addressable form of an item body.
+ *
+ * `normalized_items.content` is whatever the source served, which for most RSS
+ * items is HTML. Across the 2026-09-19 manifest that is 30% markup by volume,
+ * and on individual items far more: one 16,419-character record is 4,765
+ * characters of prose, another 37,318 is 12,017. Markup is not merely wasted
+ * context. An offset into raw HTML is meaningless as a handle, and a sentence a
+ * reader sees whole is split by tags in the bytes -- which is why five quotes
+ * that looked fabricated turned out to be real text with an <em> in the middle.
+ *
+ * So every character offset the Curator is given, and every window it reads,
+ * is expressed in this projection and never in the raw bytes. `htmlToText` is
+ * the collectors' own normalizer, reused rather than reimplemented so the
+ * agent-visible text cannot drift from the text collection already produces.
+ */
+function canonicalBody(item: NormalizedItem): string {
+	return htmlToText(item.content ?? "");
+}
+
+/** Characters of body a single tool result may carry, per item. */
+const BODY_WINDOW_DEFAULT = 2000;
+const BODY_WINDOW_MAX = 3000;
+/** Body characters `get_item_detail` may return per item before it truncates. */
+const DETAIL_BODY_CHARS = 1500;
 
 /** How a story is echoed back after a write: enough to cite it, nothing the model just sent. */
 function toStoryReceipt(entry: StoryLedgerEntry) {
@@ -319,8 +346,8 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		name: "get_item_detail",
 		label: "Item detail",
 		description:
-			"Return the full record for specific items, including body content and url. Spend this only on items that a title and summary cannot settle.",
-		promptSnippet: "get_item_detail: full content for specific item ids",
+			"Return the record for specific items -- url, source, date and the opening of the body. The body is trimmed; the reply says how long the whole thing is. When the opening does not settle it, read further with `read_item_body`, which can search inside one item and return the passage around a match. Spend either only on items that a title and summary cannot settle.",
+		promptSnippet: "get_item_detail: record and opening body for specific item ids",
 		parameters: Type.Object({
 			itemIds: Type.Array(Type.String(), { minItems: 1, maxItems: 10 }),
 		}),
@@ -331,8 +358,128 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 					`Unknown item id(s): ${unknown.join(", ")}. Item ids come from list_unseen_items or search_items — never construct one.`,
 				);
 			}
-			note("get_item_detail", { count: params.itemIds.length });
-			return ok({ items: params.itemIds.map((id) => itemsById.get(id)!) });
+			/*
+			 * Bounded, and bounded here rather than behind a flag.
+			 *
+			 * This tool returned whole records. On 2026-09-19 four calls put
+			 * 228,130 characters into the Curator's session, one of them 96,703,
+			 * and a tool result is re-sent on every later turn of its work unit --
+			 * measured at six occurrences for these calls. Those three reads cost
+			 * an estimated 156,000 tokens of the day's curation. An unbounded
+			 * default is the defect, so there is no unbounded mode left to choose.
+			 */
+			let truncated = 0;
+			const items = params.itemIds.map((id) => {
+				const item = itemsById.get(id)!;
+				const body = canonicalBody(item);
+				const head = body.slice(0, DETAIL_BODY_CHARS);
+				if (body.length > head.length) truncated += 1;
+				return {
+					id: item.id,
+					source: `${item.sourceName} (${item.sourceType})`,
+					title: item.title,
+					at: item.publishedAt.slice(0, 10),
+					...(item.url ? { url: item.url } : {}),
+					bodyChars: body.length,
+					body: head,
+					...(body.length > head.length ? { truncated: true } : {}),
+				};
+			});
+			note("get_item_detail", { count: params.itemIds.length, truncated });
+			return ok({
+				items,
+				...(truncated > 0
+					? {
+							note: `${truncated} item(s) have more body than is shown. Use read_item_body with a \`find\` term to jump to the passage you need; the decisive detail of a long piece is usually in the middle.`,
+						}
+					: {}),
+			});
+		},
+	});
+
+	/*
+	 * Reading one item properly, without pouring it into the session.
+	 *
+	 * Two things make a window usable rather than a lottery. It is taken over
+	 * the canonical prose, so offsets mean something and no budget is spent on
+	 * markup. And it is addressed by content: `find` locates a term and returns
+	 * the passage around it plus every other place it occurs, so the model never
+	 * has to guess a number. Paging by offset remains possible and is the thing
+	 * you do second, with an offset the tool itself handed you.
+	 */
+	const readItemBody = defineTool({
+		name: "read_item_body",
+		label: "Read item body",
+		description:
+			"Read part of one item's body. Give `find` to jump to a term -- the reply centres on the first match and lists where the others are -- or `start` to continue from an offset the tool gave you earlier. A long article is never returned whole: ask for what you need to know. The reply always says how long the body is and whether there is more before or after the window.",
+		promptSnippet: "read_item_body: search inside one item and read the passage around a match",
+		parameters: Type.Object({
+			itemId: Type.String({ minLength: 1 }),
+			find: Type.Optional(Type.String({ minLength: 3, maxLength: 120 })),
+			start: Type.Optional(Type.Integer({ minimum: 0 })),
+			length: Type.Optional(Type.Integer({ minimum: 200, maximum: BODY_WINDOW_MAX })),
+		}),
+		execute: async (_id, params) => {
+			const item = itemsById.get(params.itemId);
+			if (!item) {
+				throw new ToolRejection(
+					`Unknown item id: ${params.itemId}. Item ids come from list_unseen_items or search_items — never construct one.`,
+				);
+			}
+			const body = canonicalBody(item);
+			if (body.length === 0) {
+				note("read_item_body", { itemId: params.itemId, bodyChars: 0 });
+				return ok({
+					itemId: item.id,
+					bodyChars: 0,
+					text: "",
+					note: "This item has no body text; the title and summary are all there is.",
+				});
+			}
+
+			const length = Math.min(params.length ?? BODY_WINDOW_DEFAULT, BODY_WINDOW_MAX);
+			let matches: number[] = [];
+			let start = Math.min(params.start ?? 0, Math.max(0, body.length - 1));
+			if (params.find !== undefined) {
+				const haystack = body.toLowerCase();
+				const needle = params.find.toLowerCase();
+				for (let at = haystack.indexOf(needle); at !== -1 && matches.length < 8; at = haystack.indexOf(needle, at + 1)) {
+					matches.push(at);
+				}
+				if (matches.length === 0) {
+					// Not a rejection: "the word is not in this document" is an
+					// answer, and a rejection would cost a turn to learn it.
+					note("read_item_body", { itemId: params.itemId, find: params.find, matches: 0 });
+					return ok({
+						itemId: item.id,
+						bodyChars: body.length,
+						text: "",
+						matches: 0,
+						note: `"${params.find}" does not appear in this item's body. Try another term, or read from the start with no find.`,
+					});
+				}
+				// Centre the window on the first match, keeping some lead-in.
+				start = Math.max(0, matches[0]! - Math.floor(length / 3));
+			}
+			const end = Math.min(body.length, start + length);
+			note("read_item_body", {
+				itemId: params.itemId,
+				...(params.find !== undefined ? { find: params.find, matches: matches.length } : {}),
+				start,
+				returned: end - start,
+				bodyChars: body.length,
+			});
+			return ok({
+				itemId: item.id,
+				bodyChars: body.length,
+				start,
+				returnedChars: end - start,
+				text: body.slice(start, end),
+				hasMoreBefore: start > 0,
+				hasMoreAfter: end < body.length,
+				...(matches.length > 0 ? { matchOffsets: matches } : {}),
+				...(end < body.length ? { nextStart: end } : {}),
+			});
 		},
 	});
 
@@ -994,6 +1141,7 @@ export function createCuratorTools(ctx: CuratorContext): ToolDefinition[] {
 		getDailyInventory,
 		listUnseenItems,
 		getItemDetail,
+		readItemBody,
 		searchItems,
 		findHistory,
 		getStory,

@@ -113,7 +113,7 @@ item once, in a request that is thrown away afterwards, so the Curator's page
 holds only what survived. The trust boundaries:
 
 - **The manifest is the canonical evidence universe.** Screening never shrinks
-  it. `search_items` and `get_item_detail` see every manifest item regardless of
+  it. `search_items`, `get_item_detail` and `read_item_body` see every manifest item regardless of
   verdict; `upsert_story` accepts any manifest item as a source.
 - **A screening row is a routing hint and an accountable cheap decision.** It is
   written to `item_screening` (migration 012) with provider, model, policy
@@ -279,7 +279,7 @@ Recorded tool sets (`restricted-runtime.json`, written per run):
 
 | Stage | Tools |
 |---|---|
-| Curator | `find_history`, `get_daily_inventory`, `get_item_detail`, `get_story`, `get_structured_facts`, `list_today_stories`, `list_unseen_items`, `read_skill_reference`, `record_item_decisions`, `search_items`, `submit_materials`, `upsert_story` (+ `search_web` when research is configured) |
+| Curator | `find_history`, `get_daily_inventory`, `get_item_detail`, `get_story`, `get_structured_facts`, `list_today_stories`, `list_unseen_items`, `read_item_body`, `read_skill_reference`, `record_item_decisions`, `search_items`, `submit_materials`, `upsert_story`, `upsert_stories` (+ `search_web` when research is configured) |
 | Editor | `find_history`, `get_materials`, `get_source_items`, `get_story_detail`, `get_structured_facts`, `read_skill_reference`, `submit_brief` |
 
 ## Agent output = custom tool submission
