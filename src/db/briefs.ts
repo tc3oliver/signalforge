@@ -426,3 +426,30 @@ export async function listSitemapStories(sql: Sql, lineage: string): Promise<Sit
 	`;
 	return rows.map((r) => ({ storyId: r.story_id, lastDate: r.last_date }));
 }
+
+/**
+ * The most recent published editorial title for each of `storyIds`.
+ *
+ * Distinct from the ledger's `canonical_title`, which is the curator's internal
+ * handle for the event and is frequently English even when the brief that
+ * published it is written in Chinese. This is what a reader was actually shown,
+ * and is presentation only: nothing keys off it.
+ *
+ * A story with no published appearance is absent from the map rather than
+ * present with an empty string, so a caller must decide on a fallback.
+ */
+export async function publishedStoryTitles(
+	sql: Sql,
+	lineage: string,
+	storyIds: readonly string[],
+): Promise<Map<string, string>> {
+	if (storyIds.length === 0) return new Map();
+	const rows = await sql.unsafe<{ story_id: string; title: string }[]>(
+		`select distinct on (s.story_id) s.story_id, s.title
+		 from daily_brief_stories s
+		 where s.lineage = $1 and s.story_id = any($2::text[])
+		 order by s.story_id, s.date desc`,
+		[lineage, storyIds as string[]],
+	);
+	return new Map(rows.map((r) => [r.story_id, r.title] as const));
+}

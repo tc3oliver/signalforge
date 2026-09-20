@@ -9,6 +9,11 @@ import { ADMIN_ENABLED } from "../../../lib/admin.ts";
 import type { ConfidenceLevel } from "../../../../src/schemas/brief.ts";
 import { loadStoryPage } from "../../../lib/queries.ts";
 import {
+	storyDisplayDescription,
+	storyDisplayTitle,
+	timelineDisplayTitle,
+} from "../../../lib/story-title.ts";
+import {
 	confidenceLevelFromScore,
 	formatDateKey,
 	formatInstant,
@@ -37,19 +42,19 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 	if (!STORY_ID.test(storyId)) return { title: "找不到事件 — SignalForge" };
 	const data = await loadStoryPage(storyId);
 	if (!data) return { title: "找不到事件 — SignalForge" };
-	const latest = data.latest;
 	/*
-	 * The curator's own reason for the story, trimmed to a snippet length. It is
-	 * written for a reader deciding whether this matters to them, which is the
-	 * same question a search result answers.
+	 * Presentation, not identity: the published editorial title and the brief's
+	 * own account of the event, both trimmed to snippet length. The canonical
+	 * URL below still uses the id, which never changes.
 	 */
-	const description = latest.reason.slice(0, 160);
+	const title = storyDisplayTitle(data.appearances, data.latest);
+	const description = storyDisplayDescription(data.appearances, data.latest).slice(0, 160);
 	return {
-		title: `${latest.canonicalTitle} — SignalForge`,
+		title: `${title} — SignalForge`,
 		description,
 		// See /brief/[date]: a child `openGraph` replaces the parent, images included.
 		openGraph: {
-			title: latest.canonicalTitle,
+			title,
 			description,
 			type: "article",
 			images: ["/opengraph-image.png"],
@@ -69,8 +74,17 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 		notFound();
 	}
 
-	const { latest, timeline, appearances, facts, primarySources, allSources, related, signals } =
-		data;
+	const {
+		latest,
+		timeline,
+		appearances,
+		facts,
+		primarySources,
+		allSources,
+		related,
+		relatedTitles,
+		signals,
+	} = data;
 	const published = appearances[0];
 	// Published prose is preferred where it exists; the ledger's own reason is
 	// the fallback so a story that never reached a brief still explains itself.
@@ -82,7 +96,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 	return (
 		<article className="story-page">
 			<div className="story-main">
-				<h1>{latest.canonicalTitle}</h1>
+				<h1>{storyDisplayTitle(appearances, latest)}</h1>
 				<p className="meta">
 					<ChangeBadge type={latest.changeType} />
 					<span>{storyStatusLabel(latest.status)}</span>
@@ -129,7 +143,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 									<strong>{formatDateKey(entry.date)}</strong>{" "}
 									<ChangeBadge type={entry.changeType} />{" "}
 									<span className="host">{storyStatusLabel(entry.status)}</span>
-									<div>{entry.canonicalTitle}</div>
+									<div>{timelineDisplayTitle(appearance, entry)}</div>
 									<div className="meta">
 										<span>{entry.sourceItemIds.length} 個來源</span>
 										{appearance ? (
@@ -163,7 +177,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
 							{related.map(({ entry, sharedItemCount }) => (
 								<li key={entry.storyId}>
 									<Link href={`/story/${encodeURIComponent(entry.storyId)}`}>
-										{entry.canonicalTitle}
+										{relatedTitles.get(entry.storyId) ?? entry.canonicalTitle}
 									</Link>
 									<p className="meta">
 										<ChangeBadge type={entry.changeType} />

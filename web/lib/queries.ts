@@ -8,6 +8,7 @@ import {
 	listBriefSummaries,
 	listDraftValidationFailures,
 	listSitemapStories,
+	publishedStoryTitles,
 	searchBriefStories,
 	type BriefAppearance,
 	type BriefStoryHit,
@@ -219,6 +220,12 @@ export interface StoryPageData {
 	allSources: NormalizedItem[];
 	unresolvedSourceIds: string[];
 	related: RelatedStory[];
+	/*
+	 * Editorial titles for the related stories, by id. They are shown as links,
+	 * and a link whose text is the curator's internal English handle sends the
+	 * reader somewhere that reads nothing like what they clicked.
+	 */
+	relatedTitles: Map<string, string>;
 	signals: EmergingSignal[];
 }
 
@@ -252,10 +259,11 @@ export const loadStoryPage = cache(async function loadStoryPage(
 		...timeline.flatMap((entry) => entry.factRefs),
 		...appearances.flatMap((a) => a.factRefs),
 	]);
-	const [facts, items, roleRows] = await Promise.all([
+	const [facts, items, roleRows, relatedTitles] = await Promise.all([
 		getFacts(sql, LINEAGE, factRefs),
 		getNormalizedItems(sql, LINEAGE, sourceIds),
 		listStoryItemRoles(sql, LINEAGE, storyId, latest.date),
+		publishedStoryTitles(sql, LINEAGE, related.map((r) => r.entry.storyId)),
 	]);
 
 	const byId = new Map(items.map((i) => [i.id, i] as const));
@@ -274,6 +282,7 @@ export const loadStoryPage = cache(async function loadStoryPage(
 		// is a data bug the reader should make visible, not paper over.
 		unresolvedSourceIds: sourceIds.filter((id) => !byId.has(id)),
 		related,
+		relatedTitles,
 		signals,
 	};
 });
