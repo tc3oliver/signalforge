@@ -240,7 +240,18 @@ export interface DayWorkloadView {
 	duplicate: number;
 	/** Items the curator kept as candidates for a story. */
 	candidates: number;
-	/** Stories written to the day's ledger from those candidates. */
+	/**
+	 * Items judged relevant: candidates plus duplicates.
+	 *
+	 * A duplicate is not a discard. It is a second report of an event already
+	 * being tracked, and it attaches to that event as another source -- on
+	 * 2026-09-20, 34 of the day's 42 duplicates were cited as sources in the
+	 * ledger. This is the count that goes into consolidation, and the funnel
+	 * used to omit it: it showed 94 candidates becoming 94 events, which is a
+	 * coincidence of that one day and reads as though grouping did nothing.
+	 */
+	relevantItems: number;
+	/** Events in the day's ledger, consolidated from the relevant items. */
 	ledgerStories: number;
 	/** Stories in the brief — what the reader actually gets. */
 	storiesKept: number;
@@ -436,6 +447,7 @@ function toWorkloadView(
 		irrelevant: workload.dispositions.IRRELEVANT ?? 0,
 		duplicate: workload.dispositions.DUPLICATE ?? 0,
 		candidates: workload.dispositions.CANDIDATE ?? 0,
+		relevantItems: (workload.dispositions.CANDIDATE ?? 0) + (workload.dispositions.DUPLICATE ?? 0),
 		ledgerStories: ledger.length,
 		storiesKept: brief.stories.length,
 		mustKnow: brief.stories.filter((story) => story.mustKnow).length,

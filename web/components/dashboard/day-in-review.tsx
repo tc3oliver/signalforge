@@ -15,6 +15,16 @@ import { formatCount } from "../../lib/format.ts";
  * curator sees them, so "scanned" understates the day by however much was
  * withheld — on 2026-09-19, by 409 of 993.
  *
+ * It must not describe a duplicate as something that was thrown away. A
+ * duplicate is a second report of an event already being tracked, and it
+ * attaches to that event as another source -- on 2026-09-20, 34 of the day's 42
+ * did. Saying "42 則是重複報導，都沒有進來" was false, and it also hid the
+ * consolidation: the funnel showed 94 candidates becoming 94 events, which was
+ * a coincidence of that day and reads as though grouping did nothing. The
+ * relevant count -- candidates plus duplicates -- is what goes in, so 136 -> 94
+ * shows the work. It also makes the funnel add up: 126 irrelevant + 136
+ * relevant is exactly the 262 that entered analysis.
+ *
  * It must not subtract item counts and call the remainder a number of events.
  * Candidate items become ledger stories, a few of those are selected as
  * material, and fewer still reach the brief; collapsing those stages reads as
@@ -48,10 +58,14 @@ export function DayInReview({ workload }: { workload: DashboardView["workload"] 
 						全部 <strong>{formatCount(workload.itemsScanned)}</strong> 則都進入深度分析
 					</>
 				)}
-				；其中 <strong>{formatCount(workload.irrelevant)}</strong> 則與追蹤的主題無關、
-				<strong>{formatCount(workload.duplicate)}</strong> 則是重複報導，
-				<strong>{formatCount(workload.candidates)}</strong> 則留下來歸整成{" "}
-				<strong>{formatCount(workload.ledgerStories)}</strong> 則事件
+				；其中 <strong>{formatCount(workload.irrelevant)}</strong> 則與追蹤的主題無關，
+				其餘 <strong>{formatCount(workload.relevantItems)}</strong> 則
+				{workload.duplicate > 0 ? (
+					<>
+						（含 <strong>{formatCount(workload.duplicate)}</strong> 則同一件事的重複報導）
+					</>
+				) : null}
+				歸整成 <strong>{formatCount(workload.ledgerStories)}</strong> 則事件
 				{workload.unchangedStories > 0 ? (
 					<>
 						，其中 <strong>{workload.unchangedStories}</strong> 則只是舊聞再報導，已略過
@@ -79,8 +93,8 @@ export function DayInReview({ workload }: { workload: DashboardView["workload"] 
 					</li>
 				) : null}
 				<li>
-					<span>留為素材</span>
-					<strong>{formatCount(workload.candidates)}</strong>
+					<span>判定相關</span>
+					<strong>{formatCount(workload.relevantItems)}</strong>
 					<span className="day-funnel-unit">則項目</span>
 				</li>
 				<li>

@@ -193,11 +193,21 @@ describe("Today page day in review", () => {
 		expect(out).toContain("<strong>1,243</strong> 則進入深度分析");
 		expect(out).toContain("<strong>9</strong> 個來源");
 		expect(out).toContain("<strong>1,180</strong> 則與追蹤的主題無關");
-		expect(out).toContain("<strong>41</strong> 則是重複報導");
-		// Items stay items and stories stay stories: 22 candidate items become
+		/*
+		 * A duplicate is relevant, not discarded: it is another report of an event
+		 * already tracked and attaches to it as a source. So the count that goes
+		 * into consolidation is 22 candidates + 41 duplicates = 63, and the
+		 * duplicates are named as part of it rather than as something excluded.
+		 */
+		expect(out).toContain("<strong>63</strong> 則");
+		expect(out).toContain("<strong>41</strong> 則同一件事的重複報導");
+		expect(out).not.toMatch(/則是重複報導，/);
+		// The funnel adds up: 1,180 irrelevant + 63 relevant = the 1,243 scanned.
+		expect(1180 + 63).toBe(1243);
+		// Items stay items and stories stay stories: 63 relevant items become
 		// 2 ledger stories, of which 3 reach the brief.
-		expect(out).toContain("<strong>22</strong> 則留下來歸整成");
-		expect(out).toContain("<strong>2</strong> 則事件");
+		expect(out).toContain("歸整成 <strong>2</strong> 則事件");
+		expect(out).toContain("判定相關");
 		expect(out).toContain("<strong>3</strong> 則值得閱讀");
 		expect(out).toContain("<strong>1</strong> 則只是舊聞再報導");
 		// No share-of-everything: stories over items is not a percentage.
@@ -221,6 +231,7 @@ describe("Today page day in review", () => {
 		});
 		expect(out).toContain("全部 <strong>1,243</strong> 則都進入深度分析");
 		expect(out).not.toMatch(/初步篩選過濾掉/);
+		expect(out).toContain("<strong>63</strong> 則");
 	});
 
 	it("omits the paragraph when the day left no run record", () => {
@@ -281,5 +292,50 @@ describe("Today page mobile-safe markup", () => {
 		expect(html.match(/<h1\b/g)?.length).toBe(1);
 		expect(html.indexOf("<h2")).toBeGreaterThan(html.indexOf("<h1"));
 		expect(html.indexOf("<h3")).toBeGreaterThan(html.indexOf("<h2"));
+	});
+});
+
+describe("the funnel never claims relevant items were discarded", () => {
+	/*
+	 * The production text on 2026-09-20 read "42 則是重複報導，都沒有進來" while
+	 * 34 of those 42 were cited as sources in the day's ledger, and it showed
+	 * 94 candidates becoming 94 events -- a coincidence of that day that read as
+	 * though consolidation did nothing.
+	 */
+	it("counts duplicates as relevant, so consolidation is visible", () => {
+		const out = render({
+			workload: {
+				manifestItems: 678,
+				screenedItems: 677,
+				withheldItems: 416,
+				itemsScanned: 262,
+				sources: 5,
+				dispositions: { IRRELEVANT: 126, DUPLICATE: 42, CANDIDATE: 94 },
+			},
+			ledger: Array.from({ length: 94 }, (_, i) => ledger({ storyId: `st-${i}` })),
+		});
+		// 94 + 42 = 136 relevant, consolidated into 94 events. The old copy put
+		// 94 in and got 94 out.
+		expect(out).toContain("<strong>136</strong> 則");
+		expect(out).toContain("歸整成 <strong>94</strong> 則事件");
+		expect(out).not.toContain("<strong>94</strong> 則留下來歸整成");
+		// And it reconciles against what entered analysis.
+		expect(126 + 136).toBe(262);
+	});
+
+	it("omits the duplicate clause on a day that had none", () => {
+		const out = render({
+			workload: {
+				manifestItems: 100,
+				screenedItems: 100,
+				withheldItems: 10,
+				itemsScanned: 90,
+				sources: 2,
+				dispositions: { IRRELEVANT: 80, CANDIDATE: 10 },
+			},
+			ledger: [ledger()],
+		});
+		expect(out).toContain("<strong>10</strong> 則");
+		expect(out).not.toMatch(/重複報導/);
 	});
 });
