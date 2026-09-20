@@ -207,7 +207,9 @@ describe("Today page day in review", () => {
 		// Items stay items and stories stay stories: 63 relevant items become
 		// 2 ledger stories, of which 3 reach the brief.
 		expect(out).toContain("歸整成 <strong>2</strong> 則事件");
-		expect(out).toContain("判定相關");
+		// One statement of the funnel, not two: the strip that repeated these
+		// same five numbers under the paragraph is gone.
+		expect(out).not.toContain("day-funnel");
 		expect(out).toContain("<strong>3</strong> 則值得閱讀");
 		expect(out).toContain("<strong>1</strong> 則只是舊聞再報導");
 		// No share-of-everything: stories over items is not a percentage.

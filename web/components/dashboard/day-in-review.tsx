@@ -8,6 +8,14 @@ import { formatCount } from "../../lib/format.ts";
  * collected, items screened out, items the curator decided on, ledger rows it
  * wrote — so the paragraph is evidence of the day's work, not a claim about it.
  *
+ * One paragraph, not a paragraph and a list. This used to end with a five-stage
+ * funnel strip repeating 收集 / 初步篩選後 / 判定相關 / 歸整成 / 今天的重點 --
+ * every one of those numbers is already in the sentence above it, and the
+ * sentence carries what the strip could not: the source count, the irrelevant
+ * and duplicate split, the day skipped as old news, the must-know count. A
+ * reader who read the sentence learned nothing from the strip, and a reader who
+ * skipped to the strip got a worse version of the same thing.
+ *
  * Two things this must not do, both of which it used to.
  *
  * It must not treat what the curator scanned as what the day collected. Since
@@ -79,35 +87,6 @@ export function DayInReview({ workload }: { workload: DashboardView["workload"] 
 				) : null}
 				。
 			</p>
-			<ol className="day-funnel">
-				<li>
-					<span>收集</span>
-					<strong>{formatCount(workload.manifestItems)}</strong>
-					<span className="day-funnel-unit">則項目</span>
-				</li>
-				{screened ? (
-					<li>
-						<span>初步篩選後</span>
-						<strong>{formatCount(workload.itemsScanned)}</strong>
-						<span className="day-funnel-unit">則項目</span>
-					</li>
-				) : null}
-				<li>
-					<span>判定相關</span>
-					<strong>{formatCount(workload.relevantItems)}</strong>
-					<span className="day-funnel-unit">則項目</span>
-				</li>
-				<li>
-					<span>歸整成</span>
-					<strong>{formatCount(workload.ledgerStories)}</strong>
-					<span className="day-funnel-unit">則事件</span>
-				</li>
-				<li>
-					<span>今天的重點</span>
-					<strong>{workload.storiesKept}</strong>
-					<span className="day-funnel-unit">則事件</span>
-				</li>
-			</ol>
 		</section>
 	);
 }
