@@ -9,7 +9,17 @@ import { preview } from "../../lib/untrusted.ts";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export const metadata = { title: "搜尋 — SignalForge" };
+/*
+ * Noindex: every distinct `?q=` is a separate URL with near-identical chrome
+ * and content that exists elsewhere on the site. Indexing them competes with
+ * the story pages that are the real answer. `follow` is kept so a crawler that
+ * lands here still walks through to those pages.
+ */
+export const metadata = {
+	title: "搜尋 — SignalForge",
+	robots: { index: false, follow: true },
+	alternates: { canonical: "/search" },
+};
 
 export default async function SearchPage({
 	searchParams,

@@ -401,3 +401,28 @@ export async function countBriefs(sql: Sql, lineage: string): Promise<number> {
 	`;
 	return rows[0]?.total ?? 0;
 }
+
+export interface SitemapStory {
+	storyId: string;
+	/** The most recent published brief this story reached, as its lastmod. */
+	lastDate: string;
+}
+
+/**
+ * Every story id reachable at /story/<id>, with the day it last changed.
+ *
+ * Driven by `daily_brief_stories` rather than the ledger: the ledger holds
+ * every story the curator ever wrote, including ones no brief published, and
+ * those have no public page. A sitemap that listed them would be advertising
+ * URLs that answer 404.
+ */
+export async function listSitemapStories(sql: Sql, lineage: string): Promise<SitemapStory[]> {
+	const rows = await sql<{ story_id: string; last_date: string }[]>`
+		select story_id, max(date) as last_date
+		from daily_brief_stories
+		where lineage = ${lineage}
+		group by story_id
+		order by max(date) desc, story_id
+	`;
+	return rows.map((r) => ({ storyId: r.story_id, lastDate: r.last_date }));
+}

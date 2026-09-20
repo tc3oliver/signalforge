@@ -5,7 +5,11 @@ import { formatDateKey, formatInstant, sectionLabel } from "../../lib/format.ts"
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export const metadata = { title: "歷史 — SignalForge" };
+export const metadata = {
+	title: "歷史 — SignalForge",
+	description: "SignalForge 每天發布的重點回顧，依日期排列，每一天都有固定網址。",
+	alternates: { canonical: "/history" },
+};
 
 export default async function HistoryPage() {
 	const SHOWN = 120;

@@ -7,11 +7,13 @@ import {
 	latestBriefDate,
 	listBriefSummaries,
 	listDraftValidationFailures,
+	listSitemapStories,
 	searchBriefStories,
 	type BriefAppearance,
 	type BriefStoryHit,
 	type BriefSummary,
 	type DraftValidationRecord,
+	type SitemapStory,
 } from "../../src/db/briefs.ts";
 import {
 	collectionRunsForRunIds,
@@ -434,4 +436,24 @@ function unique(values: readonly string[]): string[] {
 
 function isItem(value: NormalizedItem | undefined): value is NormalizedItem {
 	return value !== undefined;
+}
+
+/**
+ * Everything a crawler should be able to reach, for /sitemap.xml.
+ *
+ * The homepage is `force-dynamic` and the archive is paged, so without this a
+ * crawler could only find story pages by walking links from whichever day
+ * happened to be current. Both halves come from published brief rows, which is
+ * the same definition of "public" the pages themselves use.
+ */
+export async function loadSitemapEntries(): Promise<{
+	briefs: BriefSummary[];
+	stories: SitemapStory[];
+}> {
+	const sql = db();
+	const [briefs, stories] = await Promise.all([
+		listBriefSummaries(sql, LINEAGE, 3650),
+		listSitemapStories(sql, LINEAGE),
+	]);
+	return { briefs, stories };
 }

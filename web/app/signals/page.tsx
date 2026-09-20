@@ -11,7 +11,11 @@ import type { SignalState } from "../../../src/db/signals.ts";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export const metadata = { title: "趨勢 — SignalForge" };
+export const metadata = {
+	title: "趨勢 — SignalForge",
+	description: "跨多天浮現的主題：哪些事件在互相印證，依據多少來源，可信度如何。",
+	alternates: { canonical: "/signals" },
+};
 
 /** Lifecycle order, strongest first; a fading signal belongs at the bottom. */
 const STATE_ORDER: readonly SignalState[] = ["confirmed", "strengthening", "emerging", "fading"];

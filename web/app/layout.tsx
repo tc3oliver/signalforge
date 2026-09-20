@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ADMIN_ENABLED } from "../lib/admin.ts";
+import { SITE_ORIGIN } from "../lib/site.ts";
 import "./globals.css";
 import "./styles/today.css";
 import "./styles/story.css";
@@ -16,30 +17,8 @@ import "./styles/reference.css";
 const SITE_DESCRIPTION =
 	"每天早上把幾百則來源讀完，留下真正有變化的十幾件事：什麼發生了、為什麼重要、和昨天比變了什麼。每個數字都有出處。";
 
-/*
- * Where this site lives, for absolute URLs. Next resolves the OpenGraph image
- * against this; unset, it resolves against localhost and every share card
- * comes back blank from anywhere but the machine that rendered it. The default
- * matches the reader's own bind port, so a dev server still produces a URL
- * that works locally.
- */
-const SITE_URL = process.env["SIGNALFORGE_SITE_URL"]?.trim() || "http://localhost:3300";
-
-/*
- * Next's own "metadataBase is not set" warning was the only signal that this
- * was unconfigured, and giving it a default silences that. In production an
- * unset variable means every shared link previews blank, indefinitely and with
- * nothing in the logs, so say so once at startup instead.
- */
-if (process.env.NODE_ENV === "production" && !process.env["SIGNALFORGE_SITE_URL"]?.trim()) {
-	console.warn(
-		`[signalforge] SIGNALFORGE_SITE_URL is unset; absolute URLs fall back to ${SITE_URL}. ` +
-			"Share cards and feed links will not resolve from other machines.",
-	);
-}
-
 export const metadata: Metadata = {
-	metadataBase: new URL(SITE_URL),
+	metadataBase: new URL(SITE_ORIGIN),
 	title: "SignalForge — 每日重點",
 	description: SITE_DESCRIPTION,
 	openGraph: {
@@ -53,6 +32,13 @@ export const metadata: Metadata = {
 	// it is now served publicly, linked from the README and from a case study,
 	// and carries a share card, so refusing to be found was the odd one out.
 	robots: { index: true, follow: true },
+	/*
+	 * Every page here has exactly one address, but the site is reachable at more
+	 * than one origin (loopback, LAN, the public host), so without this a crawler
+	 * that arrived by any other route would treat it as a separate copy. Child
+	 * routes override this with their own path.
+	 */
+	alternates: { canonical: "/" },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

@@ -36,7 +36,26 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 	const storyId = decodeURIComponent(id);
 	if (!STORY_ID.test(storyId)) return { title: "找不到事件 — SignalForge" };
 	const data = await loadStoryPage(storyId);
-	return { title: data ? `${data.latest.canonicalTitle} — SignalForge` : "找不到事件 — SignalForge" };
+	if (!data) return { title: "找不到事件 — SignalForge" };
+	const latest = data.latest;
+	/*
+	 * The curator's own reason for the story, trimmed to a snippet length. It is
+	 * written for a reader deciding whether this matters to them, which is the
+	 * same question a search result answers.
+	 */
+	const description = latest.reason.slice(0, 160);
+	return {
+		title: `${latest.canonicalTitle} — SignalForge`,
+		description,
+		// See /brief/[date]: a child `openGraph` replaces the parent, images included.
+		openGraph: {
+			title: latest.canonicalTitle,
+			description,
+			type: "article",
+			images: ["/opengraph-image.png"],
+		},
+		alternates: { canonical: `/story/${encodeURIComponent(storyId)}` },
+	};
 }
 
 export default async function StoryPage({ params }: { params: Promise<{ id: string }> }) {
