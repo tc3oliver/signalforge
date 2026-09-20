@@ -61,3 +61,29 @@ export function timelineDisplayTitle(
 ): string {
 	return appearance?.title ?? entry.canonicalTitle;
 }
+
+/**
+ * Display titles for a batch of story ids, published wording preferred.
+ *
+ * Both inputs are whole-batch lookups, so a page showing many stories costs two
+ * queries rather than one per story.
+ *
+ * The two maps answer different questions and a caller usually needs both. The
+ * ledger map answers "does this story exist at all", which is an integrity
+ * statement: a signal naming an id with no ledger row is a broken reference and
+ * the page says so. The published map answers "what was the reader told it was
+ * called", which is presentation. Collapsing them would make a real story that
+ * no brief happened to publish look like a dangling reference.
+ */
+export function resolveDisplayTitles(
+	storyIds: readonly string[],
+	published: ReadonlyMap<string, string>,
+	ledger: ReadonlyMap<string, string>,
+): Map<string, string> {
+	const out = new Map<string, string>();
+	for (const id of storyIds) {
+		const title = published.get(id) ?? ledger.get(id);
+		if (title !== undefined) out.set(id, title);
+	}
+	return out;
+}

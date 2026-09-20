@@ -21,7 +21,7 @@ export const metadata = {
 const STATE_ORDER: readonly SignalState[] = ["confirmed", "strengthening", "emerging", "fading"];
 
 export default async function SignalsPage() {
-	const { signals, storyTitles } = await loadSignals();
+	const { signals, storyTitles, knownStoryIds } = await loadSignals();
 	if (signals.length === 0) {
 		return (
 			<>
@@ -66,7 +66,7 @@ export default async function SignalsPage() {
 													<Link href={`/story/${encodeURIComponent(storyId)}`}>
 														{storyTitles.get(storyId) ?? storyId}
 													</Link>
-													{storyTitles.has(storyId) ? null : (
+													{knownStoryIds.has(storyId) ? null : (
 														<span className="host">（找不到對應的事件記錄）</span>
 													)}
 												</li>

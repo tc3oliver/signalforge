@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { localDateKey, reportingZone } from "../../src/runtime/local-day.ts";
+import { resolveDisplayTitles } from "./story-title.ts";
 import {
 	briefAppearancesForStory,
 	getBrief,
@@ -289,13 +290,28 @@ export const loadStoryPage = cache(async function loadStoryPage(
 
 export async function loadSignals(): Promise<{
 	signals: EmergingSignal[];
+	/** Display titles: the published wording, falling back to the ledger handle. */
 	storyTitles: Map<string, string>;
+	/**
+	 * Ids that have a ledger row. Separate from the titles above because the page
+	 * uses it to flag a dangling reference, and "no brief published this" is not
+	 * the same fault as "this story does not exist".
+	 */
+	knownStoryIds: Set<string>;
 }> {
 	const sql = db();
 	const signals = await listSignals(sql, LINEAGE);
 	const storyIds = unique(signals.flatMap((s) => s.storyIds));
-	const storyTitles = await latestStoryTitles(sql, LINEAGE, storyIds);
-	return { signals, storyTitles };
+	// Two batch lookups for the whole page, not one per story.
+	const [ledgerTitles, editorialTitles] = await Promise.all([
+		latestStoryTitles(sql, LINEAGE, storyIds),
+		publishedStoryTitles(sql, LINEAGE, storyIds),
+	]);
+	return {
+		signals,
+		storyTitles: resolveDisplayTitles(storyIds, editorialTitles, ledgerTitles),
+		knownStoryIds: new Set(ledgerTitles.keys()),
+	};
 }
 
 export interface SearchResults {

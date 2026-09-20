@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { BriefAppearance } from "../src/db/briefs.ts";
 import type { StoryLedgerEntry } from "../src/schemas/index.ts";
+import { readFile, readdir } from "node:fs/promises";
+import { join, relative } from "node:path";
 import {
+	resolveDisplayTitles,
 	storyDisplayDescription,
 	storyDisplayTitle,
 	timelineDisplayTitle,
@@ -88,5 +91,128 @@ describe("identity is not presentation", () => {
 		expect(source).toContain("href={`/story/${encodeURIComponent(entry.storyId)}`}");
 		// And the raw ledger handle must no longer be rendered as the page heading.
 		expect(source).not.toContain("<h1>{latest.canonicalTitle}</h1>");
+	});
+});
+
+describe("resolveDisplayTitles", () => {
+	const ledger = new Map([
+		["published-story", "Published story, English handle"],
+		["tracked-but-unpublished", "Tracked but never published"],
+	]);
+	const published = new Map([["published-story", "已發布的中文標題"]]);
+
+	it("prefers the published wording", () => {
+		const out = resolveDisplayTitles(["published-story"], published, ledger);
+		expect(out.get("published-story")).toBe("已發布的中文標題");
+	});
+
+	it("keeps a real story that no brief published, rather than dropping it", () => {
+		// The /signals page flags an absent title as a dangling reference. A story
+		// the curator tracked but never published is not dangling, and must not be
+		// reported as one.
+		const out = resolveDisplayTitles(["tracked-but-unpublished"], published, ledger);
+		expect(out.get("tracked-but-unpublished")).toBe("Tracked but never published");
+	});
+
+	it("omits an id that exists in neither, which is a genuine broken reference", () => {
+		const out = resolveDisplayTitles(["ghost-story"], published, ledger);
+		expect(out.has("ghost-story")).toBe(false);
+	});
+});
+
+describe("no reader-facing page reads the ledger handle directly", () => {
+	/*
+	 * The leak this guards against is subtle: `canonicalTitle` is a legitimate
+	 * field that identity code must keep using, so it cannot simply be banned.
+	 * What must not happen is a reader-facing route rendering it without going
+	 * through the display helpers.
+	 *
+	 * `web/lib/trace.ts` is exempt and stays exempt: it builds the admin item
+	 * trace, where naming the ledger entry is the point.
+	 */
+	const EXEMPT = new Set(["lib/story-title.ts", "lib/trace.ts", "scripts/seed-dev.ts"]);
+
+	async function walk(dir: string, root: string): Promise<string[]> {
+		const out: string[] = [];
+		for (const e of await readdir(dir, { withFileTypes: true })) {
+			if (e.name === "node_modules" || e.name === ".next") continue;
+			const full = join(dir, e.name);
+			if (e.isDirectory()) out.push(...(await walk(full, root)));
+			else if (/\.tsx?$/.test(e.name)) out.push(full);
+		}
+		return out;
+	}
+
+	it("uses a display helper wherever a story title reaches a reader", async () => {
+		const root = new URL("../web/", import.meta.url).pathname;
+		const files = await walk(root, root);
+		expect(files.length).toBeGreaterThan(10);
+		const offenders: string[] = [];
+		for (const file of files) {
+			const rel = relative(root, file);
+			if (EXEMPT.has(rel)) continue;
+			const source = await readFile(file, "utf8");
+			for (const line of source.split("\n")) {
+				if (!line.includes("canonicalTitle")) continue;
+				// A fallback inside JSX is allowed only as the tail of a `??` chain
+				// whose head is a display lookup.
+				if (/\?\?\s*[a-zA-Z.]*canonicalTitle/.test(line)) continue;
+				offenders.push(`${rel}: ${line.trim()}`);
+			}
+		}
+		expect(offenders).toEqual([]);
+	});
+});
+
+describe("the ledger title lookup cannot reach a reader unresolved", () => {
+	/*
+	 * How /signals leaked despite the guard above: it never wrote
+	 * `canonicalTitle` at all. It called `latestStoryTitles`, whose rows ARE
+	 * ledger handles, and rendered the map. The name of the field never appeared,
+	 * so a text search for it found nothing.
+	 *
+	 * `latestStoryTitles` is still the right query for the integrity half of that
+	 * page -- it answers "does this story exist" -- so it stays. What must hold is
+	 * that nothing hands its output straight to a page.
+	 */
+	it("is only called in the query layer, and always paired with the published lookup", async () => {
+		const root = new URL("../web/", import.meta.url).pathname;
+		const callers: string[] = [];
+		async function walk(dir: string): Promise<void> {
+			for (const e of await readdir(dir, { withFileTypes: true })) {
+				if (e.name === "node_modules" || e.name === ".next") continue;
+				const full = join(dir, e.name);
+				if (e.isDirectory()) await walk(full);
+				else if (/\.tsx?$/.test(e.name)) {
+					const src = await readFile(full, "utf8");
+					if (src.includes("latestStoryTitles")) callers.push(relative(root, full));
+				}
+			}
+		}
+		await walk(root);
+		expect(callers).toEqual(["lib/queries.ts"]);
+
+		const queries = await readFile(join(root, "lib/queries.ts"), "utf8");
+		// Every use of the ledger lookup must be resolved against the published one.
+		expect(queries).toContain("publishedStoryTitles");
+		expect(queries).toContain("resolveDisplayTitles");
+	});
+
+	it("no app route renders a raw title map from the ledger", async () => {
+		const appDir = new URL("../web/app/", import.meta.url).pathname;
+		const offenders: string[] = [];
+		async function walk(dir: string): Promise<void> {
+			for (const e of await readdir(dir, { withFileTypes: true })) {
+				if (e.name === ".next") continue;
+				const full = join(dir, e.name);
+				if (e.isDirectory()) await walk(full);
+				else if (/\.tsx?$/.test(e.name)) {
+					const src = await readFile(full, "utf8");
+					if (src.includes("latestStoryTitles")) offenders.push(relative(appDir, full));
+				}
+			}
+		}
+		await walk(appDir);
+		expect(offenders).toEqual([]);
 	});
 });
