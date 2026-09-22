@@ -498,3 +498,85 @@ export async function fetchModelChainHealth(
 		totalTokens: Number(r.total_tokens),
 	}));
 }
+
+/**
+ * How close each stage ran to its turn timeout, and what the misses cost.
+ *
+ * A timeout is the one failure the pipeline pays for in full before learning
+ * anything: the clock is ours, so the attempt burns the whole budget and every
+ * token it produced is discarded. On 2026-09-22 three timeouts threw away
+ * 452,745 of the day's 986,955 Codex tokens -- 46% -- while the attempts that
+ * did succeed finished at 225s, 254s and 273s against a 300s limit.
+ *
+ * That is the distinction this answers and the per-stage totals cannot: a stage
+ * whose successes land at half the limit has a provider that stalled once, and
+ * a stage whose successes crowd the limit is mis-sized and will keep dropping
+ * attempts as the day grows.
+ */
+export interface TurnHeadroomRow {
+	date: string;
+	stage: string;
+	/** Attempts that returned a result, whether they finished or yielded. */
+	completed: number;
+	/** Longest completed attempt, in seconds: how close the good path came. */
+	slowestCompletedSecs: number;
+	/** Median completed attempt, in seconds. */
+	medianCompletedSecs: number;
+	timedOut: number;
+	/** Seconds spent on attempts that timed out and produced nothing usable. */
+	timedOutSecs: number;
+	/** Tokens those attempts consumed and threw away. */
+	wastedTokens: number;
+	totalTokens: number;
+}
+
+export async function fetchTurnHeadroom(
+	sql: Sql,
+	lineage: string,
+	dates: readonly string[],
+): Promise<TurnHeadroomRow[]> {
+	if (dates.length === 0) return [];
+	const rows = await sql<
+		{
+			date: string;
+			stage: string;
+			completed: number;
+			slowest: number | null;
+			median: number | null;
+			timed_out: number;
+			timed_out_secs: number;
+			wasted_tokens: string;
+			total_tokens: string;
+		}[]
+	>`
+		select
+			r.date, a.stage,
+			count(*) filter (where a.failure_class is distinct from 'TIMEOUT')::int as completed,
+			max(a.duration_ms) filter (where a.failure_class is distinct from 'TIMEOUT') / 1000 as slowest,
+			percentile_cont(0.5) within group (
+				order by a.duration_ms
+			) filter (where a.failure_class is distinct from 'TIMEOUT') / 1000 as median,
+			count(*) filter (where a.failure_class = 'TIMEOUT')::int as timed_out,
+			coalesce(sum(a.duration_ms) filter (where a.failure_class = 'TIMEOUT'), 0)::int / 1000 as timed_out_secs,
+			coalesce(sum((a.token_usage->>'totalTokens')::bigint) filter (
+				where a.failure_class = 'TIMEOUT'
+			), 0)::text as wasted_tokens,
+			coalesce(sum((a.token_usage->>'totalTokens')::bigint), 0)::text as total_tokens
+		from agent_attempts a
+		join daily_runs r on r.run_id = a.run_id
+		where r.lineage = ${lineage} and r.date = any(${sql.array([...dates])})
+		group by r.date, a.stage
+		order by r.date desc, a.stage
+	`;
+	return rows.map((r) => ({
+		date: r.date,
+		stage: r.stage,
+		completed: r.completed,
+		slowestCompletedSecs: Math.round(r.slowest ?? 0),
+		medianCompletedSecs: Math.round(r.median ?? 0),
+		timedOut: r.timed_out,
+		timedOutSecs: r.timed_out_secs,
+		wastedTokens: Number(r.wasted_tokens),
+		totalTokens: Number(r.total_tokens),
+	}));
+}

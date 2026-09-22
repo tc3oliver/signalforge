@@ -1,3 +1,4 @@
+import { loadStageTuning } from "../config/stage-tuning.ts";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { loadConfig } from "../config/loader.ts";
@@ -16,6 +17,7 @@ import {
 	fetchScreeningOutcomes,
 	fetchScreeningVersions,
 	fetchModelChainHealth,
+	fetchTurnHeadroom,
 	fetchStageUsage,
 	fetchTriageOutcomes,
 	fetchTriageVersions,
@@ -29,6 +31,7 @@ import {
 	renderScreening,
 	renderSignals,
 	renderModelChain,
+	renderTurnHeadroom,
 	renderStageUsage,
 	renderStoryLedger,
 	renderTriage,
@@ -301,6 +304,18 @@ async function main(): Promise<void> {
 			console.log(renderStageUsage(await fetchStageUsage(sql, lineage, epochDates), screenedItems, curatorItems));
 			console.log("");
 			console.log(renderModelChain(await fetchModelChainHealth(sql, lineage, epochDates)));
+			console.log("");
+			/*
+			 * Against the configured limit, not a constant: a duration only means
+			 * something next to the budget it was spending, and reporting 300s here
+			 * while config/agent.yaml says something else would be a lie the next
+			 * time that value is tuned. The curator and the editor share a limit
+			 * today; if they diverge this needs to report them separately.
+			 */
+			const turnLimitSecs = Math.round(loadStageTuning().CURATOR.timeoutMs / 1000);
+			console.log(
+				renderTurnHeadroom(await fetchTurnHeadroom(sql, lineage, epochDates), turnLimitSecs),
+			);
 		}
 
 		console.log("");

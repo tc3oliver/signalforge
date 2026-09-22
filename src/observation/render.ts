@@ -6,7 +6,7 @@ import { REQUIRED_CLEAN_DAYS } from "./epoch.ts";
 import type { TopicFunnel } from "./funnel.ts";
 import type { RoutingReadiness, TriageFunnel } from "./triage-funnel.ts";
 import type { ScreeningFunnel, ScreeningReadiness, StageUsage } from "./screening-funnel.ts";
-import type { ModelChainRow } from "./queries.ts";
+import type { ModelChainRow, TurnHeadroomRow } from "./queries.ts";
 import { AMPLIFICATION, CHARS_PER_PROMPT_TOKEN, type LedgerPair, type LedgerTelemetry } from "./story-ledger.ts";
 
 /*
@@ -479,6 +479,66 @@ export function renderModelChain(rows: ModelChainRow[]): string {
 			);
 			lines.push(
 				"  and not why. It resolves when the quota does, and implies no code change.",
+			);
+		}
+	}
+	return lines.join("\n");
+}
+
+/**
+ * `limitSecs` is the configured `timeoutMs` for the stage, so the report can
+ * say how much room the good path had rather than printing durations that mean
+ * nothing without it.
+ */
+export function renderTurnHeadroom(rows: TurnHeadroomRow[], limitSecs: number): string {
+	const lines = [`## Turn headroom (limit ${limitSecs}s)`, ""];
+	if (rows.length === 0) {
+		lines.push("No attempts recorded.");
+		return lines.join("\n");
+	}
+	lines.push(
+		`${"date".padEnd(12)}${"stage".padEnd(10)}${"done".padEnd(6)}${"median".padEnd(8)}${"slowest".padEnd(9)}${"room".padEnd(7)}${"t/out".padEnd(7)}${"lost s".padEnd(8)}wasted tokens`,
+	);
+	for (const r of rows) {
+		// Headroom on the attempt that came closest to the wall. Negative is
+		// impossible by construction; zero means the next slow day drops it.
+		const room = limitSecs > 0 ? Math.round(((limitSecs - r.slowestCompletedSecs) / limitSecs) * 100) : 0;
+		const wasted =
+			r.totalTokens > 0 ? ` (${Math.round((r.wastedTokens / r.totalTokens) * 100)}%)` : "";
+		lines.push(
+			`${r.date.padEnd(12)}${r.stage.padEnd(10)}${String(r.completed).padEnd(6)}` +
+				`${`${r.medianCompletedSecs}s`.padEnd(8)}${`${r.slowestCompletedSecs}s`.padEnd(9)}` +
+				`${`${room}%`.padEnd(7)}${String(r.timedOut).padEnd(7)}${String(r.timedOutSecs).padEnd(8)}` +
+				`${r.wastedTokens.toLocaleString()}${wasted}`,
+		);
+	}
+	/*
+	 * The two readings that call for different fixes. A stage whose successes
+	 * crowd the limit is mis-sized: raising the limit, or shrinking the work
+	 * unit, is the lever. A stage with room to spare that still timed out had a
+	 * provider stall, and tuning the limit would only make the stall cost more.
+	 */
+	const crowded = rows.filter(
+		(r) => limitSecs > 0 && r.slowestCompletedSecs >= limitSecs * 0.8,
+	);
+	const stalled = rows.filter(
+		(r) => r.timedOut > 0 && limitSecs > 0 && r.slowestCompletedSecs < limitSecs * 0.8,
+	);
+	if (crowded.length > 0) {
+		lines.push("");
+		for (const r of crowded) {
+			lines.push(
+				`${r.date} ${r.stage}: the slowest attempt that finished took ${r.slowestCompletedSecs}s of ${limitSecs}s. ` +
+					"The work unit is sized against the limit, not comfortably inside it.",
+			);
+		}
+	}
+	if (stalled.length > 0) {
+		lines.push("");
+		for (const r of stalled) {
+			lines.push(
+				`${r.date} ${r.stage}: ${r.timedOut} timeout(s) although the slowest finishing attempt took only ${r.slowestCompletedSecs}s of ${limitSecs}s. ` +
+					"That reads as a provider stall rather than a limit that is too tight.",
 			);
 		}
 	}
