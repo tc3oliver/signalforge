@@ -35,7 +35,24 @@ modelChain:
 
 stages:
   CURATOR:
-    timeoutMs: 300000
+    # 420s, raised from 300s on 2026-09-22 after `pnpm observe` showed the
+    # curator finishing against the limit rather than inside it. Headroom
+    # tracked the size of the day, not the calendar: 262 items left 42% of the
+    # budget unused, 584 items left 8% and survived on luck, and 421 items left
+    # none and dropped two attempts -- 262,897 Codex tokens produced and
+    # discarded, because a timeout is measured by our own clock and keeps
+    # nothing.
+    #
+    # Raising the bound rather than cutting maxDecisionsPerTurn, because the
+    # soft deadline is 0.6x this value: 300s aimed a work unit at 180s, and the
+    # median attempt landed at 144-212s, so units were already yielding roughly
+    # when told to. 420s aims at 252s, which makes units larger and therefore
+    # FEWER -- a smaller budget would have added turns, and a turn costs the
+    # whole re-sent prompt again.
+    #
+    # The cost is a genuinely hung turn taking 420s to detect instead of 300s,
+    # twice before the chain moves on. maxAttemptsPerModel below still bounds it.
+    timeoutMs: 420000
     maxAttemptsPerModel: 4
     maxNudges: 3
     # Decisions one attempt records before it yields to a fresh session on the
@@ -57,10 +74,15 @@ stages:
     # ceiling is not instantaneous.
     #
     # Since 2026-09-18 this count is a backstop rather than the only bound: the
-    # work unit also closes once the turn has spent 60% of timeoutMs (180s), so a
-    # slow turn stops at a tool boundary instead of being aborted by the timeout.
-    # On 2026-09-18, 24 of 26 units closed on the count at p50 125s -- 42% of the
-    # clock -- and two still ran past it; the clock now catches those two.
+    # work unit also closes once the turn has spent 60% of timeoutMs -- 252s
+    # since the raise above, 180s before it -- so a slow turn stops at a tool
+    # boundary instead of being aborted by the timeout. On 2026-09-18, 24 of 26
+    # units closed on the count at p50 125s -- 42% of the clock -- and two still
+    # ran past it; the clock now catches those two.
+    #
+    # The raise moves that soft deadline with it, which is the point: a unit now
+    # aims at 252s instead of 180s, so it does MORE before yielding and the day
+    # needs fewer of them. Cutting this count would have gone the other way.
     #
     # Raise it only with telemetry showing p90 well under 3s/decision.
     # 2026-09-18 measured p50 2.50, p90 3.96, max 6.00 -- p90 does not meet that
@@ -68,7 +90,14 @@ stages:
     # slow tail.
     maxDecisionsPerTurn: 50
   EDITOR:
-    timeoutMs: 300000
+    # Raised with the curator, for the same reading and a different mechanism.
+    # The editor has no work unit to resize -- it writes one brief in one turn,
+    # so there is no soft deadline and nothing to yield -- and on 2026-09-22 it
+    # finished at 272s of 300s with 9% to spare, having already burned one full
+    # timeout that threw away 189,848 tokens, half of everything it spent that
+    # day. Its cost grows with the ledger it reads, which is the same thing that
+    # grew under the curator.
+    timeoutMs: 420000
     maxAttemptsPerModel: 4
     maxNudges: 3
 

@@ -73,12 +73,12 @@ const CURATOR_WORK_UNIT = 50;
 
 export const DEFAULT_STAGE_TUNING: StageTuning = Object.freeze({
 	CURATOR: {
-		timeoutMs: 300_000,
+		timeoutMs: 420_000,
 		maxAttemptsPerModel: 4,
 		maxNudges: 3,
 		maxDecisionsPerTurn: CURATOR_WORK_UNIT,
 	},
-	EDITOR: { timeoutMs: 300_000, maxAttemptsPerModel: 4, maxNudges: 3 },
+	EDITOR: { timeoutMs: 420_000, maxAttemptsPerModel: 4, maxNudges: 3 },
 });
 
 const log = createLogger("stage-tuning");
