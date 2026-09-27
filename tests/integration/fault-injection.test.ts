@@ -27,7 +27,7 @@ const DATE = "2026-09-13";
 
 const CHAIN: readonly ModelSpec[] = [
 	{ provider: "github-copilot", model: "gemini-3.8-flash" },
-	{ provider: "openai-codex", model: "gpt-5.6-sol" },
+	{ provider: "openai-codex", model: "gpt-6-sol" },
 	{ provider: "opencode-go", model: "deepseek-v4.1-flash" },
 ];
 
@@ -100,7 +100,7 @@ describe("fault injection drives a real fallback", () => {
 		});
 		expect(failed!.faultInjected!.firedAtProcessedItems).toBeGreaterThanOrEqual(10);
 
-		expect(succeeded!.model).toBe("gpt-5.6-sol");
+		expect(succeeded!.model).toBe("gpt-6-sol");
 		expect(succeeded!.status).toBe("SUCCESS");
 		expect(succeeded!.faultInjected).toBeUndefined();
 
@@ -109,7 +109,7 @@ describe("fault injection drives a real fallback", () => {
 
 		// The fallback model resumed from persisted state: it was not shown items
 		// the first model had already decided.
-		const secondaryPages = pagesSeen.filter((p) => p.model === "gpt-5.6-sol");
+		const secondaryPages = pagesSeen.filter((p) => p.model === "gpt-6-sol");
 		const totalSeenBySecondary = secondaryPages.reduce((n, p) => n + p.ids.length, 0);
 		expect(totalSeenBySecondary).toBeLessThan(manifest.items.length);
 
@@ -167,7 +167,7 @@ describe("fault injection drives a real fallback", () => {
 		expect(failed.faultInjected!.firedAtProcessedItems).toBeLessThan(manifest.items.length);
 
 		// The primary never got to submit; only the fallback model did.
-		expect(submitsByModel).toEqual(["gpt-5.6-sol"]);
+		expect(submitsByModel).toEqual(["gpt-6-sol"]);
 		expect(curatorAttempts[1]!.status).toBe("SUCCESS");
 		expect(store.load().status).toBe("COMPLETED");
 

@@ -29,7 +29,7 @@ modelChain:
   - provider: github-copilot
     model: gemini-3.8-flash
   - provider: openai-codex
-    model: gpt-5.6-sol
+    model: gpt-6-sol
   - provider: opencode-go
     model: deepseek-v4.1-flash
 

@@ -14,7 +14,7 @@ import type { ModelSpec } from "../src/runtime/model-config.ts";
 
 const CHAIN: readonly ModelSpec[] = [
 	{ provider: "github-copilot", model: "gemini-3.8-flash" },
-	{ provider: "openai-codex", model: "gpt-5.6-sol" },
+	{ provider: "openai-codex", model: "gpt-6-sol" },
 	{ provider: "opencode-go", model: "deepseek-v4.1-flash" },
 ];
 
@@ -155,7 +155,7 @@ describe("FaultInjector.check", () => {
 	it("matches a full provider/model key selector", () => {
 		const injector = new FaultInjector({
 			stage: "curator",
-			model: "openai-codex/gpt-5.6-sol",
+			model: "openai-codex/gpt-6-sol",
 			afterProcessedItems: 0,
 			failureClass: "RATE_LIMIT",
 		});

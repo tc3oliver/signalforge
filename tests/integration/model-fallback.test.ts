@@ -20,7 +20,7 @@ const DATE = "2026-09-13";
 
 const CHAIN: readonly ModelSpec[] = [
 	{ provider: "github-copilot", model: "gemini-3.8-flash" },
-	{ provider: "openai-codex", model: "gpt-5.6-sol" },
+	{ provider: "openai-codex", model: "gpt-6-sol" },
 	{ provider: "opencode-go", model: "deepseek-v4.1-flash" },
 ];
 
@@ -76,7 +76,7 @@ describe("model failure then fallback", () => {
 			curatorAttempts.map((a) => [a.model, a.status, a.failureClass ?? null]),
 		).toEqual([
 			["gemini-3.8-flash", "FAILED", "QUOTA"],
-			["gpt-5.6-sol", "SUCCESS", null],
+			["gpt-6-sol", "SUCCESS", null],
 		]);
 		expect(curatorAttempts[0]!.fallbackReason).toMatch(/QUOTA; falling back/);
 		expect(result.fallbackOccurred).toBe(true);
@@ -85,7 +85,7 @@ describe("model failure then fallback", () => {
 		// The point of the whole exercise: model 2 continued the day rather than
 		// re-scanning it. It was shown 14 unseen items, not 24.
 		const geminiPages = pagesSeen.filter((p) => p.model === "gemini-3.8-flash");
-		const gptPages = pagesSeen.filter((p) => p.model === "gpt-5.6-sol");
+		const gptPages = pagesSeen.filter((p) => p.model === "gpt-6-sol");
 		expect(geminiPages[0]!.ids).toHaveLength(24);
 		expect(gptPages[0]!.ids).toHaveLength(14);
 		expect(gptPages[0]!.ids).toEqual(manifest.items.slice(10).map((i) => i.id));

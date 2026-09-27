@@ -21,7 +21,7 @@ export type ModelSpec = {
 
 export const MODEL_CHAIN: readonly ModelSpec[] = Object.freeze([
 	Object.freeze({ provider: "github-copilot", model: "gemini-3.8-flash" }),
-	Object.freeze({ provider: "openai-codex", model: "gpt-5.6-sol" }),
+	Object.freeze({ provider: "openai-codex", model: "gpt-6-sol" }),
 	Object.freeze({ provider: "opencode-go", model: "deepseek-v4.1-flash" }),
 ]) as readonly ModelSpec[];
 

@@ -120,7 +120,7 @@ The chain that runs is `modelChain` in `config/agent.yaml`, read at run time.
 | Role | Provider | Model | Chain position |
 |---|---|---|---|
 | Primary | `github-copilot` | `gemini-3.8-flash` | 1 |
-| Fallback 1 | `openai-codex` | `gpt-5.6-sol` | 2 |
+| Fallback 1 | `openai-codex` | `gpt-6-sol` | 2 |
 | Fallback 2 | `opencode-go` | `deepseek-v4.1-flash` | 3 |
 
 There is no separate curator model and editor model. Both stages walk the same chain;

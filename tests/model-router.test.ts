@@ -29,7 +29,7 @@ describe("model-config", () => {
 	it("is the verified three-model chain in priority order", () => {
 		expect(MODEL_CHAIN.map(modelKey)).toEqual([
 			"github-copilot/gemini-3.8-flash",
-			"openai-codex/gpt-5.6-sol",
+			"openai-codex/gpt-6-sol",
 			"opencode-go/deepseek-v4.1-flash",
 		]);
 	});

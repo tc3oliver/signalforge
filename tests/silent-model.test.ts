@@ -94,7 +94,7 @@ describe("the observation report makes a dead provider impossible to miss", () =
 	const row = (over: Partial<ModelChainRow>): ModelChainRow => ({
 		stage: "CURATOR",
 		provider: "openai-codex",
-		model: "gpt-5.6-sol",
+		model: "gpt-6-sol",
 		attempts: 12,
 		succeeded: 1,
 		yielded: 11,
