@@ -27,6 +27,14 @@ sec_companies:
 crypto_assets:
   - id: bitcoin
     symbol: BTC
+  - id: solana
+    symbol: SOL
+  - id: zcash
+    symbol: ZEC
+  - id: ethereum
+    symbol: ETH
+  - id: hyperliquid
+    symbol: HYPE
 
 # FRED series id and the label to show for it.
 fred_series:

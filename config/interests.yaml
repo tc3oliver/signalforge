@@ -53,3 +53,9 @@ topics:
     weight: 0.6
     keywords: [kubernetes, database, postgres, observability, "cloud provider", outage]
     aliases: [devops, sre, platform]
+
+  - id: crypto
+    label: Crypto
+    weight: 0.5
+    keywords: [crypto, bitcoin, ethereum, blockchain, defi, stablecoin, "smart contract", exchange, exploit, hack, sec, regulation, etf]
+    aliases: [cryptocurrency, web3, onchain]
