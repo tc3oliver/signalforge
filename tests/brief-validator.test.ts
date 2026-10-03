@@ -206,9 +206,9 @@ describe("brief size follows what the curator actually found", () => {
 		});
 	}
 
-	it("requires the usual 8-15 on a normal day", () => {
-		expect(requiredStoryCount(15)).toEqual({ min: 8, max: 15 });
-		expect(requiredStoryCount(40)).toEqual({ min: 8, max: 15 });
+	it("requires the usual 8-20 on a normal day", () => {
+		expect(requiredStoryCount(20)).toEqual({ min: 8, max: 20 });
+		expect(requiredStoryCount(40)).toEqual({ min: 8, max: 20 });
 		expect(requiredStoryCount(8)).toEqual({ min: 8, max: 8 });
 	});
 

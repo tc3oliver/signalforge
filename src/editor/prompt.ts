@@ -22,7 +22,7 @@ function describeRange(min: number, max: number): string {
 
 export function buildEditorSystemPrompt(ctx: EditorPromptContext): string {
 	// How many stories the brief must carry depends on how many the Curator
-	// found. Telling the editor a fixed 8-15 on a day that produced four would
+	// found. Telling the editor a fixed 8-20 on a day that produced four would
 	// send it looking for stories that are not there.
 	const bounds = requiredStoryCount(ctx.materialCount);
 	const storyRange = describeRange(bounds.min, bounds.max);

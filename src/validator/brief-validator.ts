@@ -20,7 +20,7 @@ const TARGET_MIN_STORIES = 8;
 /**
  * How many stories this brief must contain, given what the curator found.
  *
- * A normal day supplies fifteen-odd stories and the answer is the usual 8-15.
+ * A normal day supplies fifteen-odd stories and the answer is the usual 8-20.
  * A quiet day -- the first real production run found four genuine stories in
  * 771 items, most of them repository noise -- supplies fewer than eight, and
  * then the only correct brief is one that carries all of them. Demanding eight
@@ -28,9 +28,16 @@ const TARGET_MIN_STORIES = 8;
  * short brief: the reader gets nothing at all on the morning when there
  * genuinely was not much, and the pipeline reports a failure for doing the
  * right thing.
+ *
+ * Raised from 15 to 20 on 2026-10-03: a 21-day sample showed material story
+ * counts hitting the old cap on 13 of 21 days (62%), discarding Curator output
+ * the model had already spent tokens judging and writing up -- including
+ * material tier-A/B stories (e.g. an OpenAI leadership/safety story, a SoftBank
+ * investment story) that happened to land past the 15th slot. 20 keeps a brief
+ * readable while giving those days more room before truncating.
  */
 export function requiredStoryCount(materialCount: number): { min: number; max: number } {
-	const max = Math.min(15, Math.max(1, materialCount));
+	const max = Math.min(20, Math.max(1, materialCount));
 	return { min: Math.min(TARGET_MIN_STORIES, max), max };
 }
 

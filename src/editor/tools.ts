@@ -246,7 +246,7 @@ export function createEditorTools(ctx: EditorContext): ToolDefinition[] {
 				 * bound is checked by validateBrief, which knows the material count
 				 * and can say what is wrong in a sentence the model can act on.
 				 */
-				{ minItems: 1, maxItems: 15 },
+				{ minItems: 1, maxItems: 20 },
 			),
 			emergingSignals: Type.Optional(
 				Type.Array(
